@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, createContext, useRef } from "react";
 import { useUserCtx } from "./user";
-import useContextWrapper from "../hooks/useContextWrapper";
 import { useAuth } from "./auth";
+import useContextWrapper from "../hooks/useContextWrapper";
 
 const channelTypes = {
 	createMessageInChat: (roomId: string) => `CREATE_MESSAGE_${roomId}`,
@@ -47,25 +47,26 @@ const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
 		}
 
 		ws.current = new WebSocket(
-			`ws://${window.location.hostname}:8081?token=${getAccessToken()}`
+			`${import.meta.env.VITE_WS_URL}?token=${getAccessToken()}`
 		);
 
 		ws.current.onopen = () => {
-			console.log("Opened WS connection");
+			console.log("[WS] Opened WS connection");
 		};
 
 		ws.current.onclose = () => {
-			console.log("Closed WS connection");
+			console.log("[WS] Closed WS connection");
 		};
 
 		ws.current.onmessage = (message) => {
 			const { type, data } = JSON.parse(message.data);
 			const roomChannel = `${type}_${data.room_id}`;
 
-			console.log("Received message", type, data, roomChannel);
+			console.log("[WS] Received message", type, data, roomChannel);
 
 			// users currently in room => subscribed to chat channel
 			if (channels.current[roomChannel]) channels.current[roomChannel](data);
+
 			// not subsribed to chat channel yet
 			else channels.current[type]?.(data);
 		};

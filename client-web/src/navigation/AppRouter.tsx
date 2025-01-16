@@ -17,7 +17,6 @@ const AppRouter = () => {
 				<Route element={<TabLayout />}>
 					<Route path="/" element={<HomePage />} />
 					<Route path="/profile" element={<ProfilePage />} />
-					{/* <Route path="/rooms" element={<HomePage />} /> */}
 				</Route>
 				<Route path="/rooms/create" element={<CreateRoomPage />} />
 				<Route path="/rooms/invites" element={<RoomInvitesPage />} />

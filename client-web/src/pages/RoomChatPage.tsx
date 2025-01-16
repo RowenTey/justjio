@@ -31,7 +31,7 @@ const RoomChatPage: React.FC = () => {
 		const channel = channelTypes.createMessageInChat(roomId);
 
 		subscribe(channel, (message) => {
-			console.log("Received message", message);
+			console.log("[RoomChatPage] Received message", message);
 			setMessages((prev) => [
 				...prev,
 				{
@@ -43,10 +43,10 @@ const RoomChatPage: React.FC = () => {
 			]);
 			setIsNewMessage(true);
 		});
-		console.log("Subscribed to channel", channel);
+		console.log("[RoomChatPage] Subscribed to channel", channel);
 
 		return () => {
-			console.log("Unsubscribing from channel", channel);
+			console.log("[RoomChatPage] Unsubscribing from channel", channel);
 			unsubscribe(channel);
 		};
 	}, [roomId, subscribe, unsubscribe]);
@@ -65,6 +65,7 @@ const RoomChatPage: React.FC = () => {
 				return;
 			}
 
+			console.log("[RoomChatPage] Messages fetched: ", res.data.data);
 			const newMsgs = res.data.data.messages.map((msg) => ({
 				user_id: msg.sender.id,
 				username: msg.sender.username,
