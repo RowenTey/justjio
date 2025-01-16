@@ -1,14 +1,14 @@
 package model
 
 import (
+	"sc2006-JustJio/util"
 	"time"
 
-	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
 
 type Room struct {
-	ID             ulid.ULID `gorm:"primaryKey;type:varbinary(255)" json:"id"`
+	ID             string    `gorm:"primaryKey; type:uuid" json:"id"`
 	Name           string    `gorm:"not null" json:"name"`
 	Time           string    `gorm:"not null" json:"time"`
 	Venue          string    `gorm:"not null" json:"venue"`
@@ -24,7 +24,7 @@ type Room struct {
 
 type RoomInvite struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
-	RoomID    ulid.ULID `gorm:"not null;type:varbinary(255)" json:"room_id"`    // Foreign key to Room table
+	RoomID    string    `gorm:"not null; type:uuid" json:"room_id"`             // Foreign key to Room table
 	Room      Room      `gorm:"not null" json:"room"`                           // gorm feature -> not actually stored in DB
 	UserID    uint      `gorm:"not null" json:"user_id"`                        // Foreign key to User table
 	User      User      `gorm:"not null" json:"user"`                           // gorm feature -> not actually stored in DB
@@ -36,6 +36,17 @@ type RoomInvite struct {
 }
 
 func (room *Room) BeforeCreate(tx *gorm.DB) error {
-	room.ID = ulid.Make()
+	// Generate ULID first
+	ulid := util.CreateULID()
+
+	// Convert to UUID for storage
+	uuid := util.ULIDToUUID(ulid)
+	room.ID = uuid.String()
 	return nil
 }
+
+func (invite *RoomInvite) BeforeCreate(tx *gorm.DB) error {
+	invite.RoomID = invite.Room.ID
+	return nil
+}
+

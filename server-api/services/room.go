@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/oklog/ulid/v2"
 	"gorm.io/gorm"
 )
 
@@ -23,7 +22,6 @@ type RoomService struct {
 func (rs *RoomService) CreateRoom(room *model.Room, host *model.User) (*model.Room, error) {
 	db := rs.DB.Table("rooms")
 
-	ulid.Make()
 	room.HostID = host.ID
 	room.Host = *host
 	room.Users = append(room.Users, *host)
@@ -33,6 +31,7 @@ func (rs *RoomService) CreateRoom(room *model.Room, host *model.User) (*model.Ro
 		return nil, err
 	}
 
+	log.Println("[ROOM] Created room with ID: ", room.ID)
 	return room, nil
 }
 
@@ -58,7 +57,7 @@ func (rs *RoomService) GetRoomById(roomId string) (*model.Room, error) {
 	db := rs.DB.Table("rooms")
 	var room model.Room
 
-	if err := db.First(&room, roomId).Error; err != nil {
+	if err := db.First(&room, "id = ?", roomId).Error; err != nil {
 		return nil, err
 	}
 	return &room, nil
@@ -83,7 +82,7 @@ func (rs *RoomService) GetRoomAttendees(roomId string) (*[]model.User, error) {
 	db := rs.DB.Table("rooms")
 	var room model.Room
 
-	if err := db.Preload("Users").First(&room, roomId).Error; err != nil {
+	if err := db.Preload("Users").First(&room, "id = ?", roomId).Error; err != nil {
 		return nil, err
 	}
 	return &room.Users, nil
@@ -93,11 +92,9 @@ func (rs *RoomService) GetRoomAttendeesIds(roomId string) (*[]string, error) {
 	db := rs.DB.Table("rooms")
 	var room model.Room
 
-	if err := db.Preload("Users").First(&room, roomId).Error; err != nil {
+	if err := db.Preload("Users").First(&room, "id = ?", roomId).Error; err != nil {
 		return nil, err
 	}
-
-	log.Printf("room: %+v\n", room)
 
 	var userIds []string
 	for _, user := range room.Users {
@@ -116,7 +113,7 @@ func (rs *RoomService) CloseRoom(roomId string, userId string) error {
 		return err
 	}
 
-	if err := db.First(&room, roomId).Error; err != nil {
+	if err := db.First(&room, "id = ?", roomId).Error; err != nil {
 		return err
 	}
 
@@ -153,7 +150,7 @@ func (rs *RoomService) UpdateRoomInviteStatus(roomId string, userId string, stat
 
 	var user model.User
 	var room model.Room
-	if err := db.First(&room, roomId).Error; err != nil {
+	if err := db.First(&room, "id = ?", roomId).Error; err != nil {
 		return err
 	}
 	if err := db.First(&user, userId).Error; err != nil {
@@ -182,19 +179,21 @@ func (rs *RoomService) InviteUserToRoom(
 		return &[]model.RoomInvite{}, nil
 	}
 
+	log.Printf("[ROOM] Inviting users (%v) to room %s", users, roomId)
 	roomsDB := rs.DB.Table("rooms")
 	roomInvitesDB := rs.DB.Table("room_invites")
 	var room model.Room
 	var roomInvites []model.RoomInvite
-
-	if err := roomsDB.First(&room, roomId).Error; err != nil {
+	
+	if err := roomsDB.First(&room, "id = ?", roomId).Error; err != nil {
 		return nil, err
 	}
-
+	log.Printf("[ROOM] Room %s found", roomId)
+	
 	if room.HostID != inviter.ID {
 		return nil, errors.New("User is not the host of the room")
 	}
-
+	
 	for _, user := range *users {
 		roomInvite := model.RoomInvite{
 			Room:      room,
@@ -205,11 +204,16 @@ func (rs *RoomService) InviteUserToRoom(
 			CreatedAt: time.Now(),
 			Status:    "pending",
 		}
+		log.Printf("[ROOM] Room ID of invite to be created: %v", roomInvite.Room.ID)
 		roomInvites = append(roomInvites, roomInvite)
 	}
-
-	if err := roomInvitesDB.Create(roomInvites).Error; err != nil {
+	
+	if err := roomInvitesDB.Omit("Room").Create(roomInvites).Error; err != nil {
 		return nil, err
+	}
+
+	for _, invite := range roomInvites {
+		log.Println("[ROOM] Invite created with room ID: ", invite.RoomID)
 	}
 
 	return &roomInvites, nil

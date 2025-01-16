@@ -1,46 +1,46 @@
 package model
 
-import "gorm.io/datatypes"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Bill struct {
-	ID           uint          `gorm:"primaryKey"`
-	Name         string        `gorm:"not null" json:"name"`
-	Amount       float32       `gorm:"not null" json:"amount"`
-	Date         string        `gorm:"not null" json:"date"`
-	RoomID       uint          `gorm:"not null" json:"roomID"`
-	Transactions []Transaction `json:"transactions"`
+	ID              uint          `gorm:"primaryKey"`
+	Name            string        `gorm:"not null" json:"name"`
+	Amount          float32       `gorm:"not null" json:"amount"`
+	Date            time.Time     `gorm:"not null" json:"date"`
+	RoomID          string        `gorm:"not null; type:uuid" json:"room_id"`                         // Foreign key to Room table
+	Room            Room          `gorm:"not null" json:"room"`                                       // gorm feature -> not actually stored in DB
+	OwnerID         uint          `gorm:"not null" json:"owner_id"`                                   // Foreign key to User table
+	Owner           User          `gorm:"not null; foreignKey:owner_id" json:"owner"`                 // gorm feature -> not actually stored in DB
+	ConsolidationID uint          `gorm:"not null" json:"consolidation_id"`                           // Foreign key to Consolidation table
+	Consolidation   Consolidation `gorm:"not null; foreignKey:consolidation_id" json:"consolidation"` // gorm feature -> not actually stored in DB
+	Payers          []User        `gorm:"many2many:payers" json:"payers"`
+}
+
+type Consolidation struct {
+	ID        uint      `gorm:"primaryKey"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 }
 
 type Transaction struct {
-	ID     uint   `gorm:"primaryKey"`
-	Payer  string `gorm:"not null" json:"payer"`
-	Payee  string `gorm:"not null" json:"payee"`
-	IsPaid bool   `gorm:"default:false" json:"is_paid"`
-	PaidOn string `gorm:"default:null" json:"paid_on"`
+	ID              uint          `gorm:"primaryKey"`
+	ConsolidationID uint          `gorm:"not null" json:"consolidation_id"`           // Foreign key to Consolidation table
+	Consolidation   Consolidation `gorm:"not null" json:"consolidation"`              // gorm feature -> not actually stored in DB
+	PayerID         uint          `gorm:"not null" json:"payer_id"`                   // Foreign key to User table
+	Payer           User          `gorm:"not null; foreignKey:payer_id" json:"payer"` // gorm feature -> not actually stored in DB
+	PayeeID         uint          `gorm:"not null" json:"payee_id"`                   // Foreign key to User table
+	Payee           User          `gorm:"not null; foreignKey:payee_id" json:"payee"` // gorm feature -> not actually stored in DB
+	Amount          float32       `gorm:"not null" json:"amount"`
+	IsPaid          bool          `gorm:"default:false" json:"is_paid"`
+	PaidOn          time.Time     `gorm:"default:null" json:"paid_on"`
 }
 
-type GenerateTransactionInput struct {
-	Name        string         `json:"name"`
-	ShouldPay   string         `json:"shouldPay"`
-	Payers      datatypes.JSON `json:"payers" swaggertype:"array,string"`
-	AmountToPay float32        `json:"amountToPay"`
-	Date        string         `json:"date"`
-	RoomID      string         `json:"roomId"`
-}
-
-type GenerateTransactionResponse struct {
-	Transactions []Transaction `json:"transactions"`
-	Bill         Bill          `json:"bill"`
-}
-
-type GetTransactionResponse struct {
-	Transaction Transaction `json:"transaction"`
-	Bill        Bill        `json:"bill"`
-}
-
-type PayBillInput struct {
-	BillID string `json:"billId"`
-	Payer  string `json:"payer"`
-	Payee  string `json:"payee"`
-	PaidOn string `json:"paidOn"`
+func (t *Transaction) BeforeUpdate(tx *gorm.DB) error {
+	if t.IsPaid == true {
+		t.PaidOn = time.Now()
+	}
+	return nil
 }

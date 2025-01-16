@@ -60,7 +60,7 @@ func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) error {
 	for {
 		msg, err := s.Consumer.ReadMessage(-1)
 		if err != nil {
-			fmt.Printf("Error consuming messages: %v\n", err)
+			log.Printf("Error consuming messages: %v\n", err)
 			return nil
 		}
 		handler(*msg)
@@ -68,6 +68,6 @@ func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) error {
 }
 
 func (s *KafkaService) Close() {
-	fmt.Println("Closing Kafka client")
+	log.Println("Closing Kafka client")
 	s.Consumer.Close()
 }

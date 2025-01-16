@@ -23,23 +23,24 @@ func ConnectDB() {
 		// SkipDefaultTransaction: true,
 	})
 	if err != nil {
-		log.Println("Failed to connect to database")
+		log.Println("[DB] Failed to connect to database")
 		log.Fatal(err)
 	}
-	log.Println("Connection opened to database")
+	log.Println("[DB] Connection opened to database")
 
 	err = DB.AutoMigrate(
 		&model.User{},
 		&model.Room{},
 		&model.RoomInvite{},
 		&model.Bill{},
+		&model.Consolidation{},
 		&model.Transaction{},
 		&model.Message{},
 	)
 	if err != nil {
-		log.Println("Migration failed: ", err.Error())
+		log.Println("[DB] Migration failed: ", err.Error())
 	}
-	log.Println("Database migrated")
+	log.Println("[DB] Database migrated")
 }
 
 func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {

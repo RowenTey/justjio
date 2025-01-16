@@ -15,7 +15,7 @@ func SeedDB(db *gorm.DB) error {
 	var count int64
 	db.Model(&model.User{}).Count(&count)
 	if count > 0 {
-		log.Println("Database already seeded")
+		log.Println("[SEED] Database already seeded")
 		return nil
 	}
 
@@ -43,7 +43,7 @@ func SeedDB(db *gorm.DB) error {
 			return err
 		}
 		users[i] = *createdUser
-		log.Println("\nUser created: ", users[i])
+		log.Println("[SEED] User created:\n", users[i])
 	}
 
 	for _, u := range users {
@@ -71,17 +71,16 @@ func SeedDB(db *gorm.DB) error {
 	}
 	for i, r := range rooms {
 		host := users[rand.Intn(len(users))]
-		log.Println("\nUser selected as host: ", host)
+		log.Println("[SEED] User selected as host:\n", host)
 		createdRoom, err := roomService.CreateRoom(&r, &host)
 		if err != nil {
 			return err
 		}
 		rooms[i] = *createdRoom
-		log.Println("\nRoom created: ", rooms[i])
+		log.Println("[SEED] Room created: ", rooms[i].ID)
 
-		// Invite users to room
+		// invite users to room
 		var invitees = []model.User{}
-
 		for _, u := range users {
 			if u.ID == host.ID {
 				continue
@@ -89,14 +88,12 @@ func SeedDB(db *gorm.DB) error {
 			invitees = append(invitees, u)
 		}
 
-		// invite users to room
-		invites, err := roomService.InviteUserToRoom(
-			rooms[i].ID.String(), &host, &invitees, "Join my party!")
+		_, err = roomService.InviteUserToRoom(
+			rooms[i].ID, &host, &invitees, "Join my party!")
 		if err != nil {
+			log.Fatalf("%s", err.Error())
 			return err
 		}
-
-		log.Println("Invites created: ", invites)
 	}
 
 	return nil

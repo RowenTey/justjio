@@ -22,17 +22,6 @@ import (
 // Store OTP with email as key
 var ClientOTP = make(map[string]string)
 
-// SignUp godoc
-// @Summary      Signs up a user
-// @Description  Create an account for a user
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        newUser   body      model.User  true  "New User"
-// @Success      201  {object}  model.AuthResponse
-// @Failure      400  {object}  nil
-// @Failure      500  {object}  nil
-// @Router       /auth/signup [post]
 func SignUp(c *fiber.Ctx) error {
 	var user model.User
 	if err := c.BodyParser(&user); err != nil {
@@ -75,19 +64,6 @@ func SignUp(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "User signed up successfully", response)
 }
 
-// Login godoc
-// @Summary      Log a user into the application
-// @Description  Authenticates the user
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        LoginRequest   body      model.LoginRequest  true  "Login Credentials"
-// @Success      200  {object}   model.AuthResponse
-// @Failure      400  {object}  nil
-// @Failure      401  {object}  nil
-// @Failure      404  {object}  nil
-// @Failure      500  {object}  nil
-// @Router       /auth [post]
 func Login(c *fiber.Ctx) error {
 	var input request.LoginRequest
 	if err := c.BodyParser(&input); err != nil {
@@ -116,7 +92,7 @@ func Login(c *fiber.Ctx) error {
 	// create user channel when login
 	go func() {
 		channel := fmt.Sprintf("user-%d", user.ID)
-		kafkaService, err := services.NewKafkaService("kafka:29092")
+		kafkaService, err := services.NewKafkaService(config.Config("KAFKA_URL"))
 		if err != nil {
 			log.Fatal(err)
 		}

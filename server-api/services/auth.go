@@ -53,6 +53,7 @@ func (s *AuthService) SendOTPEmail(ClientOTP *map[string]string, email string) e
 	otp := s.GenerateOTP()
 	(*ClientOTP)[email] = otp
 
+	// TODO: make env variable
 	from := "justjio-team@outlook.com"
 	password := config.Config("OUTLOOK_PASSWORD")
 	to := []string{email}

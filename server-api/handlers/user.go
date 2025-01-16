@@ -12,17 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// GetUser godoc
-// @Summary      Get a specific user
-// @Description  Get user by ID
-// @Tags         users
-// @Accept       json
-// @Produce      json
-// @Param        id   path      int  true  "User ID"
-// @Success      200  {object}  model.User
-// @Failure      404  {object}  nil
-// @Failure      500  {object}  nil
-// @Router       /users/{id} [get]
+
 func GetUser(c *fiber.Ctx) error {
 	id := c.Params("userId")
 	user, err := (&services.UserService{DB: database.DB}).GetUserByID(id)

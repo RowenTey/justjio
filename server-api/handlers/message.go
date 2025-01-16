@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"log"
+	"sc2006-JustJio/config"
 	"sc2006-JustJio/database"
 	model_kafka "sc2006-JustJio/model/kafka"
 	"sc2006-JustJio/model/request"
@@ -16,65 +17,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"gorm.io/gorm"
 )
-
-// import (
-// 	"log"
-// 	"sc2006-JustJio/config"
-// 	"sc2006-JustJio/services"
-// 	"sc2006-JustJio/services/chat_service"
-// 	"sc2006-JustJio/util"
-
-// 	"github.com/gofiber/websocket/v2"
-// 	"github.com/golang-jwt/jwt/v4"
-// )
-
-// // Create a new hub for chat handler
-// var ChatHub *chat_service.ChatHub
-
-// func InitChatHub() {
-// 	ChatHub = chat_service.NewHub()
-// 	go ChatHub.Run()
-// }
-
-// func RegisterChatWS(c *websocket.Conn) {
-// 	roomId := c.Params("roomId")
-// 	tokenStr := c.Query("token")
-
-// 	if tokenStr == "" {
-// 		c.Close()
-// 		return
-// 	}
-
-// 	claims := jwt.MapClaims{}
-// 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
-// 		return []byte(config.Config("JWT_SECRET")), nil
-// 	})
-// 	if err != nil || !token.Valid {
-// 		c.Close()
-// 		return
-// 	}
-
-// 	userId := util.GetUserInfoFromToken(token, "user_id")
-
-// 	err = services.RoomService{}.ValidateUser(roomId, userId)
-// 	if err != nil {
-// 		log.Println(err)
-// 		c.Close()
-// 		return
-// 	}
-
-// 	client := &chat_service.ChatClient{
-// 		IP:     c.RemoteAddr().String(),
-// 		Conn:   c,
-// 		Send:   make(chan []byte, 256),
-// 		UserId: userId,
-// 		RoomId: roomId,
-// 	}
-// 	ChatHub.Register <- client
-
-// 	go client.WritePump(ChatHub)
-// 	client.ReadPump(ChatHub)
-// }
 
 // /:roomId/message/:msgId
 func GetMessage(c *fiber.Ctx) error {
@@ -184,13 +126,13 @@ func CreateMessage(c *fiber.Ctx) error {
 	}
 
 	roomUserIds := c.Locals("roomUserIds").(*[]string)
-	kafkaService, err := services.NewKafkaService("kafka:29092")
+	kafkaService, err := services.NewKafkaService(config.Config("KAFKA_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer kafkaService.Close()
 	if err := kafkaService.BroadcastMessage(roomUserIds, broadcastPayload); err != nil {
-		log.Println("Failed to broadcast message:", err)
+		log.Println("[MESSAGE] Failed to broadcast message:", err)
 	}
 
 	return util.HandleSuccess(c, "Message saved successfully", nil)

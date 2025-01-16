@@ -52,10 +52,14 @@ func Initalize(router *fiber.App) {
 	messages.Get("/:msgId", handlers.GetMessage)
 	messages.Post("/", handlers.CreateMessage)
 
-	// bills := v1.Group("/bills")
-	// bills.Get("/", handlers.GetTransactions)
-	// bills.Post("/:billId", handlers.GenerateTransactions)
-	// bills.Patch("/pay", handlers.PayBill)
+	bills := v1.Group("/bills")
+	bills.Get("/", handlers.GetBillsByRoom)
+	bills.Post("/", handlers.CreateBill)
+	bills.Post("/consolidate", handlers.ConsolidateBills)
+
+	transactions := v1.Group("/transactions")
+	transactions.Get("/", handlers.GetTransactionsByUser)
+	transactions.Patch("/", handlers.SettleTransaction)
 
 	// 404 handler
 	router.Use(func(c *fiber.Ctx) error {

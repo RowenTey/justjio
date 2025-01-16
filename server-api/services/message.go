@@ -1,6 +1,7 @@
 package services
 
 import (
+	"log"
 	"math"
 	"sc2006-JustJio/database"
 	"sc2006-JustJio/model"
@@ -9,16 +10,16 @@ import (
 	"gorm.io/gorm"
 )
 
-type MessageService struct {
-	DB *gorm.DB
-}
-
 const (
 	MESSAGE_PAGE_SIZE = 10
 )
 
-func (c *MessageService) SaveMessage(room *model.Room, sender *model.User, content string) error {
-	db := c.DB.Table("messages")
+type MessageService struct {
+	DB *gorm.DB
+}
+
+func (ms *MessageService) SaveMessage(room *model.Room, sender *model.User, content string) error {
+	db := ms.DB.Table("messages")
 
 	msg := model.Message{
 		Room:     *room,
@@ -28,15 +29,17 @@ func (c *MessageService) SaveMessage(room *model.Room, sender *model.User, conte
 		SentAt:   time.Now(),
 	}
 
-	if err := db.Create(&msg).Error; err != nil {
+	// Omit to avoid creating new room
+	if err := db.Omit("Room").Create(&msg).Error; err != nil {
 		return err
 	}
 
+	log.Printf("[MESSAGE] Saved message to room %s", msg.RoomID)
 	return nil
 }
 
-func (c *MessageService) GetMessageById(msgId, roomId string) (model.Message, error) {
-	db := c.DB.Table("messages")
+func (ms *MessageService) GetMessageById(msgId, roomId string) (model.Message, error) {
+	db := ms.DB.Table("messages")
 	var message model.Message
 
 	if err := db.Where("id = ? AND room_id = ?", msgId, roomId).First(&message).Error; err != nil {
@@ -46,8 +49,8 @@ func (c *MessageService) GetMessageById(msgId, roomId string) (model.Message, er
 	return message, nil
 }
 
-func (c *MessageService) DeleteMessage(msgId, roomId string) error {
-	db := c.DB.Table("messages")
+func (ms *MessageService) DeleteMessage(msgId, roomId string) error {
+	db := ms.DB.Table("messages")
 
 	if err := db.Where("id = ? AND room_id = ?", msgId, roomId).Delete(&model.Message{}).Error; err != nil {
 		return err
@@ -56,8 +59,8 @@ func (c *MessageService) DeleteMessage(msgId, roomId string) error {
 	return nil
 }
 
-func (c *MessageService) DeleteRoomMessages(roomId string) error {
-	db := c.DB.Table("messages")
+func (ms *MessageService) DeleteRoomMessages(roomId string) error {
+	db := ms.DB.Table("messages")
 
 	if err := db.Where("room_id = ?", roomId).Delete(&model.Message{}).Error; err != nil {
 		return err
@@ -66,19 +69,20 @@ func (c *MessageService) DeleteRoomMessages(roomId string) error {
 	return nil
 }
 
-func (c *MessageService) CountNumMessagesPages(roomId string) (int, error) {
-	db := c.DB.Table("messages")
+func (ms *MessageService) CountNumMessagesPages(roomId string) (int, error) {
+	db := ms.DB.Table("messages")
 
 	var count int64
 	err := db.Where("room_id = ?", roomId).Count(&count).Error
 	if err != nil {
 		return 0, err
 	}
+
 	return int(math.Ceil(float64(count) / float64(MESSAGE_PAGE_SIZE))), nil
 }
 
-func (c *MessageService) GetMessagesByRoomId(roomId string, page int, asc bool) (*[]model.Message, error) {
-	db := c.DB.Table("messages")
+func (ms *MessageService) GetMessagesByRoomId(roomId string, page int, asc bool) (*[]model.Message, error) {
+	db := ms.DB.Table("messages")
 	var message []model.Message
 
 	// sorted by
@@ -91,6 +95,8 @@ func (c *MessageService) GetMessagesByRoomId(roomId string, page int, asc bool) 
 		Where("room_id = ?", roomId).
 		Order(order).
 		Scopes(database.Paginate(page, MESSAGE_PAGE_SIZE)).
+		Preload("Room").
+		Preload("Sender").
 		Find(&message).Error; err != nil {
 		return nil, err
 	}

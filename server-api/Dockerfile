@@ -16,10 +16,6 @@ COPY . .
 RUN go get -d -v
 RUN GOOS=linux GOARCH=amd64 go build -v -tags musl -o /api-server
 
-# # Run the tests in the container
-# FROM build-stage AS run-test-stage
-# RUN go test -v ./...
-
 # Deploy the application binary into a lean image
 FROM alpine:latest AS build-release-stage
 

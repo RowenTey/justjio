@@ -1,18 +1,3 @@
-# FROM golang:1.20-alpine
-
-# WORKDIR /app
-
-# COPY go.mod go.sum ./
-# RUN go mod download
-
-# COPY . ./
-
-# RUN go build -o ws-server.exe
-
-# EXPOSE 8080
-
-# CMD [ "ws-server" ]
-
 # Build the application from source
 FROM golang:1.20-alpine AS build-stage
 

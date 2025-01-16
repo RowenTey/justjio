@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -42,12 +41,12 @@ func main() {
 	app.Use(webSocketUpgrade)
 
 	app.Get("/", websocket.New(func(c *websocket.Conn) {
-		kafkaClient, err := services.NewKafkaService("kafka:29092", "chat-service")
+		kafkaClient, err := services.NewKafkaService("localhost:9092", "chat-service")
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer kafkaClient.Close()
-		fmt.Println("Kafka client created")
+		log.Println("Kafka client created")
 
 		user, err := services.GetCurrentUser(c)
 		if err != nil {
@@ -60,13 +59,13 @@ func main() {
 		}
 		channel := services.GetChannel(user.ID)
 
-		fmt.Println("Channel: ", channel)
+		log.Println("Channel: ", channel)
 		forAllConns, remove, isInit := connMap.Add(user.ID, c)
 
 		onMessage := func(message kafka.Message) {
 			forAllConns(func(conn *websocket.Conn) {
 				if err := conn.WriteMessage(websocket.TextMessage, []byte(message.Value)); err != nil {
-					log.Println("write:", err)
+					log.Println("WebSocket Error:", err)
 				}
 			})
 		}
@@ -96,10 +95,10 @@ func main() {
 		)
 		for {
 			if mt, msg, wsErr = c.ReadMessage(); wsErr != nil {
-				log.Println("read:", wsErr)
+				log.Println("WebSocket Error:", wsErr)
 				break
 			}
-			log.Printf("Received (%d):  %s", mt, msg)
+			log.Printf("[WebSocket] Received (%d): %s\n", mt, msg)
 			onMessage(kafka.Message{
 				Value: msg,
 			})

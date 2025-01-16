@@ -46,10 +46,10 @@ func main() {
 
 	app := fiber.New()
 
-	// go worker.ProduceMessages()
-
 	database.ConnectDB()
-	services.SeedDB(database.DB)
+	if env == "dev" {
+		services.SeedDB(database.DB)
+	}
 
 	middleware.Fiber(app)
 	router.Initalize(app)

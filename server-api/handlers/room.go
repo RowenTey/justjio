@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
-	"strconv"
 
 	"sc2006-JustJio/database"
 	"sc2006-JustJio/model/request"
@@ -31,24 +30,10 @@ func GetRoom(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Retrieved room successfully", room)
 }
 
-// GetRooms godoc
-// @Summary      Get all rooms for a user
-// @Description  Get rooms by user's username
-// @Tags         rooms
-// @Accept       json
-// @Produce      json
-// @Success      200  {array}   model.Room
-// @Failure      500  {object}  nil
-// @Router       /rooms [get]
 func GetRooms(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := util.GetUserInfoFromToken(token, "user_id")
-
-	pageStr := c.Query("page", "1")
-	page, err := strconv.Atoi(pageStr)
-	if err != nil {
-		page = 1
-	}
+	page := c.QueryInt("page", 1)
 
 	roomService := &services.RoomService{DB: database.DB}
 
@@ -63,15 +48,6 @@ func GetRooms(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Retrieved rooms successfully", rooms)
 }
 
-// GetRoomInvitations godoc
-// @Summary      Get all invitations for a user
-// @Description  Get invitations by user's username
-// @Tags         invites
-// @Accept       json
-// @Produce      json
-// @Success      200  {array}   model.Room
-// @Failure      500  {object}  nil
-// @Router       /rooms/invites/ [get]
 func GetRoomInvitations(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := util.GetUserInfoFromToken(token, "user_id")
@@ -89,16 +65,6 @@ func GetRoomInvitations(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Retrieved room invitations successfully", invites)
 }
 
-// GetRoomAttendees godoc
-// @Summary      Get all attendees for a room
-// @Description  Get attendees by roomID
-// @Tags         rooms
-// @Accept       json
-// @Produce      json
-// @Param        roomID   path      int  true  "Room ID"
-// @Success      200  {array}   string
-// @Failure      500  {object}  nil
-// @Router       /rooms/attendees/ [get]
 func GetRoomAttendees(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 
@@ -115,19 +81,6 @@ func GetRoomAttendees(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Retrieved room attendees successfully", attendees)
 }
 
-// CreateRoom godoc
-// @Summary      Create a room
-// @Description  Create a room in database
-// @Tags         rooms
-// @Accept       json
-// @Produce      json
-// @Param        room   body      model.CreateRoomInput   true  "Room"
-// @Param        invites   body      model.CreateRoomInput  true  "Invites"
-// @Success      200  {object}   model.Room
-// @Failure      400  {object}  nil
-// @Failure      404  {object}  nil
-// @Failure      500  {object}  nil
-// @Router       /rooms [post]
 func CreateRoom(c *fiber.Ctx) error {
 	var request request.CreateRoomRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -166,9 +119,8 @@ func CreateRoom(c *fiber.Ctx) error {
 		return util.HandleInternalServerError(c, err)
 	}
 
-	roomIdStr := room.ID.String()
 	invites, err := roomService.InviteUserToRoom(
-		roomIdStr, user, invitees, request.Message)
+		room.ID, user, invitees, request.Message)
 	if err != nil {
 		tx.Rollback()
 		return util.HandleInternalServerError(c, err)
@@ -188,16 +140,6 @@ func CreateRoom(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Created room successfully", response)
 }
 
-// CloseRoom godoc
-// @Summary      Close a room
-// @Description  Set a room to closed
-// @Tags         rooms
-// @Accept       json
-// @Produce      json
-// @Param        roomID   path      int  true  "Room ID"
-// @Success      200  {object}  nil
-// @Failure      500  {object}  nil
-// @Router       /rooms/{roomId} [delete]
 func CloseRoom(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 	token := c.Locals("user").(*jwt.Token)
@@ -215,16 +157,6 @@ func CloseRoom(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Closed room successfully", nil)
 }
 
-// RespondToRoomInvite godoc
-// @Summary      Join a room
-// @Description  Set accepted to true in invitation database
-// @Tags         invites
-// @Accept       json
-// @Produce      json
-// @Param        roomID   path      int  true  "Room ID"
-// @Success      200  {object}    model.JoinRoomResponse
-// @Failure      500  {object}  nil
-// @Router       /rooms/join/{roomId} [patch]
 func RespondToRoomInvite(c *fiber.Ctx) error {
 	var request request.RespondToRoomInviteRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -274,18 +206,6 @@ func RespondToRoomInvite(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Joined room successfully", roomResponse)
 }
 
-// InviteUser godoc
-// @Summary      Create new invitations
-// @Description  Invite additional users to a specific room
-// @Tags         invites
-// @Accept       json
-// @Produce      json
-// @Param        users   body      handlers.AddUser.AddUserInput  true  "Users to invite"
-// @Success      200  {object}  nil
-// @Failure      400  {object}  nil
-// @Failure      404  {object}  nil
-// @Failure      500  {object}  nil
-// @Router       /rooms/{roomId} [post]
 func InviteUser(c *fiber.Ctx) error {
 	var request request.InviteUserRequest
 	if err := c.BodyParser(&request); err != nil {

@@ -42,6 +42,15 @@ func (s *UserService) GetUserByEmail(email string) (*model.User, error) {
 	return &user, nil
 }
 
+func (s *UserService) GetUsersByID(userIds []uint) (*[]model.User, error) {
+	db := s.DB.Table("users")
+	var users []model.User
+	if err := db.Where("id IN ?", userIds).Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return &users, nil
+}
+
 func (s *UserService) UpdateUserField(userid string, field string, value interface{}) error {
 	db := s.DB
 	var user model.User
@@ -137,7 +146,6 @@ func (s *UserService) MarkOffline(userId string) {
 
 func (s *UserService) AddFriend(userID string, friendID string) error {
 	db := s.DB
-
 	var user, friend model.User
 
 	if err := db.First(&user, userID).Error; err != nil {
@@ -153,7 +161,6 @@ func (s *UserService) AddFriend(userID string, friendID string) error {
 
 func (s *UserService) RemoveFriend(userID string, friendID string) error {
 	db := s.DB
-
 	var user, friend model.User
 
 	if err := db.First(&user, userID).Error; err != nil {
