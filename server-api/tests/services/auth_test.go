@@ -2,9 +2,10 @@ package test_services
 
 import (
 	"net/smtp"
-	"sc2006-JustJio/model"
-	"sc2006-JustJio/services"
 	"testing"
+
+	"github.com/RowenTey/JustJio/model"
+	"github.com/RowenTey/JustJio/services"
 
 	"github.com/golang-jwt/jwt"
 	"github.com/stretchr/testify/assert"

@@ -3,15 +3,16 @@ package handlers
 import (
 	"errors"
 	"log"
-	"sc2006-JustJio/config"
-	"sc2006-JustJio/database"
-	model_kafka "sc2006-JustJio/model/kafka"
-	"sc2006-JustJio/model/request"
-	"sc2006-JustJio/model/response"
-	"sc2006-JustJio/services"
-	"sc2006-JustJio/util"
 	"strconv"
 	"time"
+
+	"github.com/RowenTey/JustJio/config"
+	"github.com/RowenTey/JustJio/database"
+	model_kafka "github.com/RowenTey/JustJio/model/kafka"
+	"github.com/RowenTey/JustJio/model/request"
+	"github.com/RowenTey/JustJio/model/response"
+	"github.com/RowenTey/JustJio/services"
+	"github.com/RowenTey/JustJio/util"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"

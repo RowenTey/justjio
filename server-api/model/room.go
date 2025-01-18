@@ -1,8 +1,9 @@
 package model
 
 import (
-	"sc2006-JustJio/util"
 	"time"
+
+	"github.com/RowenTey/JustJio/util"
 
 	"gorm.io/gorm"
 )
@@ -49,4 +50,3 @@ func (invite *RoomInvite) BeforeCreate(tx *gorm.DB) error {
 	invite.RoomID = invite.Room.ID
 	return nil
 }
-

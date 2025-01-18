@@ -1,7 +1,7 @@
 package request
 
 import (
-	"sc2006-JustJio/model"
+	"github.com/RowenTey/JustJio/model"
 
 	"gorm.io/datatypes"
 )

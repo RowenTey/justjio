@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"sc2006-JustJio/model"
+	"github.com/RowenTey/JustJio/model"
 
 	"gorm.io/gorm"
 )

@@ -11,8 +11,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"sc2006-JustJio/model"
-	"sc2006-JustJio/services"
+	"github.com/RowenTey/JustJio/model"
+	"github.com/RowenTey/JustJio/services"
 )
 
 type UserServiceTestSuite struct {

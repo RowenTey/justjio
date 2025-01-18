@@ -3,10 +3,11 @@ package services
 import (
 	"errors"
 	"log"
-	"sc2006-JustJio/database"
-	"sc2006-JustJio/model"
 	"strconv"
 	"time"
+
+	"github.com/RowenTey/JustJio/database"
+	"github.com/RowenTey/JustJio/model"
 
 	"gorm.io/gorm"
 )
@@ -184,16 +185,16 @@ func (rs *RoomService) InviteUserToRoom(
 	roomInvitesDB := rs.DB.Table("room_invites")
 	var room model.Room
 	var roomInvites []model.RoomInvite
-	
+
 	if err := roomsDB.First(&room, "id = ?", roomId).Error; err != nil {
 		return nil, err
 	}
 	log.Printf("[ROOM] Room %s found", roomId)
-	
+
 	if room.HostID != inviter.ID {
 		return nil, errors.New("User is not the host of the room")
 	}
-	
+
 	for _, user := range *users {
 		roomInvite := model.RoomInvite{
 			Room:      room,
@@ -207,7 +208,7 @@ func (rs *RoomService) InviteUserToRoom(
 		log.Printf("[ROOM] Room ID of invite to be created: %v", roomInvite.Room.ID)
 		roomInvites = append(roomInvites, roomInvite)
 	}
-	
+
 	if err := roomInvitesDB.Omit("Room").Create(roomInvites).Error; err != nil {
 		return nil, err
 	}

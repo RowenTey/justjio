@@ -3,15 +3,15 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"sc2006-JustJio/database"
-	"sc2006-JustJio/model/request"
-	"sc2006-JustJio/services"
-	"sc2006-JustJio/util"
+
+	"github.com/RowenTey/JustJio/database"
+	"github.com/RowenTey/JustJio/model/request"
+	"github.com/RowenTey/JustJio/services"
+	"github.com/RowenTey/JustJio/util"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
-
 
 func GetUser(c *fiber.Ctx) error {
 	id := c.Params("userId")

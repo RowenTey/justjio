@@ -3,10 +3,11 @@ package services
 import (
 	"log"
 	"math/rand"
-	"sc2006-JustJio/model"
-	"sc2006-JustJio/util"
 	"strconv"
 	"time"
+
+	"github.com/RowenTey/JustJio/model"
+	"github.com/RowenTey/JustJio/util"
 
 	"gorm.io/gorm"
 )

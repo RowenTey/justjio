@@ -1,7 +1,7 @@
 package response
 
 import (
-	"sc2006-JustJio/model"
+	"github.com/RowenTey/JustJio/model"
 )
 
 type JoinRoomResponse struct {

@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	model_kafka "sc2006-JustJio/model/kafka"
 	"sync"
+
+	model_kafka "github.com/RowenTey/JustJio/model/kafka"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )

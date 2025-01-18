@@ -2,7 +2,8 @@ package services
 
 import (
 	"log"
-	"sc2006-JustJio/model"
+
+	"github.com/RowenTey/JustJio/model"
 
 	"gorm.io/gorm"
 )

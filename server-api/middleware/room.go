@@ -2,9 +2,10 @@ package middleware
 
 import (
 	"log"
-	"sc2006-JustJio/database"
-	"sc2006-JustJio/services"
-	"sc2006-JustJio/util"
+
+	"github.com/RowenTey/JustJio/database"
+	"github.com/RowenTey/JustJio/services"
+	"github.com/RowenTey/JustJio/util"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"

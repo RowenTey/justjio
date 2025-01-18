@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
-	"sc2006-JustJio/config"
-	"sc2006-JustJio/model"
 	"time"
+
+	"github.com/RowenTey/JustJio/config"
+	"github.com/RowenTey/JustJio/model"
 
 	"github.com/golang-jwt/jwt"
 )

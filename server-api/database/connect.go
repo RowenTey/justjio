@@ -3,8 +3,8 @@ package database
 import (
 	"log"
 
-	"sc2006-JustJio/config"
-	"sc2006-JustJio/model"
+	"github.com/RowenTey/JustJio/config"
+	"github.com/RowenTey/JustJio/model"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

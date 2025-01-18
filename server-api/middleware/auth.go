@@ -1,8 +1,9 @@
 package middleware
 
 import (
-	"sc2006-JustJio/config"
 	"strings"
+
+	"github.com/RowenTey/JustJio/config"
 
 	"github.com/gofiber/fiber/v2"
 	jwtware "github.com/gofiber/jwt/v3"

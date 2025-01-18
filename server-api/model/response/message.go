@@ -1,6 +1,6 @@
 package response
 
-import "sc2006-JustJio/model"
+import "github.com/RowenTey/JustJio/model"
 
 type GetMessagesResponse struct {
 	Messages  []model.Message `json:"messages"`

@@ -1,8 +1,8 @@
 package router
 
 import (
-	"sc2006-JustJio/handlers"
-	"sc2006-JustJio/middleware"
+	"github.com/RowenTey/JustJio/handlers"
+	"github.com/RowenTey/JustJio/middleware"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"

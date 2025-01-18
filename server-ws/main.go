@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/RowenTey/SC2006-JustJio/server-ws/services"
-	"github.com/RowenTey/SC2006-JustJio/server-ws/utils"
+	"github.com/RowenTey/JustJio/server-ws/services"
+	"github.com/RowenTey/JustJio/server-ws/utils"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"

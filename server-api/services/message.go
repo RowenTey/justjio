@@ -3,9 +3,10 @@ package services
 import (
 	"log"
 	"math"
-	"sc2006-JustJio/database"
-	"sc2006-JustJio/model"
 	"time"
+
+	"github.com/RowenTey/JustJio/database"
+	"github.com/RowenTey/JustJio/model"
 
 	"gorm.io/gorm"
 )

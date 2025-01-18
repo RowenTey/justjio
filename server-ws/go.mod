@@ -1,6 +1,6 @@
-module github.com/RowenTey/SC2006-JustJio/server-ws
+module github.com/RowenTey/JustJio/server-ws
 
-go 1.20
+go 1.23
 
 require (
 	github.com/confluentinc/confluent-kafka-go/v2 v2.4.0
