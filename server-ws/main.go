@@ -105,5 +105,5 @@ func main() {
 		}
 	}))
 
-	log.Fatal(app.Listen(":8081"))
+	log.Fatal(app.Listen(":" + utils.Config("PORT")))
 }
