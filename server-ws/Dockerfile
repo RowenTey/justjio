@@ -1,5 +1,5 @@
 # Build the application from source
-FROM golang:1.20-alpine AS build-stage
+FROM golang:1.23-alpine AS build-stage
 
 # Kafka dependencies
 RUN set -ex &&\
