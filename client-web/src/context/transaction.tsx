@@ -27,8 +27,8 @@ const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({
 		try {
 			const { data: response } = await fetchTransactionsApi(api);
 			const payload = {
-				toPay: response.data.filter((tx) => tx.payerId === user.uid),
-				toReceive: response.data.filter((tx) => tx.payeeId === user.uid),
+				toPay: response.data.filter((tx) => tx.payerId === user.id),
+				toReceive: response.data.filter((tx) => tx.payeeId === user.id),
 			};
 			console.log("Fetched transactions", payload);
 			dispatch({ type: FETCH_TRANSACTIONS, payload });

@@ -24,13 +24,13 @@ export const fetchTransactionsApi = async (
 							consolidationId: 1,
 							payerId: 1,
 							payer: {
-								uid: 1,
+								id: 1,
 								username: "John Doe",
 								email: "",
 							},
 							payeeId: 2,
 							payee: {
-								uid: 2,
+								id: 2,
 								username: "Jane Doe",
 								email: "",
 							},
