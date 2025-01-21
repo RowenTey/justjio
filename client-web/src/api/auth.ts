@@ -47,7 +47,7 @@ export const loginApi = (
 export const signUpApi = (
 	api: AxiosInstance,
 	username: string,
-	phoneNum: string,
+	// phoneNum: string,
 	email: string,
 	password: string,
 	mock: boolean = false

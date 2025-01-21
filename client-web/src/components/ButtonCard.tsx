@@ -13,10 +13,11 @@ const ButtonCard: React.FC<ButtonCardProps> = ({
 	numNotifications,
 	onClick,
 }) => {
+	const shouldShowNotification = numNotifications && numNotifications > 0;
+
 	return (
 		<div
-			className="relative flex flex-col items-center justify-center w-12
-            "
+			className="relative flex flex-col items-center justify-center w-12"
 			onClick={onClick}
 		>
 			<div className="flex items-center justify-center w-12 h-12 p-1 cursor-pointer bg-justjio-secondary rounded-lg hover:shadow-lg hover:border-2 hover:border-white">
@@ -27,11 +28,11 @@ const ButtonCard: React.FC<ButtonCardProps> = ({
 				{title}
 			</p>
 
-			{numNotifications && numNotifications > 0 && (
+			{shouldShowNotification === true ? (
 				<div className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full flex items-center justify-center text-white text-xs font-bold p-1">
 					<span>{numNotifications}</span>
 				</div>
-			)}
+			) : null}
 		</div>
 	);
 };

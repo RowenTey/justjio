@@ -18,7 +18,7 @@ const RoomInvitesPage: React.FC = () => {
 
 	const { respondToInvite } = useRoomCtx();
 
-	const onRespondToInvite = async (roomId: number, accept: boolean) => {
+	const onRespondToInvite = async (roomId: string, accept: boolean) => {
 		const res = await respondToInvite(roomId, accept);
 
 		// TODO: implement error handling
@@ -28,7 +28,7 @@ const RoomInvitesPage: React.FC = () => {
 		}
 
 		setInvites((prevInvites) =>
-			prevInvites.filter((invite) => invite.room_id !== roomId)
+			prevInvites.filter((invite) => invite.roomId !== roomId)
 		);
 	};
 
@@ -58,7 +58,7 @@ const RoomInvitesPage: React.FC = () => {
 
 const RoomInvites: React.FC<{
 	invites: IRoomInvite[];
-	handleInvite: (roomId: number, accept: boolean) => void;
+	handleInvite: (roomId: string, accept: boolean) => void;
 }> = ({ invites, handleInvite }) => {
 	return (
 		<div className="w-full flex flex-col pb-4 items-center gap-4 overflow-y-auto">
@@ -75,9 +75,9 @@ const RoomInvites: React.FC<{
 
 const RoomInviteCard: React.FC<{
 	invite: IRoomInvite;
-	handleInvite: (roomId: number, accept: boolean) => void;
+	handleInvite: (roomId: string, accept: boolean) => void;
 }> = ({ invite, handleInvite }) => {
-	const onActionClick = (roomId: number, accept: boolean) => () => {
+	const onActionClick = (roomId: string, accept: boolean) => () => {
 		handleInvite(roomId, accept);
 	};
 
@@ -115,13 +115,13 @@ const RoomInviteCard: React.FC<{
 				<div className="flex flex-col gap-4 mt-3 text-white">
 					<button
 						className="bg-green-600 hover:bg-green-500 rounded-full px-3 py-1"
-						onClick={onActionClick(invite.room_id, true)}
+						onClick={onActionClick(invite.roomId, true)}
 					>
 						Accept
 					</button>
 					<button
 						className="bg-red-600 hover:bg-red-500 rounded-full px-3 py-1"
-						onClick={onActionClick(invite.room_id, false)}
+						onClick={onActionClick(invite.roomId, false)}
 					>
 						Decline
 					</button>

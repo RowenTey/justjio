@@ -53,7 +53,7 @@ const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
 		return { isSuccessResponse: true, error: null };
 	};
 
-	const respondToInvite = async (roomId: number, accept: boolean) => {
+	const respondToInvite = async (roomId: string, accept: boolean) => {
 		try {
 			const { data: response } = await respondToInviteApi(
 				api,
@@ -78,7 +78,7 @@ const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
 		return { isSuccessResponse: true, error: null };
 	};
 
-	const closeRoom = async (roomId: number) => {
+	const closeRoom = async (roomId: string) => {
 		try {
 			await closeRoomApi(api, roomId);
 

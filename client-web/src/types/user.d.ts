@@ -1,7 +1,7 @@
 import React from "react";
 
 export interface BaseUserInfo {
-	uid: number;
+	id: number;
 	email: string;
 	username: string;
 }
@@ -12,11 +12,12 @@ export interface IUser {
 	email: string;
 	password: string;
 	name?: string;
-	phone_num: string;
-	is_email_valid: boolean;
-	is_online: boolean;
-	last_seen: string;
-	registered_at: string;
+	phoneNum: string;
+	isEmailValid: boolean;
+	isOnline: boolean;
+	lastSeen: string;
+	registeredAt: string;
+	updatedAt: string;
 }
 
 export type UserContextType = {

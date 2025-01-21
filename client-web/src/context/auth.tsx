@@ -22,15 +22,17 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		let res = null;
 		try {
 			res = await loginApi(api, username, password, false);
+
+			const { data, token } = res.data;
 			setAuthState({
-				accessToken: res.data.token,
+				accessToken: token,
 				authenticated: true,
 			});
-			localStorage.setItem("accessToken", res.data.token);
+			localStorage.setItem("accessToken", token);
 			setUser({
-				uid: res.data.data.id,
-				email: res.data.data.email,
-				username: res.data.data.username,
+				id: data.id,
+				email: data.email,
+				username: data.username,
 			});
 		} catch (error) {
 			console.error(error);
@@ -50,7 +52,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 				localStorage.removeItem("accessToken");
 				setUser(initialUserState);
 				resolve(true);
-			}, 1000);
+			}, 500);
 		});
 	};
 

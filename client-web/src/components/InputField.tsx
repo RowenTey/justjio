@@ -6,6 +6,7 @@ interface InputFieldProps {
 	label: string;
 	name: string;
 	type: string;
+	isFloat?: boolean;
 	placeholder: string;
 	register: UseFormRegister<any>;
 	errors: FieldErrors<any>;
@@ -16,6 +17,7 @@ const InputField: React.FC<InputFieldProps> = ({
 	label,
 	name,
 	type,
+	isFloat,
 	placeholder,
 	register,
 	errors,
@@ -23,11 +25,12 @@ const InputField: React.FC<InputFieldProps> = ({
 }) => {
 	return (
 		<div className="flex flex-col gap-1 w-full">
-			<label htmlFor={name} className="text-justjio-secondary">
+			<label htmlFor={name} className="font-semibold text-justjio-secondary">
 				{label}
 			</label>
 			<input
 				type={type}
+				step={isFloat ? "0.01" : "1"}
 				id={name}
 				placeholder={placeholder}
 				className="bg-white text-black px-2 py-1 rounded-lg shadow-lg"

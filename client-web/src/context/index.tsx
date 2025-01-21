@@ -3,11 +3,10 @@ import { AuthProvider } from "./auth";
 import { UserProvider } from "./user";
 import { RoomProvider } from "./room";
 import { WebSocketProvider } from "./ws";
+import { TransactionProvider } from "./transaction";
 
 type ProvidersType = [ElementType, Record<string, unknown>];
-type ChildrenType = {
-	children: Array<ElementType>;
-};
+type ChildrenType = { children: React.ReactNode };
 
 const buildProvidersTree = (componentsWithProps: Array<ProvidersType>) => {
 	const initialComponent = ({ children }: ChildrenType) => <>{children}</>;
@@ -34,6 +33,7 @@ const providers: ProvidersType[] = [
 	[AuthProvider, {}],
 	[WebSocketProvider, {}],
 	[RoomProvider, {}],
+	[TransactionProvider, {}],
 ];
 
 export const AppContextProvider = buildProvidersTree(providers);

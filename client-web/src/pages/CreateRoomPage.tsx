@@ -31,7 +31,7 @@ const CreateRoomPage = () => {
 		const parsedDate = new Date(data.date);
 		data.date = parsedDate.toISOString();
 
-		console.log(data);
+		console.log("[CreateRoomPage] Submitted data: ", data);
 		const res = await createRoom(data);
 
 		if (!res.isSuccessResponse) {

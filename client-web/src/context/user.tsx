@@ -3,7 +3,7 @@ import { BaseUserInfo, UserContextType } from "../types/user";
 import useContextWrapper from "../hooks/useContextWrapper";
 
 const initialUserState: BaseUserInfo = {
-	uid: -1,
+	id: -1,
 	email: "",
 	username: "",
 };

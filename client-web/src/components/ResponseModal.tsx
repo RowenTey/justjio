@@ -1,6 +1,6 @@
 import React from "react";
 
-type ModalProps = {
+type ResponseModalProps = {
 	title: string;
 	message: string;
 	type: "error" | "success";
@@ -8,7 +8,7 @@ type ModalProps = {
 	closeModal: () => void;
 };
 
-const Modal: React.FC<ModalProps> = ({
+const ResponseModal: React.FC<ResponseModalProps> = ({
 	title,
 	message,
 	type,
@@ -47,4 +47,4 @@ const Modal: React.FC<ModalProps> = ({
 	);
 };
 
-export default Modal;
+export default ResponseModal;

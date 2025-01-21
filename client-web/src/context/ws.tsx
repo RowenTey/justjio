@@ -41,7 +41,7 @@ const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
 
 	// connect to ws server when user is logged in
 	useEffect(() => {
-		if (!user || user.uid === -1) {
+		if (!user || user.id === -1) {
 			ws.current?.close();
 			return;
 		}
@@ -66,7 +66,6 @@ const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
 
 			// users currently in room => subscribed to chat channel
 			if (channels.current[roomChannel]) channels.current[roomChannel](data);
-
 			// not subsribed to chat channel yet
 			else channels.current[type]?.(data);
 		};

@@ -3,23 +3,23 @@ import { BaseContextResponse } from ".";
 import { BaseUserInfo } from "./user";
 
 export interface IRoom {
-	id: number;
+	id: string;
 	name: string;
 	time: string;
 	venue: string;
 	date: string;
-	host_id: number;
+	hostId: number;
 	host: BaseUserInfo;
-	attendees_count: number;
+	attendeesCount: number;
 	url: string;
-	created_at: string;
-	updated_at: string;
-	is_closed: boolean;
+	createdAt: string;
+	updatedAt: string;
+	isClosed: boolean;
 }
 
 export interface IRoomInvite {
 	id: number;
-	room_id: number;
+	roomId: string;
 	message: string;
 	room: IRoom;
 }
@@ -35,10 +35,10 @@ export interface RoomContextType {
 	fetchRooms: () => Promise<BaseContextResponse>;
 	createRoom: (roomData: Partial<IRoom>) => Promise<BaseContextResponse>;
 	respondToInvite: (
-		roomId: number,
+		roomId: string,
 		accept: boolean
 	) => Promise<BaseContextResponse>;
-	closeRoom: (roomId: number) => Promise<BaseContextResponse>;
+	closeRoom: (roomId: string) => Promise<BaseContextResponse>;
 }
 
 interface FetchRoomsPayload {

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import IMAGES from "../assets/images/Images";
 
 interface RoomCardProps {
-	id: number;
+	id: string;
 	name: string;
 	img?: string;
 }
@@ -17,7 +17,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
 
 	return (
 		<div
-			className="min-w-36 h-36 flex flex-col items-center justify-center bg-purple-200 rounded-lg shadow-md p-4 cursor-pointer transition-transform transform hover:scale-105"
+			className="min-w-36 w-36 h-36 flex flex-col items-center justify-center bg-purple-200 rounded-lg shadow-md p-4 cursor-pointer transition-transform transform hover:scale-105"
 			onClick={() => navigate(`/room/${id}`)}
 		>
 			<img src={img} alt="Group" className="w-16 h-16" />

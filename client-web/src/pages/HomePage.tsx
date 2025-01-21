@@ -12,12 +12,14 @@ import { useRoomCtx } from "../context/room";
 import { useEffect, useState } from "react";
 import { IRoom } from "../types/room";
 import Spinner from "../components/Spinner";
+import { useTransactionCtx } from "../context/transaction";
 
 const HomePage = () => {
 	const { loading, startLoading, stopLoading } = useLoadingAndError();
 	const [logoutLoading, setLogoutLoading] = useState(false);
 	const { logout } = useAuth();
 	const { rooms, fetchRooms } = useRoomCtx();
+	const { fetchTransactions } = useTransactionCtx();
 	const { user } = useUserCtx();
 	const navigate = useNavigate();
 
@@ -29,16 +31,17 @@ const HomePage = () => {
 	};
 
 	useEffect(() => {
-		console.log("Fetching rooms...");
+		console.log("[HomePage] Fetching data...");
 		async function fetchData() {
 			const roomPromise = fetchRooms();
-			return await Promise.all([roomPromise]);
+			const transactionPromise = fetchTransactions();
+			return await Promise.all([roomPromise, transactionPromise]);
 		}
 
 		startLoading();
 		fetchData()
 			.then(() => stopLoading())
-			.then(() => console.log("Rooms fetched"));
+			.then(() => console.log("[HomePage] Data fetched"));
 	}, []);
 
 	if (loading) {
@@ -63,10 +66,22 @@ const HomePage = () => {
 };
 
 const TransactionActionWidgets: React.FC = () => {
+	const { toPay, toReceive } = useTransactionCtx();
+
 	return (
 		<div className="w-[90%] h-[35%] flex justify-between mt-6">
-			<TransactionContainer title="To Pay:" status="Available" />
-			<TransactionContainer title="To Collect:" status="Occupied" />
+			<TransactionContainer
+				title="To Pay:"
+				emptyText="Available"
+				transactions={toPay}
+				isPayer={true}
+			/>
+			<TransactionContainer
+				title="To Receive:"
+				emptyText="Occupied"
+				transactions={toReceive}
+				isPayer={false}
+			/>
 		</div>
 	);
 };

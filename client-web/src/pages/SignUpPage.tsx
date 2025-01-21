@@ -34,7 +34,7 @@ const SignUpPage = () => {
 			const res = await signUpApi(
 				api,
 				data.username,
-				data.phoneNumber,
+				// data.phoneNumber,
 				data.email,
 				data.password,
 				true
@@ -145,7 +145,6 @@ const SignUpPage = () => {
 					className="bg-justjio-secondary hover:bg-purple-900 text-white font-bold py-2 px-4 rounded-full mt-3"
 					form="signup-form"
 				>
-					{/* {loading ? <Spinner /> : "Submit"} */}
 					Submit
 				</button>
 

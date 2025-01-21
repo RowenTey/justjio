@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import RoomTopBar from "../components/RoomTopBar";
 import { channelTypes, useWs } from "../context/ws";
-import { useParams } from "react-router-dom";
 import { useUserCtx } from "../context/user";
 import { fetchRoomMessageApi, sendMessageApi } from "../api/message";
 import { api } from "../api";
+import useMandatoryParam from "../hooks/useMandatoryParam";
 
 type Message = {
+	id: number;
 	user_id: number;
 	username: string;
 	content: string;
@@ -19,15 +20,10 @@ const RoomChatPage: React.FC = () => {
 	const [pageCount, setPageCount] = useState<number>();
 	const [isNewMessage, setIsNewMessage] = useState<boolean>(false);
 	const { user } = useUserCtx();
-	const { roomId } = useParams();
+	const roomId = useMandatoryParam("roomId");
 	const [subscribe, unsubscribe] = useWs();
 
 	useEffect(() => {
-		if (!roomId) {
-			alert("Room ID not found");
-			return;
-		}
-
 		const channel = channelTypes.createMessageInChat(roomId);
 
 		subscribe(channel, (message) => {
@@ -35,6 +31,7 @@ const RoomChatPage: React.FC = () => {
 			setMessages((prev) => [
 				...prev,
 				{
+					id: message.id,
 					user_id: Number(message.sender_id),
 					username: message.sender_name,
 					content: message.content,
@@ -52,11 +49,6 @@ const RoomChatPage: React.FC = () => {
 	}, [roomId, subscribe, unsubscribe]);
 
 	useEffect(() => {
-		if (!roomId) {
-			alert("Room ID not found");
-			return;
-		}
-
 		const fetchMessages = async () => {
 			const res = await fetchRoomMessageApi(api, roomId, page);
 
@@ -65,39 +57,45 @@ const RoomChatPage: React.FC = () => {
 				return;
 			}
 
-			console.log("[RoomChatPage] Messages fetched: ", res.data.data);
-			const newMsgs = res.data.data.messages.map((msg) => ({
+			const { data } = res.data;
+
+			console.log("[RoomChatPage] Messages fetched: ", data);
+			const newMsgs = data.messages.map((msg) => ({
+				id: msg.id,
 				user_id: msg.sender.id,
 				username: msg.sender.username,
 				content: msg.content,
 				time: new Date(msg.sent_at).toLocaleTimeString(),
 			}));
 
-			setIsNewMessage(false);
-			setMessages((prev) =>
-				[...newMsgs, ...prev].sort(
-					(a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
-				)
-			);
-			setPageCount(res.data.data.page_count);
+			setIsNewMessage(page == 1 ? true : false);
+			setMessages((prev) => {
+				// deduplicate messages
+				const allMessages = [...newMsgs, ...prev];
+				const uniqueMessagesMap = new Map();
+				allMessages.forEach((msg) => uniqueMessagesMap.set(msg.id, msg));
+				// sort by time in ascending order
+				return Array.from(uniqueMessagesMap.values())
+					.sort(
+						(a, b) => new Date(a.time).getTime() - new Date(b.time).getTime()
+					)
+					.reverse();
+			});
+			setPageCount(data.page_count);
 		};
 
 		fetchMessages();
 	}, [roomId, page]);
 
 	const fetchMoreMessages = () => {
+		console.log("[RoomChatPage] Fetching more messages...");
 		if (page < (pageCount || 0)) {
 			setPage((prevPage) => prevPage + 1);
 		}
 	};
 
 	const handleSend = async (text: string) => {
-		if (!roomId) {
-			alert("Room ID not found");
-			return;
-		}
-
-		const res = await sendMessageApi(api, roomId?.toString(), text);
+		const res = await sendMessageApi(api, roomId, text);
 
 		if (res.status !== 200) {
 			alert("Failed to send message");
@@ -110,7 +108,7 @@ const RoomChatPage: React.FC = () => {
 			<RoomTopBar title="Chat" />
 			<ChatMessages
 				messages={messages}
-				currentUserId={user.uid}
+				currentUserId={user.id}
 				isNewMessage={isNewMessage}
 				fetchMore={fetchMoreMessages}
 			/>
