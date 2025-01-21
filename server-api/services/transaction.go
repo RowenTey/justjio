@@ -1,7 +1,10 @@
 package services
 
 import (
+	"errors"
+	"fmt"
 	"log"
+	"sync"
 
 	"github.com/RowenTey/JustJio/model"
 
@@ -21,28 +24,57 @@ func (ts *TransactionService) GenerateTransactions(consolidatedBill *model.Conso
 	billsDb := ts.DB.Table("bills")
 	var bills []model.Bill
 
-	if err := billsDb.Where("consolidation_id = ?", (*consolidatedBill).ID).Find(&bills).Error; err != nil {
+	if err := billsDb.
+		Where("consolidation_id = ?", (*consolidatedBill).ID).
+		Preload("Payers").
+		Find(&bills).Error; err != nil {
 		return err
 	}
 
-	// TODO: Vectorize
-	var transactions []model.Transaction
+	var wg sync.WaitGroup
+	txChan := make(chan *model.Transaction)
+
 	for _, bill := range bills {
-		transactionAmt := bill.Amount / float32(len(bill.Payers))
-		for _, payers := range bill.Payers {
-			transaction := model.Transaction{
-				Consolidation: *consolidatedBill,
-				Payer:         payers,
-				PayerID:       payers.ID,
-				Payee:         bill.Owner,
-				PayeeID:       bill.OwnerID,
-				Amount:        transactionAmt,
+		wg.Add(1)
+		go func(bill *model.Bill) {
+			defer wg.Done()
+			log.Println("[TRANSACTION] Processing bill: ", bill)
+			log.Println("[TRANSACTION] Payers: ", bill.Payers)
+
+			num_payers := float32(len(bill.Payers))
+			if bill.IncludeOwner {
+				num_payers += 1
 			}
-			transactions = append(transactions, transaction)
-		}
+
+			transactionAmt := bill.Amount / num_payers
+			for _, payers := range bill.Payers {
+				transaction := model.Transaction{
+					Consolidation: *consolidatedBill,
+					Payer:         payers,
+					PayerID:       payers.ID,
+					Payee:         bill.Owner,
+					PayeeID:       bill.OwnerID,
+					Amount:        transactionAmt,
+				}
+				txChan <- &transaction
+			}
+		}(&bill)
 	}
 
+	go func() {
+		wg.Wait()
+		close(txChan)
+	}()
+
+	var transactions []model.Transaction
+	// BLOCKING until all goroutines finish
+	for transaction := range txChan {
+		transactions = append(transactions, *transaction)
+	}
+	log.Println("[TRANSACTION] Transactions: ", transactions)
+
 	consolidatedTransactions := consolidateTransactions(&transactions, consolidatedBill)
+	log.Println("[TRANSACTION] Consolidated Transactions: ", transactions)
 	if err := ts.DB.Create(&consolidatedTransactions).Error; err != nil {
 		return err
 	}
@@ -66,12 +98,24 @@ func (ts *TransactionService) GetTransactionsByUser(isPaid bool, userId string) 
 	return &transactions, nil
 }
 
-func (ts *TransactionService) SettleTransaction(transactionId string) error {
+func (ts *TransactionService) SettleTransaction(transactionId string, userId string) error {
 	db := ts.DB.Table("transactions")
+	var transaction model.Transaction
 
-	if err := db.
-		Where("id = ?", transactionId).
-		Update("is_paid", true).Error; err != nil {
+	if err := db.First(&transaction, transactionId).Error; err != nil {
+		return err
+	}
+
+	if transaction.IsPaid {
+		return errors.New("Transaction already settled")
+	}
+
+	if fmt.Sprint(transaction.PayerID) != userId {
+		return errors.New("Invalid payer")
+	}
+
+	transaction.IsPaid = true
+	if err := ts.DB.Save(&transaction).Error; err != nil {
 		return err
 	}
 
@@ -151,7 +195,7 @@ func removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) f
 			continue
 		}
 
-		if neighbor.amount-amtToDeduct > 0 {
+		if (neighbor.amount - amtToDeduct) > 0 {
 			// deduct the amount of the cycle's edge
 			neighbors[i] = edge{
 				userId: neighbor.userId,

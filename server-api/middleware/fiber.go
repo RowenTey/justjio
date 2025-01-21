@@ -25,7 +25,9 @@ func Fiber(a *fiber.App) {
 			Max:        50,
 			Expiration: 30 * time.Second,
 			LimitReached: func(c *fiber.Ctx) error {
-				return c.Status(fiber.StatusTooManyRequests).SendString("Rate Limit Exceeded! Please wait 30s before making a request again...")
+				return c.
+					Status(fiber.StatusTooManyRequests).
+					SendString("Rate Limit Exceeded! Please wait 30s before making a request again...")
 			},
 		}),
 

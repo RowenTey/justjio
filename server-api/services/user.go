@@ -71,9 +71,8 @@ func (s *UserService) UpdateUserField(userid string, field string, value interfa
 	case "lastSeen":
 		user.LastSeen = value.(time.Time)
 	default:
-		return errors.New("User field " + field + " not supported for update")
+		return errors.New("User field (" + field + ") not supported for update")
 	}
-	user.UpdatedAt = time.Now()
 
 	if err := db.Save(&user).Error; err != nil {
 		return err
@@ -128,20 +127,25 @@ func (s *UserService) ValidateUsers(userIds []string) (*[]model.User, error) {
 	return &users, nil
 }
 
-func (s *UserService) MarkOnline(userId string) {
+func (s *UserService) MarkOnline(userId string) error {
 	if err := s.UpdateUserField(userId, "isOnline", true); err != nil {
 		log.Println("Error marking user online:", err)
+		return err
 	}
+	return nil
 }
 
-func (s *UserService) MarkOffline(userId string) {
+func (s *UserService) MarkOffline(userId string) error {
 	if err := s.UpdateUserField(userId, "isOnline", false); err != nil {
 		log.Println("Error marking user offline:", err)
+		return err
 	}
 
 	if err := s.UpdateUserField(userId, "lastSeen", time.Now()); err != nil {
 		log.Println("Error updating last seen:", err)
+		return err
 	}
+	return nil
 }
 
 func (s *UserService) AddFriend(userID string, friendID string) error {

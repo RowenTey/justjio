@@ -73,10 +73,7 @@ func Login(c *fiber.Ctx) error {
 	username := input.Username
 	user, err := (&services.UserService{DB: database.DB}).GetUserByUsername(username)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "User not found", err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
 
 	if !util.CheckPasswordHash(input.Password, user.Password) {
@@ -96,6 +93,7 @@ func Login(c *fiber.Ctx) error {
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		defer kafkaService.Close()
 		if err := kafkaService.CreateTopic(channel); err != nil {
 			log.Println("Error creating topic", err)
@@ -107,6 +105,7 @@ func Login(c *fiber.Ctx) error {
 		Email:    user.Email,
 		UID:      user.ID,
 	}
+
 	log.Println("User " + response.Username + " logged in successfully.")
 	return util.HandleLoginSuccess(c, "Login successfully", token, response)
 }

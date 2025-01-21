@@ -12,8 +12,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
-
-	_ "github.com/RowenTey/JustJio/docs"
 )
 
 func main() {
@@ -26,6 +24,7 @@ func main() {
 
 	// only load .env file if in dev environment
 	if env == "dev" {
+		log.Println("Loading .env file...")
 		godotenv.Load(".env")
 	}
 

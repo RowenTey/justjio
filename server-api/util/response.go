@@ -1,9 +1,11 @@
 package util
 
 import (
+	"errors"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 )
 
 func HandleError(c *fiber.Ctx, statusCode int, message string, err error) error {
@@ -28,6 +30,13 @@ func HandleInvalidInputError(c *fiber.Ctx, err error) error {
 func HandleInternalServerError(c *fiber.Ctx, err error) error {
 	log.Println("Error occurred in server:", err)
 	return HandleError(c, fiber.StatusInternalServerError, "Error occured in server", err)
+}
+
+func HandleNotFoundOrInternalError(c *fiber.Ctx, err error, notFoundMsg string) error {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return HandleError(c, fiber.StatusNotFound, notFoundMsg, nil)
+	}
+	return HandleInternalServerError(c, nil)
 }
 
 func HandleSuccess(c *fiber.Ctx, message string, data interface{}) error {

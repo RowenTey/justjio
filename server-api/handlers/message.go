@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"errors"
 	"log"
-	"strconv"
 	"time"
 
 	"github.com/RowenTey/JustJio/config"
@@ -16,7 +14,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
-	"gorm.io/gorm"
 )
 
 // /:roomId/message/:msgId
@@ -26,10 +23,7 @@ func GetMessage(c *fiber.Ctx) error {
 
 	message, err := (&services.MessageService{DB: database.DB}).GetMessageById(msgId, roomId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "No message found", err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "No message found")
 	}
 
 	return util.HandleSuccess(c, "Retrieved message successfully", message)
@@ -39,26 +33,14 @@ func GetMessage(c *fiber.Ctx) error {
 func GetMessages(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 
-	pageStr := c.Query("page", "1")
-	page, err := strconv.Atoi(pageStr)
-	if err != nil {
-		page = 1
-	}
-
-	ascStr := c.Query("asc", "true")
-	asc, err := strconv.ParseBool(ascStr)
-	if err != nil {
-		asc = true
-	}
+	page := c.QueryInt("page", 1)
+	asc := c.QueryBool("asc", true)
 
 	msgService := &services.MessageService{DB: database.DB}
 
 	messages, err := msgService.GetMessagesByRoomId(roomId, page, asc)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "No messages found", err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "No messages found")
 	}
 
 	pageCount, err := msgService.CountNumMessagesPages(roomId)
@@ -90,18 +72,12 @@ func CreateMessage(c *fiber.Ctx) error {
 
 	room, err := (&services.RoomService{DB: database.DB}).GetRoomById(roomId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "Room not found", nil)
-		}
-		return util.HandleInternalServerError(c, nil)
+		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
 	user, err := (&services.UserService{DB: database.DB}).GetUserByID(userId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "User not found", nil)
-		}
-		return util.HandleInternalServerError(c, nil)
+		return util.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
 
 	err = (&services.MessageService{DB: database.DB}).SaveMessage(room, user, request.Content)

@@ -10,7 +10,7 @@ import (
 
 func Initalize(router *fiber.App) {
 	router.Get("/", func(c *fiber.Ctx) error {
-		return c.Status(200).SendString("Hello, World!")
+		return c.Status(200).SendString("Hello world from JustJio :)")
 	})
 
 	v1 := router.Group("/v1")
@@ -38,13 +38,14 @@ func Initalize(router *fiber.App) {
 	rooms := v1.Group("/rooms")
 	rooms.Get("/", handlers.GetRooms)
 	rooms.Get("/invites", handlers.GetRoomInvitations)
+	rooms.Get("/invites/count", handlers.GetNumRoomInvitations)
 	rooms.Get("/:roomId", middleware.IsUserInRoom, handlers.GetRoom)
 	rooms.Get("/:roomId/attendees", middleware.IsUserInRoom, handlers.GetRoomAttendees)
 	rooms.Post("/", handlers.CreateRoom)
 	rooms.Post("/:roomId", middleware.IsUserInRoom, handlers.InviteUser)
 	rooms.Patch("/:roomId", handlers.RespondToRoomInvite)
-	rooms.Patch("/close/:roomId", middleware.IsUserInRoom, handlers.CloseRoom)
-	rooms.Patch("/leave/:roomId", middleware.IsUserInRoom, handlers.LeaveRoom)
+	rooms.Patch("/:roomId/close", middleware.IsUserInRoom, handlers.CloseRoom)
+	rooms.Patch("/:roomId/leave", middleware.IsUserInRoom, handlers.LeaveRoom)
 
 	messages := rooms.Group("/:roomId/messages")
 	messages.Use(middleware.IsUserInRoom)
@@ -59,13 +60,13 @@ func Initalize(router *fiber.App) {
 
 	transactions := v1.Group("/transactions")
 	transactions.Get("/", handlers.GetTransactionsByUser)
-	transactions.Patch("/", handlers.SettleTransaction)
+	transactions.Patch("/:txId/settle", handlers.SettleTransaction)
 
 	// 404 handler
 	router.Use(func(c *fiber.Ctx) error {
 		return c.Status(404).JSON(fiber.Map{
 			"code":    404,
-			"message": "404: Not Found",
+			"message": "404: Endpoint Not Found",
 		})
 	})
 }

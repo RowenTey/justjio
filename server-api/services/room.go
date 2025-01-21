@@ -79,6 +79,18 @@ func (rs *RoomService) GetRoomInvites(userId string) (*[]model.RoomInvite, error
 	return &invites, nil
 }
 
+func (rs *RoomService) GetNumRoomInvites(userId string) (int64, error) {
+	db := rs.DB.Table("room_invites")
+	var count int64
+
+	if err := db.
+		Where("user_id = ? AND status = ?", userId, "pending").
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func (rs *RoomService) GetRoomAttendees(roomId string) (*[]model.User, error) {
 	db := rs.DB.Table("rooms")
 	var room model.Room

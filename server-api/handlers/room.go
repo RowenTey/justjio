@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 
 	"github.com/RowenTey/JustJio/database"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
-	"gorm.io/gorm"
 )
 
 func GetRoom(c *fiber.Ctx) error {
@@ -21,10 +19,7 @@ func GetRoom(c *fiber.Ctx) error {
 
 	room, err := (&services.RoomService{DB: database.DB}).GetRoomById(roomId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "Room not found", err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
 	return util.HandleSuccess(c, "Retrieved room successfully", room)
@@ -39,10 +34,7 @@ func GetRooms(c *fiber.Ctx) error {
 
 	rooms, err := roomService.GetRooms(userId, page)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "No rooms found", err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "No rooms found")
 	}
 
 	return util.HandleSuccess(c, "Retrieved rooms successfully", rooms)
@@ -56,13 +48,25 @@ func GetRoomInvitations(c *fiber.Ctx) error {
 
 	invites, err := roomService.GetRoomInvites(userId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "No room invitations found", err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "No room invitations found")
 	}
 
 	return util.HandleSuccess(c, "Retrieved room invitations successfully", invites)
+}
+
+func GetNumRoomInvitations(c *fiber.Ctx) error {
+	token := c.Locals("user").(*jwt.Token)
+	userId := util.GetUserInfoFromToken(token, "user_id")
+
+	roomService := &services.RoomService{DB: database.DB}
+
+	numInvites, err := roomService.GetNumRoomInvites(userId)
+	if err != nil {
+		return util.HandleNotFoundOrInternalError(c, err, "No room invitations found")
+	}
+
+	response := response.GetNumRoomInvitationsResponse{Count: int(numInvites)}
+	return util.HandleSuccess(c, "Retrieved number of invitations successfully", response)
 }
 
 func GetRoomAttendees(c *fiber.Ctx) error {
@@ -72,10 +76,7 @@ func GetRoomAttendees(c *fiber.Ctx) error {
 
 	attendees, err := roomService.GetRoomAttendees(roomId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "No attendees found", err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "No attendees found")
 	}
 
 	return util.HandleSuccess(c, "Retrieved room attendees successfully", attendees)
@@ -101,10 +102,7 @@ func CreateRoom(c *fiber.Ctx) error {
 	user, err := userService.GetUserByID(userId)
 	if err != nil {
 		tx.Rollback()
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "User not found", err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
 
 	invitees, err := userService.ValidateUsers(inviteesIds)
@@ -176,10 +174,7 @@ func RespondToRoomInvite(c *fiber.Ctx) error {
 
 	err := roomService.UpdateRoomInviteStatus(roomId, userId, status)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "Room not found", err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "Room found")
 	}
 
 	if status == "rejected" {
@@ -197,8 +192,8 @@ func RespondToRoomInvite(c *fiber.Ctx) error {
 	}
 
 	roomResponse := response.JoinRoomResponse{
-		Room:     *room,
-		Attendes: *attendees,
+		Room:      *room,
+		Attendees: *attendees,
 	}
 
 	log.Println(
@@ -212,8 +207,6 @@ func InviteUser(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	// TODO: Check if user is host of room
-
 	token := c.Locals("user").(*jwt.Token)
 	userId := util.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
@@ -222,14 +215,12 @@ func InviteUser(c *fiber.Ctx) error {
 	json.Unmarshal([]byte(request.InviteesId), &inviteesIds)
 
 	tx := database.DB.Begin()
+
 	userService := &services.UserService{DB: tx}
 
 	user, err := userService.GetUserByID(userId)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "User not found", err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
 
 	invitees, err := userService.ValidateUsers(inviteesIds)
@@ -241,12 +232,10 @@ func InviteUser(c *fiber.Ctx) error {
 		roomId, user, invitees, "You have been invited to join this room")
 	if err != nil {
 		tx.Rollback()
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "Room / User not found", err)
-		} else if err.Error() == "User is not the host of the room" {
+		if err.Error() == "User is not the host of the room" {
 			return util.HandleError(c, fiber.StatusUnauthorized, "Only hosts are allowed to invite users", err)
 		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "Room / User not found")
 	}
 
 	if err := tx.Commit().Error; err != nil {
@@ -267,10 +256,7 @@ func LeaveRoom(c *fiber.Ctx) error {
 	err = (&services.RoomService{DB: tx}).RemoveUserFromRoom(roomId, userId)
 	if err != nil {
 		tx.Rollback()
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(c, fiber.StatusNotFound, "Room not found", err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
 	if err := tx.Commit().Error; err != nil {

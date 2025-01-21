@@ -5,8 +5,8 @@ import (
 )
 
 type JoinRoomResponse struct {
-	Room     model.Room   `json:"room"`
-	Attendes []model.User `json:"attendees"`
+	Room      model.Room   `json:"room"`
+	Attendees []model.User `json:"attendees"`
 }
 
 type CreateRoomResponse struct {

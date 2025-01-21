@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"log"
 	"time"
 
@@ -18,27 +19,32 @@ func (bs *BillService) CreateBill(
 	owner *model.User,
 	name string,
 	amount float32,
+	includeOwner bool,
 	payers *[]model.User,
 ) (*model.Bill, error) {
-	// TODO: Modify to accept list of attendee IDs that should pay for this bill
 	db := bs.DB.Table("bills")
 
-	bill := model.Bill{
-		Name:    name,
-		Amount:  amount,
-		Date:    time.Now(),
-		Room:    *room,
-		Owner:   *owner,
-		OwnerID: owner.ID,
-		Payers:  *payers,
+	if len(*payers) == 0 {
+		return nil, errors.New("Payers of a bill can't be empty")
 	}
 
-	// Omit to avoid creating new room
+	bill := model.Bill{
+		Name:         name,
+		Amount:       amount,
+		Date:         time.Now(),
+		IncludeOwner: includeOwner,
+		RoomID:       room.ID,
+		Owner:        *owner,
+		OwnerID:      owner.ID,
+		Payers:       *payers,
+	}
+
+	// Omit to avoid creating new room and set consolidation to null
 	if err := db.Omit("Room").Create(&bill).Error; err != nil {
 		return nil, err
 	}
 
-	log.Println("[BILL] Bill created: ", bill.ID)
+	log.Println("[BILL] Bill created in room:", bill.RoomID)
 	return &bill, nil
 }
 
@@ -57,7 +63,7 @@ func (bs *BillService) GetBillsForRoom(roomId string) (*[]model.Bill, error) {
 	db := bs.DB.Table("bills")
 	var bills []model.Bill
 
-	if err := db.Where("room_id = ?", roomId).Find(&bills).Error; err != nil {
+	if err := db.Where("room_id = ?", roomId).Preload("Owner").Preload("Payers").Find(&bills).Error; err != nil {
 		return nil, err
 	}
 
@@ -74,13 +80,24 @@ func (bs *BillService) DeleteRoomBills(roomId string) error {
 	return nil
 }
 
+func (bs *BillService) IsRoomBillConsolidated(roomId string) (bool, error) {
+	db := bs.DB.Table("bills")
+	var bill model.Bill
+
+	if err := db.Where("room_id = ?", roomId).First(&bill).Error; err != nil {
+		return false, err
+	}
+
+	return bill.ConsolidationID != 0, nil
+}
+
 // Consolidate bills for a room
 func (bs *BillService) ConsolidateBills(roomId string) (*model.Consolidation, error) {
 	db := bs.DB.Table("bills")
 
 	// Create empty struct as fields will be auto populated by DB
 	consolidation := model.Consolidation{}
-	if err := bs.DB.Table("consolidation").
+	if err := bs.DB.Table("consolidations").
 		Create(&consolidation).Error; err != nil {
 		return nil, err
 	}
