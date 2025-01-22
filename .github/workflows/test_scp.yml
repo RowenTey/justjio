@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Transfer file to remote server
-      uses: RowenTey/cloudflared-scp-action@v1
+      uses: RowenTey/cloudflared-scp-action@v1.1.7
       with:
         host: ${{ secrets.SSH_HOST }}
         username:  ${{ secrets.SSH_USERNAME }}
