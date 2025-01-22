@@ -1,0 +1,20 @@
+name: Transfer file to remote server via SCP
+on:
+  workflow_dispatch:
+
+jobs:
+  transfer_file:
+    name: Run SCP command
+    runs-on: ubuntu-latest
+    steps:
+    - name: Transfer file to remote server
+      uses: RowenTey/cloudflared-scp-action@v1
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username:  ${{ secrets.SSH_USERNAME }}
+        private_key: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
+        port: ${{ secrets.SSH_PORT }}
+        from: ./docker-compose.yml
+        to: ~/Documents/
+        service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
+        service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
