@@ -1,0 +1,21 @@
+name: Run command on remote server
+on:
+  workflow_dispatch:
+  
+jobs:
+  ssh_command:
+    name: Run SSH command
+    # needs: terraform_apply
+    runs-on: ubuntu-latest
+    steps:
+      - name: Connect and run command on remote server
+        uses: and-fm/cloudflared-ssh-action@v3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          private_key_filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }}
+          private_key_value: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
+          port: ${{ secrets.SSH_PORT }}
+          service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
+          service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
+          commands: echo "Hello world"
