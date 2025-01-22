@@ -7,6 +7,12 @@ jobs:
     name: Run SCP command
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: |
+          docker-compose.yml
+        sparse-checkout-cone-mode: false
     - name: Transfer file to remote server
       uses: RowenTey/cloudflared-scp-action@v1.1.7
       with:
