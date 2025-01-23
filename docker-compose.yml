@@ -1,33 +1,53 @@
-version: "3"
 name: justjio-backend
 
 services:
+  frontend:
+    image: ghcr.io/rowentey/justjio/web:latest
+    # build:
+    #   context: ./client-web
+    #   dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      APP_ENV_PREFIX: VITE
+      VITE_API_URL: http://localhost:8080/v1
+      VITE_WS_URL: ws://localhost:8081
+    depends_on:
+      - api-server
+      - ws-server
+
   api-server:
-    build:
-      context: ./server-api
-      dockerfile: Dockerfile
+    image: ghcr.io/rowentey/justjio/api:latest
+    # build:
+    #   context: ./server-api
+    #   dockerfile: Dockerfile
     ports:
       - "8080:8080"
     environment:
-      DSN: postgresql://postgres:NUv5oMuh1EWV@postgres:5432/postgres?sslmode=disable
+      DSN: postgresql://postgres:${POSTGRES_PASSWORD}@postgres/postgres?sslmode=disable
       PORT: 8080
-      JWT_SECRET: sc2006-justjio
-      OUTLOOK_PASSWORD: sc2006Onestart
+      JWT_SECRET: ${JWT_SECRET}
+      KAFKA_URL: kafka:29092
+      OUTLOOK_EMAIL: ${OUTLOOK_EMAIL}
+      OUTLOOK_PASSWORD: ${OUTLOOK_PASSWORD}
+    entrypoint: ["/api-server", "dev"]
     depends_on:
       kafka:
         condition: service_started
       postgres:
         condition: service_healthy
-      # - redis
 
   ws-server:
-    build:
-      context: ./server-ws
-      dockerfile: Dockerfile
+    image: ghcr.io/rowentey/justjio/ws:latest
+    # build:
+    #   context: ./server-ws
+    #   dockerfile: Dockerfile
     ports:
       - "8081:8081"
     environment:
-      JWT_SECRET: sc2006-justjio
+      PORT: 8081
+      JWT_SECRET: ${JWT_SECRET}
+      KAFKA_URL: kafka:29092
     depends_on:
       kafka:
         condition: service_started
@@ -36,7 +56,7 @@ services:
     image: confluentinc/cp-kafka:latest
     ports:
       - "9092:9092"
-    restart: always
+    restart: unless-stopped
     environment:
       KAFKA_BROKER_ID: 0
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -60,13 +80,9 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
-  # redis:
-  #   image: redis:latest
-  #   ports:
-  #     - "6379:6379"
-
   postgres:
     image: postgres:15
+    restart: unless-stopped
     environment:
       PG_USER: postgres
       POSTGRES_USER: postgres
@@ -81,6 +97,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # redis:
+  #   image: redis:latest
+  #   ports:
+  #     - "6379:6379"
 
   # pgadmin:
   #   image: dpage/pgadmin4
