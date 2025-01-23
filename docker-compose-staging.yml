@@ -11,8 +11,8 @@ services:
       - caddy_network
     environment:
       APP_ENV_PREFIX: VITE
-      VITE_API_URL: http://localhost:8080/v1
-      VITE_WS_URL: ws://localhost:8081
+      VITE_API_URL: http://justjio-api-staging.rowentey.xyz/v1
+      VITE_WS_URL: ws://justjio-ws-staging.rowentey.xyz
     depends_on:
       - api-server
       - ws-server
