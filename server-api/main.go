@@ -31,7 +31,7 @@ func main() {
 	app := fiber.New()
 
 	database.ConnectDB()
-	if env == "dev" {
+	if env == "dev" || env == "staging" {
 		services.SeedDB(database.DB)
 	}
 
