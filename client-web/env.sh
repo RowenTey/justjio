@@ -1,3 +1,4 @@
+# Took from https://dev.to/dutchskull/setting-up-dynamic-environment-variables-with-vite-and-docker-5cmj
 #! /bin/sh
 
 if [ -z "$APP_ENV_PREFIX" ]; then
