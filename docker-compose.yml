@@ -30,7 +30,7 @@ services:
       KAFKA_URL: kafka:29092
       OUTLOOK_EMAIL: ${OUTLOOK_EMAIL}
       OUTLOOK_PASSWORD: ${OUTLOOK_PASSWORD}
-    entrypoint: ["/api-server", "dev"]
+    entrypoint: ["/api-server", "staging"]
     depends_on:
       kafka:
         condition: service_started
