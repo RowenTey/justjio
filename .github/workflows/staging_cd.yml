@@ -1,0 +1,50 @@
+name: Deploy to Staging environment
+
+on:
+  # push:
+  #   branches:
+  #     - main
+  workflow_dispatch:
+
+jobs:
+  deploy_to_staging:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            docker-compose.yml
+          sparse-checkout-cone-mode: false
+
+      - name: Transfer updated Docker Compose to Staging server
+        uses: RowenTey/cloudflared-scp-action@v1.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          private_key: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
+          port: ${{ secrets.SSH_PORT }}
+          from: ./docker-compose.yml
+          to: ~/Documents/Codebase/justjio/docker-compose-staging.yml
+          service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
+          service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
+
+      - name: SSH and run command on Staging server
+        uses: and-fm/cloudflared-ssh-action@v3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          private_key_filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }}
+          private_key_value: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
+          port: ${{ secrets.SSH_PORT }}
+          service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
+          service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
+          commands: |
+            export POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            export JWT_SECRET=${{ secrets.JWT_SECRET }}
+            export OUTLOOK_EMAIL=${{ secrets.OUTLOOK_EMAIL }}
+            export OUTLOOK_PASSWORD=${{ secrets.OUTLOOK_PASSWORD }}
+            cd ~/Documents/Codebase/justjio
+            docker-compose -f docker-compose-staging.yml pull
+            docker-compose -f docker-compose-staging.yml up -d
