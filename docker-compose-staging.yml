@@ -1,4 +1,4 @@
-name: justjio-backend
+name: justjio
 
 services:
   frontend:
@@ -6,12 +6,13 @@ services:
     # build:
     #   context: ./client-web
     #   dockerfile: Dockerfile
-    ports:
-      - "80:80"
+    networks:
+      - justjio_network
+      - caddy_network
     environment:
       APP_ENV_PREFIX: VITE
-      VITE_API_URL: http://localhost:8080/v1
-      VITE_WS_URL: ws://localhost:8081
+      VITE_API_URL: https://justjio-api-staging.rowentey.xyz/v1
+      VITE_WS_URL: wss://justjio-ws-staging.rowentey.xyz
     depends_on:
       - api-server
       - ws-server
@@ -21,8 +22,9 @@ services:
     # build:
     #   context: ./server-api
     #   dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
+    networks:
+      - justjio_network
+      - caddy_network
     environment:
       DSN: postgresql://postgres:${POSTGRES_PASSWORD}@postgres/postgres?sslmode=disable
       PORT: 8080
@@ -42,8 +44,9 @@ services:
     # build:
     #   context: ./server-ws
     #   dockerfile: Dockerfile
-    ports:
-      - "8081:8081"
+    networks:
+      - justjio_network
+      - caddy_network
     environment:
       PORT: 8081
       JWT_SECRET: ${JWT_SECRET}
@@ -54,9 +57,9 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:latest
-    ports:
-      - "9092:9092"
     restart: unless-stopped
+    networks:
+      - justjio_network
     environment:
       KAFKA_BROKER_ID: 0
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -74,8 +77,8 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
-    ports:
-      - "2181:2181"
+    networks:
+      - justjio_network
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -83,15 +86,15 @@ services:
   postgres:
     image: postgres:15
     restart: unless-stopped
+    networks:
+      - justjio_network
     environment:
       PG_USER: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: NUv5oMuh1EWV
       POSTGRES_DB: postgres
-    ports:
-      - "5432:5432"
     volumes:
-      - justjio-postgres-data:/var/lib/postgresql/data
+      - justjio_pg_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -111,5 +114,11 @@ services:
   #     PGADMIN_DEFAULT_EMAIL: admin@test.com
   #     PGADMIN_DEFAULT_PASSWORD: admin
 
+networks:
+  justjio_network:
+    name: justjio_network
+  caddy_network:
+    external: true
+
 volumes:
-  justjio-postgres-data:
+  justjio_pg_data:

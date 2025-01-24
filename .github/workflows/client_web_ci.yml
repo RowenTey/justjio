@@ -1,4 +1,4 @@
-name: CI pipeline for web client
+name: CI pipeline for Web Client
 on:
   push:
     branches: ["main"]

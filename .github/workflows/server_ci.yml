@@ -1,4 +1,4 @@
-name: CI pipeline for API and WS server
+name: CI pipeline for API and WS Server
 on:
   push:
     branches: ["main"]

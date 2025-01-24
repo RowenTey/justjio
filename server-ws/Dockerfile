@@ -28,6 +28,6 @@ WORKDIR /
 
 COPY --from=build-stage /ws-server /ws-server
 
-EXPOSE 8080
+EXPOSE 8081
 
 ENTRYPOINT ["/ws-server"]

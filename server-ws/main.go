@@ -41,7 +41,7 @@ func main() {
 	app.Use(webSocketUpgrade)
 
 	app.Get("/", websocket.New(func(c *websocket.Conn) {
-		kafkaClient, err := services.NewKafkaService("localhost:9092", "chat-service")
+		kafkaClient, err := services.NewKafkaService(utils.Config("KAFKA_URL"), "chat-service")
 		if err != nil {
 			log.Fatal(err)
 		}
