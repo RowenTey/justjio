@@ -8,7 +8,7 @@ import { api } from "../api";
 
 type SignUpFormData = {
 	username: string;
-	phoneNumber: string;
+	// phoneNumber: string;
 	email: string;
 	password: string;
 	confirmPassword: string;
@@ -36,8 +36,7 @@ const SignUpPage = () => {
 				data.username,
 				// data.phoneNumber,
 				data.email,
-				data.password,
-				true
+				data.password
 			);
 			console.log(res);
 			stopLoading();
@@ -79,7 +78,7 @@ const SignUpPage = () => {
 					}}
 				/>
 
-				<InputField
+				{/* <InputField
 					label="Phone Number"
 					name="phoneNumber"
 					type="text"
@@ -93,7 +92,7 @@ const SignUpPage = () => {
 							message: "Phone number must be 8 digits",
 						},
 					}}
-				/>
+				/> */}
 
 				<InputField
 					label="Email"

@@ -49,12 +49,12 @@ func (s *UserServiceTestSuite) AfterTest(_, _ string) {
 func (s *UserServiceTestSuite) TestGetUserByID_Success() {
 	// arrange
 	expectedUser := &model.User{
-		ID:           1,
-		Username:     "johndoe",
-		Email:        "john@example.com",
-		Password:     "hashedpassword",
-		Name:         "John Doe",
-		PhoneNum:     "1234567890",
+		ID:       1,
+		Username: "johndoe",
+		Email:    "john@example.com",
+		Password: "hashedpassword",
+		// Name:     "John Doe",
+		// PhoneNum:     "1234567890",
 		IsEmailValid: true,
 		IsOnline:     false,
 		LastSeen:     time.Now(),
@@ -70,8 +70,8 @@ func (s *UserServiceTestSuite) TestGetUserByID_Success() {
 			expectedUser.Username,
 			expectedUser.Email,
 			expectedUser.Password,
-			expectedUser.Name,
-			expectedUser.PhoneNum,
+			// expectedUser.Name,
+			// expectedUser.PhoneNum,
 			expectedUser.IsEmailValid,
 			expectedUser.IsOnline,
 			expectedUser.LastSeen,
@@ -91,8 +91,8 @@ func (s *UserServiceTestSuite) TestGetUserByID_Success() {
 	assert.Equal(s.T(), expectedUser.ID, user.ID)
 	assert.Equal(s.T(), expectedUser.Username, user.Username)
 	assert.Equal(s.T(), expectedUser.Email, user.Email)
-	assert.Equal(s.T(), expectedUser.Name, user.Name)
-	assert.Equal(s.T(), expectedUser.PhoneNum, user.PhoneNum)
+	// assert.Equal(s.T(), expectedUser.Name, user.Name)
+	// assert.Equal(s.T(), expectedUser.PhoneNum, user.PhoneNum)
 	assert.Equal(s.T(), expectedUser.IsEmailValid, user.IsEmailValid)
 	assert.Equal(s.T(), expectedUser.IsOnline, user.IsOnline)
 	assert.Equal(s.T(), expectedUser.LastSeen.Unix(), user.LastSeen.Unix())
