@@ -23,6 +23,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -68,6 +69,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -112,6 +114,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -151,10 +154,15 @@ jobs:
 
   manage-pr-label:
     if: ${{ github.event.label.name == 'ready_for_build' }}
-    needs: [ build-and-push-api-image, build-and-push-ws-image, build-and-push-web-image ]
+    needs:
+      [
+        build-and-push-api-image,
+        build-and-push-ws-image,
+        build-and-push-web-image,
+      ]
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      pull-requests: write
     steps:
       - name: Remove `ready_for_build` label
         # always try to run this step, even if the previous steps fail
