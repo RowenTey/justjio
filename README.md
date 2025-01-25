@@ -1,6 +1,6 @@
-# 🍺 SC2006-JustJio 
+# 🍺 JustJio
 
-> Project for SC2006 -> Invite your friends to hangout easily 🀄
+> Invite your friends to hangout easily 🀄
 
 ![landing](./client/assets/gifs/JustJio.gif)
 
@@ -17,7 +17,7 @@ cd <FOLDER-NAME>
 2\. Clone the repo
 
 ```terminal
-git clone https://github.com/RowenTey/SC2006-OneStart.git
+git clone https://github.com/RowenTey/JustJio.git
 ```
 
 3\. Go to project directory
@@ -53,6 +53,7 @@ cd <PROJECT-PATH>
 ```
 
 ## 🧪 Tech Stack
+
 <p>
   <img src="https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" >
   <img src="https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" >
