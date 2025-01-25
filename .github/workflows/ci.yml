@@ -150,12 +150,8 @@ jobs:
           labels: ready_for_build
 
   manage-pr-label:
-    needs:
-      [
-        build-and-push-api-image,
-        build-and-push-ws-image,
-        build-and-push-web-image,
-      ]
+    if: ${{ github.event.label.name == 'ready_for_build' }}
+    needs: [ build-and-push-api-image, build-and-push-ws-image, build-and-push-web-image ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
