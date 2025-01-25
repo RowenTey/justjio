@@ -1,17 +1,15 @@
 name: Deploy to Staging Environment
 
 on:
-  workflow_run:
-    workflows:
-      ["CI pipeline for API and WS Server", "CI pipeline for Web Client"]
-    types:
-      - completed
+  push:
+    branches:
+      - dev
+      - main
   workflow_dispatch:
 
 jobs:
   deploy_to_staging:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     environment:
       name: staging
       url: https://justjio-staging.rowentey.xyz/
