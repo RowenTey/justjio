@@ -50,5 +50,5 @@ jobs:
             export OUTLOOK_PASSWORD=${{ secrets.OUTLOOK_PASSWORD }}
             cd ~/Documents/Codebase/justjio
             docker compose -f docker-compose-staging.yml pull
-            docker compose down -v
+            docker compose -f docker-compose-staging.yml down -v
             docker compose -f docker-compose-staging.yml up -d
