@@ -40,6 +40,21 @@ func GetRooms(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Retrieved rooms successfully", rooms)
 }
 
+func GetNumRooms(c *fiber.Ctx) error {
+	token := c.Locals("user").(*jwt.Token)
+	userId := util.GetUserInfoFromToken(token, "user_id")
+
+	roomService := &services.RoomService{DB: database.DB}
+
+	numRooms, err := roomService.GetNumRooms(userId)
+	if err != nil {
+		return util.HandleNotFoundOrInternalError(c, err, "No rooms found")
+	}
+
+	response := response.GetNumRoomsResponse{Count: int(numRooms)}
+	return util.HandleSuccess(c, "Retrieved number of rooms successfully", response)
+}
+
 func GetRoomInvitations(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := util.GetUserInfoFromToken(token, "user_id")

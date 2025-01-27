@@ -195,6 +195,17 @@ func (s *UserService) GetFriends(userID string) ([]model.User, error) {
 	return friends, nil
 }
 
+func (s *UserService) GetNumFriends(userID string) (int64, error) {
+	db := s.DB
+	var user model.User
+
+	if err := db.First(&user, userID).Error; err != nil {
+		return 0, err
+	}
+
+	return db.Model(&user).Association("Friends").Count(), nil
+}
+
 func (s *UserService) IsFriend(userID string, friendID string) (bool, error) {
 	db := s.DB
 

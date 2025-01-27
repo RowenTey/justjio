@@ -16,16 +16,16 @@ func CreateULID() ulid.ULID {
 
 // Copy ULID bytes into UUID format
 func ULIDToUUID(u ulid.ULID) uuid.UUID {
-    var uuidBytes [16]byte
-	
+	var uuidBytes [16]byte
+
 	// Convert ULID timestamp (uint64) to 6 bytes
 	timestamp := u.Time()
 	// First 6 bytes: ULID timestamp
 	binary.BigEndian.PutUint64(uuidBytes[:8], timestamp)
 
-    copy(uuidBytes[6:], u.Entropy()) // Remaining 10 bytes: ULID entropy
+	copy(uuidBytes[6:], u.Entropy()) // Remaining 10 bytes: ULID entropy
 
-    return uuid.UUID(uuidBytes)
+	return uuid.UUID(uuidBytes)
 }
 
 func UUIDToULID(u uuid.UUID) ulid.ULID {

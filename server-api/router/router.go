@@ -33,10 +33,12 @@ func Initalize(router *fiber.App) {
 	users.Get("/:userId/friends", handlers.GetFriends)
 	users.Post("/:userId/friends", handlers.AddFriend)
 	users.Post("/:userId/friends/check", handlers.IsFriend)
+	users.Post("/:userId/friends/count", handlers.GetNumFriends)
 	users.Delete("/:userId/friends", handlers.RemoveFriend)
 
 	rooms := v1.Group("/rooms")
 	rooms.Get("/", handlers.GetRooms)
+	// rooms.Get("/count", handlers.GetN)
 	rooms.Get("/invites", handlers.GetRoomInvitations)
 	rooms.Get("/invites/count", handlers.GetNumRoomInvitations)
 	rooms.Get("/:roomId", middleware.IsUserInRoom, handlers.GetRoom)
