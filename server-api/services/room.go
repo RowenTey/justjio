@@ -54,6 +54,21 @@ func (rs *RoomService) GetRooms(userId string, page int) (*[]model.Room, error) 
 	return &rooms, nil
 }
 
+func (rs *RoomService) GetNumRooms(userId string) (int64, error) {
+	db := database.DB
+	var count int64
+
+	if err := db.
+		Model(&model.Room{}).
+		Joins("JOIN room_users ON rooms.id = room_users.room_id").
+		Where("room_users.user_id = ?", userId).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (rs *RoomService) GetRoomById(roomId string) (*model.Room, error) {
 	db := rs.DB.Table("rooms")
 	var room model.Room
