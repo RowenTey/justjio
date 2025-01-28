@@ -2,13 +2,12 @@ name: justjio
 
 services:
   frontend:
+    container_name: justjio-web
     image: ghcr.io/rowentey/justjio/web:latest
-    # build:
-    #   context: ./client-web
-    #   dockerfile: Dockerfile
     networks:
       - justjio_network
       - caddy_network
+    restart: unless-stopped
     environment:
       APP_ENV_PREFIX: VITE
       VITE_API_URL: https://justjio-api-staging.rowentey.xyz/v1
@@ -18,10 +17,9 @@ services:
       - ws-server
 
   api-server:
+    container_name: justjio-api
     image: ghcr.io/rowentey/justjio/api:latest
-    # build:
-    #   context: ./server-api
-    #   dockerfile: Dockerfile
+    restart: unless-stopped
     networks:
       - justjio_network
       - caddy_network
@@ -40,10 +38,9 @@ services:
         condition: service_healthy
 
   ws-server:
+    container_name: justjio-ws
     image: ghcr.io/rowentey/justjio/ws:latest
-    # build:
-    #   context: ./server-ws
-    #   dockerfile: Dockerfile
+    restart: unless-stopped
     networks:
       - justjio_network
       - caddy_network
@@ -56,34 +53,39 @@ services:
         condition: service_started
 
   kafka:
+    container_name: justjio-kafka
     image: confluentinc/cp-kafka:latest
     restart: unless-stopped
-    networks:
-      - justjio_network
     environment:
-      KAFKA_BROKER_ID: 0
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Bob is internal docker network listener
-      # Fred is external listener
-      KAFKA_ADVERTISED_LISTENERS: LISTENER_BOB://kafka:29092,LISTENER_FRED://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_BOB:PLAINTEXT,LISTENER_FRED:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_BOB
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
-      # KAFKA_LISTENERS: LISTENER_BOB://kafka:29092,LISTENER_FRED://kafka:9092
-      # KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-    depends_on:
-      - zookeeper
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    networks:
-      - justjio_network
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      KAFKA_KRAFT_MODE: "true" # This enables KRaft mode in Kafka.
+      KAFKA_PROCESS_ROLES: controller,broker # Kafka acts as both broker and controller.
+      KAFKA_NODE_ID: 1 # A unique ID for this Kafka instance.
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093" # Defines the controller voters.
+      KAFKA_LISTENERS: INNER://kafka:29092,PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INNER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_ADVERTISED_LISTENERS: INNER://kafka:29092,PLAINTEXT://localhost:9092
+      KAFKA_LOG_DIRS: /var/lib/kafka/data # Where Kafka stores its logs.
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true" # Kafka will automatically create topics if needed.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 # Since we’re running one broker, one replica is enough.
+      KAFKA_LOG_RETENTION_HOURS: 168 # Keep logs for 7 days.
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0 # No delay for consumer rebalancing.
+      CLUSTER_ID: "Mk3OEYBSD34fcwNTJENDM2Qk" # A unique ID for the Kafka cluster.
+    ports:
+      - "9092:9092" # Port for Kafka broker
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "./opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
 
   postgres:
+    container_name: justjio-postgres
     image: postgres:15
     restart: unless-stopped
     networks:
@@ -100,19 +102,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # redis:
-  #   image: redis:latest
-  #   ports:
-  #     - "6379:6379"
-
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   ports:
-  #     - "5050:80"
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: admin@test.com
-  #     PGADMIN_DEFAULT_PASSWORD: admin
 
 networks:
   justjio_network:
