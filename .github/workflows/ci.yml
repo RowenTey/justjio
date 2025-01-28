@@ -13,17 +13,18 @@ env:
   IMAGE_NAME_WS: ${{ github.repository }}/ws
   IMAGE_NAME_WEB: ${{ github.repository }}/web
 
+# Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this workflow.
+permissions:
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+  pull-requests: write
+
 jobs:
   build-and-push-api-image:
     if: ${{ github.event.label.name == 'ready_for_build' }}
     runs-on: ubuntu-latest
-    # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
-      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -64,12 +65,6 @@ jobs:
   build-and-push-ws-image:
     if: ${{ github.event.label.name == 'ready_for_build' }}
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
-      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -108,13 +103,6 @@ jobs:
   build-and-push-web-image:
     if: ${{ github.event.label.name == 'ready_for_build' }}
     runs-on: ubuntu-latest
-    # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
-      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -161,8 +149,6 @@ jobs:
         build-and-push-web-image,
       ]
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
     steps:
       - name: Remove `ready_for_build` label
         # always try to run this step, even if the previous steps fail

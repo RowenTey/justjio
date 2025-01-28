@@ -29,7 +29,7 @@ jobs:
           private_key: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
           port: ${{ secrets.SSH_PORT }}
           from: ./docker-compose-staging.yml
-          to: ~/Documents/Codebase/justjio/docker-compose-staging.yml
+          to: ~/Documents/Codebase/justjio/docker-compose.yml
           service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
           service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
 
@@ -49,6 +49,6 @@ jobs:
             export OUTLOOK_EMAIL=${{ secrets.OUTLOOK_EMAIL }}
             export OUTLOOK_PASSWORD=${{ secrets.OUTLOOK_PASSWORD }}
             cd ~/Documents/Codebase/justjio
-            docker compose -f docker-compose-staging.yml pull
-            docker compose -f docker-compose-staging.yml down -v
-            docker compose -f docker-compose-staging.yml up -d
+            docker compose pull
+            docker compose down -v
+            docker compose up -d
