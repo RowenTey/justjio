@@ -16,8 +16,6 @@ type User struct {
 func GetCurrentUser(c *websocket.Conn) (*User, error) {
 	tokenStr := c.Query("token")
 
-	fmt.Println("tokenStr: ", tokenStr)
-
 	// Decode the JWT token
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		return []byte(utils.Config("JWT_SECRET")), nil
