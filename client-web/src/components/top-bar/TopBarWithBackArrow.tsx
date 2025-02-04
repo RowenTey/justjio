@@ -2,12 +2,12 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-type RoomTopBarProps = {
+type TopBarWithBackArrowProps = {
 	title: string;
 	shouldCenterTitle?: boolean;
 };
 
-const RoomTopBar: React.FC<RoomTopBarProps> = ({
+const TopBarWithBackArrow: React.FC<TopBarWithBackArrowProps> = ({
 	title,
 	shouldCenterTitle = true,
 }) => {
@@ -21,7 +21,7 @@ const RoomTopBar: React.FC<RoomTopBarProps> = ({
 		>
 			<button
 				onClick={() => navigate(-1)}
-				className={`flex items-center justify-center p-1 bg-transparent hover:scale-110 ${
+				className={`flex items-center justify-center p-1 hover:scale-110 ${
 					shouldCenterTitle ? "absolute left-3" : ""
 				}`}
 			>
@@ -39,4 +39,4 @@ const RoomTopBar: React.FC<RoomTopBarProps> = ({
 	);
 };
 
-export default RoomTopBar;
+export default TopBarWithBackArrow;

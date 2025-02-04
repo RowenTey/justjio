@@ -1,7 +1,7 @@
 import React from "react";
 
 import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
-import Spinner from "./Spinner";
+import Spinner from "../Spinner";
 
 interface HomeTopBarProps {
 	isLoading: boolean;
@@ -15,10 +15,18 @@ const HomeTopBar: React.FC<HomeTopBarProps> = ({
 	onLogout,
 }) => {
 	return (
-		<div className="relative top-0 flex h-[8%] items-center justify-between w-full py-4 px-6 bg-purple-200">
-			<h1 className="text-lg font-bold text-justjio-secondary">
-				Welcome, {username}!
-			</h1>
+		<div className="relative top-0 flex h-[8%] items-center justify-between w-full py-4 pl-4 pr-6 bg-purple-200">
+			<div className="flex items-center gap-1">
+				<img
+					src="/favicon.svg"
+					alt="JustJio Logo"
+					className="w-8 h-8 rounded-full"
+				/>
+
+				<h1 className="text-lg font-bold text-justjio-secondary">
+					Welcome, {username}!
+				</h1>
+			</div>
 
 			<button
 				onClick={onLogout}

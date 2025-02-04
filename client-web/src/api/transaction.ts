@@ -8,10 +8,11 @@ interface FetchTransactionResponse extends ApiResponse {
 
 export const fetchTransactionsApi = async (
 	api: AxiosInstance,
+	isPaid: boolean = false,
 	mock: boolean = false
 ): Promise<AxiosResponse<FetchTransactionResponse>> => {
 	if (!mock) {
-		return api.get<FetchTransactionResponse>("/transactions");
+		return api.get<FetchTransactionResponse>(`/transactions?isPaid=${isPaid}`);
 	}
 
 	return new Promise<AxiosResponse<FetchTransactionResponse>>((resolve) => {

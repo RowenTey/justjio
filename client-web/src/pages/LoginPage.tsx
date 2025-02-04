@@ -45,11 +45,12 @@ const LoginPage = () => {
 
 	return (
 		<div className="h-full flex flex-col justify-center items-center xs:border-y-1 border-black overflow-y-auto bg-justjio-primary">
-			<h1 className="text-justjio-secondary font-bold mb-6">Login</h1>
+			<img src="/favicon.svg" alt="JustJio Logo" className="w-36 h-36" />
+
 			<form
 				onSubmit={handleSubmit(onSubmit)}
 				id="login-form"
-				className="flex flex-col gap-3 p-2 w-[70%]"
+				className="flex flex-col items-center gap-3 p-2 w-[70%]"
 			>
 				<InputField
 					label="Username"
@@ -72,13 +73,13 @@ const LoginPage = () => {
 				/>
 
 				<button
-					className="bg-justjio-secondary hover:bg-purple-900 text-white font-bold py-2 px-4 rounded-full mt-3"
+					className="bg-justjio-secondary hover:bg-purple-900 text-white font-bold py-2 px-4 rounded-full mt-3 w-3/5"
 					form="login-form"
 				>
-					Submit
+					Login
 				</button>
 
-				<p className="text-justjio-secondary text-center">
+				<p className="text-justjio-secondary text-sm text-center">
 					Don't have an account?{" "}
 					<Link to="/signup" className="underline cursor-pointer">
 						Sign Up

@@ -1,6 +1,6 @@
 import { SubmitHandler, useForm } from "react-hook-form";
 import InputField from "../components/InputField";
-import RoomTopBar from "../components/RoomTopBar";
+import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
 import { useRoomCtx } from "../context/room";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import { useNavigate } from "react-router-dom";
@@ -104,7 +104,7 @@ const CreateRoomPage = () => {
 				/>
 
 				<button
-					className="bg-justjio-secondary hover:bg-purple-900 text-white font-bold py-2 px-4 rounded-full mt-4 w-2/5"
+					className="bg-justjio-secondary hover:shadow-lg hover:border-2 hover:border-white text-white font-bold py-2 px-4 rounded-full mt-4 w-2/5"
 					form="create-room-form"
 				>
 					{loading ? (

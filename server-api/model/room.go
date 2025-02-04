@@ -16,7 +16,7 @@ type Room struct {
 	Date           time.Time `gorm:"not null" json:"date"`
 	HostID         uint      `gorm:"not null" json:"hostId"`
 	Host           User      `gorm:"not null; foreignKey:host_id" json:"host"`
-	AttendeesCount int       `gorm:"default:1" json:"attendees_count"`
+	AttendeesCount int       `gorm:"default:1" json:"attendeesCount"`
 	CreatedAt      time.Time `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt      time.Time `gorm:"autoUpdateTime" json:"updatedAt"`
 	IsClosed       bool      `gorm:"default:false" json:"isClosed"`

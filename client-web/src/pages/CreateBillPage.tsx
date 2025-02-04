@@ -1,5 +1,5 @@
 import { SubmitHandler, useForm } from "react-hook-form";
-import RoomTopBar from "../components/RoomTopBar";
+import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import InputField from "../components/InputField";
 import Spinner from "../components/Spinner";

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import RoomTopBar from "../components/RoomTopBar";
+import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
 import { channelTypes, useWs } from "../context/ws";
 import { useUserCtx } from "../context/user";
 import { fetchRoomMessageApi, sendMessageApi } from "../api/message";

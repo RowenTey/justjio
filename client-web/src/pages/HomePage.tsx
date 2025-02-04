@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import { useUserCtx } from "../context/user";
-import HomeTopBar from "../components/HomeTopBar";
+import HomeTopBar from "../components/top-bar/HomeTopBar";
 import RoomCard from "../components/RoomCard";
 import ButtonCard from "../components/ButtonCard";
 import { EnvelopeIcon, PlusIcon } from "@heroicons/react/24/outline";
@@ -69,16 +69,16 @@ const TransactionActionWidgets: React.FC = () => {
 	const { toPay, toReceive } = useTransactionCtx();
 
 	return (
-		<div className="w-[90%] h-[35%] flex justify-between mt-6">
+		<div className="w-[90%] h-[30%] flex justify-between mt-3">
 			<TransactionContainer
 				title="To Pay:"
-				emptyText="Available"
+				emptyText="No bills to pay"
 				transactions={toPay}
 				isPayer={true}
 			/>
 			<TransactionContainer
 				title="To Receive:"
-				emptyText="Occupied"
+				emptyText="No bills to receive"
 				transactions={toReceive}
 				isPayer={false}
 			/>
@@ -96,7 +96,7 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
 	onRoomInvitations,
 }) => {
 	return (
-		<div className="h-[15%] flex justify-evenly w-full mt-6">
+		<div className="h-[15%] flex justify-evenly w-full mt-4">
 			<ButtonCard title="Create Room" Icon={PlusIcon} onClick={onCreateRoom} />
 			<ButtonCard
 				title="Room Invites"
@@ -109,7 +109,7 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
 
 const RecentRoomsWidget: React.FC<{ rooms: IRoom[] }> = ({ rooms }) => {
 	return (
-		<div className="w-full h-[60%] mt-3 flex flex-col items-center">
+		<div className="w-full h-[60%] mt-1 flex flex-col items-center">
 			<h1 className="text-justjio-secondary text-[2.5rem] font-bold">
 				Recent Rooms
 			</h1>

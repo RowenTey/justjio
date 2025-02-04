@@ -12,6 +12,7 @@ migrate_working_dir/
 *.env
 .docker_build/
 *.exe
+*.bat
 /data
 tmp/
 

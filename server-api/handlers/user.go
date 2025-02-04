@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/RowenTey/JustJio/database"
@@ -11,18 +10,13 @@ import (
 	"github.com/RowenTey/JustJio/util"
 
 	"github.com/gofiber/fiber/v2"
-	"gorm.io/gorm"
 )
 
 func GetUser(c *fiber.Ctx) error {
 	id := c.Params("userId")
 	user, err := (&services.UserService{DB: database.DB}).GetUserByID(id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(
-				c, fiber.StatusNotFound, fmt.Sprintf("No user found with ID %s", id), err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
 	return util.HandleSuccess(c, "User found successfully", user)
 }
@@ -37,10 +31,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	userService := services.UserService{DB: database.DB}
 	err := userService.UpdateUserField(id, request.Field, request.Value)
 	if err != nil {
-		if err.Error() == fmt.Sprintf("User field %s not supported for update", request.Field) {
-			return util.HandleInvalidInputError(c, err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
 
 	return util.HandleSuccess(c, "User successfully updated", request)
@@ -53,11 +44,7 @@ func DeleteUser(c *fiber.Ctx) error {
 
 	err := userService.DeleteUser(id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(
-				c, fiber.StatusNotFound, fmt.Sprintf("No user found with ID %s", id), err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
 	return util.HandleSuccess(c, "User successfully deleted", nil)
 }
@@ -71,13 +58,8 @@ func AddFriend(c *fiber.Ctx) error {
 	}
 
 	userService := services.UserService{DB: database.DB}
-
 	if err := userService.AddFriend(userID, request.FriendID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(
-				c, fiber.StatusNotFound, fmt.Sprintf("No user found with ID %s", userID), err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
 
 	return util.HandleSuccess(c, "Friend successfully added", nil)
@@ -92,13 +74,8 @@ func RemoveFriend(c *fiber.Ctx) error {
 	}
 
 	userService := services.UserService{DB: database.DB}
-
 	if err := userService.RemoveFriend(userID, request.FriendID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(
-				c, fiber.StatusNotFound, fmt.Sprintf("No user found with ID %s", userID), err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
 
 	return util.HandleSuccess(c, "Friend successfully removed", nil)
@@ -111,11 +88,7 @@ func GetFriends(c *fiber.Ctx) error {
 
 	friends, err := userService.GetFriends(userID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(
-				c, fiber.StatusNotFound, fmt.Sprintf("No user found with ID %s", userID), err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
 
 	return util.HandleSuccess(c, "Friends retrieved successfully", friends)
@@ -123,9 +96,7 @@ func GetFriends(c *fiber.Ctx) error {
 
 func IsFriend(c *fiber.Ctx) error {
 	userID := c.Params("userId")
-	var request struct {
-		FriendID string `json:"frienId"`
-	}
+	var request request.ModifyFriendRequest
 
 	if err := c.BodyParser(&request); err != nil {
 		return util.HandleInvalidInputError(c, err)
@@ -158,4 +129,18 @@ func GetNumFriends(c *fiber.Ctx) error {
 		NumFriends: numFriends,
 	}
 	return util.HandleSuccess(c, "Number of friends retrieved successfully", response)
+}
+
+func SearchFriends(c *fiber.Ctx) error {
+	userID := c.Params("userId")
+	query := c.Query("query")
+
+	userService := services.UserService{DB: database.DB}
+
+	friends, err := userService.SearchUsers(userID, query)
+	if err != nil {
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
+	}
+
+	return util.HandleSuccess(c, "Friends retrieved successfully", friends)
 }
