@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from "react";
-import RoomTopBar from "../components/RoomTopBar";
+import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
 import { fetchRoomInvitesApi } from "../api/room";
 import { api } from "../api";
 import { IRoomInvite } from "../types/room";
@@ -61,14 +61,22 @@ const RoomInvites: React.FC<{
 	handleInvite: (roomId: string, accept: boolean) => void;
 }> = ({ invites, handleInvite }) => {
 	return (
-		<div className="w-full flex flex-col pb-4 items-center gap-4 overflow-y-auto">
-			{invites.map((invite) => (
-				<RoomInviteCard
-					key={invite.id}
-					invite={invite}
-					handleInvite={handleInvite}
-				/>
-			))}
+		<div
+			className={`w-full h-full flex flex-col pb-4 items-center gap-4 overflow-y-auto ${
+				invites.length === 0 ? "justify-center" : ""
+			}`}
+		>
+			{invites.length === 0 ? (
+				<p className="text-lg font-semibold text-gray-500">No invites found</p>
+			) : (
+				invites.map((invite) => (
+					<RoomInviteCard
+						key={invite.id}
+						invite={invite}
+						handleInvite={handleInvite}
+					/>
+				))
+			)}
 		</div>
 	);
 };

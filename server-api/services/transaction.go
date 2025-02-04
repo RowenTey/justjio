@@ -38,8 +38,8 @@ func (ts *TransactionService) GenerateTransactions(consolidatedBill *model.Conso
 		wg.Add(1)
 		go func(bill *model.Bill) {
 			defer wg.Done()
-			log.Println("[TRANSACTION] Processing bill: ", bill)
-			log.Println("[TRANSACTION] Payers: ", bill.Payers)
+			log.Printf("[TRANSACTION] Processing bill: %s with amount %f\n", bill.Name, bill.Amount)
+			log.Println("[TRANSACTION] Payers: ", len(bill.Payers))
 
 			num_payers := float32(len(bill.Payers))
 			if bill.IncludeOwner {
@@ -71,10 +71,15 @@ func (ts *TransactionService) GenerateTransactions(consolidatedBill *model.Conso
 	for transaction := range txChan {
 		transactions = append(transactions, *transaction)
 	}
-	log.Println("[TRANSACTION] Transactions: ", transactions)
+
+	for _, transaction := range transactions {
+		log.Printf("[TRANSACTION] Before %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
+	}
 
 	consolidatedTransactions := consolidateTransactions(&transactions, consolidatedBill)
-	log.Println("[TRANSACTION] Consolidated Transactions: ", transactions)
+	for _, transaction := range *consolidatedTransactions {
+		log.Printf("[TRANSACTION] After %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
+	}
 	if err := ts.DB.Create(&consolidatedTransactions).Error; err != nil {
 		return err
 	}
@@ -143,11 +148,10 @@ func consolidateTransactions(transactions *[]model.Transaction, consolidatedBill
 		// trigger the do-while loop
 		hasCycle = 1
 		for hasCycle != -1 {
-			log.Println("[DEBUG] Graph before: ", graph)
+			// 0 -> Start from source node
 			visited[transaction.PayerID] = true
-			hasCycle = removeCycle(transaction.PayerID, graph, visited)
+			hasCycle, _ = removeCycle(transaction.PayerID, graph, visited)
 			resetVisited(visited)
-			log.Println("[DEBUG] Graph after: ", graph)
 		}
 	}
 
@@ -173,25 +177,29 @@ func resetVisited(visited map[uint]bool) {
 	}
 }
 
-func removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) float32 {
-	log.Println("[DEBUG] Current node: ", startNode)
-
+func removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) (float32, uint) {
 	neighbors := graph[startNode]
 	for i, neighbor := range neighbors {
+		log.Println("[DEBUG] Current node ", startNode, " with neighbor: ", neighbor.userId)
+
 		// cycle detected
 		if isVisited := visited[neighbor.userId]; isVisited {
+			log.Println("[DEBUG] Cycle detected: ", startNode, " -> ", neighbor.userId)
+
 			// remove the edge
 			neighbors = append(neighbors[:i], neighbors[i+1:]...)
 			graph[startNode] = neighbors
 
 			// return amount to deduct
-			return neighbor.amount
+			return neighbor.amount, neighbor.userId
 		}
 
 		visited[neighbor.userId] = true
-		amtToDeduct := removeCycle(neighbor.userId, graph, visited)
+		amtToDeduct, stopAt := removeCycle(neighbor.userId, graph, visited)
+		visited[neighbor.userId] = false
+
 		// no cycle -> nothing to deduct
-		if amtToDeduct == -1 {
+		if stopAt == 0 {
 			continue
 		}
 
@@ -201,7 +209,7 @@ func removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) f
 				userId: neighbor.userId,
 				amount: neighbor.amount - amtToDeduct,
 			}
-		} else {
+		} else if (neighbor.amount - amtToDeduct) < 0 {
 			// -ve -> remove this edge and add it in opposite direction
 			neighbors = append(neighbors[:i], neighbors[i+1:]...)
 			graph[startNode] = neighbors
@@ -211,11 +219,19 @@ func removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) f
 				amount: amtToDeduct - neighbor.amount,
 			}
 			graph[neighbor.userId] = append(graph[neighbor.userId], newEndNode)
+		} else {
+			// 0 -> remove the edge
+			neighbors = append(neighbors[:i], neighbors[i+1:]...)
+			graph[startNode] = neighbors
 		}
 
-		// bubble the amount to deduct back to path
-		return amtToDeduct
+		// cycle is resolved
+		if stopAt == startNode {
+			return amtToDeduct, 0
+		} else {
+			return amtToDeduct, stopAt
+		}
 	}
 
-	return -1
+	return -1, 0
 }

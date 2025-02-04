@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { consolidateBillApi, fetchBillApi } from "../api/bill";
 import { api } from "../api";
 import useMandatoryParam from "../hooks/useMandatoryParam";
-import RoomTopBar from "../components/RoomTopBar";
+import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
 import { IBill } from "../types/bill";
 import { formatDate } from "../utils/date";
 import { useLocation, useNavigate } from "react-router-dom";

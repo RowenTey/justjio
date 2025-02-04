@@ -111,6 +111,7 @@ func CreateMessage(c *fiber.Ctx) error {
 	if err := kafkaService.BroadcastMessage(roomUserIds, broadcastPayload); err != nil {
 		log.Println("[MESSAGE] Failed to broadcast message:", err)
 	}
+	log.Println("[MESSAGE] Broadcasted message to Kafka")
 
 	return util.HandleSuccess(c, "Message saved successfully", nil)
 }

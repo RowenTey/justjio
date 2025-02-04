@@ -22,6 +22,8 @@ func SeedDB(db *gorm.DB) error {
 
 	userService := UserService{DB: db}
 	roomService := RoomService{DB: db}
+	billService := BillService{DB: db}
+	transactionService := TransactionService{DB: db}
 
 	// create users
 	users := []model.User{
@@ -32,6 +34,7 @@ func SeedDB(db *gorm.DB) error {
 		{Username: "kaiseong", Password: "Ks12345!", Email: "ks123@test.com"},
 		{Username: "aloysius", Password: "Aloysius12345!", Email: "aloysius123@test.com"},
 	}
+
 	for i, u := range users {
 		hashedPassword, err := util.HashPassword(u.Password)
 		if err != nil {
@@ -70,6 +73,7 @@ func SeedDB(db *gorm.DB) error {
 		{Name: "harish birthday", Date: time.Date(2022, time.October, 4, 0, 0, 0, 0, time.UTC), Time: "6:00pm", Venue: "clementi mall"},
 		{Name: "amabel birthday", Date: time.Date(2022, time.November, 4, 0, 0, 0, 0, time.UTC), Time: "9:00am", Venue: "marina bay sand"},
 	}
+
 	for i, r := range rooms {
 		host := users[rand.Intn(len(users))]
 		log.Println("[SEED] User selected as host:\n", host)
@@ -91,6 +95,62 @@ func SeedDB(db *gorm.DB) error {
 
 		_, err = roomService.InviteUserToRoom(
 			rooms[i].ID, &host, &invitees, "Join my party!")
+		if err != nil {
+			log.Fatalf("%s", err.Error())
+			return err
+		}
+
+		// only accept invite for first and second room
+		if i == 2 {
+			continue
+		}
+
+		// accept invite
+		for _, u := range invitees {
+			err := roomService.UpdateRoomInviteStatus(rooms[i].ID, strconv.FormatUint(uint64(u.ID), 10), "accepted")
+			if err != nil {
+				log.Fatalf("%s", err.Error())
+				return err
+			}
+		}
+
+		// only create bills for first room
+		if i != 0 {
+			continue
+		}
+
+		// create bill
+		for j, u := range invitees {
+			var payers = []model.User{}
+			for _, p := range invitees {
+				if p.ID == u.ID {
+					continue
+				}
+				payers = append(payers, p)
+			}
+
+			_, err := billService.CreateBill(&rooms[i], &u, "food", float32(j+10)*10, true, &payers)
+			if err != nil {
+				log.Fatalf("%s", err.Error())
+				return err
+			}
+
+			_, err = billService.CreateBill(&rooms[i], &u, "drinks", rand.Float32()*100, false, &payers)
+			if err != nil {
+				log.Fatalf("%s", err.Error())
+				return err
+			}
+		}
+
+		// consolidate bills for this room
+		consolidation, err := billService.ConsolidateBills(rooms[i].ID)
+		if err != nil {
+			log.Fatalf("%s", err.Error())
+			return err
+		}
+
+		// generate transactions for this room
+		err = transactionService.GenerateTransactions(consolidation)
 		if err != nil {
 			log.Fatalf("%s", err.Error())
 			return err

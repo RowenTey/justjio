@@ -18,7 +18,7 @@ const TransactionContainer: React.FC<TransactionContainerProps> = ({
 	isPayer,
 }) => {
 	return (
-		<div className="flex flex-col gap-1 w-[47.5%] h-[8rem] bg-white shadow-lg rounded-lg p-2">
+		<div className="flex flex-col gap-1 w-[47.5%] h-full bg-white shadow-lg rounded-lg p-2">
 			<h2 className="text-xs font-semibold text-gray-500">{title}</h2>
 			<div
 				className={`h-[82.5%] overflow-y-auto pr-1 flex flex-col w-full gap-2 ${
@@ -65,7 +65,7 @@ const TransactionBox = ({
 	return (
 		<div
 			className="flex items-center justify-between w-full 
-				py-1 pl-2 pr-1 border-[1px] border-justjio-secondary rounded-lg"
+				py-1 pl-2 pr-1 shadow-md rounded-lg"
 		>
 			<p className="text-sm font-semibold text-gray-700">
 				{isPayer ? transaction.payee.username : transaction.payer.username}
@@ -76,11 +76,11 @@ const TransactionBox = ({
 				</p>
 				{isPayer ? (
 					<CheckCircleIcon
-						className="w-5 h-5 text-justjio-secondary cursor-pointer"
+						className="w-5 h-5 text-justjio-secondary cursor-pointer hover:scale-110"
 						onClick={() => handleSettleTransaction(transaction.id)}
 					/>
 				) : (
-					<BellIcon className="w-5 h-5 text-justjio-secondary cursor-pointer" />
+					<BellIcon className="w-5 h-5 text-justjio-secondary cursor-pointer hover:scale-110" />
 				)}
 			</div>
 		</div>

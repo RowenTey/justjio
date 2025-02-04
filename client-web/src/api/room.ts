@@ -7,6 +7,12 @@ interface FetchRecentRoomsResponse extends ApiResponse {
 	data: IRoom[];
 }
 
+interface GetNumRoomsResponse extends ApiResponse {
+	data: {
+		count: number;
+	};
+}
+
 interface CreateRoomResponse extends ApiResponse {
 	data: {
 		room: IRoom;
@@ -75,6 +81,33 @@ export const fetchRecentRoomsApi = (
 				headers: {},
 				config: {},
 			} as AxiosResponse<FetchRecentRoomsResponse>);
+		}, 1500);
+	});
+};
+
+export const fetchNumRoomsApi = (
+	api: AxiosInstance,
+	mock: boolean = false
+): Promise<AxiosResponse<GetNumRoomsResponse>> => {
+	if (!mock) {
+		return api.get<GetNumRoomsResponse>(`/rooms/count`);
+	}
+
+	return new Promise<AxiosResponse<GetNumRoomsResponse>>((resolve) => {
+		setTimeout(() => {
+			resolve({
+				data: {
+					data: {
+						count: 1,
+					},
+					message: "Retrieved number of rooms successfully",
+					status: "success",
+				},
+				status: 200,
+				statusText: "OK",
+				headers: {},
+				config: {},
+			} as AxiosResponse<GetNumRoomsResponse>);
 		}, 1500);
 	});
 };

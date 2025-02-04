@@ -148,6 +148,25 @@ func (s *UserService) MarkOffline(userId string) error {
 	return nil
 }
 
+func (s *UserService) SearchUsers(currentUserID, query string) (*[]model.User, error) {
+	db := s.DB
+	var users []model.User
+
+	// Use LEFT JOIN to exclude friends
+	if err := db.
+		Table("users").
+		Joins("LEFT JOIN user_friends ON users.id = user_friends.friend_id AND user_friends.user_id = ?", currentUserID).
+		Where("users.username LIKE ?", "%"+query+"%").
+		Where("user_friends.friend_id IS NULL").
+		Where("users.id != ?", currentUserID).
+		Limit(10).
+		Find(&users).Error; err != nil {
+		return nil, err
+	}
+
+	return &users, nil
+}
+
 func (s *UserService) AddFriend(userID string, friendID string) error {
 	db := s.DB
 	var user, friend model.User
@@ -158,6 +177,10 @@ func (s *UserService) AddFriend(userID string, friendID string) error {
 
 	if err := db.First(&friend, friendID).Error; err != nil {
 		return err
+	}
+
+	if userID == friendID {
+		return errors.New("Cannot add self as friend")
 	}
 
 	return db.Model(&user).Association("Friends").Append(&friend)

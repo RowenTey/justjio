@@ -12,7 +12,7 @@ export interface IUser {
 	email: string;
 	password: string;
 	name?: string;
-	phoneNum: string;
+	phoneNum?: string;
 	isEmailValid: boolean;
 	isOnline: boolean;
 	lastSeen: string;

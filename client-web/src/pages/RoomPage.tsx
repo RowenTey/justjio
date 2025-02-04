@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import RoomTopBar from "../components/RoomTopBar";
+import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
 import ButtonCard from "../components/ButtonCard";
 import {
 	ChatBubbleLeftIcon,
@@ -47,13 +47,13 @@ const RoomPage = () => {
 		}
 
 		stopLoading();
-		console.log("Room closed successfully");
 		navigate("/");
 	};
 
 	useEffect(() => {
 		const fetchRoom = async (roomId: string) => {
 			const res = await fetchRoomApi(api, roomId);
+			console.log("[RoomPage] Room data", res.data.data);
 			setRoom(res.data.data);
 		};
 		const fetchAttendees = async (roomId: string) => {

@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"log"
-
 	"github.com/RowenTey/JustJio/database"
 	"github.com/RowenTey/JustJio/services"
 	"github.com/RowenTey/JustJio/util"
@@ -17,15 +15,15 @@ func IsUserInRoom(c *fiber.Ctx) error {
 	userId := util.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	log.Println("[ROOM Middleware] roomId: ", roomId)
+	// log.Println("[ROOM Middleware] roomId: ", roomId)
 
 	userIds, err := (&services.RoomService{DB: database.DB}).GetRoomAttendeesIds(roomId)
 	if err != nil {
 		return util.HandleInternalServerError(c, err)
 	}
 
-	log.Println("[ROOM Middleware] userId: ", userId)
-	log.Println("[ROOM Middleware] userIds: ", userIds)
+	// log.Println("[ROOM Middleware] userId: ", userId)
+	// log.Println("[ROOM Middleware] userIds: ", userIds)
 
 	// Check if user is in room
 	for _, id := range *userIds {
