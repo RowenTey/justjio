@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -37,17 +38,23 @@ func main() {
 
 	connMap := utils.NewConnMap()
 
+	consumerName := "chat-service"
+	if env == "dev" || env == "staging" {
+		consumerName = fmt.Sprintf("chat-service-%s", env)
+	}
+	consumerName = fmt.Sprintf("%s-%s", utils.Config("KAFKA_TOPIC_PREFIX"), consumerName)
+
+	log.Println("Kafka client created")
+	kafkaClient, err := services.NewKafkaService(utils.Config("KAFKA_URL"), consumerName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer kafkaClient.Close()
+
 	// handle websocket upgrade
 	app.Use(webSocketUpgrade)
 
 	app.Get("/", websocket.New(func(c *websocket.Conn) {
-		kafkaClient, err := services.NewKafkaService(utils.Config("KAFKA_URL"), "chat-service")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer kafkaClient.Close()
-		log.Println("Kafka client created")
-
 		user, err := services.GetCurrentUser(c)
 		if err != nil {
 			log.Println(err)
@@ -57,7 +64,7 @@ func main() {
 			c.Close()
 			return
 		}
-		channel := services.GetChannel(user.ID)
+		channel := services.GetUserChannel(user.ID, env)
 
 		log.Println("Channel: ", channel)
 		forAllConns, remove, isInit := connMap.Add(user.ID, c)
@@ -98,6 +105,7 @@ func main() {
 				log.Println("WebSocket Error:", wsErr)
 				break
 			}
+
 			log.Printf("[WebSocket] Received (%d): %s\n", mt, msg)
 			onMessage(kafka.Message{
 				Value: msg,

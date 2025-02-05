@@ -64,7 +64,7 @@ func SignUp(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "User signed up successfully", response)
 }
 
-func Login(c *fiber.Ctx) error {
+func Login(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	var input request.LoginRequest
 	if err := c.BodyParser(&input); err != nil {
 		return util.HandleInvalidInputError(c, err)
@@ -89,13 +89,7 @@ func Login(c *fiber.Ctx) error {
 	// create user channel when login
 	go func() {
 		channel := fmt.Sprintf("user-%d", user.ID)
-		kafkaService, err := services.NewKafkaService(config.Config("KAFKA_URL"))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		defer kafkaService.Close()
-		if err := kafkaService.CreateTopic(channel); err != nil {
+		if err := kafkaSvc.CreateTopic(channel); err != nil {
 			log.Println("Error creating topic", err)
 		}
 	}()
