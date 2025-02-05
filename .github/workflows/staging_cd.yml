@@ -48,6 +48,10 @@ jobs:
             export JWT_SECRET=${{ secrets.JWT_SECRET }}
             export OUTLOOK_EMAIL=${{ secrets.OUTLOOK_EMAIL }}
             export OUTLOOK_PASSWORD=${{ secrets.OUTLOOK_PASSWORD }}
+            export KAFKA_HOST=${{ vars.KAFKA_HOST }}
+            export KAFKA_PORT=${{ vars.KAFKA_PORT }}
+            export POSTGRES_HOST=${{ vars.POSTGRES_HOST }}
+            export POSTGRES_DB=${{ vars.POSTGRES_DB }}
             cd ~/Documents/Codebase/justjio
             docker compose pull
             docker image prune -f
