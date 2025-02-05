@@ -35,7 +35,13 @@ func main() {
 		services.SeedDB(database.DB)
 	}
 
+	kafkaService, err := services.NewKafkaService(config.Config("KAFKA_URL"), env)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer kafkaService.Close()
+
 	middleware.Fiber(app)
-	router.Initalize(app)
+	router.Initalize(app, kafkaService)
 	log.Fatal(app.Listen(":" + config.Config("PORT")))
 }

@@ -4,7 +4,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/RowenTey/JustJio/config"
 	"github.com/RowenTey/JustJio/database"
 	model_kafka "github.com/RowenTey/JustJio/model/kafka"
 	"github.com/RowenTey/JustJio/model/request"
@@ -57,7 +56,7 @@ func GetMessages(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Retrieved messages successfully", response)
 }
 
-func CreateMessage(c *fiber.Ctx) error {
+func CreateMessage(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	roomId := c.Params("roomId")
 
 	var request request.CreateMessageRequest
@@ -103,12 +102,7 @@ func CreateMessage(c *fiber.Ctx) error {
 	}
 
 	roomUserIds := c.Locals("roomUserIds").(*[]string)
-	kafkaService, err := services.NewKafkaService(config.Config("KAFKA_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer kafkaService.Close()
-	if err := kafkaService.BroadcastMessage(roomUserIds, broadcastPayload); err != nil {
+	if err := kafkaSvc.BroadcastMessage(roomUserIds, broadcastPayload); err != nil {
 		log.Println("[MESSAGE] Failed to broadcast message:", err)
 	}
 	log.Println("[MESSAGE] Broadcasted message to Kafka")

@@ -7,6 +7,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/RowenTey/JustJio/config"
 	model_kafka "github.com/RowenTey/JustJio/model/kafka"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -15,9 +16,10 @@ import (
 type KafkaService struct {
 	Producer *kafka.Producer
 	Admin    *kafka.AdminClient
+	Env      string
 }
 
-func NewKafkaService(bootstrapServers string) (*KafkaService, error) {
+func NewKafkaService(bootstrapServers, env string) (*KafkaService, error) {
 	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": bootstrapServers})
 	if err != nil {
 		return nil, err
@@ -31,10 +33,16 @@ func NewKafkaService(bootstrapServers string) (*KafkaService, error) {
 	return &KafkaService{
 		Producer: p,
 		Admin:    a,
+		Env:      env,
 	}, nil
 }
 
 func (ks *KafkaService) CreateTopic(topic string) error {
+	if ks.Env == "dev" || ks.Env == "staging" {
+		topic = fmt.Sprintf("%s-%s", ks.Env, topic)
+	}
+	topic = fmt.Sprintf("%s-%s", config.Config("KAFKA_TOPIC_PREFIX"), topic)
+
 	topicSpec := kafka.TopicSpecification{
 		Topic:             topic,
 		NumPartitions:     1,
@@ -63,6 +71,10 @@ func (ks *KafkaService) BroadcastMessage(userIds *[]string, message model_kafka.
 		go func(userId string) {
 			defer wg.Done()
 			channel := fmt.Sprintf("user-%s", userId)
+			if ks.Env == "dev" || ks.Env == "staging" {
+				channel = fmt.Sprintf("%s-%s", ks.Env, channel)
+			}
+			channel = fmt.Sprintf("%s-%s", config.Config("KAFKA_TOPIC_PREFIX"), channel)
 
 			if err := ks.PublishMessage(channel, string(messageJSON)); err != nil {
 				errors <- err
@@ -113,7 +125,7 @@ func (ks *KafkaService) PublishMessage(topic string, message string) error {
 func (ks *KafkaService) Close() {
 	// Flush and close the producer and the events channel
 	for ks.Producer.Flush(10000) > 0 {
-		fmt.Print("Still waiting to flush outstanding messages\n")
+		log.Println("Still waiting to flush outstanding messages")
 	}
 	ks.Producer.Close()
 }

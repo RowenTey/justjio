@@ -3,12 +3,13 @@ package router
 import (
 	"github.com/RowenTey/JustJio/handlers"
 	"github.com/RowenTey/JustJio/middleware"
+	"github.com/RowenTey/JustJio/services"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
 )
 
-func Initalize(router *fiber.App) {
+func Initalize(router *fiber.App, kafkaSvc *services.KafkaService) {
 	router.Get("/", func(c *fiber.Ctx) error {
 		return c.Status(200).SendString("Hello world from JustJio :)")
 	})
@@ -20,7 +21,9 @@ func Initalize(router *fiber.App) {
 	v1.Get("/swagger/*", swagger.HandlerDefault)
 
 	auth := v1.Group("/auth")
-	auth.Post("/", handlers.Login)
+	auth.Post("/", func(c *fiber.Ctx) error {
+		return handlers.Login(c, kafkaSvc)
+	})
 	auth.Post("/signup", handlers.SignUp)
 	auth.Post("/verify", handlers.VerifyOTP)
 
@@ -30,12 +33,18 @@ func Initalize(router *fiber.App) {
 	users.Get("/:userId", handlers.GetUser)
 	users.Patch("/:userId", handlers.UpdateUser)
 	users.Delete("/:userId", handlers.DeleteUser)
-	users.Get("/:userId/friends", handlers.GetFriends)
-	users.Post("/:userId/friends", handlers.AddFriend)
-	users.Post("/:userId/friends/check", handlers.IsFriend)
-	users.Get("/:userId/friends/count", handlers.GetNumFriends)
-	users.Get("/:userId/friends/search", handlers.SearchFriends)
-	users.Delete("/:userId/friends", handlers.RemoveFriend)
+
+	friends := users.Group("/:userId/friends")
+	friends.Get("/", handlers.GetFriends)
+	friends.Post("/check", handlers.IsFriend)
+	friends.Get("/count", handlers.GetNumFriends)
+	friends.Get("/search", handlers.SearchFriends)
+	friends.Delete("/", handlers.RemoveFriend)
+
+	friendRequests := users.Group("/:userId/friend-requests")
+	friendRequests.Get("/", handlers.GetFriendRequestsByStatus)
+	friendRequests.Post("/", handlers.SendFriendRequest)
+	friendRequests.Patch("/", handlers.RespondToFriendRequest)
 
 	rooms := v1.Group("/rooms")
 	rooms.Get("/", handlers.GetRooms)
@@ -54,7 +63,9 @@ func Initalize(router *fiber.App) {
 	messages.Use(middleware.IsUserInRoom)
 	messages.Get("/", handlers.GetMessages)
 	messages.Get("/:msgId", handlers.GetMessage)
-	messages.Post("/", handlers.CreateMessage)
+	messages.Post("/", func(c *fiber.Ctx) error {
+		return handlers.CreateMessage(c, kafkaSvc)
+	})
 
 	bills := v1.Group("/bills")
 	bills.Get("/", handlers.GetBillsByRoom)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/RowenTey/JustJio/server-ws/utils"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
@@ -12,12 +13,17 @@ type KafkaService struct {
 	Config   *kafka.ConfigMap
 }
 
-func GetChannel(userId string) string {
-	return fmt.Sprintf("user-%s", userId)
+func GetUserChannel(userId, env string) string {
+	channel := fmt.Sprintf("user-%s", userId)
+	if env == "dev" || env == "staging" {
+		channel = fmt.Sprintf("%s-%s", env, channel)
+	}
+	channel = fmt.Sprintf("%s-%s", utils.Config("KAFKA_TOPIC_PREFIX"), channel)
+	return channel
 }
 
 // Creates a new KafkaService instance
-func NewKafkaService(brokers string, groupId string) (*KafkaService, error) {
+func NewKafkaService(brokers, groupId string) (*KafkaService, error) {
 	config := &kafka.ConfigMap{
 		"bootstrap.servers":       brokers,
 		"group.id":                groupId,
