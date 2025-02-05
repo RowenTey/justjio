@@ -50,5 +50,6 @@ jobs:
             export OUTLOOK_PASSWORD=${{ secrets.OUTLOOK_PASSWORD }}
             cd ~/Documents/Codebase/justjio
             docker compose pull
+            docker image prune -f
             docker compose down -v
             docker compose up -d
