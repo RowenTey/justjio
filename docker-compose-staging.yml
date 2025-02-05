@@ -25,6 +25,7 @@ services:
       DSN: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}/${POSTGRES_DB}?sslmode=disable
       PORT: 8080
       JWT_SECRET: ${JWT_SECRET}
+      KAFKA_TOPIC_PREFIX: justjio
       KAFKA_URL: ${KAFKA_HOST}:${KAFKA_PORT}
       OUTLOOK_EMAIL: ${OUTLOOK_EMAIL}
       OUTLOOK_PASSWORD: ${OUTLOOK_PASSWORD}
@@ -40,6 +41,7 @@ services:
     environment:
       PORT: 8081
       JWT_SECRET: ${JWT_SECRET}
+      KAFKA_TOPIC_PREFIX: justjio
       KAFKA_URL: ${KAFKA_HOST}:${KAFKA_PORT}
     entrypoint: ["/ws-server", "staging"]
 
