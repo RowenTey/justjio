@@ -31,7 +31,7 @@ jobs:
           version: v1.60
 
       - name: Run golangci-lint
-        run: golangci-lint run ./server-api/... ./server-ws/...
+        run: golangci-lint run ./...
 
       - name: Format Go code
         run: |
