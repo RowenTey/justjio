@@ -23,14 +23,14 @@ const HomeTopBar: React.FC<HomeTopBarProps> = ({
 					className="w-8 h-8 rounded-full"
 				/>
 
-				<h1 className="text-lg font-bold text-justjio-secondary">
+				<h1 className="text-lg font-bold text-secondary">
 					Welcome, {username}!
 				</h1>
 			</div>
 
 			<button
 				onClick={onLogout}
-				className="flex items-center justify-center w-9 h-9 p-1 bg-justjio-secondary rounded-full hover:shadow-lg hover:border-2 hover:border-white"
+				className="flex items-center justify-center w-9 h-9 p-1 bg-secondary rounded-full hover:shadow-lg hover:border-[1px] hover:border-white"
 			>
 				{isLoading ? (
 					<Spinner

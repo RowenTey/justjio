@@ -20,7 +20,7 @@ const ButtonCard: React.FC<ButtonCardProps> = ({
 			className="relative flex flex-col items-center justify-center w-12"
 			onClick={onClick}
 		>
-			<div className="flex items-center justify-center w-12 h-12 p-1 cursor-pointer bg-justjio-secondary rounded-lg hover:shadow-lg hover:border-[1.5px] hover:border-white">
+			<div className="flex items-center justify-center w-12 h-12 p-1 cursor-pointer bg-secondary rounded-lg hover:shadow-lg hover:border-[1.5px] hover:border-white">
 				<Icon className="w-8 h-8 text-white font-bold" />
 			</div>
 

@@ -85,14 +85,14 @@ const SplitBillPage: React.FC = () => {
 			<RoomTopBar title="Split Bill" shouldCenterTitle={true} />
 
 			<div className="h-full w-4/5 flex flex-col items-center gap-2">
-				<h2 className="text-lg font-bold text-justjio-secondary mb-1">
+				<h2 className="text-lg font-bold text-secondary mb-1">
 					Bill(s) for:{" "}
-					<span className="text-white bg-justjio-secondary rounded-full px-3 py-1">
+					<span className="text-white bg-secondary rounded-full px-3 py-1">
 						{roomName}
 					</span>
 				</h2>
 
-				<div className="h-[80%] w-full p-3 flex flex-col items-center justify-between bg-justjio-primary rounded-xl">
+				<div className="h-[80%] w-full p-3 flex flex-col items-center justify-between bg-primary rounded-xl">
 					<div className="h-[90%] pr-1 w-full flex flex-col items-center gap-2 overflow-y-auto">
 						{Array.from(groupedBills.entries()).map(([ownerId, bills]) => {
 							const owner = bills[0].owner;
@@ -105,7 +105,7 @@ const SplitBillPage: React.FC = () => {
 							return (
 								<div
 									key={ownerId}
-									className="w-full rounded-xl bg-white border-2 border-justjio-secondary text-justjio-secondary"
+									className="w-full rounded-xl bg-white border-2 border-secondary text-secondary"
 								>
 									<div className="flex gap-1 px-4 py-2 justify-between">
 										<p className="text-sm">
@@ -123,7 +123,7 @@ const SplitBillPage: React.FC = () => {
 									</div>
 
 									{isExpanded && (
-										<div className="px-4 py-2 border-t border-justjio-secondary">
+										<div className="px-4 py-2 border-t border-secondary">
 											{bills.map((bill) => (
 												<div
 													key={bill.id}
@@ -142,13 +142,13 @@ const SplitBillPage: React.FC = () => {
 						})}
 					</div>
 
-					<p className="text-lg text-justjio-secondary">
+					<p className="text-lg text-secondary">
 						Total: <span className="font-bold">{total.toFixed(2)}</span>
 					</p>
 				</div>
 
 				<button
-					className="bg-justjio-secondary hover:bg-purple-900 text-white font-bold py-2 px-4 rounded-full mt-2 w-2/5"
+					className="bg-secondary hover:bg-purple-900 text-white font-bold py-2 px-4 rounded-full mt-2 w-2/5"
 					onClick={onSubmit}
 				>
 					Submit

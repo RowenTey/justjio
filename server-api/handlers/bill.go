@@ -61,7 +61,7 @@ func CreateBill(c *fiber.Ctx) error {
 		payers,
 	)
 	if err != nil {
-		if err.Error() == "Payers of a bill can't be empty" {
+		if err.Error() == "payers of a bill can't be empty" {
 			return util.HandleInvalidInputError(c, err)
 		}
 		return util.HandleInternalServerError(c, err)

@@ -16,9 +16,7 @@ const InviteAttendeesModalContent: React.FC = () => {
 
 	return (
 		<>
-			<h2 className="text-3xl font-bold text-justjio-secondary">
-				Invite People
-			</h2>
+			<h2 className="text-3xl font-bold text-secondary">Invite People</h2>
 			<form
 				onSubmit={handleSubmit((data: InviteAttendeesFormData) => {
 					console.log(data);
@@ -46,7 +44,7 @@ const InviteAttendeesModalContent: React.FC = () => {
 				/>
 
 				<button
-					className="w-32 py-2 mt-2 rounded-full text-black font-semibold bg-justjio-primary"
+					className="w-32 py-2 mt-2 rounded-full text-black font-semibold bg-primary"
 					form="invite-people-form"
 				>
 					Submit

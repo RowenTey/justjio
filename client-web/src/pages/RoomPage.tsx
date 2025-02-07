@@ -79,7 +79,7 @@ const RoomPage = () => {
 	}, [roomId, subscribe, unsubscribe]);
 
 	if (loading || room === undefined) {
-		return <Spinner bgClass="bg-justjio-primary" />;
+		return <Spinner bgClass="bg-primary" />;
 	}
 
 	return (
@@ -118,7 +118,7 @@ const RoomPage = () => {
 const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
 	return (
 		<div className="h-[25%] w-full px-5 flex flex-col gap-2">
-			<h3 className="text-justjio-secondary font-bold">
+			<h3 className="text-secondary font-bold">
 				{new Date(room.date) > new Date() ? "Upcoming" : "Passed"} Event
 			</h3>
 
@@ -132,10 +132,10 @@ const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
 				</div>
 
 				<div className="w-3/5 flex flex-col gap-2 font-bold justify-center">
-					<div className="w-full py-2 px-3 bg-justjio-secondary rounded-xl text-white">
+					<div className="w-full py-2 px-3 bg-secondary rounded-xl text-white">
 						<p>Venue: {room.venue}</p>
 					</div>
-					<div className="w-full py-2 px-3 bg-justjio-secondary rounded-xl text-white">
+					<div className="w-full py-2 px-3 bg-secondary rounded-xl text-white">
 						<p>Attendees: {room.attendeesCount}</p>
 					</div>
 				</div>
@@ -161,12 +161,12 @@ const RoomAttendees: React.FC<RoomAttendeesProps> = ({
 		<>
 			<div className="h-[40%] w-full px-5 flex flex-col gap-2 mt-1">
 				<div className="w-full flex justify-between items-center">
-					<h3 className="text-justjio-secondary font-bold">Attendees</h3>
+					<h3 className="text-secondary font-bold">Attendees</h3>
 
 					{isHost && (
 						<div
 							className="flex items-center justify-center 
-								rounded-full bg-justjio-secondary p-1 w-8 h-8 
+								rounded-full bg-secondary p-1 w-8 h-8 
 								cursor-pointer hover:border-2 hover:border-white hover:shadow-lg"
 							onClick={() => setIsModalVisible(true)}
 						>
@@ -176,7 +176,7 @@ const RoomAttendees: React.FC<RoomAttendeesProps> = ({
 				</div>
 				<div
 					className="h-[90%] flex flex-col gap-2 p-2 
-						rounded-xl bg-justjio-primary overflow-y-auto"
+						rounded-xl bg-primary overflow-y-auto"
 				>
 					{attendees.map((attendee) => (
 						<PeopleBox

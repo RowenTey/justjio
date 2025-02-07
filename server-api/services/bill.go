@@ -25,7 +25,7 @@ func (bs *BillService) CreateBill(
 	db := bs.DB.Table("bills")
 
 	if len(*payers) == 0 {
-		return nil, errors.New("Payers of a bill can't be empty")
+		return nil, errors.New("payers of a bill can't be empty")
 	}
 
 	bill := model.Bill{

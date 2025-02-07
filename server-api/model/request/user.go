@@ -6,5 +6,10 @@ type UpdateUserRequest struct {
 }
 
 type ModifyFriendRequest struct {
-	FriendID string `json:"friendId"`
+	FriendID uint `json:"friendId"`
+}
+
+type RespondToFriendRequestRequest struct {
+	Action    string `json:"action"`
+	RequestID uint   `json:"requestId"`
 }

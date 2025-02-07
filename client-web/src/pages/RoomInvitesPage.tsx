@@ -10,26 +10,40 @@ import { useRoomCtx } from "../context/room";
 import { formatDate } from "../utils/date";
 import { CalendarIcon, MapPinIcon } from "@heroicons/react/24/solid";
 import { ClockIcon } from "@heroicons/react/24/outline";
+import { useToast } from "../context/toast";
 
 const RoomInvitesPage: React.FC = () => {
 	const { loading, startLoading, stopLoading } = useLoadingAndError();
 	// TODO: refactor to context
 	const [invites, setInvites] = useState<IRoomInvite[]>([]);
+	const { showToast } = useToast();
 
 	const { respondToInvite } = useRoomCtx();
 
 	const onRespondToInvite = async (roomId: string, accept: boolean) => {
 		const res = await respondToInvite(roomId, accept);
 
-		// TODO: implement error handling
 		if (!res.isSuccessResponse) {
 			console.error(res.error);
+			switch (res.error?.response?.status) {
+				case 400:
+					showToast("Bad request, please check request body.", true);
+					break;
+				case 404:
+					showToast("Room not found, please try again later.", true);
+					break;
+				case 500:
+				default:
+					showToast("An error occurred, please try again later.", true);
+					break;
+			}
 			return;
 		}
 
 		setInvites((prevInvites) =>
 			prevInvites.filter((invite) => invite.roomId !== roomId)
 		);
+		showToast("Invite responded successfully!", false);
 	};
 
 	useEffect(() => {
@@ -90,7 +104,7 @@ const RoomInviteCard: React.FC<{
 	};
 
 	return (
-		<div className="flex flex-col gap-2 w-[75%] bg-white rounded-md shadow-md px-4 py-3 text-black border-2 border-justjio-secondary">
+		<div className="flex flex-col gap-2 w-[75%] bg-white rounded-md shadow-md px-4 py-3 text-black border-2 border-secondary">
 			<h3 className="text-lg font-bold">{invite.room.name}</h3>
 
 			<div className="flex justify-between items-center">
@@ -105,15 +119,15 @@ const RoomInviteCard: React.FC<{
 							<p>{invite.room.host.username}</p>
 						</div>
 						<div className="flex items-center gap-2">
-							<CalendarIcon className="w-6 h-6 text-justjio-secondary" />
+							<CalendarIcon className="w-6 h-6 text-secondary" />
 							<p>{formatDate(invite.room.date)}</p>
 						</div>
 						<div className="flex items-center gap-2">
-							<ClockIcon className="w-6 h-6 text-justjio-secondary" />
+							<ClockIcon className="w-6 h-6 text-secondary" />
 							<p>{invite.room.time}</p>
 						</div>
 						<div className="flex items-center gap-2">
-							<MapPinIcon className="w-6 h-6 text-justjio-secondary" />
+							<MapPinIcon className="w-6 h-6 text-secondary" />
 							<p>{invite.room.venue}</p>
 						</div>
 						{invite.message && <p className="mt-2">{invite.message}</p>}

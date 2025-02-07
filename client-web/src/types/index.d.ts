@@ -1,3 +1,5 @@
+import { AxiosError } from "axios";
+
 declare module "*.jpg";
 declare module "*.png";
 
@@ -5,7 +7,7 @@ declare module "*.png";
 export interface BaseContextResponse {
 	isSuccessResponse: boolean;
 	data?: unknown;
-	error: unknown;
+	error: AxiosError | null;
 }
 
 // auth

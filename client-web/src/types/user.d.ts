@@ -20,6 +20,17 @@ export interface IUser {
 	updatedAt: string;
 }
 
+export interface IFriendRequests {
+	id: number;
+	senderId: number;
+	receiverId: number;
+	status: string;
+	sentAt: string;
+	respondedAt: string | null;
+	sender: IUser;
+	receiver: IUser;
+}
+
 export type UserContextType = {
 	user: BaseUserInfo;
 	setUser: React.Dispatch<React.SetStateAction<BaseUserInfo>>;

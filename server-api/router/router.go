@@ -39,12 +39,13 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService) {
 	friends.Post("/check", handlers.IsFriend)
 	friends.Get("/count", handlers.GetNumFriends)
 	friends.Get("/search", handlers.SearchFriends)
-	friends.Delete("/", handlers.RemoveFriend)
+	friends.Delete("/:friendId", handlers.RemoveFriend)
 
-	// friendRequests := users.Group("/:userId/friend-requests")
-	// friendRequests.Get("/", handlers.GetFriendRequestsByStatus)
-	// friendRequests.Post("/", handlers.SendFriendRequest)
-	// friendRequests.Patch("/", handlers.RespondToFriendRequest)
+	friendRequests := users.Group("/:userId/friendRequests")
+	friendRequests.Get("/", handlers.GetFriendRequestsByStatus)
+	friendRequests.Get("/count", handlers.CountPendingFriendRequests)
+	friendRequests.Post("/", handlers.SendFriendRequest)
+	friendRequests.Patch("/", handlers.RespondToFriendRequest)
 
 	rooms := v1.Group("/rooms")
 	rooms.Get("/", handlers.GetRooms)

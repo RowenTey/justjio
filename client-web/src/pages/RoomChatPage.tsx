@@ -148,7 +148,7 @@ const ChatMessages: React.FC<{
 			{messages.map((message, index) => (
 				<div
 					key={index}
-					className={`max-w-[85%] w-fit mb-4 px-3 py-2 rounded-xl text-black bg-white border-[1.5px] border-justjio-secondary ${
+					className={`max-w-[85%] w-fit mb-4 px-3 py-2 rounded-xl text-black bg-white border-[1.5px] border-secondary ${
 						message.user_id === currentUserId
 							? "ml-auto rounded-br-none"
 							: "rounded-bl-none"
@@ -220,7 +220,7 @@ const ChatInput: React.FC<{ onSend: (message: string) => void }> = ({
 		<div className="w-full px-4 pt-3 pb-4 flex">
 			<input
 				type="text"
-				className="flex-1 p-2 border border-gray-900 rounded-lg rounded-tr-none rounded-br-none text-black placeholder-black border-r-0 bg-justjio-primary focus:outline-none"
+				className="flex-1 p-2 border border-gray-900 rounded-lg rounded-tr-none rounded-br-none text-black placeholder-black border-r-0 bg-primary focus:outline-none"
 				value={input}
 				onKeyDown={handleKeyDown}
 				onChange={(e) => setInput(e.target.value)}
@@ -228,7 +228,7 @@ const ChatInput: React.FC<{ onSend: (message: string) => void }> = ({
 			/>
 			<button
 				onClick={handleSend}
-				className="bg-justjio-secondary hover:bg-purple-800 text-white rounded-tl-none rounded-bl-none border-l-0 font-bold py-2 px-4 rounded"
+				className="bg-secondary hover:bg-purple-800 text-white rounded-tl-none rounded-bl-none border-l-0 font-bold py-2 px-4 rounded"
 			>
 				Send
 			</button>

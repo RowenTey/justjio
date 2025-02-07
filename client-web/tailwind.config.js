@@ -4,8 +4,13 @@ export default {
 	theme: {
 		extend: {
 			colors: {
-				"justjio-primary": "#E9D7FD",
-				"justjio-secondary": "#4E1164",
+				"primary": "#E9D7FD",
+				"secondary": "#4E1164",
+				"tertiary": "#400e52",
+				"success": "#4F8A10",
+				"success-bg": "#DFF2BF",
+				"error": "#D8000C",
+				"error-bg": "#FFBABA",
 			},
 		},
 		screens: {
