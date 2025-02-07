@@ -70,17 +70,6 @@
 	.break-word {
 		word-break: break-word;
 	}
-
-	/* Toast */
-	.toast-show {
-		transform: translateY(0);
-		opacity: 1;
-	}
-
-	.toast-hide {
-		transform: translateY(-100%);
-		opacity: 0;
-	}
 }
 
 @media (prefers-color-scheme: light) {

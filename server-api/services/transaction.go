@@ -112,11 +112,11 @@ func (ts *TransactionService) SettleTransaction(transactionId string, userId str
 	}
 
 	if transaction.IsPaid {
-		return errors.New("Transaction already settled")
+		return errors.New("transaction already settled")
 	}
 
 	if fmt.Sprint(transaction.PayerID) != userId {
-		return errors.New("Invalid payer")
+		return errors.New("invalid payer")
 	}
 
 	transaction.IsPaid = true
@@ -226,6 +226,7 @@ func removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) (
 		}
 
 		// cycle is resolved
+		// still return amount to deduct for retry in parent call
 		if stopAt == startNode {
 			return amtToDeduct, 0
 		} else {

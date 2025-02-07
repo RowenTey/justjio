@@ -21,7 +21,7 @@ const RoomCard: React.FC<RoomCardProps> = ({
 			onClick={() => navigate(`/room/${id}`)}
 		>
 			<img src={img} alt="Group" className="w-16 h-16" />
-			<p className="mt-3 text-lg font-bold text-center leading-[1.1] text-justjio-secondary">
+			<p className="mt-3 text-lg font-bold text-center leading-[1.1] text-secondary">
 				{name}
 			</p>
 		</div>

@@ -3,20 +3,20 @@ import React, { useEffect } from "react";
 type ToastProps = {
 	message: string;
 	visible: boolean;
-	bgColor?: string;
-	onClose: () => void;
+	className: string;
+	onClose?: () => void;
 };
 
 const Toast: React.FC<ToastProps> = ({
 	message,
-	bgColor = "bg-justjio-secondary",
+	className,
 	visible,
 	onClose,
 }) => {
 	useEffect(() => {
 		if (visible) {
 			const timer = setTimeout(() => {
-				onClose();
+				onClose && onClose();
 			}, 3000);
 			return () => clearTimeout(timer);
 		}
@@ -24,11 +24,15 @@ const Toast: React.FC<ToastProps> = ({
 
 	return (
 		<div
-			className={`fixed top-4 left-[31.5%] transform -translate-x-1/2 px-4 py-2 ${bgColor} text-white rounded shadow-lg transition-transform duration-300 ${
-				visible ? "toast-show" : "toast-hide"
+			className={`fixed top-4 left-0 right-0 flex justify-center transition-opacity duration-300 ease-in-out ${
+				visible ? "opacity-100" : "opacity-0 pointer-events-none"
 			}`}
 		>
-			{message}
+			<div
+				className={`px-4 py-2 text-sm font-semibold rounded-2xl shadow-lg ${className}`}
+			>
+				{message}
+			</div>
 		</div>
 	);
 };

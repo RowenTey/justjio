@@ -1,9 +1,10 @@
 import React, { createContext, useState } from "react";
-import { AuthContextType, AuthState } from "../types";
+import { AuthContextType, AuthState, BaseContextResponse } from "../types";
 import { loginApi } from "../api/auth";
 import { api } from "../api";
 import { initialUserState, useUserCtx } from "./user";
 import useContextWrapper from "../hooks/useContextWrapper";
+import { AxiosError } from "axios";
 
 export const LOGOUT = "LOGOUT";
 
@@ -18,7 +19,10 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	});
 	const { setUser } = useUserCtx();
 
-	const login = async (username: string, password: string) => {
+	const login = async (
+		username: string,
+		password: string
+	): Promise<BaseContextResponse> => {
 		let res = null;
 		try {
 			res = await loginApi(api, username, password, false);
@@ -35,8 +39,9 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 				username: data.username,
 			});
 		} catch (error) {
-			console.error(error);
-			return { isSuccessResponse: false, data: null, error: error };
+			const err = error as AxiosError;
+			console.error(err);
+			return { isSuccessResponse: false, data: null, error: err };
 		}
 
 		return { isSuccessResponse: true, data: res.data, error: null };

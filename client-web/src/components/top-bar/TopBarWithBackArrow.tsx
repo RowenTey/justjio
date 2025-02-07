@@ -29,7 +29,7 @@ const TopBarWithBackArrow: React.FC<TopBarWithBackArrowProps> = ({
 			</button>
 
 			<h1
-				className={`text-xl font-bold text-justjio-secondary ${
+				className={`text-xl font-bold text-secondary ${
 					shouldCenterTitle ? "ml-4" : ""
 				}`}
 			>

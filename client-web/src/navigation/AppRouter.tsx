@@ -11,7 +11,8 @@ import ProfilePage from "../pages/ProfilePage";
 import RoomChatPage from "../pages/RoomChatPage";
 import CreateBillPage from "../pages/CreateBillPage";
 import SplitBillPage from "../pages/SplitBillPage";
-import FriendListPage from "../pages/FriendListPage";
+import FriendsPage from "../pages/FriendsPage";
+import FriendRequestsPage from "../pages/FriendRequestPage";
 
 const AppRouter = () => {
 	return (
@@ -21,7 +22,8 @@ const AppRouter = () => {
 					<Route path="/" element={<HomePage />} />
 					<Route path="/profile" element={<ProfilePage />} />
 				</Route>
-				<Route path="/friends" element={<FriendListPage />} />
+				<Route path="/friends" element={<FriendsPage />} />
+				<Route path="/friendRequests" element={<FriendRequestsPage />} />
 				<Route path="/rooms/create" element={<CreateRoomPage />} />
 				<Route path="/rooms/invites" element={<RoomInvitesPage />} />
 				<Route path="/room/:roomId" element={<RoomPage />} />

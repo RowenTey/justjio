@@ -167,26 +167,94 @@ func (s *UserService) SearchUsers(currentUserID, query string) (*[]model.User, e
 	return &users, nil
 }
 
-func (s *UserService) AddFriend(userID string, friendID string) error {
+func (s *UserService) SendFriendRequest(senderID, receiverID uint) error {
 	db := s.DB
-	var user, friend model.User
 
-	if err := db.First(&user, userID).Error; err != nil {
-		return err
+	if senderID == receiverID {
+		return errors.New("cannot send friend request to yourself")
 	}
 
-	if err := db.First(&friend, friendID).Error; err != nil {
-		return err
+	// Check if they are already friends
+	var sender model.User
+	if err := db.Preload("Friends").First(&sender, senderID).Error; err != nil {
+		return errors.New("sender not found")
+	}
+	for _, friend := range sender.Friends {
+		if friend.ID == receiverID {
+			return errors.New("already friends")
+		}
 	}
 
-	if userID == friendID {
-		return errors.New("Cannot add self as friend")
+	// Check if a friend request already exists
+	var existing model.FriendRequest
+	if err := db.Where("sender_id = ? AND receiver_id = ? AND status = ?", senderID, receiverID, "pending").First(&existing).Error; err == nil {
+		return errors.New("friend request already sent")
 	}
 
-	return db.Model(&user).Association("Friends").Append(&friend)
+	// Create new friend request
+	request := model.FriendRequest{
+		SenderID:   senderID,
+		ReceiverID: receiverID,
+		Status:     "pending",
+	}
+	return db.Create(&request).Error
 }
 
-func (s *UserService) RemoveFriend(userID string, friendID string) error {
+func (s *UserService) AcceptFriendRequest(requestID uint) error {
+	db := s.DB
+	var request model.FriendRequest
+
+	if err := db.First(&request, requestID).Error; err != nil {
+		return err
+	}
+
+	if request.Status != "pending" {
+		return errors.New("friend request already processed")
+	}
+
+	request.Status = "accepted"
+	request.RespondedAt = time.Now()
+	if err := db.Save(&request).Error; err != nil {
+		return err
+	}
+
+	// Add each user to the other's friend list
+	var sender, receiver model.User
+	if err := db.First(&sender, request.SenderID).Error; err != nil {
+		return err
+	}
+	if err := db.First(&receiver, request.ReceiverID).Error; err != nil {
+		return err
+	}
+
+	if err := db.Model(&sender).Association("Friends").Append(&receiver); err != nil {
+		return err
+	}
+	if err := db.Model(&receiver).Association("Friends").Append(&sender); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *UserService) RejectFriendRequest(requestID uint) error {
+	db := s.DB
+	var request model.FriendRequest
+
+	if err := db.First(&request, requestID).Error; err != nil {
+		return err
+	}
+
+	if request.Status != "pending" {
+		return errors.New("friend request already processed")
+	}
+
+	request.Status = "rejected"
+	request.RespondedAt = time.Now()
+	return db.Save(&request).Error
+}
+
+func (s *UserService) RemoveFriend(userID, friendID uint) error {
 	db := s.DB
 	var user, friend model.User
 
@@ -198,7 +266,15 @@ func (s *UserService) RemoveFriend(userID string, friendID string) error {
 		return err
 	}
 
-	return db.Model(&user).Association("Friends").Delete(&friend)
+	if err := db.Model(&user).Association("Friends").Delete(&friend); err != nil {
+		return err
+	}
+
+	if err := db.Model(&friend).Association("Friends").Delete(&user); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *UserService) GetFriends(userID string) ([]model.User, error) {
@@ -218,6 +294,41 @@ func (s *UserService) GetFriends(userID string) ([]model.User, error) {
 	return friends, nil
 }
 
+func (s *UserService) GetFriendRequestsByStatus(userID uint, status string) ([]model.FriendRequest, error) {
+	db := s.DB
+	var requests []model.FriendRequest
+
+	// Validate status
+	validStatuses := map[string]bool{"pending": true, "accepted": true, "rejected": true}
+	if !validStatuses[status] {
+		return nil, errors.New("invalid status")
+	}
+
+	// Fetch friend requests where the user is either sender or receiver
+	if err := db.Where("receiver_id = ? AND status = ?", userID, status).
+		Preload("Sender").
+		Preload("Receiver").
+		Find(&requests).Error; err != nil {
+		return nil, err
+	}
+
+	return requests, nil
+}
+
+func (s *UserService) CountPendingFriendRequests(userID uint) (int64, error) {
+	db := s.DB
+	var count int64
+
+	// Count pending friend requests where the user is the receiver
+	if err := db.Model(&model.FriendRequest{}).
+		Where("receiver_id = ? AND status = ?", userID, "pending").
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (s *UserService) GetNumFriends(userID string) (int64, error) {
 	db := s.DB
 	var user model.User
@@ -229,17 +340,16 @@ func (s *UserService) GetNumFriends(userID string) (int64, error) {
 	return db.Model(&user).Association("Friends").Count(), nil
 }
 
-func (s *UserService) IsFriend(userID string, friendID string) (bool, error) {
+func (s *UserService) IsFriend(userID uint, friendID uint) bool {
 	db := s.DB
 
 	var user, friend model.User
-
 	if err := db.First(&user, userID).Error; err != nil {
-		return false, err
+		return false
 	}
 
 	if err := db.First(&friend, friendID).Error; err != nil {
-		return false, err
+		return false
 	}
 
 	if err := db.
@@ -247,8 +357,8 @@ func (s *UserService) IsFriend(userID string, friendID string) (bool, error) {
 		Where("id = ?", friendID).
 		Association("Friends").
 		Find(&friend); err != nil {
-		return false, err
+		return false
 	}
 
-	return true, nil
+	return true
 }

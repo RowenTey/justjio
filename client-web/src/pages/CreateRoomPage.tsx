@@ -104,7 +104,7 @@ const CreateRoomPage = () => {
 				/>
 
 				<button
-					className="bg-justjio-secondary hover:shadow-lg hover:border-2 hover:border-white text-white font-bold py-2 px-4 rounded-full mt-4 w-2/5"
+					className="bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full mt-4 w-2/5"
 					form="create-room-form"
 				>
 					{loading ? (

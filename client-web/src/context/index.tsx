@@ -4,6 +4,7 @@ import { UserProvider } from "./user";
 import { RoomProvider } from "./room";
 import { WebSocketProvider } from "./ws";
 import { TransactionProvider } from "./transaction";
+import { ToastProvider } from "./toast";
 
 type ProvidersType = [ElementType, Record<string, unknown>];
 type ChildrenType = { children: React.ReactNode };
@@ -32,6 +33,7 @@ const providers: ProvidersType[] = [
 	[UserProvider, {}],
 	[AuthProvider, {}],
 	[WebSocketProvider, {}],
+	[ToastProvider, {}],
 	[RoomProvider, {}],
 	[TransactionProvider, {}],
 ];

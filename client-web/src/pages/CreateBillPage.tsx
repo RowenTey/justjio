@@ -78,13 +78,13 @@ const CreateBillPage = () => {
 	}, [payers]);
 
 	return (
-		<div className="h-full flex flex-col items-center gap-4 bg-gray-200">
+		<div className="h-full flex flex-col items-center bg-gray-200">
 			<RoomTopBar title="Create Bill" shouldCenterTitle={true} />
 
-			<div className="flex flex-col justify-center items-center gap-4 w-4/5 h-[87.5%]">
-				<h2 className="text-lg font-bold text-justjio-secondary">
+			<div className="flex flex-col justify-center items-center gap-4 w-4/5 h-[92%]">
+				<h2 className="text-lg font-bold text-secondary">
 					Bill for:{" "}
-					<span className="text-white bg-justjio-secondary rounded-full px-3 py-1">
+					<span className="text-white font-semibold bg-secondary rounded-full px-3 py-1 ml-1">
 						{roomName}
 					</span>
 				</h2>
@@ -92,7 +92,7 @@ const CreateBillPage = () => {
 				<form
 					onSubmit={handleSubmit(onSubmit)}
 					id="create-room-form"
-					className="flex flex-col items-center gap-2 w-[85%] h-[85%]"
+					className="flex flex-col items-center gap-2 w-[85%] max-h-[85%]"
 				>
 					<InputField
 						name="name"
@@ -128,7 +128,7 @@ const CreateBillPage = () => {
 					/>
 
 					<button
-						className="bg-justjio-secondary hover:bg-purple-900 text-white 
+						className="bg-secondary hover:bg-tertiary text-white 
 							font-bold py-2 px-4 rounded-full mt-2 w-3/5"
 						form="create-room-form"
 					>
@@ -173,9 +173,9 @@ const SelectMembersInput: React.FC<{
 	};
 
 	return (
-		<div className="flex flex-col gap-2 w-full my-1 h-[45%]">
+		<div className="flex flex-col gap-2 w-full my-1 h-full">
 			<div className="flex justify-between items-center w-full">
-				<label className="font-semibold text-md text-justjio-secondary">
+				<label className="font-semibold text-md text-secondary">
 					Select payers:
 				</label>
 				<Checkbox

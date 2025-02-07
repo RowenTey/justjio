@@ -24,13 +24,24 @@ const LoginPage = () => {
 	const onSubmit: SubmitHandler<LoginFormData> = async (data) => {
 		startLoading();
 
-		console.log(data);
+		console.log("[LoginPage] Form data: ", data);
 		const res = await login(data.username, data.password);
-		console.log(res);
+		console.log("[LoginPage] Response: ", res);
 
 		if (!res.isSuccessResponse) {
-			console.error(res.error);
-			setErrorMsg("An error occurred. Please try again later.");
+			switch (res.error?.response?.status) {
+				case 400:
+					setErrorMsg("Bad request, please check request body.");
+					break;
+				case 401:
+				case 404:
+					setErrorMsg("Invalid username or password.");
+					break;
+				case 500:
+				default:
+					setErrorMsg("An error occurred, please try again later.");
+					break;
+			}
 			stopLoading();
 			return;
 		}
@@ -39,12 +50,8 @@ const LoginPage = () => {
 		navigate("/");
 	};
 
-	if (loading) {
-		return <Spinner bgClass="bg-justjio-primary" />;
-	}
-
 	return (
-		<div className="h-full flex flex-col justify-center items-center xs:border-y-1 border-black overflow-y-auto bg-justjio-primary">
+		<div className="h-full flex flex-col justify-center items-center xs:border-y-1 border-black overflow-y-auto bg-primary">
 			<img src="/favicon.svg" alt="JustJio Logo" className="w-36 h-36" />
 
 			<form
@@ -72,21 +79,34 @@ const LoginPage = () => {
 					validation={{ required: "Password is required" }}
 				/>
 
+				{error && (
+					<p className="text-error text-md font-semibold text-wrap text-center">
+						{error}
+					</p>
+				)}
+
 				<button
-					className="bg-justjio-secondary hover:bg-purple-900 text-white font-bold py-2 px-4 rounded-full mt-3 w-3/5"
+					className={`bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full w-3/5 ${
+						error ? "" : "mt-3"
+					}`}
 					form="login-form"
 				>
-					Login
+					{loading ? (
+						<Spinner
+							spinnerColor="border-white"
+							spinnerSize={{ width: "w-6", height: "h-6" }}
+						/>
+					) : (
+						"Login"
+					)}
 				</button>
 
-				<p className="text-justjio-secondary text-sm text-center">
+				<p className="text-secondary text-sm text-center">
 					Don't have an account?{" "}
 					<Link to="/signup" className="underline cursor-pointer">
 						Sign Up
 					</Link>
 				</p>
-
-				{error && <p className="text-red-500 text-wrap text-center">{error}</p>}
 			</form>
 		</div>
 	);

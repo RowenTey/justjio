@@ -146,7 +146,7 @@ func (rs *RoomService) CloseRoom(roomId string, userId string) error {
 	}
 
 	if room.HostID != uint(userIdUint) {
-		return errors.New("User is not the host of the room")
+		return errors.New("user is not the host of the room")
 	}
 
 	room.IsClosed = true
@@ -160,7 +160,7 @@ func (rs *RoomService) CloseRoom(roomId string, userId string) error {
 
 func (rs *RoomService) UpdateRoomInviteStatus(roomId string, userId string, status string) error {
 	if status != "accepted" && status != "rejected" {
-		return errors.New("Invalid status")
+		return errors.New("invalid status")
 	}
 
 	db := rs.DB
@@ -216,10 +216,9 @@ func (rs *RoomService) InviteUserToRoom(
 	if err := roomsDB.First(&room, "id = ?", roomId).Error; err != nil {
 		return nil, err
 	}
-	log.Printf("[ROOM] Room %s found", roomId)
 
 	if room.HostID != inviter.ID {
-		return nil, errors.New("User is not the host of the room")
+		return nil, errors.New("user is not the host of the room")
 	}
 
 	for _, user := range *users {
@@ -232,16 +231,12 @@ func (rs *RoomService) InviteUserToRoom(
 			CreatedAt: time.Now(),
 			Status:    "pending",
 		}
-		log.Printf("[ROOM] Room ID of invite to be created: %v", roomInvite.Room.ID)
+
 		roomInvites = append(roomInvites, roomInvite)
 	}
 
 	if err := roomInvitesDB.Omit("Room").Create(roomInvites).Error; err != nil {
 		return nil, err
-	}
-
-	for _, invite := range roomInvites {
-		log.Println("[ROOM] Invite created with room ID: ", invite.RoomID)
 	}
 
 	return &roomInvites, nil
@@ -251,7 +246,7 @@ func (rs *RoomService) RemoveUserFromRoom(roomId string, userId string) error {
 	db := rs.DB
 	if err := db.
 		Exec("DELETE FROM room_users WHERE room_id = ? AND user_id = ?", roomId, userId).Error; err != nil {
-		return errors.New("Error removing user from room: " + err.Error())
+		return err
 	}
 	return nil
 }

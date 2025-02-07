@@ -28,10 +28,10 @@ func SettleTransaction(c *fiber.Ctx) error {
 
 	err := (&services.TransactionService{DB: database.DB}).SettleTransaction(txId, userId)
 	if err != nil {
-		if err.Error() == "Invalid payer" {
+		if err.Error() == "invalid payer" {
 			return util.HandleError(c, fiber.StatusUnauthorized, err.Error(), nil)
 		}
-		if err.Error() == "Transaction already settled" {
+		if err.Error() == "transaction already settled" {
 			return util.HandleError(c, fiber.StatusBadRequest, err.Error(), nil)
 		}
 		return util.HandleNotFoundOrInternalError(c, err, "Transaction not found")

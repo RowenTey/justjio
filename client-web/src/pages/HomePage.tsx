@@ -31,16 +31,16 @@ const HomePage = () => {
 	};
 
 	useEffect(() => {
-		console.log("[HomePage] Fetching data...");
 		async function fetchData() {
 			const roomPromise = fetchRooms();
 			const transactionPromise = fetchTransactions();
 			return await Promise.all([roomPromise, transactionPromise]);
 		}
 
+		console.log("[HomePage] Fetching data...");
 		startLoading();
 		fetchData()
-			.then(() => stopLoading())
+			.then(stopLoading)
 			.then(() => console.log("[HomePage] Data fetched"));
 	}, []);
 
@@ -110,9 +110,7 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
 const RecentRoomsWidget: React.FC<{ rooms: IRoom[] }> = ({ rooms }) => {
 	return (
 		<div className="w-full h-[60%] mt-1 flex flex-col items-center">
-			<h1 className="text-justjio-secondary text-[2.5rem] font-bold">
-				Recent Rooms
-			</h1>
+			<h1 className="text-secondary text-[2.5rem] font-bold">Recent Rooms</h1>
 			<div
 				className={`relative bottom-0 h-[95%] w-full px-[1.875rem] flex items-center gap-7 overflow-x-auto ${
 					rooms.length === 1 ? "justify-center" : ""

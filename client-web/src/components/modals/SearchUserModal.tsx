@@ -7,12 +7,12 @@ import { UserPlusIcon } from "@heroicons/react/24/outline";
 
 type SearchUserModalProps = {
 	userId: number;
-	addFriend: (user: IUser) => void;
+	sendFriendRequest: (user: IUser) => void;
 };
 
 const SearchUserModalContent: React.FC<SearchUserModalProps> = ({
 	userId,
-	addFriend,
+	sendFriendRequest,
 }) => {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [searchResults, setSearchResults] = useState<IUser[]>([]);
@@ -35,7 +35,7 @@ const SearchUserModalContent: React.FC<SearchUserModalProps> = ({
 
 	return (
 		<div className="w-full flex flex-col gap-3">
-			<h3 className="text-center text-3xl font-bold text-justjio-secondary">
+			<h3 className="text-center text-3xl font-bold text-secondary">
 				Add Friends
 			</h3>
 
@@ -60,10 +60,10 @@ const SearchUserModalContent: React.FC<SearchUserModalProps> = ({
 									alt="Profile Image"
 									className="w-7 h-7 rounded-full"
 								/>
-								<p className="text-justjio-secondary">{user.username}</p>
+								<p className="text-secondary">{user.username}</p>
 							</div>
 							<UserPlusIcon
-								onClick={() => addFriend(user)}
+								onClick={() => sendFriendRequest(user)}
 								className="h-6 w-6 text-green-500 hover:text-green-600 cursor-pointer"
 							/>
 						</div>

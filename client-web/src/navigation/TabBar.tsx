@@ -11,7 +11,7 @@ import NavIcon from "../components/NavIcon";
 
 const TabBar = () => {
 	return (
-		<nav className="h-[7.5%] p-2 bg-justjio-primary flex items-center justify-evenly">
+		<nav className="h-[7.5%] p-2 bg-primary flex items-center justify-evenly">
 			<Link to="/">
 				<NavIcon to="/" SolidIcon={HomeSolid} OutlineIcon={HomeOutline} />
 			</Link>

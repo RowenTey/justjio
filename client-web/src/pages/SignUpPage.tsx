@@ -15,7 +15,7 @@ type SignUpFormData = {
 };
 
 const SignUpPage = () => {
-	const { loading, startLoading, stopLoading, setErrorMsg } =
+	const { loading, startLoading, stopLoading, error, setErrorMsg } =
 		useLoadingAndError();
 	const navigate = useNavigate();
 	const {
@@ -27,10 +27,8 @@ const SignUpPage = () => {
 
 	const onSubmit: SubmitHandler<SignUpFormData> = async (data) => {
 		startLoading();
-		console.log(data);
-
 		try {
-			console.log(data);
+			console.log("[SignUpPage] Form data: ", data);
 			const res = await signUpApi(
 				api,
 				data.username,
@@ -38,7 +36,25 @@ const SignUpPage = () => {
 				data.email,
 				data.password
 			);
-			console.log(res);
+			console.log("[SignUpPage] Response: ", res);
+
+			if (res.status !== 200) {
+				switch (res.status) {
+					case 400:
+						setErrorMsg("Bad request. Please check request body.");
+						break;
+					case 409:
+						setErrorMsg("Username or email already exists.");
+						break;
+					case 500:
+					default:
+						setErrorMsg("An error occurred. Please try again later.");
+						break;
+				}
+				stopLoading();
+				return;
+			}
+
 			stopLoading();
 			navigate("/login");
 		} catch (error) {
@@ -50,12 +66,8 @@ const SignUpPage = () => {
 
 	const password = watch("password");
 
-	if (loading) {
-		return <Spinner bgClass="bg-justjio-primary" />;
-	}
-
 	return (
-		<div className="h-full flex flex-col justify-center items-center xs:border-y-1 border-black overflow-y-auto bg-justjio-primary py-4">
+		<div className="h-full flex flex-col justify-center items-center xs:border-y-1 border-black overflow-y-auto bg-primary py-4">
 			<img src="/favicon.svg" alt="JustJio Logo" className="w-36 h-36" />
 
 			<form
@@ -141,14 +153,29 @@ const SignUpPage = () => {
 					}}
 				/>
 
+				{error && (
+					<p className="text-error text-md font-semibold text-wrap text-center">
+						{error}
+					</p>
+				)}
+
 				<button
-					className="bg-justjio-secondary hover:bg-purple-900 text-white font-bold py-2 px-4 rounded-full mt-3 w-3/5"
-					form="signup-form"
+					className={`bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full w-3/5 ${
+						error ? "" : "mt-3"
+					}`}
+					form="login-form"
 				>
-					Sign Up
+					{loading ? (
+						<Spinner
+							spinnerColor="border-white"
+							spinnerSize={{ width: "w-6", height: "h-6" }}
+						/>
+					) : (
+						"Sign Up"
+					)}
 				</button>
 
-				<p className="text-justjio-secondary text-sm text-center">
+				<p className="text-secondary text-sm text-center">
 					Already have an account?{" "}
 					<Link className="underline cursor-pointer" to="/login">
 						Login

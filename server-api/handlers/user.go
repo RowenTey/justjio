@@ -49,33 +49,45 @@ func DeleteUser(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "User successfully deleted", nil)
 }
 
-func AddFriend(c *fiber.Ctx) error {
-	userID := c.Params("userId")
-	var request request.ModifyFriendRequest
+func SendFriendRequest(c *fiber.Ctx) error {
+	userID, err := c.ParamsInt("userId")
+	if err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
 
+	var request request.ModifyFriendRequest
 	if err := c.BodyParser(&request); err != nil {
 		return util.HandleInvalidInputError(c, err)
 	}
 
 	userService := services.UserService{DB: database.DB}
-	if err := userService.AddFriend(userID, request.FriendID); err != nil {
-		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
+	if err := userService.SendFriendRequest(uint(userID), request.FriendID); err != nil {
+		if err.Error() == "cannot send friend request to yourself" ||
+			err.Error() == "already friends" ||
+			err.Error() == "friend request already sent" {
+			return util.HandleError(
+				c, fiber.StatusConflict, err.Error(), err)
+		}
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
 
-	return util.HandleSuccess(c, "Friend successfully added", nil)
+	return util.HandleSuccess(c, "Friend request sent", nil)
 }
 
 func RemoveFriend(c *fiber.Ctx) error {
-	userID := c.Params("userId")
-	var request request.ModifyFriendRequest
+	userID, err := c.ParamsInt("userId")
+	if err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
 
-	if err := c.BodyParser(&request); err != nil {
+	friendID, err := c.ParamsInt("friendId")
+	if err != nil {
 		return util.HandleInvalidInputError(c, err)
 	}
 
 	userService := services.UserService{DB: database.DB}
-	if err := userService.RemoveFriend(userID, request.FriendID); err != nil {
-		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
+	if err := userService.RemoveFriend(uint(userID), uint(friendID)); err != nil {
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
 
 	return util.HandleSuccess(c, "Friend successfully removed", nil)
@@ -95,19 +107,19 @@ func GetFriends(c *fiber.Ctx) error {
 }
 
 func IsFriend(c *fiber.Ctx) error {
-	userID := c.Params("userId")
-	var request request.ModifyFriendRequest
+	userID, err := c.ParamsInt("userId")
+	if err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
 
+	var request request.ModifyFriendRequest
 	if err := c.BodyParser(&request); err != nil {
 		return util.HandleInvalidInputError(c, err)
 	}
 
 	userService := services.UserService{DB: database.DB}
 
-	isFriend, err := userService.IsFriend(userID, request.FriendID)
-	if err != nil {
-		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
-	}
+	isFriend := userService.IsFriend(uint(userID), request.FriendID)
 
 	response := response.IsFriendResponse{
 		IsFriend: isFriend,
@@ -143,4 +155,75 @@ func SearchFriends(c *fiber.Ctx) error {
 	}
 
 	return util.HandleSuccess(c, "Friends retrieved successfully", friends)
+}
+
+func GetFriendRequestsByStatus(c *fiber.Ctx) error {
+	userID, err := c.ParamsInt("userId")
+	if err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
+
+	status := c.Query("status")
+	userService := services.UserService{DB: database.DB}
+
+	requests, err := userService.GetFriendRequestsByStatus(uint(userID), status)
+	if err != nil {
+		if err.Error() == "invalid status" {
+			return util.HandleInvalidInputError(c, err)
+		}
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
+	}
+
+	return util.HandleSuccess(c, "Friend requests retrieved successfully", requests)
+}
+
+func CountPendingFriendRequests(c *fiber.Ctx) error {
+	userID, err := c.ParamsInt("userId")
+	if err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
+
+	userService := services.UserService{DB: database.DB}
+
+	count, err := userService.CountPendingFriendRequests(uint(userID))
+	if err != nil {
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
+	}
+
+	response := response.CountPendingRequestsResponse{
+		Count: count,
+	}
+	return util.HandleSuccess(c, "Pending friend requests counted successfully", response)
+}
+
+func RespondToFriendRequest(c *fiber.Ctx) error {
+	var request request.RespondToFriendRequestRequest
+	if err := c.BodyParser(&request); err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
+
+	userService := services.UserService{DB: database.DB}
+
+	switch request.Action {
+	case "accept":
+		if err := userService.AcceptFriendRequest(uint(request.RequestID)); err != nil {
+			if err.Error() == "friend request already processed" {
+				return util.HandleError(
+					c, fiber.StatusConflict, err.Error(), err)
+			}
+			return util.HandleNotFoundOrInternalError(c, err, "Error processing friend request")
+		}
+		return util.HandleSuccess(c, "Friend request accepted successfully", nil)
+	case "reject":
+		if err := userService.RejectFriendRequest(uint(request.RequestID)); err != nil {
+			if err.Error() == "friend request already processed" {
+				return util.HandleError(
+					c, fiber.StatusConflict, err.Error(), err)
+			}
+			return util.HandleNotFoundOrInternalError(c, err, "Error processing friend request")
+		}
+		return util.HandleSuccess(c, "Friend request rejected successfully", nil)
+	default:
+		return util.HandleInvalidInputError(c, fmt.Errorf("invalid action: must be 'accept' or 'reject'"))
+	}
 }

@@ -27,9 +27,7 @@ const PeopleBox: React.FC<PeopleBoxProps> = ({
 			/>
 			<span className="text-black font-bold">{name}</span>
 			{isHost && <span className="text-black ml-auto mr-2 italic">Host</span>}
-			{isChecked && (
-				<CheckIcon className="w-6 h-6 text-justjio-secondary ml-auto" />
-			)}
+			{isChecked && <CheckIcon className="w-6 h-6 text-secondary ml-auto" />}
 		</div>
 	);
 };

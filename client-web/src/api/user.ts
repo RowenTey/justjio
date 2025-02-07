@@ -1,6 +1,6 @@
 import { AxiosInstance, AxiosResponse } from "axios";
 import { ApiResponse } from ".";
-import { IUser } from "../types/user";
+import { IFriendRequests, IUser } from "../types/user";
 
 interface GetNumFriendsResponse extends ApiResponse {
 	data: {
@@ -10,6 +10,16 @@ interface GetNumFriendsResponse extends ApiResponse {
 
 interface FetchFriendsResponse extends ApiResponse {
 	data: IUser[];
+}
+
+interface FetchFriendRequestsResponse extends ApiResponse {
+	data: IFriendRequests[];
+}
+
+interface CountPendingFriendRequestsResponse extends ApiResponse {
+	data: {
+		count: number;
+	};
 }
 
 export const getNumFriendsApi = (
@@ -72,6 +82,54 @@ export const fetchFriendsApi = (
 	});
 };
 
+export const fetchFriendRequestsApi = (
+	api: AxiosInstance,
+	userId: number,
+	status: "pending" | "accepted" | "rejected",
+	mock: boolean = false
+): Promise<AxiosResponse<FetchFriendRequestsResponse>> => {
+	if (!mock) {
+		return api.get<FetchFriendRequestsResponse>(
+			`/users/${userId}/friendRequests?status=${status}`
+		);
+	}
+
+	return new Promise<AxiosResponse<FetchFriendRequestsResponse>>((resolve) => {
+		setTimeout(() => {
+			resolve({
+				data: {
+					data: [
+						{
+							id: 1,
+							senderId: 2,
+							receiverId: 1,
+							status: "pending",
+							sender: {
+								id: 2,
+								username: "testuser2",
+								email: "test@test.com",
+							},
+							receiver: {
+								id: 1,
+								username: "testuser1",
+								email: "test@test.com",
+							},
+							sentAt: new Date().toISOString(),
+							respondedAt: null,
+						},
+					],
+					message: "Friend requests retrieved successfully",
+					status: "success",
+				},
+				status: 200,
+				statusText: "OK",
+				headers: {},
+				config: {},
+			} as AxiosResponse<FetchFriendRequestsResponse>);
+		}, 1500);
+	});
+};
+
 export const searchFriendsApi = (
 	api: AxiosInstance,
 	userId: number,
@@ -109,15 +167,15 @@ export const searchFriendsApi = (
 	});
 };
 
-export const addFriendApi = (
+export const sendFriendRequestApi = (
 	api: AxiosInstance,
 	userId: number,
 	friendId: number,
 	mock: boolean = false
 ): Promise<AxiosResponse<ApiResponse>> => {
 	if (!mock) {
-		return api.post<ApiResponse>(`/users/${userId}/friends`, {
-			friendId: friendId.toString(),
+		return api.post<ApiResponse>(`/users/${userId}/friendRequests`, {
+			friendId,
 		});
 	}
 
@@ -135,4 +193,92 @@ export const addFriendApi = (
 			} as AxiosResponse<ApiResponse>);
 		}, 1500);
 	});
+};
+
+export const removeFriendApi = (
+	api: AxiosInstance,
+	userId: number,
+	friendId: number,
+	mock: boolean = false
+): Promise<AxiosResponse<ApiResponse>> => {
+	if (!mock) {
+		return api.delete<ApiResponse>(`/users/${userId}/friends/${friendId}`);
+	}
+
+	return new Promise<AxiosResponse<ApiResponse>>((resolve) => {
+		setTimeout(() => {
+			resolve({
+				data: {
+					message: "Friend removed successfully",
+					status: "success",
+				},
+				status: 200,
+				statusText: "OK",
+				headers: {},
+				config: {},
+			} as AxiosResponse<ApiResponse>);
+		}, 1500);
+	});
+};
+
+export const respondToFriendRequestApi = (
+	api: AxiosInstance,
+	userId: number,
+	friendRequestId: number,
+	action: "accept" | "reject",
+	mock: boolean = false
+): Promise<AxiosResponse<ApiResponse>> => {
+	if (!mock) {
+		return api.patch<ApiResponse>(`/users/${userId}/friendRequests`, {
+			requestId: friendRequestId,
+			action,
+		});
+	}
+
+	return new Promise<AxiosResponse<ApiResponse>>((resolve) => {
+		setTimeout(() => {
+			resolve({
+				data: {
+					message: "Friend request responded to successfully",
+					status: "success",
+				},
+				status: 200,
+				statusText: "OK",
+				headers: {},
+				config: {},
+			} as AxiosResponse<ApiResponse>);
+		}, 1500);
+	});
+};
+
+export const countPendingFriendRequestsApi = (
+	api: AxiosInstance,
+	userId: number,
+	mock: boolean = false
+): Promise<AxiosResponse<CountPendingFriendRequestsResponse>> => {
+	if (!mock) {
+		return api.get<CountPendingFriendRequestsResponse>(
+			`/users/${userId}/friendRequests/count`
+		);
+	}
+
+	return new Promise<AxiosResponse<CountPendingFriendRequestsResponse>>(
+		(resolve) => {
+			setTimeout(() => {
+				resolve({
+					data: {
+						data: {
+							count: 1,
+						},
+						message: "Number of pending friend requests retrieved successfully",
+						status: "success",
+					},
+					status: 200,
+					statusText: "OK",
+					headers: {},
+					config: {},
+				} as AxiosResponse<CountPendingFriendRequestsResponse>);
+			}, 1500);
+		}
+	);
 };

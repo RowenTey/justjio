@@ -30,6 +30,7 @@ func ConnectDB() {
 
 	err = DB.AutoMigrate(
 		&model.User{},
+		&model.FriendRequest{},
 		&model.Room{},
 		&model.RoomInvite{},
 		&model.Bill{},
