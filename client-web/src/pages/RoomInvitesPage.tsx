@@ -24,7 +24,7 @@ const RoomInvitesPage: React.FC = () => {
 		const res = await respondToInvite(roomId, accept);
 
 		if (!res.isSuccessResponse) {
-			console.error(res.error);
+			console.error("An error occured while responding to invite: ", res.error);
 			switch (res.error?.response?.status) {
 				case 400:
 					showToast("Bad request, please check request body.", true);

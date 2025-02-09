@@ -55,11 +55,11 @@ const SignUpPage = () => {
 				return;
 			}
 
-			stopLoading();
 			navigate("/login");
 		} catch (error) {
 			console.error(error);
 			setErrorMsg("An error occurred. Please try again later.");
+		} finally {
 			stopLoading();
 		}
 	};

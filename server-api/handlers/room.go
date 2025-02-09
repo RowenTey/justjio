@@ -97,6 +97,20 @@ func GetRoomAttendees(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Retrieved room attendees successfully", attendees)
 }
 
+func GetUninvitedFriendsForRoom(c *fiber.Ctx) error {
+	token := c.Locals("user").(*jwt.Token)
+	userId := util.GetUserInfoFromToken(token, "user_id")
+	roomId := c.Params("roomId")
+
+	roomService := &services.RoomService{DB: database.DB}
+	friends, err := roomService.GetUninvitedFriendsForRoom(roomId, userId)
+	if err != nil {
+		return util.HandleNotFoundOrInternalError(c, err, "No uninvited friends found")
+	}
+
+	return util.HandleSuccess(c, "Retrieved uninvited friends successfully", friends)
+}
+
 func CreateRoom(c *fiber.Ctx) error {
 	var request request.CreateRoomRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -244,11 +258,15 @@ func InviteUser(c *fiber.Ctx) error {
 	}
 
 	roomInvites, err := (&services.RoomService{DB: tx}).InviteUserToRoom(
-		roomId, user, invitees, "You have been invited to join this room")
+		roomId, user, invitees, request.Message)
 	if err != nil {
 		tx.Rollback()
 		if err.Error() == "user is not the host of the room" {
 			return util.HandleError(c, fiber.StatusUnauthorized, "Only hosts are allowed to invite users", err)
+		} else if err.Error() == "user is already in the room" {
+			return util.HandleError(c, fiber.StatusConflict, "User is already in the room", err)
+		} else if err.Error() == "user already has pending invite" {
+			return util.HandleError(c, fiber.StatusConflict, "User already has pending invite", err)
 		}
 		return util.HandleNotFoundOrInternalError(c, err, "Room / User not found")
 	}

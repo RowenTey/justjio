@@ -1,5 +1,6 @@
-import React from "react";
+import { BaseContextResponse } from ".";
 
+/* eslint-disable no-mixed-spaces-and-tabs */
 export interface BaseUserInfo {
 	id: number;
 	email: string;
@@ -31,7 +32,29 @@ export interface IFriendRequests {
 	receiver: IUser;
 }
 
+export interface UserState {
+	user: BaseUserInfo;
+	friends: IUser[];
+}
+
 export type UserContextType = {
 	user: BaseUserInfo;
-	setUser: React.Dispatch<React.SetStateAction<BaseUserInfo>>;
+	setUser: (user: BaseUserInfo) => void;
+	friends: IUser[];
+	fetchFriends: (userId: number) => Promise<BaseContextResponse>;
+	removeFriend: (
+		userId: number,
+		friendId: number
+	) => Promise<BaseContextResponse>;
 };
+
+interface FriendsPayload {
+	data: IUser[];
+}
+
+type UserActionTypes =
+	| {
+			type: "FETCH_FRIENDS" | "ADD_FRIEND" | "REMOVE_FRIEND";
+			payload: FriendsPayload;
+	  }
+	| { type: "FETCH_USER"; payload: BaseUserInfo };

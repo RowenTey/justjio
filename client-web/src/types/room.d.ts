@@ -25,15 +25,17 @@ export interface IRoomInvite {
 }
 
 export interface RoomState {
-	total: number;
 	rooms: IRoom[];
 }
 
 export interface RoomContextType {
-	total: number;
 	rooms: Room[];
 	fetchRooms: () => Promise<BaseContextResponse>;
-	createRoom: (roomData: Partial<IRoom>) => Promise<BaseContextResponse>;
+	createRoom: (
+		roomData: Partial<IRoom>,
+		attendeesId: string[],
+		message?: string
+	) => Promise<BaseContextResponse>;
 	respondToInvite: (
 		roomId: string,
 		accept: boolean
@@ -41,20 +43,14 @@ export interface RoomContextType {
 	closeRoom: (roomId: string) => Promise<BaseContextResponse>;
 }
 
-interface FetchRoomsPayload {
+interface RoomsPayload {
 	data: IRoom[];
 }
 
-interface ModifyRoomsPayload {
-	rooms: IRoom[];
-	total: number;
-}
-
 type RoomActionTypes =
-	| { type: "FETCH_ROOMS"; payload: FetchRoomsPayload }
 	| {
-			type: "CREATE_ROOM" | "JOIN_ROOM" | "CLOSE_ROOM";
-			payload: ModifyRoomsPayload;
+			type: "FETCH_ROOMS" | "CREATE_ROOM" | "JOIN_ROOM" | "CLOSE_ROOM";
+			payload: RoomsPayload;
 	  }
 	| { type: "DECLINE_ROOM"; payload?: never }
 	| { type: "LOGOUT"; payload?: never };

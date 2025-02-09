@@ -83,7 +83,7 @@ const RoomPage = () => {
 	}
 
 	return (
-		<div className="h-full flex flex-col items-center gap-4 bg-gray-200">
+		<div className="h-full flex flex-col items-center gap-3 bg-gray-200">
 			<RoomTopBar title={room.name} shouldCenterTitle={true} />
 
 			<RoomDetails room={room} />
@@ -91,6 +91,7 @@ const RoomPage = () => {
 			<RoomAttendees
 				isHost={user.id === room.hostId}
 				attendees={attendees}
+				roomId={roomId}
 				hostId={room.hostId}
 			/>
 
@@ -145,12 +146,14 @@ const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
 };
 
 interface RoomAttendeesProps {
+	roomId: string;
 	isHost: boolean;
 	hostId: number;
 	attendees: IUser[];
 }
 
 const RoomAttendees: React.FC<RoomAttendeesProps> = ({
+	roomId,
 	isHost,
 	hostId,
 	attendees,
@@ -167,7 +170,7 @@ const RoomAttendees: React.FC<RoomAttendeesProps> = ({
 						<div
 							className="flex items-center justify-center 
 								rounded-full bg-secondary p-1 w-8 h-8 
-								cursor-pointer hover:border-2 hover:border-white hover:shadow-lg"
+								cursor-pointer hover:border hover:border-white"
 							onClick={() => setIsModalVisible(true)}
 						>
 							<PlusIcon className="h-7 w-7 text-white" />
@@ -191,6 +194,7 @@ const RoomAttendees: React.FC<RoomAttendeesProps> = ({
 			<InviteAttendeesModal
 				isVisible={isModalVisible}
 				closeModal={() => setIsModalVisible(false)}
+				roomId={roomId}
 			/>
 		</>
 	);

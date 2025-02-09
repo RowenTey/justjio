@@ -1,9 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
 import { IUser } from "../types/user";
 import {
 	sendFriendRequestApi,
-	fetchFriendsApi,
-	removeFriendApi,
 	countPendingFriendRequestsApi,
 } from "../api/user";
 import { useUserCtx } from "../context/user";
@@ -13,6 +12,9 @@ import SearchUserModal from "../components/modals/SearchUserModal";
 import { ArrowLeftIcon, UserGroupIcon } from "@heroicons/react/24/solid";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../context/toast";
+import useLoadingAndError from "../hooks/useLoadingAndError";
+import Spinner from "../components/Spinner";
+import { AxiosError } from "axios";
 
 type FriendsTopBarProps = {
 	title: string;
@@ -24,12 +26,12 @@ const FriendsTopBar: React.FC<FriendsTopBarProps> = ({ userId, title }) => {
 	const [numFriendRequests, setNumFriendRequests] = useState(0);
 
 	useEffect(() => {
-		const fetchFriendRequests = async () => {
+		const fetchNumFriendRequests = async () => {
 			const res = await countPendingFriendRequestsApi(api, userId);
 			setNumFriendRequests(res.data.data.count);
 		};
 
-		fetchFriendRequests();
+		fetchNumFriendRequests();
 	}, [userId]);
 
 	return (
@@ -61,76 +63,69 @@ const FriendsTopBar: React.FC<FriendsTopBarProps> = ({ userId, title }) => {
 };
 
 const FriendsPage = () => {
-	const [friends, setFriends] = useState<IUser[]>([]);
-	const { user } = useUserCtx();
+	const { loading, startLoading, stopLoading } = useLoadingAndError();
+	const { user, friends, fetchFriends, removeFriend } = useUserCtx();
 	const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
 	const { showToast } = useToast();
 
 	useEffect(() => {
-		const fetchFriends = async () => {
-			const res = await fetchFriendsApi(api, user.id);
-			setFriends(res.data.data);
-		};
-
-		fetchFriends();
+		startLoading();
+		fetchFriends(user.id).then(stopLoading);
 	}, [user.id]);
 
 	const handleSendFriendRequest = async (newFriend: IUser) => {
+		startLoading();
 		try {
-			const res = await sendFriendRequestApi(api, user.id, newFriend.id);
-			if (res.status !== 200) {
-				switch (res.status) {
-					case 400:
-						showToast("Bad request, please check request body.", true);
-						break;
-					case 404:
-						showToast("User not found, please try again later.", true);
-						break;
-					case 409:
-						showToast(res.data.message, true);
-						break;
-					case 500:
-					default:
-						showToast("An error occurred, please try again later.", true);
-						break;
-				}
-				return;
-			}
-
+			await sendFriendRequestApi(api, user.id, newFriend.id);
 			showToast("Friend request sent!", false);
 			setIsSearchModalVisible(false);
 		} catch (error) {
-			console.error(error);
-			showToast("An error occurred, please try again later.", true);
+			console.error("An error occurred while sending friend request: ", error);
+			switch ((error as AxiosError).response?.status) {
+				case 400:
+					showToast("Bad request, please check request body.", true);
+					break;
+				case 404:
+					showToast("User not found, please try again later.", true);
+					break;
+				case 409:
+					showToast(
+						(error as AxiosError<{ message: string }>).response?.data
+							?.message || "An error occurred, please try again later.",
+						true
+					);
+					break;
+				case 500:
+				default:
+					showToast("An error occurred, please try again later.", true);
+					break;
+			}
+		} finally {
+			stopLoading();
 		}
 	};
 
 	const handleRemoveFriend = async (friendId: number) => {
-		try {
-			const res = await removeFriendApi(api, user.id, friendId);
-			if (res.status !== 200) {
-				switch (res.status) {
-					case 400:
-						showToast("Bad request, please check request body.", true);
-						break;
-					case 404:
-						showToast("User not found, please try again later.", true);
-						break;
-					case 500:
-					default:
-						showToast("An error occurred, please try again later.", true);
-						break;
-				}
-				return;
+		startLoading();
+		const res = await removeFriend(user.id, friendId);
+		if (!res.isSuccessResponse) {
+			switch (res.error?.response?.status) {
+				case 400:
+					showToast("Bad request, please check request body.", true);
+					break;
+				case 404:
+					showToast("User not found, please try again later.", true);
+					break;
+				case 500:
+				default:
+					showToast("An error occurred, please try again later.", true);
+					break;
 			}
-
-			showToast("Friend removed!", false);
-			setFriends((prevFriends) =>
-				prevFriends.filter((friend) => friend.id !== friendId)
-			);
-		} catch (error) {
-			showToast("An error occurred, please try again later.", true);
+			stopLoading();
+			return;
 		}
+		showToast("Friend removed!", false);
+		stopLoading();
 	};
 
 	return (
@@ -139,7 +134,9 @@ const FriendsPage = () => {
 
 			<div className="w-full h-full flex flex-col items-center px-4 gap-3">
 				<div className="w-full h-[85%] overflow-y-auto flex flex-col items-center justify-center gap-4">
-					{friends.length > 0 ? (
+					{loading ? (
+						<Spinner spinnerSize={{ width: "w-10", height: "h-10" }} />
+					) : friends.length > 0 ? (
 						friends.map((friend) => (
 							<div
 								key={friend.id}
@@ -154,7 +151,7 @@ const FriendsPage = () => {
 									<p className="text-black">{friend.username}</p>
 								</div>
 								<TrashIcon
-									className="h-6 w-6 text-red-500 hover:text-red-600 cursor-pointer"
+									className="h-6 w-6 text-error hover:scale-110 cursor-pointer"
 									onClick={() => handleRemoveFriend(friend.id)}
 								/>
 							</div>

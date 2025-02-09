@@ -24,8 +24,8 @@ const Toast: React.FC<ToastProps> = ({
 
 	return (
 		<div
-			className={`fixed top-4 left-0 right-0 flex justify-center transition-opacity duration-300 ease-in-out ${
-				visible ? "opacity-100" : "opacity-0 pointer-events-none"
+			className={`fixed top-4 left-0 right-0 flex justify-center transition-opacity duration-300 ease-in-out pointer-events-none ${
+				visible ? "opacity-100" : "opacity-0"
 			}`}
 		>
 			<div

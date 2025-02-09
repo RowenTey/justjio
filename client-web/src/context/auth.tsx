@@ -2,7 +2,7 @@ import React, { createContext, useState } from "react";
 import { AuthContextType, AuthState, BaseContextResponse } from "../types";
 import { loginApi } from "../api/auth";
 import { api } from "../api";
-import { initialUserState, useUserCtx } from "./user";
+import { useUserCtx } from "./user";
 import useContextWrapper from "../hooks/useContextWrapper";
 import { AxiosError } from "axios";
 
@@ -23,11 +23,10 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		username: string,
 		password: string
 	): Promise<BaseContextResponse> => {
-		let res = null;
 		try {
-			res = await loginApi(api, username, password, false);
+			const { data: res } = await loginApi(api, username, password, false);
 
-			const { data, token } = res.data;
+			const { data, token } = res;
 			setAuthState({
 				accessToken: token,
 				authenticated: true,
@@ -38,13 +37,15 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 				email: data.email,
 				username: data.username,
 			});
-		} catch (error) {
-			const err = error as AxiosError;
-			console.error(err);
-			return { isSuccessResponse: false, data: null, error: err };
-		}
 
-		return { isSuccessResponse: true, data: res.data, error: null };
+			return { isSuccessResponse: true, error: null };
+		} catch (error) {
+			console.error("Error logging in: ", error);
+			return {
+				isSuccessResponse: false,
+				error: error as AxiosError,
+			};
+		}
 	};
 
 	const logout = async () => {
@@ -55,7 +56,11 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 					authenticated: false,
 				});
 				localStorage.removeItem("accessToken");
-				setUser(initialUserState);
+				setUser({
+					id: -1,
+					email: "",
+					username: "",
+				});
 				resolve(true);
 			}, 500);
 		});
