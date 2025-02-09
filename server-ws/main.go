@@ -35,7 +35,6 @@ func main() {
 	}
 
 	app := fiber.New()
-
 	connMap := utils.NewConnMap()
 
 	consumerName := "chat-service"
@@ -44,16 +43,8 @@ func main() {
 	}
 	consumerName = fmt.Sprintf("%s-%s", utils.Config("KAFKA_TOPIC_PREFIX"), consumerName)
 
-	log.Println("Kafka client created")
-	kafkaClient, err := services.NewKafkaService(utils.Config("KAFKA_URL"), consumerName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer kafkaClient.Close()
-
 	// handle websocket upgrade
 	app.Use(webSocketUpgrade)
-
 	app.Get("/", websocket.New(func(c *websocket.Conn) {
 		user, err := services.GetCurrentUser(c)
 		if err != nil {
@@ -64,21 +55,30 @@ func main() {
 			c.Close()
 			return
 		}
-		channel := services.GetUserChannel(user.ID, env)
 
-		log.Println("Channel: ", channel)
+		log.Println("[Kafka] Kafka client created")
+		kafkaClient, err := services.NewKafkaService(utils.Config("KAFKA_URL"), consumerName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer kafkaClient.Close()
+
+		channel := services.GetUserChannel(user.ID, env)
+		log.Println("[Kafka] Channel: ", channel)
 		forAllConns, remove, isInit := connMap.Add(user.ID, c)
 
 		onMessage := func(message kafka.Message) {
 			forAllConns(func(conn *websocket.Conn) {
+				log.Println("[WebSocket] Sending message to", user.ID)
 				if err := conn.WriteMessage(websocket.TextMessage, []byte(message.Value)); err != nil {
-					log.Println("WebSocket Error:", err)
+					log.Println("[WebSocket] WebSocket Error:", err)
 				}
+				log.Println("[WebSocket] Sent message to", user.ID)
 			})
 		}
 
 		onClose := func(code int, text string) error {
-			log.Printf("%s disconnected\n", user.ID)
+			log.Printf("[WebSocket] %s disconnected\n", user.ID)
 			remove(func() {
 				if err := kafkaClient.Unsubscribe(); err != nil {
 					log.Println(err)
@@ -93,7 +93,7 @@ func main() {
 			go kafkaClient.ConsumeMessages(onMessage)
 		}
 
-		log.Printf("User %s connected\n", user.ID)
+		log.Printf("[WebSocket] User %s connected\n", user.ID)
 
 		var (
 			mt    int
@@ -102,7 +102,11 @@ func main() {
 		)
 		for {
 			if mt, msg, wsErr = c.ReadMessage(); wsErr != nil {
-				log.Println("WebSocket Error:", wsErr)
+				if websocket.IsCloseError(wsErr, websocket.CloseNoStatusReceived) {
+					log.Println("[WebSocket] Connection closed by client")
+				} else {
+					log.Println("[WebSocket] Error:", wsErr)
+				}
 				break
 			}
 
@@ -113,5 +117,6 @@ func main() {
 		}
 	}))
 
+	log.Println("Server running on port", utils.Config("PORT"))
 	log.Fatal(app.Listen(":" + utils.Config("PORT")))
 }

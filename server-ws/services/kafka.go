@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"log"
 
@@ -11,6 +12,8 @@ import (
 type KafkaService struct {
 	Consumer *kafka.Consumer
 	Config   *kafka.ConfigMap
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
 func GetUserChannel(userId, env string) string {
@@ -38,14 +41,16 @@ func NewKafkaService(brokers, groupId string) (*KafkaService, error) {
 		return nil, err
 	}
 
-	return &KafkaService{Consumer: consumer, Config: config}, nil
+	ctx, cancel := context.WithCancel(context.Background())
+
+	return &KafkaService{Consumer: consumer, Config: config, ctx: ctx, cancel: cancel}, nil
 }
 
 // Subscribes to a list of Kafka topics
 func (s *KafkaService) Subscribe(topics []string) error {
 	err := s.Consumer.SubscribeTopics(topics, nil)
 	if err != nil {
-		return fmt.Errorf("Failed to subscribe to topics: %w", err)
+		return fmt.Errorf("failed to subscribe to topics: %w", err)
 	}
 	log.Printf("Subscribed to topics: %v\n", topics)
 	return nil
@@ -53,9 +58,12 @@ func (s *KafkaService) Subscribe(topics []string) error {
 
 // Unsubscribes from Kafka topics
 func (s *KafkaService) Unsubscribe() error {
+	// signal to stop consuming messages
+	s.cancel()
+
 	err := s.Consumer.Unsubscribe()
 	if err != nil {
-		return fmt.Errorf("Failed to unsubscribe from topics: %w", err)
+		return fmt.Errorf("failed to unsubscribe from topics: %w", err)
 	}
 	log.Println("Unsubscribed from topics")
 	return nil
@@ -64,12 +72,21 @@ func (s *KafkaService) Unsubscribe() error {
 // Consumes messages from subscribed topics in a loop
 func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) error {
 	for {
-		msg, err := s.Consumer.ReadMessage(-1)
-		if err != nil {
-			log.Printf("Error consuming messages: %v\n", err)
+		select {
+		case <-s.ctx.Done():
+			log.Println("Stopping message consumption")
 			return nil
+		default:
+			msg, err := s.Consumer.ReadMessage(1)
+			if err != nil && err.(kafka.Error).Code() == kafka.ErrTimedOut {
+				continue
+			} else if err != nil {
+				log.Printf("Failed to consume message: %w", err)
+				return nil
+			}
+			log.Printf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
+			handler(*msg)
 		}
-		handler(*msg)
 	}
 }
 
