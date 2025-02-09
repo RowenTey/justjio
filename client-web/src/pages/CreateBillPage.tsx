@@ -110,6 +110,7 @@ const CreateBillPage = () => {
 						label="Amount"
 						isFloat={true}
 						placeholder="Enter amount"
+						pattern="[0-9]*"
 						errors={errors}
 						register={register}
 						validation={{ required: "amount is required" }}

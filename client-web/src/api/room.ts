@@ -115,13 +115,15 @@ export const fetchNumRoomsApi = (
 export const createRoomApi = (
 	api: AxiosInstance,
 	roomData: Partial<IRoom>,
+	inviteesId: string[],
+	message: string = "Join my room!",
 	mock: boolean = false
 ): Promise<AxiosResponse<CreateRoomResponse>> => {
 	if (!mock) {
 		return api.post<CreateRoomResponse>("/rooms", {
 			room: roomData,
-			// TODO: Implement invitees (friends)
-			invitees: [],
+			invitees: inviteesId,
+			message,
 		});
 	}
 
@@ -360,6 +362,68 @@ export const fetchRoomAttendeesApi = (
 				headers: {},
 				config: {},
 			} as AxiosResponse<FetchRoomAttendeesResponse>);
+		}, 1500);
+	});
+};
+
+export const getUninvitedFriendsForRoomApi = (
+	api: AxiosInstance,
+	roomId: string,
+	mock: boolean = false
+): Promise<AxiosResponse<FetchRoomAttendeesResponse>> => {
+	if (!mock) {
+		return api.get<FetchRoomAttendeesResponse>(`/rooms/${roomId}/uninvited`);
+	}
+
+	return new Promise<AxiosResponse<FetchRoomAttendeesResponse>>((resolve) => {
+		setTimeout(() => {
+			resolve({
+				data: {
+					data: [
+						{
+							id: 1,
+							username: "testuser",
+							email: "test@test.com",
+						},
+					],
+					message: "Fetched uninvited friends successfully",
+					status: "success",
+				},
+				status: 200,
+				statusText: "OK",
+				headers: {},
+				config: {},
+			} as AxiosResponse<FetchRoomAttendeesResponse>);
+		}, 1500);
+	});
+};
+
+export const inviteUsersToRoomApi = (
+	api: AxiosInstance,
+	roomId: string,
+	inviteesId: string[],
+	message: string = "Join my room!",
+	mock: boolean = false
+): Promise<AxiosResponse<ApiResponse>> => {
+	if (!mock) {
+		return api.post<ApiResponse>(`/rooms/${roomId}`, {
+			invitees: inviteesId,
+			message,
+		});
+	}
+
+	return new Promise<AxiosResponse<ApiResponse>>((resolve) => {
+		setTimeout(() => {
+			resolve({
+				data: {
+					message: "Invited user to room successfully",
+					status: "success",
+				},
+				status: 200,
+				statusText: "OK",
+				headers: {},
+				config: {},
+			} as AxiosResponse<ApiResponse>);
 		}, 1500);
 	});
 };

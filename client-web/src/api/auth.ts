@@ -1,7 +1,7 @@
 import { AxiosInstance, AxiosResponse } from "axios";
 import { ApiResponse } from ".";
 
-interface LoginResponse extends ApiResponse {
+export interface LoginResponse extends ApiResponse {
 	data: {
 		id: number;
 		username: string;
@@ -9,8 +9,6 @@ interface LoginResponse extends ApiResponse {
 	};
 	token: string;
 }
-
-interface SignUpResponse extends ApiResponse {}
 
 export const loginApi = (
 	api: AxiosInstance,
@@ -51,16 +49,16 @@ export const signUpApi = (
 	email: string,
 	password: string,
 	mock: boolean = false
-): Promise<AxiosResponse<SignUpResponse>> => {
+): Promise<AxiosResponse<ApiResponse>> => {
 	if (!mock) {
-		return api.post<SignUpResponse>("/auth/signup", {
+		return api.post<ApiResponse>("/auth/signup", {
 			username,
 			email,
 			password,
 		});
 	}
 
-	return new Promise<AxiosResponse<SignUpResponse>>((resolve) => {
+	return new Promise<AxiosResponse<ApiResponse>>((resolve) => {
 		setTimeout(() => {
 			resolve({
 				data: {
@@ -76,7 +74,7 @@ export const signUpApi = (
 				statusText: "OK",
 				headers: {},
 				config: {},
-			} as AxiosResponse<SignUpResponse>);
+			} as AxiosResponse<ApiResponse>);
 		}, 1500);
 	});
 };

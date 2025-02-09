@@ -38,15 +38,13 @@ const SearchUserModalContent: React.FC<SearchUserModalProps> = ({
 			<h3 className="text-center text-3xl font-bold text-secondary">
 				Add Friends
 			</h3>
-
 			<input
 				type="text"
 				placeholder="Search users..."
-				className="bg-white text-black px-2 py-1 rounded-lg shadow-lg"
+				className="bg-white text-black px-2 py-1 rounded-lg shadow-lg w-full focus:outline-none focus:border-secondary focus:border-2"
 				value={searchTerm}
 				onChange={(e) => setSearchTerm(e.target.value)}
 			/>
-
 			<div className="max-h-40 overflow-y-auto flex flex-col gap-2">
 				{searchResults.length > 0 ? (
 					searchResults.map((user) => (
@@ -64,13 +62,13 @@ const SearchUserModalContent: React.FC<SearchUserModalProps> = ({
 							</div>
 							<UserPlusIcon
 								onClick={() => sendFriendRequest(user)}
-								className="h-6 w-6 text-green-500 hover:text-green-600 cursor-pointer"
+								className="h-6 w-6 text-success hover:scale-110 cursor-pointer"
 							/>
 						</div>
 					))
-				) : (
+				) : searchTerm.trim() !== "" ? (
 					<p className="text-gray-500 text-center">No users found</p>
-				)}
+				) : null}
 			</div>
 		</div>
 	);

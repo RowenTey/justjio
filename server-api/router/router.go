@@ -54,6 +54,7 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService) {
 	rooms.Get("/invites/count", handlers.GetNumRoomInvitations)
 	rooms.Get("/:roomId", middleware.IsUserInRoom, handlers.GetRoom)
 	rooms.Get("/:roomId/attendees", middleware.IsUserInRoom, handlers.GetRoomAttendees)
+	rooms.Get("/:roomId/uninvited", middleware.IsUserInRoom, handlers.GetUninvitedFriendsForRoom)
 	rooms.Post("/", handlers.CreateRoom)
 	rooms.Post("/:roomId", middleware.IsUserInRoom, handlers.InviteUser)
 	rooms.Patch("/:roomId", handlers.RespondToRoomInvite)

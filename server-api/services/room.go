@@ -155,6 +155,13 @@ func (rs *RoomService) CloseRoom(roomId string, userId string) error {
 		return err
 	}
 
+	// Remove all pending invites
+	if err := db.
+		Where("room_id = ? AND status = ?", roomId, "pending").
+		Delete(&model.RoomInvite{}).Error; err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -221,6 +228,27 @@ func (rs *RoomService) InviteUserToRoom(
 		return nil, errors.New("user is not the host of the room")
 	}
 
+	// Check if users are already in room or have pending invites
+	for _, user := range *users {
+		var count int64
+
+		// Check if user is already in room
+		err := rs.DB.Model(&model.Room{}).Joins("JOIN room_users ON rooms.id = room_users.room_id").Where("rooms.id = ? AND room_users.user_id = ?", roomId, user.ID).Count(&count).Error
+		if err != nil || count > 0 {
+			return nil, errors.New("user is already in room")
+		}
+
+		// Check if user has pending invite
+		if err := roomInvitesDB.
+			Where("room_id = ? AND user_id = ? AND status = ?", roomId, user.ID, "pending").
+			Count(&count).Error; err != nil {
+			return nil, err
+		}
+		if count > 0 {
+			return nil, errors.New("user already has pending invite")
+		}
+	}
+
 	for _, user := range *users {
 		roomInvite := model.RoomInvite{
 			Room:      room,
@@ -249,4 +277,24 @@ func (rs *RoomService) RemoveUserFromRoom(roomId string, userId string) error {
 		return err
 	}
 	return nil
+}
+
+func (rs *RoomService) GetUninvitedFriendsForRoom(roomId string, userId string) (*[]model.User, error) {
+	db := rs.DB
+	var friends []model.User
+
+	// Get friends who are not in the room and don't have pending invites
+	if err := db.
+		Distinct("users.*").
+		Table("users").
+		Joins("JOIN user_friends ON (user_friends.friend_id = ? AND user_friends.user_id = users.id)", userId).
+		// Exclude users already in room
+		Where("users.id NOT IN (SELECT user_id FROM room_users WHERE room_id = ?)", roomId).
+		// Exclude users with pending invites
+		Where("users.id NOT IN (SELECT user_id FROM room_invites WHERE room_id = ? AND status = 'pending')", roomId).
+		Find(&friends).Error; err != nil {
+		return nil, err
+	}
+
+	return &friends, nil
 }

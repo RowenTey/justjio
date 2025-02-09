@@ -30,7 +30,7 @@ const HomeTopBar: React.FC<HomeTopBarProps> = ({
 
 			<button
 				onClick={onLogout}
-				className="flex items-center justify-center w-9 h-9 p-1 bg-secondary rounded-full hover:shadow-lg hover:border-[1px] hover:border-white"
+				className="flex items-center justify-center w-9 h-9 p-1 bg-secondary rounded-full hover:shadow-lg hover:border hover:border-white"
 			>
 				{isLoading ? (
 					<Spinner

@@ -10,6 +10,7 @@ import useLoadingAndError from "../hooks/useLoadingAndError";
 import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import Spinner from "../components/Spinner";
 import { formatDate } from "../utils/date";
+import { AxiosError } from "axios";
 
 const FriendRequestsPage = () => {
 	const { loading, startLoading, stopLoading } = useLoadingAndError();
@@ -32,38 +33,41 @@ const FriendRequestsPage = () => {
 		accept: boolean
 	) => {
 		try {
-			const res = await respondToFriendRequestApi(
+			await respondToFriendRequestApi(
 				api,
 				user.id,
 				requestId,
 				accept ? "accept" : "reject"
 			);
 
-			if (res.status !== 200) {
-				switch (res.status) {
-					case 400:
-						showToast("Bad request, please check request body.", true);
-						break;
-					case 404:
-						showToast("User not found, please try again later.", true);
-						break;
-					case 409:
-						showToast(res.data.message, true);
-						break;
-					case 500:
-					default:
-						showToast("An error occurred, please try again later.", true);
-						break;
-				}
-				return;
-			}
-
 			showToast("Friend request responded to successfully!", false);
 			setFriendRequests((prev) =>
 				prev.filter((friendRequest) => friendRequest.id !== requestId)
 			);
 		} catch (err) {
-			showToast("An error occurred, please try again later.", true);
+			console.error(
+				"An error occurred while responding to friend request: ",
+				err
+			);
+			switch ((err as AxiosError).response?.status) {
+				case 400:
+					showToast("Bad request, please check request body.", true);
+					break;
+				case 404:
+					showToast("User not found, please try again later.", true);
+					break;
+				case 409:
+					showToast(
+						(err as AxiosError<{ message: string }>).response?.data?.message ||
+							"An error occurred, please try again later.",
+						true
+					);
+					break;
+				case 500:
+				default:
+					showToast("An error occurred, please try again later.", true);
+					break;
+			}
 		}
 	};
 

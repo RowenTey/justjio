@@ -9,6 +9,8 @@ import {
 } from "../api/room";
 import { api } from "../api";
 import useContextWrapper from "../hooks/useContextWrapper";
+import { AxiosError } from "axios";
+import { BaseContextResponse } from "../types";
 
 interface RoomProviderProps {
 	children: ReactNode;
@@ -26,34 +28,45 @@ const { Provider } = RoomContext;
 const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
 	const [state, dispatch] = useReducer(RoomReducer, initialRoomState);
 
-	const fetchRooms = async () => {
+	const fetchRooms = async (): Promise<BaseContextResponse> => {
 		try {
 			const { data: response } = await fetchRecentRoomsApi(api);
 			dispatch({ type: FETCH_ROOMS, payload: response });
 		} catch (error) {
 			console.error("Failed to fetch rooms", error);
-			return { isSuccessResponse: false, error: error };
+			return { isSuccessResponse: false, error: error as AxiosError };
 		}
 		return { isSuccessResponse: true, error: null };
 	};
 
-	const createRoom = async (roomData: Partial<IRoom>) => {
+	const createRoom = async (
+		roomData: Partial<IRoom>,
+		attendeesId: string[],
+		message?: string
+	): Promise<BaseContextResponse> => {
 		try {
-			const { data: response } = await createRoomApi(api, roomData);
+			const { data: response } = await createRoomApi(
+				api,
+				roomData,
+				attendeesId,
+				message
+			);
 			const updatedRooms = state.rooms.concat(response.data.room);
-			const updatedTotal = updatedRooms.length;
 			dispatch({
 				type: CREATE_ROOM,
-				payload: { rooms: updatedRooms, total: updatedTotal },
+				payload: { data: updatedRooms },
 			});
 		} catch (error) {
 			console.error("Failed to create room", error);
-			return { isSuccessResponse: false, error: error };
+			return { isSuccessResponse: false, error: error as AxiosError };
 		}
 		return { isSuccessResponse: true, error: null };
 	};
 
-	const respondToInvite = async (roomId: string, accept: boolean) => {
+	const respondToInvite = async (
+		roomId: string,
+		accept: boolean
+	): Promise<BaseContextResponse> => {
 		try {
 			const { data: response } = await respondToInviteApi(
 				api,
@@ -63,40 +76,37 @@ const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
 
 			if (accept) {
 				const updatedRooms = state.rooms.concat(response.data.room as IRoom);
-				const updatedTotal = updatedRooms.length;
 				dispatch({
 					type: JOIN_ROOM,
-					payload: { rooms: updatedRooms, total: updatedTotal },
+					payload: { data: updatedRooms },
 				});
 			} else {
 				dispatch({ type: DECLINE_ROOM });
 			}
 		} catch (error) {
 			console.error("Failed to respond to invite", error);
-			return { isSuccessResponse: false, error: error };
+			return { isSuccessResponse: false, error: error as AxiosError };
 		}
 		return { isSuccessResponse: true, error: null };
 	};
 
-	const closeRoom = async (roomId: string) => {
+	const closeRoom = async (roomId: string): Promise<BaseContextResponse> => {
 		try {
 			await closeRoomApi(api, roomId);
 
 			const updatedRooms = state.rooms.filter((room) => room.id !== roomId);
-			const updatedTotal = updatedRooms.length;
 			dispatch({
 				type: CLOSE_ROOM,
-				payload: { rooms: updatedRooms, total: updatedTotal },
+				payload: { data: updatedRooms },
 			});
 		} catch (error) {
 			console.error("Failed to close room", error);
-			return { isSuccessResponse: false, error: error };
+			return { isSuccessResponse: false, error: error as AxiosError };
 		}
 		return { isSuccessResponse: true, error: null };
 	};
 
 	const value = {
-		total: state.total,
 		rooms: state.rooms,
 		fetchRooms,
 		createRoom,

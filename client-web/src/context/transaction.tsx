@@ -8,6 +8,7 @@ import { fetchTransactionsApi, settleTransactionApi } from "../api/transaction";
 import { useUserCtx } from "./user";
 import { BaseContextResponse } from "../types";
 import { api } from "../api";
+import { AxiosError } from "axios";
 
 export const FETCH_TRANSACTIONS = "FETCH_TRANSACTIONS";
 export const SETTLE_TRANSACTION = "SETTLE_TRANSACTION";
@@ -30,12 +31,11 @@ const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({
 				toPay: response.data.filter((tx) => tx.payerId === user.id),
 				toReceive: response.data.filter((tx) => tx.payeeId === user.id),
 			};
-			console.log("Fetched transactions", payload);
 			dispatch({ type: FETCH_TRANSACTIONS, payload });
 			return { isSuccessResponse: true, error: null };
 		} catch (error) {
 			console.error("Failed to fetch transactions", error);
-			return { isSuccessResponse: false, error: error };
+			return { isSuccessResponse: false, error: error as AxiosError };
 		}
 	};
 
@@ -51,7 +51,7 @@ const TransactionProvider: React.FC<{ children: React.ReactNode }> = ({
 			return { isSuccessResponse: true, error: null };
 		} catch (error) {
 			console.error("Failed to settle transaction", error);
-			return { isSuccessResponse: false, error: error };
+			return { isSuccessResponse: false, error: error as AxiosError };
 		}
 	};
 

@@ -4,9 +4,9 @@ declare module "*.jpg";
 declare module "*.png";
 
 // general
-export interface BaseContextResponse {
+export interface BaseContextResponse<T = never> {
 	isSuccessResponse: boolean;
-	data?: unknown;
+	data?: T;
 	error: AxiosError | null;
 }
 
