@@ -52,7 +52,7 @@ func (s *KafkaService) Subscribe(topics []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to topics: %w", err)
 	}
-	log.Printf("Subscribed to topics: %v\n", topics)
+	log.Printf("[Kafka] Subscribed to topics: %v\n", topics)
 	return nil
 }
 
@@ -65,7 +65,7 @@ func (s *KafkaService) Unsubscribe() error {
 	if err != nil {
 		return fmt.Errorf("failed to unsubscribe from topics: %w", err)
 	}
-	log.Println("Unsubscribed from topics")
+	log.Println("[Kafka] Unsubscribed from topics")
 	return nil
 }
 
@@ -74,23 +74,26 @@ func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) error {
 	for {
 		select {
 		case <-s.ctx.Done():
-			log.Println("Stopping message consumption")
+			log.Println("[Kafka] Stopping message consumption")
 			return nil
 		default:
 			msg, err := s.Consumer.ReadMessage(1)
 			if err != nil && err.(kafka.Error).Code() == kafka.ErrTimedOut {
 				continue
 			} else if err != nil {
-				log.Printf("Failed to consume message: %w", err)
+				log.Printf("[Kafka] Failed to consume message: %w", err)
 				return nil
 			}
-			log.Printf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
+			log.Printf("[Kafka] Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
 			handler(*msg)
 		}
 	}
 }
 
 func (s *KafkaService) Close() {
-	log.Println("Closing Kafka client")
+	// signal to stop consuming messages
+	s.cancel()
+
+	log.Println("[Kafka] Closing Kafka client")
 	s.Consumer.Close()
 }
