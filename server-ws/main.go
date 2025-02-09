@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/RowenTey/JustJio/server-ws/services"
 	"github.com/RowenTey/JustJio/server-ws/utils"
@@ -94,6 +96,38 @@ func main() {
 		}
 
 		log.Printf("[WebSocket] User %s connected\n", user.ID)
+
+		// Set up ping/pong handlers
+		c.SetPingHandler(func(appData string) error {
+			log.Println("[WebSocket] Received ping")
+			return c.WriteMessage(websocket.PongMessage, []byte(appData))
+		})
+
+		c.SetPongHandler(func(appData string) error {
+			log.Println("[WebSocket] Received pong from user ", user.ID)
+			return nil
+		})
+
+		// Send ping messages every 5 seconds (heartbeat)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		go func() {
+			heartbeat := time.NewTicker(5 * time.Second)
+			defer heartbeat.Stop()
+			for {
+				select {
+				case <-heartbeat.C:
+					if err := c.WriteMessage(websocket.PingMessage, nil); err != nil {
+						log.Println("[WebSocket] Ping Error:", err)
+						c.Close()
+						return
+					}
+				case <-ctx.Done():
+					return
+				}
+			}
+		}()
 
 		var (
 			mt    int
