@@ -51,10 +51,8 @@ func forEachConnection(key string, conns *sync.Map) func(func(*websocket.Conn)) 
 // HOF to remove a connection from a map
 func onRemove(key, connId string, outer, inner *atomicSyncMap) func(func()) {
 	return func(onInnerEmptycallback func()) {
-		log.Printf("(%s, %s) - remove\n", key, connId)
 		inner.Remove(connId)
 		if inner.Len() == 0 {
-			log.Printf("(%s, %s) - empty\n", key, connId)
 			// unsubscribe from Kafka for this user
 			onInnerEmptycallback()
 			outer.Remove(key)
@@ -77,13 +75,11 @@ func (cm *ConnMap) Add(key string, conn *websocket.Conn) (func(func(*websocket.C
 	if value, ok := cm.outer.m.Load(key); ok {
 		inner = value.(*atomicSyncMap)
 		inner.Add(connId, conn)
-		log.Printf("(%s, %s) - add\n", key, connId)
 	} else {
 		inner = newAtomicSyncMap()
 		inner.Add(connId, conn)
 		cm.outer.Add(key, inner)
 		isInit = true
-		log.Printf("(%s, %s) - init\n", key, connId)
 	}
 
 	return forEachConnection(key, inner.m), onRemove(key, connId, &cm.outer, inner), isInit
