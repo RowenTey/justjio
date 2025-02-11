@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import {
+	BellIcon as BellSolid,
 	HomeIcon as HomeSolid,
 	UserIcon as UserSolid,
 } from "@heroicons/react/24/solid";
 import {
+	BellIcon as BellOutline,
 	HomeIcon as HomeOutline,
 	UserIcon as UserOutline,
 } from "@heroicons/react/24/outline";
@@ -20,6 +22,13 @@ const TabBar = () => {
 					to="/profile"
 					SolidIcon={UserSolid}
 					OutlineIcon={UserOutline}
+				/>
+			</Link>
+			<Link to="/notifications">
+				<NavIcon
+					to="/notifications"
+					SolidIcon={BellSolid}
+					OutlineIcon={BellOutline}
 				/>
 			</Link>
 		</nav>

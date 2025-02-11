@@ -5,6 +5,9 @@ import { BellIcon } from "@heroicons/react/24/outline";
 import { useTransactionCtx } from "../context/transaction";
 import Toast from "./Toast";
 import { useToast } from "../context/toast";
+import { createNotificationApi } from "../api/notifications";
+import { api } from "../api";
+import { AxiosError } from "axios";
 
 type TransactionContainerProps = {
 	title: string;
@@ -65,6 +68,28 @@ const TransactionBox = ({
 		showToast(`Transaction settled successfully!`, false);
 	};
 
+	const handleCreateReminder = async (transaction: ITransaction) => {
+		try {
+			await createNotificationApi(
+				api,
+				transaction.payerId,
+				`Reminder to pay $${transaction.amount.toFixed(2)} to ${
+					transaction.payee.username
+				}!`
+			);
+			showToast("Reminder created successfully", false);
+		} catch (error) {
+			switch ((error as AxiosError).response?.status) {
+				case 400:
+					showToast("Bad request, please check request body.", true);
+					break;
+				default:
+					showToast("Failed to create reminder", true);
+					break;
+			}
+		}
+	};
+
 	return (
 		<div
 			className="flex items-center justify-between w-full 
@@ -83,7 +108,10 @@ const TransactionBox = ({
 						onClick={() => handleSettleTransaction(transaction.id)}
 					/>
 				) : (
-					<BellIcon className="w-5 h-5 text-secondary cursor-pointer hover:scale-110" />
+					<BellIcon
+						className="w-5 h-5 text-secondary cursor-pointer hover:scale-110"
+						onClick={() => handleCreateReminder(transaction)}
+					/>
 				)}
 			</div>
 			<Toast

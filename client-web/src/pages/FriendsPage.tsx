@@ -40,7 +40,7 @@ const FriendsTopBar: React.FC<FriendsTopBarProps> = ({ userId, title }) => {
 		>
 			<button
 				onClick={() => navigate(-1)}
-				className={`flex items-center justify-center p-1 hover:scale-110 `}
+				className={`flex items-center justify-center bg-transparent p-1 hover:scale-110 `}
 			>
 				<ArrowLeftIcon className="w-6 h-6 text-black" />
 			</button>
@@ -133,7 +133,15 @@ const FriendsPage = () => {
 			<FriendsTopBar userId={user.id} title="Friends" />
 
 			<div className="w-full h-full flex flex-col items-center px-4 gap-3">
-				<div className="w-full h-[85%] overflow-y-auto flex flex-col items-center justify-center gap-4">
+				<div
+					className={`w-full h-[85%] overflow-y-auto flex flex-col items-center ${
+						loading
+							? "justify-center"
+							: friends.length > 0
+							? ""
+							: "justify-center"
+					} gap-4`}
+				>
 					{loading ? (
 						<Spinner spinnerSize={{ width: "w-10", height: "h-10" }} />
 					) : friends.length > 0 ? (

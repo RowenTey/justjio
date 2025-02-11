@@ -21,7 +21,7 @@ const TopBarWithBackArrow: React.FC<TopBarWithBackArrowProps> = ({
 		>
 			<button
 				onClick={() => navigate(-1)}
-				className={`flex items-center justify-center p-1 hover:scale-110 ${
+				className={`flex items-center justify-center p-1 bg-transparent hover:scale-110 ${
 					shouldCenterTitle ? "absolute left-3" : ""
 				}`}
 			>

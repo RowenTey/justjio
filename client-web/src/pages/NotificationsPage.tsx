@@ -1,0 +1,95 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useEffect, useState } from "react";
+import { useUserCtx } from "../context/user";
+import { api } from "../api";
+import { useToast } from "../context/toast";
+import TopBarWithBackArrow from "../components/top-bar/TopBarWithBackArrow";
+import useLoadingAndError from "../hooks/useLoadingAndError";
+import { CheckIcon } from "@heroicons/react/24/solid";
+import Spinner from "../components/Spinner";
+import {
+	getNotificationsApi,
+	markNotificationAsReadApi,
+} from "../api/notifications";
+import { INotification } from "../types/notifications";
+
+const NotificationsPage = () => {
+	const { loading, startLoading, stopLoading } = useLoadingAndError();
+	const [notifications, setNotifications] = useState<INotification[]>([]);
+	const { user } = useUserCtx();
+	const { showToast } = useToast();
+
+	useEffect(() => {
+		const fetchNotifications = async () => {
+			const res = await getNotificationsApi(api);
+			setNotifications(res.data.data);
+		};
+
+		startLoading();
+		fetchNotifications().then(stopLoading);
+	}, [user.id]);
+
+	const handleReadNotification = async (notificationId: number) => {
+		try {
+			await markNotificationAsReadApi(api, user.id, notificationId);
+			const updatedNotifications = notifications.map((notification) => {
+				if (notification.id === notificationId) {
+					return { ...notification, isRead: true };
+				}
+				return notification;
+			});
+			setNotifications(updatedNotifications);
+		} catch (error) {
+			console.error(
+				"An error occurred while marking notification as read: ",
+				error
+			);
+			showToast("Error occurred, please try again later.", true);
+		}
+	};
+
+	return (
+		<div className="h-full flex flex-col items-center gap-4 bg-gray-200">
+			<TopBarWithBackArrow title="Notifications" />
+
+			<div className="w-full h-full flex flex-col items-center gap-3">
+				{loading ? (
+					<Spinner spinnerSize={{ width: "w-10", height: "h-10" }} />
+				) : (
+					<div
+						className={`w-full h-[85%] overflow-y-auto flex flex-col items-center gap-4 ${
+							notifications.length > 0 ? "" : "justify-center"
+						}`}
+					>
+						{notifications.length > 0 ? (
+							notifications.map((notification) => (
+								<div
+									key={notification.id}
+									className={`w-4/5 flex items-center justify-between py-2 px-3 ${
+										notification.isRead ? "bg-gray-100" : "bg-white"
+									} rounded-xl shadow-md`}
+								>
+									<p className="text-sm text-black text-wrap w-[90%]">
+										{notification.content}
+									</p>
+									{!notification.isRead && (
+										<CheckIcon
+											className="w-5 h-5 text-green-500 cursor-pointer"
+											onClick={() => handleReadNotification(notification.id)}
+										/>
+									)}
+								</div>
+							))
+						) : (
+							<p className="text-lg font-semibold text-gray-500">
+								No notifications found
+							</p>
+						)}
+					</div>
+				)}
+			</div>
+		</div>
+	);
+};
+
+export default NotificationsPage;

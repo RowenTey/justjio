@@ -29,7 +29,7 @@ export interface RoomState {
 }
 
 export interface RoomContextType {
-	rooms: Room[];
+	rooms: IRoom[];
 	fetchRooms: () => Promise<BaseContextResponse>;
 	createRoom: (
 		roomData: Partial<IRoom>,

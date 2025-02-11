@@ -47,6 +47,10 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService) {
 	friendRequests.Post("/", handlers.SendFriendRequest)
 	friendRequests.Patch("/", handlers.RespondToFriendRequest)
 
+	userNotifications := users.Group("/:userId/notifications")
+	userNotifications.Get("/:id", handlers.GetNotification)
+	userNotifications.Patch("/:id", handlers.MarkNotificationAsRead)
+
 	rooms := v1.Group("/rooms")
 	rooms.Get("/", handlers.GetRooms)
 	rooms.Get("/count", handlers.GetNumRooms)
@@ -77,6 +81,10 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService) {
 	transactions := v1.Group("/transactions")
 	transactions.Get("/", handlers.GetTransactionsByUser)
 	transactions.Patch("/:txId/settle", handlers.SettleTransaction)
+
+	notifications := v1.Group("/notifications")
+	notifications.Get("/", handlers.GetNotifications)
+	notifications.Post("/", handlers.CreateNotification)
 
 	// 404 handler
 	router.Use(func(c *fiber.Ctx) error {
