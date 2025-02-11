@@ -123,7 +123,10 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({
 				</button>
 			</div>
 
-			<div className="w-1/5 flex flex-col gap-3 items-center cursor-pointer">
+			<div
+				className="w-1/5 flex flex-col gap-3 items-center cursor-pointer"
+				onClick={() => navigate("/rooms")}
+			>
 				<p className="text-4xl font-extrabold text-secondary hover:scale-110">
 					{numRooms}
 				</p>

@@ -185,9 +185,9 @@ func (s *UserService) SendFriendRequest(senderID, receiverID uint) error {
 		}
 	}
 
-	// Check if a friend request already exists
+	// Check if a friend request already exists (either sent by userA or userB)
 	var existing model.FriendRequest
-	if err := db.Where("sender_id = ? AND receiver_id = ? AND status = ?", senderID, receiverID, "pending").First(&existing).Error; err == nil {
+	if err := db.Where("((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) AND status = ?", senderID, receiverID, receiverID, senderID, "pending").First(&existing).Error; err == nil {
 		return errors.New("friend request already sent")
 	}
 

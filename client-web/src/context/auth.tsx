@@ -5,6 +5,7 @@ import { api } from "../api";
 import { useUserCtx } from "./user";
 import useContextWrapper from "../hooks/useContextWrapper";
 import { AxiosError } from "axios";
+import { DecodedJWTToken, jwtDecode } from "../utils/jwt";
 
 export const LOGOUT = "LOGOUT";
 
@@ -18,6 +19,26 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 		authenticated: false,
 	});
 	const { setUser } = useUserCtx();
+
+	const checkAuth = (): boolean => {
+		const accessToken = localStorage.getItem("accessToken");
+		if (!accessToken) return false;
+
+		// Decode the token to get the user's info
+		const decodedToken = jwtDecode<DecodedJWTToken>(accessToken);
+		setUser({
+			id: decodedToken.user_id,
+			email: decodedToken.user_email,
+			username: decodedToken.username,
+		});
+
+		setAuthState({
+			accessToken,
+			authenticated: true,
+		});
+
+		return true;
+	};
 
 	const login = async (
 		username: string,
@@ -71,7 +92,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	};
 
 	const isAuthenticated = () => {
-		return authState.authenticated;
+		return authState.authenticated ? true : checkAuth();
 	};
 
 	return (

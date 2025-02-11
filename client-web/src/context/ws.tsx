@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, createContext, useRef } from "react";
 import { useUserCtx } from "./user";
@@ -6,7 +7,6 @@ import useContextWrapper from "../hooks/useContextWrapper";
 
 const channelTypes = {
 	createMessageInChat: (roomId: string) => `CREATE_MESSAGE_${roomId}`,
-	deleteMessageInChat: (roomId: string) => `DELETE_MESSAGE_${roomId}`,
 	createMessage: () => "CREATE_MESSAGE",
 };
 
@@ -39,8 +39,7 @@ const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
 		delete channels.current[channel];
 	};
 
-	// connect to ws server when user is logged in
-	useEffect(() => {
+	const connectWebSocket = () => {
 		if (!user || user.id === -1) {
 			ws.current?.close();
 			return;
@@ -66,14 +65,32 @@ const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
 
 			// users currently in room => subscribed to chat channel
 			if (channels.current[roomChannel]) channels.current[roomChannel](data);
-			// not subsribed to chat channel yet
+			// not subscribed to chat channel yet
 			else channels.current[type]?.(data);
 		};
+	};
+
+	// connect to ws server when user is logged in
+	useEffect(() => {
+		connectWebSocket();
 
 		return () => {
 			ws.current?.close();
 		};
-	}, [getAccessToken, user]);
+	}, [user]);
+
+	// Periodically check the WebSocket connection status and reconnect if needed
+	useEffect(() => {
+		// Check every 5 seconds
+		const interval = setInterval(() => {
+			if (ws.current?.readyState === WebSocket.CLOSED) {
+				console.log("[WS] Reconnecting WS connection");
+				connectWebSocket();
+			}
+		}, 5000);
+
+		return () => clearInterval(interval);
+	}, [user]);
 
 	return (
 		<WebSocketContext.Provider value={[subscribe, unsubscribe]}>

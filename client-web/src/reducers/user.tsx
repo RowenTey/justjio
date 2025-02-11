@@ -1,4 +1,4 @@
-import { FETCH_FRIENDS, FETCH_USER } from "../context/user";
+import { FETCH_FRIENDS, FETCH_USER, REMOVE_FRIEND } from "../context/user";
 import { UserActionTypes, UserState } from "../types/user";
 
 export const initialUserState: UserState = {
@@ -20,6 +20,11 @@ const UserReducer = (state: UserState, action: UserActionTypes): UserState => {
 				user: payload,
 			};
 		case FETCH_FRIENDS:
+			return {
+				...state,
+				friends: payload.data,
+			};
+		case REMOVE_FRIEND:
 			return {
 				...state,
 				friends: payload.data,

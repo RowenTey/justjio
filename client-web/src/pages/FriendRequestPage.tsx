@@ -79,7 +79,11 @@ const FriendRequestsPage = () => {
 				{loading ? (
 					<Spinner spinnerSize={{ width: "w-10", height: "h-10" }} />
 				) : (
-					<div className="w-full h-[85%] overflow-y-auto flex flex-col items-center justify-center gap-4">
+					<div
+						className={`w-full h-[85%] overflow-y-auto flex flex-col items-center ${
+							friendRequests.length > 0 ? "" : "justify-center"
+						} gap-4`}
+					>
 						{friendRequests.length > 0 ? (
 							friendRequests.map((friendRequest) => (
 								<div

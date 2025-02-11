@@ -28,8 +28,7 @@
 
 	/* WebKit-based browsers (Chrome, Safari) */
 	::-webkit-scrollbar {
-		width: 12px;
-		height: 12px;
+		width: 10px;
 	}
 
 	::-webkit-scrollbar-track {
@@ -58,6 +57,12 @@
 
 	*::-webkit-scrollbar-thumb {
 		border-radius: 10px;
+	}
+
+	/* Styling date and time input on Safari */
+	input[type="date"],
+	input[type="time"] {
+		-webkit-min-logical-width: calc(100% - 16px);
 	}
 
 	h1 {
