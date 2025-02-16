@@ -15,6 +15,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type UserKafkaClient struct {
+	client *services.KafkaService
+}
+
+// maps user ID to Kafka client
+var userKafkaClients = make(map[string]*UserKafkaClient)
+
 func webSocketUpgrade(c *fiber.Ctx) error {
 	// IsWebSocketUpgrade returns true if the client
 	// requested upgrade to the WebSocket protocol.
@@ -47,10 +54,11 @@ func main() {
 
 	// handle websocket upgrade
 	app.Use(webSocketUpgrade)
+
 	app.Get("/", websocket.New(func(c *websocket.Conn) {
 		user, err := services.GetCurrentUser(c)
 		if err != nil {
-			log.Println(err)
+			log.Println("[AUTH] ", err)
 			c.WriteJSON(fiber.Map{
 				"status": "Unauthorized",
 			})
@@ -58,16 +66,10 @@ func main() {
 			return
 		}
 
-		log.Println("[Kafka] Kafka client created")
-		kafkaClient, err := services.NewKafkaService(utils.Config("KAFKA_URL"), consumerName)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer kafkaClient.Close()
-
-		channel := services.GetUserChannel(user.ID, env)
-		log.Println("[Kafka] Channel: ", channel)
 		forAllConns, remove, isInit := connMap.Add(user.ID, c)
+
+		var kafkaClient *services.KafkaService
+		var channel string
 
 		onMessage := func(message kafka.Message) {
 			forAllConns(func(conn *websocket.Conn) {
@@ -79,32 +81,49 @@ func main() {
 			})
 		}
 
+		// if the user is connecting for the first time, create a new Kafka client
+		if isInit {
+			kafkaClient, err = services.NewKafkaService(utils.Config("KAFKA_URL"), consumerName)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			channel = services.GetUserChannel(user.ID, env)
+			log.Println("[Kafka] Channel: ", channel)
+
+			userKafkaClients[user.ID] = &UserKafkaClient{
+				client: kafkaClient,
+			}
+
+			kafkaClient.Subscribe([]string{channel})
+			go kafkaClient.ConsumeMessages(onMessage)
+		} else {
+			kafkaClient = userKafkaClients[user.ID].client
+		}
+
 		onClose := func(code int, text string) error {
-			log.Printf("[WebSocket] %s disconnected\n", user.ID)
+			log.Printf("[WebSocket] User %s disconnected\n", user.ID)
+			// only runs when the last connection is removed
 			remove(func() {
 				if err := kafkaClient.Unsubscribe(); err != nil {
 					log.Println(err)
 				}
+				kafkaClient.Close()
+				delete(userKafkaClients, user.ID)
 			})
 			return nil
 		}
 		c.SetCloseHandler(onClose)
 
-		if isInit {
-			kafkaClient.Subscribe([]string{channel})
-			go kafkaClient.ConsumeMessages(onMessage)
-		}
-
 		log.Printf("[WebSocket] User %s connected\n", user.ID)
 
 		// Set up ping/pong handlers
 		c.SetPingHandler(func(appData string) error {
-			log.Println("[WebSocket] Received ping")
+			log.Println("[WebSocket] Received ping:", appData)
 			return c.WriteMessage(websocket.PongMessage, []byte(appData))
 		})
 
 		c.SetPongHandler(func(appData string) error {
-			log.Println("[WebSocket] Received pong from user ", user.ID)
 			return nil
 		})
 
@@ -119,7 +138,7 @@ func main() {
 				select {
 				case <-heartbeat.C:
 					if err := c.WriteMessage(websocket.PingMessage, nil); err != nil {
-						log.Println("[WebSocket] Ping Error:", err)
+						log.Println("[WebSocket] Ping error:", err)
 						c.Close()
 						return
 					}
