@@ -43,5 +43,7 @@ func main() {
 
 	middleware.Fiber(app)
 	router.Initalize(app, kafkaService)
+
+	log.Println("Server running on port", config.Config("PORT"))
 	log.Fatal(app.Listen(":" + config.Config("PORT")))
 }
