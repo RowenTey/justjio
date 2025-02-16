@@ -60,7 +60,7 @@ func SignUp(c *fiber.Ctx) error {
 		UID:      createdUser.ID,
 	}
 
-	log.Println("User " + response.Username + " signed up successfully.")
+	log.Println("[AUTH] User " + response.Username + " signed up successfully.")
 	return util.HandleSuccess(c, "User signed up successfully", response)
 }
 
@@ -100,7 +100,7 @@ func Login(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 		UID:      user.ID,
 	}
 
-	log.Println("User " + response.Username + " logged in successfully.")
+	log.Println("[AUTH] User " + response.Username + " logged in successfully.")
 	return util.HandleLoginSuccess(c, "Login successfully", token, response)
 }
 
@@ -129,6 +129,6 @@ func VerifyOTP(c *fiber.Ctx) error {
 		return util.HandleError(c, fiber.StatusBadRequest, "Invalid OTP", err)
 	}
 
-	log.Println("OTP verified successfully for email", request.Email)
+	log.Println("[AUTH] OTP verified successfully for email", request.Email)
 	return util.HandleSuccess(c, "OTP verified successfully", nil)
 }
