@@ -91,9 +91,6 @@ func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) error {
 }
 
 func (s *KafkaService) Close() {
-	// signal to stop consuming messages
-	s.cancel()
-
 	log.Println("[Kafka] Closing Kafka client")
 	s.Consumer.Close()
 }
