@@ -3,6 +3,7 @@ import { useAuth } from "../context/auth";
 import { useEffect, useState } from "react";
 import { useUserCtx } from "../context/user";
 import Spinner from "../components/Spinner";
+import { setRedirectPath } from "../utils/redirect";
 
 const ProtectedRoutes = () => {
 	const { isAuthenticated } = useAuth();
@@ -12,6 +13,7 @@ const ProtectedRoutes = () => {
 
 	useEffect(() => {
 		if (!isAuthenticated()) {
+			setRedirectPath(window.location.pathname + window.location.search);
 			setAllowed(false);
 			setLoading(false);
 			return;

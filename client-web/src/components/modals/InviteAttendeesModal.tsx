@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import ModalWrapper from "../ModalWrapper";
+import ModalWrapper, { ModalWrapperProps } from "../ModalWrapper";
 import SearchableDropdown from "../SearchableDropdown";
 import { IUser } from "../../types/user";
 import { useEffect, useState } from "react";
@@ -21,9 +21,9 @@ interface InviteAttendeesModalProps {
 	roomId: string;
 }
 
-const InviteAttendeesModalContent: React.FC<InviteAttendeesModalProps> = ({
-	roomId,
-}) => {
+const InviteAttendeesModalContent: React.FC<
+	InviteAttendeesModalProps & ModalWrapperProps
+> = ({ roomId }) => {
 	const {
 		register,
 		handleSubmit,

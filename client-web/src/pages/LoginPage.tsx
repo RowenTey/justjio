@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import InputField from "../components/InputField";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import { useAuth } from "../context/auth";
+import { getRedirectPath } from "../utils/redirect";
 
 type LoginFormData = {
 	username: string;
@@ -47,7 +48,8 @@ const LoginPage = () => {
 		}
 
 		stopLoading();
-		navigate("/");
+		const redirectPath = getRedirectPath() || "/";
+		navigate(redirectPath);
 	};
 
 	return (

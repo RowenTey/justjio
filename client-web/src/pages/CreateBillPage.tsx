@@ -174,7 +174,7 @@ const SelectMembersInput: React.FC<{
 	};
 
 	return (
-		<div className="flex flex-col gap-2 w-full my-1 h-full">
+		<div className="flex flex-col gap-2 w-full my-1 h-[50%]">
 			<div className="flex justify-between items-center w-full">
 				<label className="font-semibold text-md text-secondary">
 					Select payers:

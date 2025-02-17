@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { IUser } from "../../types/user";
-import ModalWrapper from "../ModalWrapper";
+import ModalWrapper, { ModalWrapperProps } from "../ModalWrapper";
 import { searchFriendsApi } from "../../api/user";
 import { api } from "../../api";
 import { UserPlusIcon } from "@heroicons/react/24/outline";
@@ -10,10 +10,9 @@ type SearchUserModalProps = {
 	sendFriendRequest: (user: IUser) => void;
 };
 
-const SearchUserModalContent: React.FC<SearchUserModalProps> = ({
-	userId,
-	sendFriendRequest,
-}) => {
+const SearchUserModalContent: React.FC<
+	SearchUserModalProps & ModalWrapperProps
+> = ({ userId, sendFriendRequest, closeModal }) => {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [searchResults, setSearchResults] = useState<IUser[]>([]);
 
@@ -61,7 +60,10 @@ const SearchUserModalContent: React.FC<SearchUserModalProps> = ({
 								<p className="text-secondary">{user.username}</p>
 							</div>
 							<UserPlusIcon
-								onClick={() => sendFriendRequest(user)}
+								onClick={() => {
+									sendFriendRequest(user);
+									closeModal();
+								}}
 								className="h-6 w-6 text-success hover:scale-110 cursor-pointer"
 							/>
 						</div>

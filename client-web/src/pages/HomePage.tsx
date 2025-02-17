@@ -56,10 +56,7 @@ const HomePage = () => {
 				onLogout={onLogout}
 			/>
 			<TransactionActionWidgets />
-			<RoomActionWidgets
-				onCreateRoom={() => navigate("/rooms/create")}
-				onRoomInvitations={() => navigate("/rooms/invites")}
-			/>
+			<RoomActionWidgets />
 			<RecentRoomsWidget rooms={rooms} />
 		</div>
 	);
@@ -86,22 +83,26 @@ const TransactionActionWidgets: React.FC = () => {
 	);
 };
 
-type RoomActionWidgetsProps = {
-	onCreateRoom: () => void;
-	onRoomInvitations: () => void;
-};
-
-const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
-	onCreateRoom,
-	onRoomInvitations,
-}) => {
+const RoomActionWidgets: React.FC = () => {
 	return (
 		<div className="h-[15%] flex justify-evenly w-full mt-4">
-			<ButtonCard title="Create Room" Icon={PlusIcon} onClick={onCreateRoom} />
+			<ButtonCard
+				title="Create Room"
+				Icon={PlusIcon}
+				isLink={true}
+				linkProps={{
+					to: "/rooms/create",
+					from: "/",
+				}}
+			/>
 			<ButtonCard
 				title="Room Invites"
 				Icon={EnvelopeIcon}
-				onClick={onRoomInvitations}
+				isLink={true}
+				linkProps={{
+					to: "/rooms/invites",
+					from: "/",
+				}}
 			/>
 		</div>
 	);

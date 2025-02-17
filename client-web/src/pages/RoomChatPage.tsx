@@ -35,7 +35,10 @@ const RoomChatPage: React.FC = () => {
 					user_id: Number(message.sender_id),
 					username: message.sender_name,
 					content: message.content,
-					time: new Date(message.sent_at).toLocaleTimeString(),
+					time: new Date(message.sent_at).toLocaleTimeString("en-US", {
+						hour: "2-digit",
+						minute: "2-digit",
+					}),
 				},
 			]);
 			setIsNewMessage(true);
@@ -65,7 +68,10 @@ const RoomChatPage: React.FC = () => {
 				user_id: msg.sender.id,
 				username: msg.sender.username,
 				content: msg.content,
-				time: new Date(msg.sent_at).toLocaleTimeString(),
+				time: new Date(msg.sent_at).toLocaleTimeString("en-US", {
+					hour: "2-digit",
+					minute: "2-digit",
+				}),
 			}));
 
 			setIsNewMessage(page == 1 ? true : false);
@@ -168,7 +174,7 @@ const ChatMessages: React.FC<{
 						/>
 						<div className="flex flex-col">
 							<div
-								className={`flex items-start gap-2 ${
+								className={`flex items-start justify-between gap-2 ${
 									message.user_id === currentUserId
 										? "flex-row-reverse"
 										: "flex-row"

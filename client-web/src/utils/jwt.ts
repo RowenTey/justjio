@@ -2,8 +2,7 @@ export interface DecodedJWTToken {
 	user_id: number;
 	user_email: string;
 	username: string;
-	exp?: number;
-	iat?: number;
+	exp: number;
 }
 
 // see https://stackoverflow.com/questions/38552003/how-to-decode-jwt-token-in-javascript-without-using-a-library
