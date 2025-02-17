@@ -8,7 +8,7 @@ import useLoadingAndError from "../hooks/useLoadingAndError";
 import Spinner from "../components/Spinner";
 import { fetchTransactionsApi } from "../api/transaction";
 import { ITransaction } from "../types/transaction";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 const ProfilePage: React.FC = () => {
 	const { loading, startLoading, stopLoading } = useLoadingAndError();
@@ -93,19 +93,18 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({
 	numFriends,
 	numRooms,
 }) => {
-	const navigate = useNavigate();
-
 	return (
 		<div className="w-[90%] p-4 flex justify-center items-center bg-white rounded-xl mt-4 shadow-xl">
-			<div
+			<Link
 				className="w-1/5 flex flex-col gap-3 items-center cursor-pointer"
-				onClick={() => navigate("/friends")}
+				to="/friends"
+				state={{ from: "/profile" }}
 			>
 				<p className="text-4xl font-extrabold text-secondary hover:scale-110">
 					{numFriends}
 				</p>
 				<p className="text-lg font-semibold text-black">Friends</p>
-			</div>
+			</Link>
 
 			<div className="w-3/5 flex flex-col gap-2 items-center">
 				<img
@@ -123,15 +122,16 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({
 				</button>
 			</div>
 
-			<div
+			<Link
 				className="w-1/5 flex flex-col gap-3 items-center cursor-pointer"
-				onClick={() => navigate("/rooms")}
+				to="/rooms"
+				state={{ from: "/profile" }}
 			>
 				<p className="text-4xl font-extrabold text-secondary hover:scale-110">
 					{numRooms}
 				</p>
 				<p className="text-lg font-semibold text-black">Rooms</p>
-			</div>
+			</Link>
 		</div>
 	);
 };

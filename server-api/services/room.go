@@ -204,6 +204,43 @@ func (rs *RoomService) UpdateRoomInviteStatus(roomId string, userId string, stat
 	return nil
 }
 
+func (rs *RoomService) JoinRoom(roomId, userId string) error {
+	db := rs.DB
+	var room model.Room
+	var user model.User
+
+	if err := db.First(&room, "id = ?", roomId).Error; err != nil {
+		return err
+	}
+	if err := db.First(&user, userId).Error; err != nil {
+		return err
+	}
+
+	// Check if user is already in room
+	var count int64
+	if err := db.
+		Model(&model.Room{}).
+		Joins("JOIN room_users ON rooms.id = room_users.room_id").
+		Where("rooms.id = ? AND room_users.user_id = ?", roomId, userId).
+		Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return errors.New("user is already in room")
+	}
+
+	// Update room info
+	room.AttendeesCount++
+	room.Users = append(room.Users, user)
+	room.UpdatedAt = time.Now()
+
+	if err := db.Save(&room).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (rs *RoomService) InviteUserToRoom(
 	roomId string,
 	inviter *model.User,
@@ -233,7 +270,11 @@ func (rs *RoomService) InviteUserToRoom(
 		var count int64
 
 		// Check if user is already in room
-		err := rs.DB.Model(&model.Room{}).Joins("JOIN room_users ON rooms.id = room_users.room_id").Where("rooms.id = ? AND room_users.user_id = ?", roomId, user.ID).Count(&count).Error
+		err := rs.DB.
+			Model(&model.Room{}).
+			Joins("JOIN room_users ON rooms.id = room_users.room_id").
+			Where("rooms.id = ? AND room_users.user_id = ?", roomId, user.ID).
+			Count(&count).Error
 		if err != nil || count > 0 {
 			return nil, errors.New("user is already in room")
 		}

@@ -163,7 +163,7 @@ const SignUpPage = () => {
 					className={`bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full w-3/5 ${
 						error ? "" : "mt-3"
 					}`}
-					form="login-form"
+					form="signup-form"
 				>
 					{loading ? (
 						<Spinner

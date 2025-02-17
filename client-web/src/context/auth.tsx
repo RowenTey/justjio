@@ -26,6 +26,11 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
 		// Decode the token to get the user's info
 		const decodedToken = jwtDecode<DecodedJWTToken>(accessToken);
+		// Check if token is expired
+		if (decodedToken.exp * 1000 < Date.now()) {
+			return false;
+		}
+
 		setUser({
 			id: decodedToken.user_id,
 			email: decodedToken.user_email,

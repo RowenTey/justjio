@@ -160,6 +160,48 @@ export const createRoomApi = (
 	});
 };
 
+export const joinRoomApi = (
+	api: AxiosInstance,
+	roomId: string,
+	mock: boolean = false
+): Promise<AxiosResponse<RespondToInviteResponse>> => {
+	if (!mock) {
+		return api.patch<RespondToInviteResponse>(`/rooms/${roomId}/join`);
+	}
+
+	return new Promise<AxiosResponse<RespondToInviteResponse>>((resolve) => {
+		setTimeout(() => {
+			resolve({
+				data: {
+					data: {
+						room: {
+							id: roomId,
+							name: "Test Room",
+							time: "5:00pm",
+							venue: "ntu hall 9",
+							date: "2022-09-04T00:00:00Z",
+							hostId: 6,
+							host: {},
+							createdAt: "2021-09-25T02:00:00Z",
+							updatedAt: "2021-09-25T02:00:00Z",
+							attendeesCount: 2,
+							url: "",
+							isClosed: false,
+						},
+						attendees: [],
+					},
+					message: "Joined room successfully",
+					status: "success",
+				},
+				status: 200,
+				statusText: "OK",
+				headers: {},
+				config: {},
+			} as AxiosResponse<RespondToInviteResponse>);
+		}, 1500);
+	});
+};
+
 export const respondToInviteApi = (
 	api: AxiosInstance,
 	roomId: string,

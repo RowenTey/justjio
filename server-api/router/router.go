@@ -62,6 +62,7 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService) {
 	rooms.Post("/", handlers.CreateRoom)
 	rooms.Post("/:roomId", middleware.IsUserInRoom, handlers.InviteUser)
 	rooms.Patch("/:roomId", handlers.RespondToRoomInvite)
+	rooms.Patch("/:roomId/join", handlers.JoinRoom)
 	rooms.Patch("/:roomId/close", middleware.IsUserInRoom, handlers.CloseRoom)
 	rooms.Patch("/:roomId/leave", middleware.IsUserInRoom, handlers.LeaveRoom)
 

@@ -6,7 +6,7 @@ export interface ModalWrapperProps {
 }
 
 const ModalWrapper = <P extends object>(
-	WrappedComponent: React.ComponentType<P>
+	WrappedComponent: React.ComponentType<P & ModalWrapperProps>
 ) => {
 	const ModalComponent: React.FC<P & ModalWrapperProps> = ({
 		isVisible,
@@ -44,7 +44,11 @@ const ModalWrapper = <P extends object>(
 					ref={modalContentRef}
 					className="w-80 p-6 bg-gray-200 rounded-xl border-[1px] border-secondary flex flex-col gap-3 items-center justify-center"
 				>
-					<WrappedComponent {...(props as P)} />
+					<WrappedComponent
+						{...(props as P)}
+						isVisible={isVisible}
+						closeModal={closeModal}
+					/>
 				</div>
 			</div>
 		);

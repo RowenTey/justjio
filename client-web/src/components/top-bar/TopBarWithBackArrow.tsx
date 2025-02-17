@@ -1,6 +1,6 @@
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 type TopBarWithBackArrowProps = {
 	title: string;
@@ -12,6 +12,9 @@ const TopBarWithBackArrow: React.FC<TopBarWithBackArrowProps> = ({
 	shouldCenterTitle = true,
 }) => {
 	const navigate = useNavigate();
+	const { state } = useLocation();
+	const { from } = state as { from: string | undefined };
+	console.log("from", from);
 
 	return (
 		<div
@@ -20,7 +23,13 @@ const TopBarWithBackArrow: React.FC<TopBarWithBackArrowProps> = ({
 			}`}
 		>
 			<button
-				onClick={() => navigate(-1)}
+				onClick={() => {
+					if (!from) {
+						navigate("/");
+					} else {
+						navigate(-1);
+					}
+				}}
 				className={`flex items-center justify-center p-1 bg-transparent hover:scale-110 ${
 					shouldCenterTitle ? "absolute left-3" : ""
 				}`}

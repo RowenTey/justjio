@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { useUserCtx } from "../context/user";
 import { api } from "../api";
 import { useToast } from "../context/toast";
-import TopBarWithBackArrow from "../components/top-bar/TopBarWithBackArrow";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import { CheckIcon } from "@heroicons/react/24/solid";
 import Spinner from "../components/Spinner";
@@ -12,6 +11,14 @@ import {
 	markNotificationAsReadApi,
 } from "../api/notifications";
 import { INotification } from "../types/notifications";
+
+const NotificationsTopBar: React.FC = () => {
+	return (
+		<div className="relative top-0 flex h-[8%] items-center justify-center w-full py-4 px-6 bg-purple-200">
+			<h1 className="text-xl font-bold text-secondary">Notifications</h1>
+		</div>
+	);
+};
 
 const NotificationsPage = () => {
 	const { loading, startLoading, stopLoading } = useLoadingAndError();
@@ -50,7 +57,7 @@ const NotificationsPage = () => {
 
 	return (
 		<div className="h-full flex flex-col items-center gap-4 bg-gray-200">
-			<TopBarWithBackArrow title="Notifications" />
+			<NotificationsTopBar />
 
 			<div className="w-full h-full flex flex-col items-center gap-3">
 				{loading ? (

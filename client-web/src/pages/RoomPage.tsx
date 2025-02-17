@@ -14,9 +14,9 @@ import PeopleBox from "../components/PeopleBox";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import { useEffect, useState } from "react";
 import Spinner from "../components/Spinner";
-import { fetchRoomApi, fetchRoomAttendeesApi } from "../api/room";
+import { fetchRoomApi, fetchRoomAttendeesApi, joinRoomApi } from "../api/room";
 import { api } from "../api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { IRoom } from "../types/room";
 import { useUserCtx } from "../context/user";
 import { IUser } from "../types/user";
@@ -25,19 +25,76 @@ import { useRoomCtx } from "../context/room";
 import { channelTypes, useWs } from "../context/ws";
 import useMandatoryParam from "../hooks/useMandatoryParam";
 import InviteAttendeesModal from "../components/modals/InviteAttendeesModal";
+import QRCodeModal from "../components/modals/QRCodeModal";
+import { getRedirectPath, setRedirectPath } from "../utils/redirect";
+import ConfirmJoinModal from "../components/modals/ConfirmJoinModal";
+import { useToast } from "../context/toast";
+import { AxiosError } from "axios";
+
+const initialRoom: IRoom = {
+	id: "0",
+	name: "Room",
+	date: "",
+	time: "",
+	venue: "",
+	attendeesCount: 1,
+	hostId: 0,
+	host: {
+		id: 0,
+		username: "",
+		email: "",
+	},
+	createdAt: "",
+	updatedAt: "",
+	isClosed: false,
+	url: "",
+};
 
 const RoomPage = () => {
 	const { loading, startLoading, stopLoading } = useLoadingAndError();
-	const [room, setRoom] = useState<IRoom | undefined>(undefined);
+	const [room, setRoom] = useState<IRoom>(initialRoom);
 	const [attendees, setAttendees] = useState<IUser[]>([]);
 	const [numNewMessages, setNumNewMessages] = useState<number>(0);
+	const [isConfirmJoinModalVisible, setConfirmJoinModalVisible] =
+		useState(false);
 	const roomId = useMandatoryParam("roomId");
-	const { closeRoom } = useRoomCtx();
 	const [subscribe, unsubscribe] = useWs();
+	const { closeRoom } = useRoomCtx();
 	const { user } = useUserCtx();
 	const navigate = useNavigate();
+	const { showToast } = useToast();
+	const [searchParams, setSearchParams] = useSearchParams();
 
-	const onCloseRoom = async () => {
+	const handleConfirmJoin = async () => {
+		startLoading();
+		try {
+			const res = await joinRoomApi(api, roomId);
+			showToast("Successfully joined room!", false);
+			console.log("[RoomPage] Joined room", res.data.data);
+			stopLoading();
+
+			searchParams.delete("join");
+			setSearchParams(searchParams);
+
+			fetchData();
+		} catch (error) {
+			switch ((error as AxiosError).response?.status) {
+				case 404:
+					showToast("Room not found, please try again later.", true);
+					break;
+				case 409:
+					showToast("User already in room!", true);
+					break;
+				case 500:
+				default:
+					showToast("An error occurred, please try again later.", true);
+					break;
+			}
+			stopLoading();
+		}
+	};
+
+	const handleCloseRoom = async () => {
 		startLoading();
 		const res = await closeRoom(roomId);
 
@@ -50,19 +107,33 @@ const RoomPage = () => {
 		navigate("/");
 	};
 
-	useEffect(() => {
+	const fetchData = async () => {
 		const fetchRoom = async (roomId: string) => {
 			const res = await fetchRoomApi(api, roomId);
 			console.log("[RoomPage] Room data", res.data.data);
 			setRoom(res.data.data);
 		};
+
 		const fetchAttendees = async (roomId: string) => {
 			const res = await fetchRoomAttendeesApi(api, roomId);
 			setAttendees(res.data.data);
 		};
 
 		startLoading();
-		Promise.all([fetchRoom(roomId), fetchAttendees(roomId)]).then(stopLoading);
+		Promise.all([fetchRoom(roomId), fetchAttendees(roomId)])
+			.then(stopLoading)
+			.catch(stopLoading);
+	};
+
+	useEffect(() => {
+		searchParams.get("join") === "true" && setConfirmJoinModalVisible(true);
+
+		// Clear the redirect path after successful login/signup
+		if (getRedirectPath() === window.location.pathname) {
+			setRedirectPath("");
+		}
+
+		fetchData();
 	}, []);
 
 	useEffect(() => {
@@ -78,7 +149,7 @@ const RoomPage = () => {
 		};
 	}, [roomId, subscribe, unsubscribe]);
 
-	if (loading || room === undefined) {
+	if (loading) {
 		return <Spinner bgClass="bg-primary" />;
 	}
 
@@ -96,21 +167,23 @@ const RoomPage = () => {
 			/>
 
 			<RoomActionWidgets
-				isHost={user.id === room.hostId}
+				userId={user.id}
 				roomId={roomId}
+				room={room}
+				attendees={attendees}
+				isHost={user.id === room.hostId}
 				numNewMessages={numNewMessages}
-				onSplitBillClicked={() =>
-					navigate(`/room/${roomId}/bill/split`, {
-						state: { roomName: room.name },
-					})
-				}
-				onCreateBillClicked={() =>
-					navigate(`/room/${roomId}/bill/create`, {
-						state: { attendees, roomName: room.name, currentUserId: user.id },
-					})
-				}
-				onChatClicked={() => navigate(`/room/${roomId}/chat`)}
-				onCloseRoom={onCloseRoom}
+				onCloseRoom={handleCloseRoom}
+			/>
+
+			<ConfirmJoinModal
+				isVisible={isConfirmJoinModalVisible}
+				closeModal={() => setConfirmJoinModalVisible(false)}
+				rejectJoin={() => navigate("/")}
+				confirmJoin={() => {
+					handleConfirmJoin();
+					setConfirmJoinModalVisible(false);
+				}}
 			/>
 		</div>
 	);
@@ -145,12 +218,12 @@ const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
 	);
 };
 
-interface RoomAttendeesProps {
+type RoomAttendeesProps = {
 	roomId: string;
 	isHost: boolean;
 	hostId: number;
 	attendees: IUser[];
-}
+};
 
 const RoomAttendees: React.FC<RoomAttendeesProps> = ({
 	roomId,
@@ -200,48 +273,67 @@ const RoomAttendees: React.FC<RoomAttendeesProps> = ({
 	);
 };
 
-interface RoomActionWidgetsProps {
-	isHost: boolean;
+type RoomActionWidgetsProps = {
+	userId: number;
 	roomId: string;
+	room: IRoom;
+	isHost: boolean;
+	attendees: IUser[];
 	numNewMessages: number;
-	onSplitBillClicked?: () => void;
-	onCreateBillClicked: () => void;
-	onChatClicked: () => void;
 	onCloseRoom: () => void;
-}
+};
 
 const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
+	userId,
+	roomId,
+	room,
 	isHost,
+	attendees,
 	numNewMessages,
-	onSplitBillClicked,
-	onCreateBillClicked,
-	onChatClicked,
 	onCloseRoom,
 }) => {
-	const showSplitBillBtn = isHost && onSplitBillClicked !== undefined;
+	const [isQRCodeModalVisible, setIsQRCodeModalVisible] = useState(false);
 
 	return (
 		<>
 			<div className="w-full mt-3 h-[10%] flex justify-evenly items-baseline">
-				{showSplitBillBtn && (
+				{isHost && (
 					<ButtonCard
 						title="Split Bill"
 						Icon={DocumentDuplicateIcon}
-						onClick={onSplitBillClicked}
+						isLink={true}
+						linkProps={{
+							to: `/room/${roomId}/bill/split`,
+							from: `/room/${roomId}`,
+							state: { roomName: room.name },
+						}}
 					/>
 				)}
 				<ButtonCard
 					title="Create Bill"
 					Icon={DocumentPlusIcon}
-					onClick={onCreateBillClicked}
+					isLink={true}
+					linkProps={{
+						to: `/room/${roomId}/bill/create`,
+						from: `/room/${roomId}`,
+						state: { attendees, roomName: room.name, currentUserId: userId },
+					}}
 				/>
 				<ButtonCard
 					title="Chat"
 					Icon={ChatBubbleLeftIcon}
 					numNotifications={numNewMessages}
-					onClick={onChatClicked}
+					linkProps={{
+						to: `/room/${roomId}/chat`,
+						from: `/room/${roomId}`,
+					}}
 				/>
-				<ButtonCard title="Generate QR" Icon={QrCodeIcon} onClick={() => {}} />
+				<ButtonCard
+					title="Generate QR"
+					Icon={QrCodeIcon}
+					onClick={() => setIsQRCodeModalVisible(true)}
+					isLink={false}
+				/>
 
 				{/* TODO: Show prompt for close and leave room */}
 				{isHost ? (
@@ -249,14 +341,22 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
 						title="Close Room"
 						Icon={XMarkIcon}
 						onClick={onCloseRoom}
+						isLink={false}
 					/>
 				) : (
 					<ButtonCard
 						title="Leave Room"
 						Icon={ArrowRightStartOnRectangleIcon}
 						onClick={() => {}}
+						isLink={false}
 					/>
 				)}
+
+				<QRCodeModal
+					url={window.location.href + "?join=true"}
+					isVisible={isQRCodeModalVisible}
+					closeModal={() => setIsQRCodeModalVisible(false)}
+				/>
 			</div>
 		</>
 	);

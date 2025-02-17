@@ -184,6 +184,40 @@ func CloseRoom(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Closed room successfully", nil)
 }
 
+func JoinRoom(c *fiber.Ctx) error {
+	token := c.Locals("user").(*jwt.Token)
+	userId := util.GetUserInfoFromToken(token, "user_id")
+	roomId := c.Params("roomId")
+
+	roomService := &services.RoomService{DB: database.DB}
+
+	err := roomService.JoinRoom(roomId, userId)
+	if err != nil {
+		if err.Error() == "user is already in room" {
+			return util.HandleError(c, fiber.StatusConflict, "User is already in room", err)
+		}
+		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
+	}
+
+	room, err := roomService.GetRoomById(roomId)
+	if err != nil {
+		return util.HandleInternalServerError(c, err)
+	}
+
+	attendees, err := roomService.GetRoomAttendees(roomId)
+	if err != nil {
+		return util.HandleInternalServerError(c, err)
+	}
+
+	roomResponse := response.JoinRoomResponse{
+		Room:      *room,
+		Attendees: *attendees,
+	}
+
+	log.Println("User " + util.GetUserInfoFromToken(token, "username") + " joined Room " + roomId + " successfully.")
+	return util.HandleSuccess(c, "Joined room successfully", roomResponse)
+}
+
 func RespondToRoomInvite(c *fiber.Ctx) error {
 	var request request.RespondToRoomInviteRequest
 	if err := c.BodyParser(&request); err != nil {
