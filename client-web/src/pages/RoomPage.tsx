@@ -340,6 +340,7 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
 						}}
 					/>
 				)}
+
 				<ButtonCard
 					title="Chat"
 					Icon={ChatBubbleLeftIcon}
