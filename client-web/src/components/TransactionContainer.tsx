@@ -3,7 +3,6 @@ import { ITransaction } from "../types/transaction";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { BellIcon } from "@heroicons/react/24/outline";
 import { useTransactionCtx } from "../context/transaction";
-import Toast from "./Toast";
 import { useToast } from "../context/toast";
 import { createNotificationApi } from "../api/notifications";
 import { api } from "../api";
@@ -77,7 +76,7 @@ const TransactionBox = ({
 					transaction.payee.username
 				}!`
 			);
-			showToast("Reminder created successfully", false);
+			showToast("Reminder created successfully!", false);
 		} catch (error) {
 			switch ((error as AxiosError).response?.status) {
 				case 400:
@@ -114,11 +113,6 @@ const TransactionBox = ({
 					/>
 				)}
 			</div>
-			<Toast
-				message="Transaction settled"
-				visible={false}
-				className="bg-green-400"
-			/>
 		</div>
 	);
 };

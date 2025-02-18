@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState } from "react";
 import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
 import { channelTypes, useWs } from "../context/ws";
@@ -5,6 +6,8 @@ import { useUserCtx } from "../context/user";
 import { fetchRoomMessageApi, sendMessageApi } from "../api/message";
 import { api } from "../api";
 import useMandatoryParam from "../hooks/useMandatoryParam";
+import useLoadingAndError from "../hooks/useLoadingAndError";
+import Spinner from "../components/Spinner";
 
 type Message = {
 	id: number;
@@ -15,6 +18,7 @@ type Message = {
 };
 
 const RoomChatPage: React.FC = () => {
+	const { loading, startLoading, stopLoading } = useLoadingAndError();
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [page, setPage] = useState<number>(1);
 	const [pageCount, setPageCount] = useState<number>();
@@ -90,7 +94,8 @@ const RoomChatPage: React.FC = () => {
 			setPageCount(data.page_count);
 		};
 
-		fetchMessages();
+		startLoading();
+		fetchMessages().then(stopLoading).catch(stopLoading);
 	}, [roomId, page]);
 
 	const fetchMoreMessages = () => {
@@ -112,12 +117,16 @@ const RoomChatPage: React.FC = () => {
 	return (
 		<div className="h-full flex flex-col bg-gray-200">
 			<RoomTopBar title="Chat" />
-			<ChatMessages
-				messages={messages}
-				currentUserId={user.id}
-				isNewMessage={isNewMessage}
-				fetchMore={fetchMoreMessages}
-			/>
+			{loading ? (
+				<Spinner spinnerSize={{ width: "w-10", height: "h-10" }} />
+			) : (
+				<ChatMessages
+					messages={messages}
+					currentUserId={user.id}
+					isNewMessage={isNewMessage}
+					fetchMore={fetchMoreMessages}
+				/>
+			)}
 			<ChatInput onSend={handleSend} />
 		</div>
 	);

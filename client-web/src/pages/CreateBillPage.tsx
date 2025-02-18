@@ -134,7 +134,10 @@ const CreateBillPage = () => {
 						form="create-room-form"
 					>
 						{loading ? (
-							<Spinner spinnerSize={{ width: "w-6", height: "h-6" }} />
+							<Spinner
+								spinnerColor="border-white"
+								spinnerSize={{ width: "w-6", height: "h-6" }}
+							/>
 						) : (
 							"Submit"
 						)}

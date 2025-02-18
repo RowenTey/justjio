@@ -24,15 +24,11 @@ const Toast: React.FC<ToastProps> = ({
 
 	return (
 		<div
-			className={`fixed top-4 left-0 right-0 flex justify-center transition-opacity duration-300 ease-in-out pointer-events-none ${
+			className={`max-w-[275px] text-center text-wrap transition-opacity duration-300 ease-in-out px-4 py-2 text-sm font-semibold rounded-2xl shadow-lg  ${
 				visible ? "opacity-100" : "opacity-0"
-			}`}
+			} ${className}`}
 		>
-			<div
-				className={`px-4 py-2 text-sm font-semibold rounded-2xl shadow-lg ${className}`}
-			>
-				{message}
-			</div>
+			{message}
 		</div>
 	);
 };

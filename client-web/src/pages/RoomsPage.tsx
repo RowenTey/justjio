@@ -6,7 +6,7 @@ import Spinner from "../components/Spinner";
 import TopBarWithBackArrow from "../components/top-bar/TopBarWithBackArrow";
 import { useRoomCtx } from "../context/room";
 import IMAGES from "../assets/images/Images";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { IRoom } from "../types/room";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
@@ -16,11 +16,10 @@ const RoomsPage = () => {
 	const { user } = useUserCtx();
 	const { rooms, fetchRooms } = useRoomCtx();
 	const [filteredRooms, setFilteredRooms] = useState<IRoom[]>([]);
-	const navigate = useNavigate();
 
 	useEffect(() => {
 		startLoading();
-		fetchRooms().then(stopLoading);
+		fetchRooms().then(stopLoading).catch(stopLoading);
 
 		setFilteredRooms(rooms);
 	}, [user.id]);
@@ -61,10 +60,11 @@ const RoomsPage = () => {
 					<Spinner spinnerSize={{ width: "w-10", height: "h-10" }} />
 				) : filteredRooms.length > 0 ? (
 					filteredRooms.map((room) => (
-						<div
+						<Link
 							key={room.id}
 							className="w-4/5 flex items-center p-4 gap-3 bg-white rounded-md shadow-md cursor-pointer hover:scale-105"
-							onClick={() => navigate(`/room/${room.id}`)}
+							to={`/room/${room.id}`}
+							state={{ from: "/rooms" }}
 						>
 							<img
 								src={IMAGES.group}
@@ -74,7 +74,7 @@ const RoomsPage = () => {
 							<p className="text-md text-secondary font-semibold">
 								{room.name}
 							</p>
-						</div>
+						</Link>
 					))
 				) : (
 					<p className="text-lg font-semibold text-gray-500">No rooms found</p>

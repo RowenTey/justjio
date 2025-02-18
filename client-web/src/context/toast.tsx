@@ -5,41 +5,50 @@ type ToastContextType = {
 	showToast: (message: string, isError: boolean, className?: string) => void;
 };
 
+type ToastType = {
+	id: number;
+	message: string;
+	className: string;
+	visible: boolean;
+};
+
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-	const [toast, setToast] = useState<{
-		message: string;
-		className: string;
-		visible: boolean;
-	}>({
-		message: "",
-		className: "",
-		visible: false,
-	});
+	const [toasts, setToasts] = useState<ToastType[]>([]);
 
 	const showToast = (message: string, isError: boolean, className = "") => {
 		const baseStyles = isError
 			? "bg-error-bg text-error"
 			: "bg-success-bg text-success";
-		setToast({
+		const newToast: ToastType = {
+			id: Date.now(),
 			message,
 			className: `${baseStyles} ${className}`,
 			visible: true,
-		});
+		};
+		setToasts((prevToasts) => [...prevToasts, newToast]);
+
 		setTimeout(() => {
-			setToast((prev) => ({ ...prev, visible: false }));
+			setToasts((prevToasts) =>
+				prevToasts.filter((toast) => toast.id !== newToast.id)
+			);
 		}, 3000);
 	};
 
 	return (
 		<ToastContext.Provider value={{ showToast }}>
 			{children}
-			<Toast
-				message={toast.message}
-				className={toast.className}
-				visible={toast.visible}
-			/>
+			<div className="fixed top-4 left-0 right-0 flex flex-col items-center gap-2 p-4 pointer-events-none ">
+				{toasts.map((toast) => (
+					<Toast
+						key={toast.id}
+						message={toast.message}
+						className={toast.className}
+						visible={toast.visible}
+					/>
+				))}
+			</div>
 		</ToastContext.Provider>
 	);
 };
