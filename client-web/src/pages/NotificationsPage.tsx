@@ -59,12 +59,12 @@ const NotificationsPage = () => {
 		<div className="h-full flex flex-col items-center gap-4 bg-gray-200">
 			<NotificationsTopBar />
 
-			<div className="w-full h-full flex flex-col items-center gap-3">
+			<div className="w-full h-[85%] flex flex-col items-center gap-3">
 				{loading ? (
 					<Spinner spinnerSize={{ width: "w-10", height: "h-10" }} />
 				) : (
 					<div
-						className={`w-full h-[85%] overflow-y-auto flex flex-col items-center gap-4 ${
+						className={`w-full h-full overflow-y-auto flex flex-col items-center gap-4 ${
 							notifications.length > 0 ? "" : "justify-center"
 						}`}
 					>

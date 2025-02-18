@@ -13,8 +13,6 @@ const TopBarWithBackArrow: React.FC<TopBarWithBackArrowProps> = ({
 }) => {
 	const navigate = useNavigate();
 	const { state } = useLocation();
-	const { from } = state as { from: string | undefined };
-	console.log("from", from);
 
 	return (
 		<div
@@ -24,7 +22,7 @@ const TopBarWithBackArrow: React.FC<TopBarWithBackArrowProps> = ({
 		>
 			<button
 				onClick={() => {
-					if (!from) {
+					if (!state?.from) {
 						navigate("/");
 					} else {
 						navigate(-1);

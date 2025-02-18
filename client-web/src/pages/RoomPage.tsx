@@ -30,6 +30,7 @@ import { getRedirectPath, setRedirectPath } from "../utils/redirect";
 import ConfirmJoinModal from "../components/modals/ConfirmJoinModal";
 import { useToast } from "../context/toast";
 import { AxiosError } from "axios";
+import { isRoomBillConsolidatedApi } from "../api/bill";
 
 const initialRoom: IRoom = {
 	id: "0",
@@ -57,6 +58,7 @@ const RoomPage = () => {
 	const [numNewMessages, setNumNewMessages] = useState<number>(0);
 	const [isConfirmJoinModalVisible, setConfirmJoinModalVisible] =
 		useState(false);
+	const [isRoomBillConsolidated, setIsRoomBillConsolidated] = useState(false);
 	const roomId = useMandatoryParam("roomId");
 	const [subscribe, unsubscribe] = useWs();
 	const { closeRoom } = useRoomCtx();
@@ -119,8 +121,17 @@ const RoomPage = () => {
 			setAttendees(res.data.data);
 		};
 
+		const getBillConsolidationStatus = async (roomId: string) => {
+			const res = await isRoomBillConsolidatedApi(api, roomId);
+			setIsRoomBillConsolidated(res.data.data.isConsolidated);
+		};
+
 		startLoading();
-		Promise.all([fetchRoom(roomId), fetchAttendees(roomId)])
+		Promise.all([
+			fetchRoom(roomId),
+			fetchAttendees(roomId),
+			getBillConsolidationStatus(roomId),
+		])
 			.then(stopLoading)
 			.catch(stopLoading);
 	};
@@ -172,6 +183,7 @@ const RoomPage = () => {
 				room={room}
 				attendees={attendees}
 				isHost={user.id === room.hostId}
+				isRoomBillConsolidated={isRoomBillConsolidated}
 				numNewMessages={numNewMessages}
 				onCloseRoom={handleCloseRoom}
 			/>
@@ -278,6 +290,7 @@ type RoomActionWidgetsProps = {
 	roomId: string;
 	room: IRoom;
 	isHost: boolean;
+	isRoomBillConsolidated: boolean;
 	attendees: IUser[];
 	numNewMessages: number;
 	onCloseRoom: () => void;
@@ -288,16 +301,22 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
 	roomId,
 	room,
 	isHost,
+	isRoomBillConsolidated,
 	attendees,
 	numNewMessages,
 	onCloseRoom,
 }) => {
 	const [isQRCodeModalVisible, setIsQRCodeModalVisible] = useState(false);
+	const showSplitBill = isHost
+		? isRoomBillConsolidated
+			? false
+			: true
+		: false;
 
 	return (
 		<>
 			<div className="w-full mt-3 h-[10%] flex justify-evenly items-baseline">
-				{isHost && (
+				{showSplitBill && (
 					<ButtonCard
 						title="Split Bill"
 						Icon={DocumentDuplicateIcon}
@@ -309,16 +328,19 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
 						}}
 					/>
 				)}
-				<ButtonCard
-					title="Create Bill"
-					Icon={DocumentPlusIcon}
-					isLink={true}
-					linkProps={{
-						to: `/room/${roomId}/bill/create`,
-						from: `/room/${roomId}`,
-						state: { attendees, roomName: room.name, currentUserId: userId },
-					}}
-				/>
+				{!isRoomBillConsolidated && (
+					<ButtonCard
+						title="Create Bill"
+						Icon={DocumentPlusIcon}
+						isLink={true}
+						linkProps={{
+							to: `/room/${roomId}/bill/create`,
+							from: `/room/${roomId}`,
+							state: { attendees, roomName: room.name, currentUserId: userId },
+						}}
+					/>
+				)}
+
 				<ButtonCard
 					title="Chat"
 					Icon={ChatBubbleLeftIcon}

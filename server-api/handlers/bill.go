@@ -140,3 +140,19 @@ func ConsolidateBills(c *fiber.Ctx) error {
 
 	return util.HandleSuccess(c, "Bill consolidated successfully", nil)
 }
+
+func IsRoomBillConsolidated(c *fiber.Ctx) error {
+	roomId := c.Params("roomId")
+	if roomId == "" {
+		return util.HandleInvalidInputError(c, errors.New("Missing roomId in path param"))
+	}
+
+	isConsolidated, err := (&services.BillService{DB: database.DB}).IsRoomBillConsolidated(roomId)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return util.HandleInternalServerError(c, err)
+	}
+
+	return util.HandleSuccess(c, "Retrieved consolidation status successfully", fiber.Map{
+		"isConsolidated": isConsolidated,
+	})
+}

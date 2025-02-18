@@ -14,6 +14,12 @@ interface FetchBillResponse extends ApiResponse {
 	data: IBill[];
 }
 
+interface IsRoomBillConsolidatedResponse extends ApiResponse {
+	data: {
+		isConsolidated: boolean;
+	};
+}
+
 export const createBillApi = (
 	api: AxiosInstance,
 	billData: CreateBillRequest,
@@ -105,4 +111,36 @@ export const consolidateBillApi = (
 			} as AxiosResponse<ApiResponse>);
 		}, 1500);
 	});
+};
+
+export const isRoomBillConsolidatedApi = (
+	api: AxiosInstance,
+	roomId: string,
+	mock: boolean = false
+): Promise<AxiosResponse<IsRoomBillConsolidatedResponse>> => {
+	if (!mock) {
+		return api.get<IsRoomBillConsolidatedResponse>(
+			`/bills/consolidate/${roomId}`
+		);
+	}
+
+	return new Promise<AxiosResponse<IsRoomBillConsolidatedResponse>>(
+		(resolve) => {
+			setTimeout(() => {
+				resolve({
+					data: {
+						data: {
+							isConsolidated: false,
+						},
+						message: "Retrieved consolidation status successfully",
+						status: "success",
+					},
+					status: 200,
+					statusText: "OK",
+					headers: {},
+					config: {},
+				} as AxiosResponse<IsRoomBillConsolidatedResponse>);
+			}, 1500);
+		}
+	);
 };

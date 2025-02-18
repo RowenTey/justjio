@@ -76,6 +76,7 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService) {
 
 	bills := v1.Group("/bills")
 	bills.Get("/", handlers.GetBillsByRoom)
+	bills.Get("/consolidate/:roomId", handlers.IsRoomBillConsolidated)
 	bills.Post("/", handlers.CreateBill)
 	bills.Post("/consolidate", handlers.ConsolidateBills)
 
