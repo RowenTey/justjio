@@ -40,7 +40,9 @@ func main() {
 
 	// only load .env file if in dev environment
 	if env == "dev" {
-		godotenv.Load(".env")
+		if err := godotenv.Load(".env"); err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
 
 	app := fiber.New()
@@ -59,9 +61,13 @@ func main() {
 		user, err := services.GetCurrentUser(c)
 		if err != nil {
 			log.Println("[AUTH] ", err)
-			c.WriteJSON(fiber.Map{
+
+			if err := c.WriteJSON(fiber.Map{
 				"status": "Unauthorized",
-			})
+			}); err != nil {
+				log.Println("[WebSocket] Error writing JSON:", err)
+			}
+
 			c.Close()
 			return
 		}
@@ -95,7 +101,9 @@ func main() {
 				client: kafkaClient,
 			}
 
-			kafkaClient.Subscribe([]string{channel})
+			if err := kafkaClient.Subscribe([]string{channel}); err != nil {
+				log.Println("[Kafka] Error subscribing to channel:", err)
+			}
 			go kafkaClient.ConsumeMessages(onMessage)
 		} else {
 			kafkaClient = userKafkaClients[user.ID].client

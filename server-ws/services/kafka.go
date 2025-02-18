@@ -70,19 +70,19 @@ func (s *KafkaService) Unsubscribe() error {
 }
 
 // Consumes messages from subscribed topics in a loop
-func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) error {
+func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) {
 	for {
 		select {
 		case <-s.ctx.Done():
 			log.Println("[Kafka] Stopping message consumption")
-			return nil
+			return
 		default:
 			msg, err := s.Consumer.ReadMessage(1)
 			if err != nil && err.(kafka.Error).Code() == kafka.ErrTimedOut {
 				continue
 			} else if err != nil {
-				log.Printf("[Kafka] Failed to consume message: %w", err)
-				return nil
+				log.Printf("[Kafka] Failed to consume message: %s", err.Error())
+				return
 			}
 			log.Printf("[Kafka] Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
 			handler(*msg)
