@@ -1,10 +1,6 @@
 name: Lint and Format
 
 on:
-  push:
-    branches:
-      - main
-      - dev
   pull_request:
     branches:
       - main
@@ -48,7 +44,7 @@ jobs:
 
       - name: Format Go code
         run: |
-          gofmt -s -w .
+          gofmt -s -w ${{ matrix.modules }}
 
       - name: Check for changes
         id: git-check
