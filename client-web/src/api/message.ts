@@ -90,10 +90,10 @@ export const fetchRoomMessageApi = (
 								sender_id: 2,
 								sender: {
 									id: 2,
-									name: "User2",
+									username: "User2",
+									pictureUrl: "https://example.com/picture.jpg",
 									email: "user2@example.com",
 									password: "password456",
-									phoneNum: "0987654321",
 									isEmailValid: true,
 									isOnline: true,
 									lastSeen: new Date().toISOString(),
