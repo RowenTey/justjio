@@ -36,12 +36,12 @@ func CreateNotification(c *fiber.Ctx) error {
 func MarkNotificationAsRead(c *fiber.Ctx) error {
 	notificationId, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
-		util.HandleInvalidInputError(c, err)
+		return util.HandleInvalidInputError(c, err)
 	}
 
 	userId, err := strconv.ParseUint(c.Params("userId"), 10, 32)
 	if err != nil {
-		util.HandleInvalidInputError(c, err)
+		return util.HandleInvalidInputError(c, err)
 	}
 
 	if err := (&services.NotificationService{DB: database.DB}).MarkNotificationAsRead(uint(notificationId), uint(userId)); err != nil {
@@ -60,7 +60,7 @@ func GetNotification(c *fiber.Ctx) error {
 
 	userId, err := strconv.ParseUint(c.Params("userId"), 10, 32)
 	if err != nil {
-		util.HandleInvalidInputError(c, err)
+		return util.HandleInvalidInputError(c, err)
 	}
 
 	notification, err := (&services.NotificationService{DB: database.DB}).GetNotification(uint(notificationId), uint(userId))

@@ -25,14 +25,18 @@ func main() {
 	// only load .env file if in dev environment
 	if env == "dev" {
 		log.Println("Loading .env file...")
-		godotenv.Load(".env")
+		if err := godotenv.Load(".env"); err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
 
 	app := fiber.New()
 
 	database.ConnectDB()
 	if env == "dev" || env == "staging" {
-		services.SeedDB(database.DB)
+		if err := services.SeedDB(database.DB); err != nil {
+			log.Fatal("Error seeding database:", err)
+		}
 	}
 
 	kafkaService, err := services.NewKafkaService(config.Config("KAFKA_URL"), env)
