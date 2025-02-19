@@ -121,7 +121,9 @@ func CreateRoom(c *fiber.Ctx) error {
 	userId := util.GetUserInfoFromToken(token, "user_id")
 
 	var inviteesIds []string
-	json.Unmarshal([]byte(request.InviteesId), &inviteesIds)
+	if err := json.Unmarshal([]byte(request.InviteesId), &inviteesIds); err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
 
 	tx := database.DB.Begin()
 
@@ -275,7 +277,9 @@ func InviteUser(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 
 	var inviteesIds []string
-	json.Unmarshal([]byte(request.InviteesId), &inviteesIds)
+	if err := json.Unmarshal([]byte(request.InviteesId), &inviteesIds); err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
 
 	tx := database.DB.Begin()
 
