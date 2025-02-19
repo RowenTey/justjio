@@ -11,7 +11,7 @@ import { ITransaction } from "../types/transaction";
 import { Link } from "react-router-dom";
 
 const ProfilePage: React.FC = () => {
-	const { loading, startLoading, stopLoading } = useLoadingAndError();
+	const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
 	const { user } = useUserCtx();
 	const [numFriends, setNumFriends] = useState<number | undefined>(undefined);
 	const [numRooms, setNumRooms] = useState<number | undefined>(undefined);
@@ -54,7 +54,7 @@ const ProfilePage: React.FC = () => {
 			.then(() => stopLoading());
 	}, [user.id]);
 
-	if (loading) {
+	if (loadingStates[0]) {
 		return <Spinner bgClass="bg-gray-200" />;
 	}
 
@@ -63,6 +63,7 @@ const ProfilePage: React.FC = () => {
 			<ProfileTopBar />
 			<ProfileContainer
 				username={user.username}
+				pictureUrl={user.pictureUrl}
 				numFriends={numFriends || 0}
 				numRooms={numRooms || 0}
 			/>
@@ -84,12 +85,14 @@ const ProfileTopBar: React.FC = () => {
 
 type ProfileContainerProps = {
 	username: string;
+	pictureUrl: string;
 	numFriends: number;
 	numRooms: number;
 };
 
 const ProfileContainer: React.FC<ProfileContainerProps> = ({
 	username,
+	pictureUrl,
 	numFriends,
 	numRooms,
 }) => {
@@ -108,13 +111,16 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({
 
 			<div className="w-3/5 flex flex-col gap-2 items-center">
 				<img
-					src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
-					alt=""
+					// src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
+					src={pictureUrl}
+					alt="Profile Image"
 					className="w-24 h-24 rounded-full"
 				/>
 
 				<div className="flex justify-center items-center bg-secondary border-black border-[1.5px] rounded-3xl px-2 w-[75%]">
-					<h3 className="text-lg text-white font-semibold">{username}</h3>
+					<h3 className="text-lg text-white font-semibold break-all text-center leading-tight">
+						{username}
+					</h3>
 				</div>
 
 				<button className="bg-primary text-black text-sm font-semibold px-4 py-1 rounded-3xl mt-1">

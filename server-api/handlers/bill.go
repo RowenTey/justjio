@@ -73,7 +73,7 @@ func CreateBill(c *fiber.Ctx) error {
 func GetBillsByRoom(c *fiber.Ctx) error {
 	roomId := c.Query("roomId")
 	if roomId == "" {
-		return util.HandleInvalidInputError(c, errors.New("Missing roomId in query param"))
+		return util.HandleInvalidInputError(c, errors.New("missing roomId in query param"))
 	}
 
 	bills, err := (&services.BillService{DB: database.DB}).GetBillsForRoom(roomId)

@@ -5,6 +5,8 @@ import InputField from "../components/InputField";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import { useAuth } from "../context/auth";
 import { getRedirectPath } from "../utils/redirect";
+import { useGoogleLogin } from "@react-oauth/google";
+import GoogleIcon from "../assets/icons/google.svg?react";
 
 type LoginFormData = {
 	username: string;
@@ -12,9 +14,9 @@ type LoginFormData = {
 };
 
 const LoginPage = () => {
-	const { loading, error, startLoading, stopLoading, setErrorMsg } =
-		useLoadingAndError();
-	const { login } = useAuth();
+	const { loadingStates, errorStates, startLoading, stopLoading, setErrorMsg } =
+		useLoadingAndError(2);
+	const { login, googleLogin } = useAuth();
 	const navigate = useNavigate();
 	const {
 		register,
@@ -23,7 +25,7 @@ const LoginPage = () => {
 	} = useForm<LoginFormData>();
 
 	const onSubmit: SubmitHandler<LoginFormData> = async (data) => {
-		startLoading();
+		startLoading(0);
 
 		console.log("[LoginPage] Form data: ", data);
 		const res = await login(data.username, data.password);
@@ -43,14 +45,48 @@ const LoginPage = () => {
 					setErrorMsg("An error occurred, please try again later.");
 					break;
 			}
-			stopLoading();
+			stopLoading(0);
 			return;
 		}
 
-		stopLoading();
+		stopLoading(0);
 		const redirectPath = getRedirectPath() || "/";
 		navigate(redirectPath);
 	};
+
+	const loginWithGoogle = useGoogleLogin({
+		onSuccess: async (codeResponse) => {
+			startLoading(1);
+			const res = await googleLogin(codeResponse.code);
+
+			if (!res.isSuccessResponse) {
+				switch (res.error?.response?.status) {
+					case 400:
+						setErrorMsg("Bad request, please check request body.");
+						break;
+					case 401:
+					case 404:
+						setErrorMsg("Invalid username or password.");
+						break;
+					case 500:
+					default:
+						setErrorMsg("An error occurred, please try again later.");
+						break;
+				}
+				stopLoading(1);
+				return;
+			}
+
+			stopLoading(1);
+			const redirectPath = getRedirectPath() || "/";
+			navigate(redirectPath);
+		},
+		onError: (error) => {
+			console.error("An error occurred: ", error);
+			setErrorMsg("An error occurred, please try again later.");
+		},
+		flow: "auth-code",
+	});
 
 	return (
 		<div className="h-full flex flex-col justify-center items-center xs:border-y-1 border-black overflow-y-auto bg-primary">
@@ -81,19 +117,19 @@ const LoginPage = () => {
 					validation={{ required: "Password is required" }}
 				/>
 
-				{error && (
+				{errorStates[0] && (
 					<p className="text-error text-md font-semibold text-wrap text-center">
-						{error}
+						{errorStates[0]}
 					</p>
 				)}
 
 				<button
 					className={`bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full w-3/5 ${
-						error ? "" : "mt-3"
+						errorStates[0] ? "" : "mt-3"
 					}`}
 					form="login-form"
 				>
-					{loading ? (
+					{loadingStates[0] ? (
 						<Spinner
 							spinnerColor="border-white"
 							spinnerSize={{ width: "w-6", height: "h-6" }}
@@ -109,6 +145,25 @@ const LoginPage = () => {
 						Sign Up
 					</Link>
 				</p>
+
+				<p className="text-secondary font-bold text-center">OR</p>
+
+				<button
+					type="button"
+					className={`bg-white hover:bg-gray-100 text-black font-bold py-2 px-4 rounded-full w-4/5`}
+					onClick={loginWithGoogle}
+				>
+					{loadingStates[1] ? (
+						<Spinner
+							spinnerColor="border-black"
+							spinnerSize={{ width: "w-6", height: "h-6" }}
+						/>
+					) : (
+						<div className="flex items-center justify-between w-full">
+							<span>Login with Google</span> <GoogleIcon className="w-5 h-5" />
+						</div>
+					)}
+				</button>
 			</form>
 		</div>
 	);

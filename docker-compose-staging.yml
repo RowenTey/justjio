@@ -10,6 +10,7 @@ services:
       APP_ENV_PREFIX: VITE
       VITE_API_URL: https://justjio-api-staging.rowentey.xyz/v1
       VITE_WS_URL: wss://justjio-ws-staging.rowentey.xyz
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
     depends_on:
       - api-server
       - ws-server
@@ -29,6 +30,9 @@ services:
       KAFKA_URL: ${KAFKA_HOST}:${KAFKA_PORT}
       OUTLOOK_EMAIL: ${OUTLOOK_EMAIL}
       OUTLOOK_PASSWORD: ${OUTLOOK_PASSWORD}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URL: https://justjio-staging.rowentey.xyz
     entrypoint: ["/api-server", "staging"]
 
   ws-server:

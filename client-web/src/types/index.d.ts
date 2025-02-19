@@ -21,4 +21,5 @@ export type AuthContextType = {
 	isAuthenticated: () => boolean;
 	logout: () => Promise<boolean>;
 	login: (username: string, password: string) => Promise<BaseContextResponse>;
+	googleLogin: (code: string) => Promise<BaseContextResponse>;
 };

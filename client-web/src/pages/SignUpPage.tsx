@@ -15,7 +15,7 @@ type SignUpFormData = {
 };
 
 const SignUpPage = () => {
-	const { loading, startLoading, stopLoading, error, setErrorMsg } =
+	const { loadingStates, startLoading, stopLoading, errorStates, setErrorMsg } =
 		useLoadingAndError();
 	const navigate = useNavigate();
 	const {
@@ -153,19 +153,18 @@ const SignUpPage = () => {
 					}}
 				/>
 
-				{error && (
+				{errorStates[0] && (
 					<p className="text-error text-md font-semibold text-wrap text-center">
-						{error}
+						{errorStates[0]}
 					</p>
 				)}
 
 				<button
-					className={`bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full w-3/5 ${
-						error ? "" : "mt-3"
+					className={`bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full w-3/5 ${errorStates[0]} ? "" : "mt-3"
 					}`}
 					form="signup-form"
 				>
-					{loading ? (
+					{loadingStates[0] ? (
 						<Spinner
 							spinnerColor="border-white"
 							spinnerSize={{ width: "w-6", height: "h-6" }}

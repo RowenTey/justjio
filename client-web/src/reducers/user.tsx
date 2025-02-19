@@ -6,6 +6,7 @@ export const initialUserState: UserState = {
 		id: -1,
 		email: "",
 		username: "",
+		pictureUrl: "",
 	},
 	friends: [],
 };

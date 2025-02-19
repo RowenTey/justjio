@@ -6,6 +6,7 @@ export interface LoginResponse extends ApiResponse {
 		id: number;
 		username: string;
 		email: string;
+		pictureUrl: string;
 	};
 	token: string;
 }
@@ -27,6 +28,37 @@ export const loginApi = (
 					data: {
 						id: 6,
 						username: username,
+						email: "test123@test.com",
+					},
+					message: "Login successfully",
+					status: "success",
+					token: "token123",
+				},
+				status: 200,
+				statusText: "OK",
+				headers: {},
+				config: {},
+			} as AxiosResponse<LoginResponse>);
+		}, 1500);
+	});
+};
+
+export const googleLoginApi = (
+	api: AxiosInstance,
+	code: string,
+	mock: boolean = false
+): Promise<AxiosResponse<LoginResponse>> => {
+	if (!mock) {
+		return api.post<LoginResponse>("/auth/google", { code });
+	}
+
+	return new Promise<AxiosResponse<LoginResponse>>((resolve) => {
+		setTimeout(() => {
+			resolve({
+				data: {
+					data: {
+						id: 6,
+						username: "test",
 						email: "test123@test.com",
 					},
 					message: "Login successfully",
