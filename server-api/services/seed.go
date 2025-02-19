@@ -33,6 +33,8 @@ func SeedDB(db *gorm.DB) error {
 		{Username: "eldrick", Password: "Eldrick123!", Email: "eldrick123@test.com"},
 		{Username: "kaiseong", Password: "Ks12345!", Email: "ks123@test.com"},
 		{Username: "aloysius", Password: "Aloysius12345!", Email: "aloysius123@test.com"},
+		{Username: "test", Password: "Test12345!", Email: "test@test.com"},
+		{Username: "happy", Password: "Happy12345!", Email: "happy@test.com"},
 	}
 
 	for i, u := range users {
@@ -49,6 +51,9 @@ func SeedDB(db *gorm.DB) error {
 		users[i] = *createdUser
 		log.Println("[SEED] User created:\n", users[i])
 	}
+
+	// Remove test user from users
+	users = users[:len(users)-2]
 
 	for _, u := range users {
 		// create friends

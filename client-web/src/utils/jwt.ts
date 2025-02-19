@@ -2,6 +2,7 @@ export interface DecodedJWTToken {
 	user_id: number;
 	user_email: string;
 	username: string;
+	picture_url: string;
 	exp: number;
 }
 

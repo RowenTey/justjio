@@ -15,7 +15,7 @@ import Spinner from "../components/Spinner";
 import { useTransactionCtx } from "../context/transaction";
 
 const HomePage = () => {
-	const { loading, startLoading, stopLoading } = useLoadingAndError();
+	const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
 	const [logoutLoading, setLogoutLoading] = useState(false);
 	const { logout } = useAuth();
 	const { rooms, fetchRooms } = useRoomCtx();
@@ -38,13 +38,14 @@ const HomePage = () => {
 		}
 
 		console.log("[HomePage] Fetching data...");
-		startLoading();
+		startLoading(0);
 		fetchData()
-			.then(stopLoading)
-			.then(() => console.log("[HomePage] Data fetched"));
+			.then(() => stopLoading(0))
+			.then(() => console.log("[HomePage] Data fetched"))
+			.catch(() => stopLoading(0));
 	}, []);
 
-	if (loading) {
+	if (loadingStates[0]) {
 		return <Spinner bgClass="bg-gray-200" />;
 	}
 

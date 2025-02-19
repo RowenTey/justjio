@@ -44,6 +44,7 @@ const initialRoom: IRoom = {
 		id: 0,
 		username: "",
 		email: "",
+		pictureUrl: "",
 	},
 	createdAt: "",
 	updatedAt: "",
@@ -52,7 +53,7 @@ const initialRoom: IRoom = {
 };
 
 const RoomPage = () => {
-	const { loading, startLoading, stopLoading } = useLoadingAndError();
+	const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
 	const [room, setRoom] = useState<IRoom>(initialRoom);
 	const [attendees, setAttendees] = useState<IUser[]>([]);
 	const [numNewMessages, setNumNewMessages] = useState<number>(0);
@@ -132,8 +133,8 @@ const RoomPage = () => {
 			fetchAttendees(roomId),
 			getBillConsolidationStatus(roomId),
 		])
-			.then(stopLoading)
-			.catch(stopLoading);
+			.then(() => stopLoading())
+			.catch(() => stopLoading());
 	};
 
 	useEffect(() => {
@@ -160,7 +161,7 @@ const RoomPage = () => {
 		};
 	}, [roomId, subscribe, unsubscribe]);
 
-	if (loading) {
+	if (loadingStates[0]) {
 		return <Spinner bgClass="bg-primary" />;
 	}
 
@@ -270,6 +271,7 @@ const RoomAttendees: React.FC<RoomAttendeesProps> = ({
 						<PeopleBox
 							key={attendee.id}
 							name={attendee.username}
+							pictureUrl={attendee.pictureUrl}
 							isHost={attendee.id === hostId}
 						/>
 					))}

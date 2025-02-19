@@ -1,6 +1,6 @@
 import React, { createContext, useState } from "react";
 import { AuthContextType, AuthState, BaseContextResponse } from "../types";
-import { loginApi } from "../api/auth";
+import { googleLoginApi, loginApi } from "../api/auth";
 import { api } from "../api";
 import { useUserCtx } from "./user";
 import useContextWrapper from "../hooks/useContextWrapper";
@@ -35,6 +35,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 			id: decodedToken.user_id,
 			email: decodedToken.user_email,
 			username: decodedToken.username,
+			pictureUrl: decodedToken.picture_url,
 		});
 
 		setAuthState({
@@ -51,7 +52,6 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	): Promise<BaseContextResponse> => {
 		try {
 			const { data: res } = await loginApi(api, username, password, false);
-
 			const { data, token } = res;
 			setAuthState({
 				accessToken: token,
@@ -62,6 +62,34 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 				id: data.id,
 				email: data.email,
 				username: data.username,
+				pictureUrl: data.pictureUrl,
+			});
+
+			return { isSuccessResponse: true, error: null };
+		} catch (error) {
+			console.error("Error logging in: ", error);
+			return {
+				isSuccessResponse: false,
+				error: error as AxiosError,
+			};
+		}
+	};
+
+	const googleLogin = async (code: string): Promise<BaseContextResponse> => {
+		try {
+			const { data: res } = await googleLoginApi(api, code);
+			const { data, token } = res;
+			console.log("Google login response: ", res);
+			setAuthState({
+				accessToken: token,
+				authenticated: true,
+			});
+			localStorage.setItem("accessToken", token);
+			setUser({
+				id: data.id,
+				email: data.email,
+				username: data.username,
+				pictureUrl: data.pictureUrl,
 			});
 
 			return { isSuccessResponse: true, error: null };
@@ -86,6 +114,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 					id: -1,
 					email: "",
 					username: "",
+					pictureUrl: "",
 				});
 				resolve(true);
 			}, 500);
@@ -105,6 +134,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 			value={{
 				login,
 				logout,
+				googleLogin,
 				getAccessToken,
 				isAuthenticated,
 			}}

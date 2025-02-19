@@ -13,14 +13,14 @@ import { AxiosError } from "axios";
 import FriendsTopBar from "../components/top-bar/FriendsTopBar";
 
 const FriendsPage = () => {
-	const { loading, startLoading, stopLoading } = useLoadingAndError();
+	const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
 	const { user, friends, fetchFriends, removeFriend } = useUserCtx();
 	const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
 	const { showToast } = useToast();
 
 	useEffect(() => {
 		startLoading();
-		fetchFriends(user.id).then(stopLoading);
+		fetchFriends(user.id).then(() => stopLoading());
 	}, [user.id]);
 
 	const handleSendFriendRequest = async (newFriend: IUser) => {
@@ -84,14 +84,14 @@ const FriendsPage = () => {
 			<div className="w-full h-full flex flex-col items-center px-4 gap-3">
 				<div
 					className={`w-full h-[85%] overflow-y-auto flex flex-col items-center ${
-						loading
+						loadingStates[0]
 							? "justify-center"
 							: friends.length > 0
 							? ""
 							: "justify-center"
 					} gap-4`}
 				>
-					{loading ? (
+					{loadingStates[0] ? (
 						<Spinner spinnerSize={{ width: "w-10", height: "h-10" }} />
 					) : friends.length > 0 ? (
 						friends.map((friend) => (
@@ -101,7 +101,8 @@ const FriendsPage = () => {
 							>
 								<div className="flex items-center gap-2">
 									<img
-										src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
+										// src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
+										src={friend.pictureUrl}
 										alt="Profile Image"
 										className="w-7 h-7 rounded-full"
 									/>

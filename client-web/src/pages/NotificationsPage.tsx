@@ -21,7 +21,7 @@ const NotificationsTopBar: React.FC = () => {
 };
 
 const NotificationsPage = () => {
-	const { loading, startLoading, stopLoading } = useLoadingAndError();
+	const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
 	const [notifications, setNotifications] = useState<INotification[]>([]);
 	const { user } = useUserCtx();
 	const { showToast } = useToast();
@@ -33,7 +33,7 @@ const NotificationsPage = () => {
 		};
 
 		startLoading();
-		fetchNotifications().then(stopLoading);
+		fetchNotifications().then(() => stopLoading);
 	}, [user.id]);
 
 	const handleReadNotification = async (notificationId: number) => {
@@ -60,7 +60,7 @@ const NotificationsPage = () => {
 			<NotificationsTopBar />
 
 			<div className="w-full h-[85%] flex flex-col items-center gap-3">
-				{loading ? (
+				{loadingStates[0] ? (
 					<Spinner spinnerSize={{ width: "w-10", height: "h-10" }} />
 				) : (
 					<div

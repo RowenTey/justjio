@@ -21,7 +21,7 @@ type CreateRoomFormData = {
 };
 
 const CreateRoomPage = () => {
-	const { loading, startLoading, stopLoading } = useLoadingAndError();
+	const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
 	const {
 		register,
 		handleSubmit,
@@ -34,11 +34,9 @@ const CreateRoomPage = () => {
 	const navigate = useNavigate();
 
 	useEffect(() => {
-		if (friends.length !== 0) return;
-
 		startLoading();
-		fetchFriends(user.id).then(stopLoading);
-	}, [user, friends]);
+		fetchFriends(user.id).then(() => stopLoading());
+	}, [user]);
 
 	const onSubmit: SubmitHandler<CreateRoomFormData> = async (data) => {
 		startLoading();
@@ -177,8 +175,11 @@ const CreateRoomPage = () => {
 					className="bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full mt-4 w-2/5"
 					form="create-room-form"
 				>
-					{loading ? (
-						<Spinner spinnerSize={{ width: "w-6", height: "h-6" }} />
+					{loadingStates[0] ? (
+						<Spinner
+							spinnerColor="border-white"
+							spinnerSize={{ width: "w-6", height: "h-6" }}
+						/>
 					) : (
 						"Submit"
 					)}

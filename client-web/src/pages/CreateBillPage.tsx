@@ -11,6 +11,8 @@ import Checkbox from "../components/Checkbox";
 import useMandatoryParam from "../hooks/useMandatoryParam";
 import { createBillApi } from "../api/bill";
 import { api } from "../api";
+import { useToast } from "../context/toast";
+import { AxiosError } from "axios";
 
 type CreateBillFormData = {
 	name: string;
@@ -26,10 +28,11 @@ type CreateBillPageProps = {
 type SimplifiedUser = {
 	id: number;
 	username: string;
+	pictureUrl: string;
 };
 
 const CreateBillPage = () => {
-	const { loading, startLoading, stopLoading, error, setErrorMsg } =
+	const { loadingStates, startLoading, stopLoading, errorStates, setErrorMsg } =
 		useLoadingAndError();
 	const {
 		register,
@@ -44,10 +47,12 @@ const CreateBillPage = () => {
 		.map<SimplifiedUser>((attendee) => ({
 			id: attendee.id,
 			username: attendee.username,
+			pictureUrl: attendee.pictureUrl,
 		}))
 		.filter((attendee) => attendee.id !== currentUserId);
 	const [payers, setPayers] = useState<SimplifiedUser[]>(simplifiedAttendees);
 	const [includeOwner, setIncludeOwner] = useState(true);
+	const { showToast } = useToast();
 
 	const onSubmit: SubmitHandler<CreateBillFormData> = async (data) => {
 		startLoading();
@@ -61,16 +66,25 @@ const CreateBillPage = () => {
 		};
 		console.log("[CreateBillPage] Submitted data: ", billData);
 
-		const res = await createBillApi(api, billData);
-
-		if (res.status !== 200) {
-			setErrorMsg("An error occurred: " + res.data.message);
+		try {
+			createBillApi(api, billData);
 			stopLoading();
-			return;
+			showToast("Bill created successfully", false);
+			navigate(-1);
+		} catch (error) {
+			switch ((error as AxiosError).response?.status) {
+				case 400:
+					setErrorMsg("Invalid data");
+					break;
+				case 404:
+					setErrorMsg("Room or user not found");
+					break;
+				case 500:
+				default:
+					setErrorMsg("An error occurred, please try again later.");
+					break;
+			}
 		}
-
-		stopLoading();
-		navigate(-1);
 	};
 
 	useEffect(() => {
@@ -133,7 +147,7 @@ const CreateBillPage = () => {
 							font-bold py-2 px-4 rounded-full mt-2 w-3/5"
 						form="create-room-form"
 					>
-						{loading ? (
+						{loadingStates[0] ? (
 							<Spinner
 								spinnerColor="border-white"
 								spinnerSize={{ width: "w-6", height: "h-6" }}
@@ -143,8 +157,8 @@ const CreateBillPage = () => {
 						)}
 					</button>
 
-					{error && (
-						<p className="text-red-500 text-wrap text-center">{error}</p>
+					{errorStates[0] && (
+						<p className="text-error text-wrap text-center">{errorStates[0]}</p>
 					)}
 				</form>
 			</div>
@@ -221,6 +235,7 @@ const SelectBox: React.FC<{
 	return (
 		<PeopleBox
 			name={user.username}
+			pictureUrl={user.pictureUrl}
 			isHost={false}
 			isChecked={check}
 			onClick={onChange}
