@@ -1,8 +1,8 @@
 package util
 
 import (
+	"crypto/rand"
 	"encoding/base64"
-	"math/rand"
 )
 
 // GenerateRandomString generates a secure random string of the specified length.
