@@ -58,6 +58,7 @@ const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
 		};
 
 		ws.current.onmessage = (message) => {
+			console.log("[WS] Received message", JSON.parse(message.data));
 			const { type, data } = JSON.parse(message.data);
 			const roomChannel = `${type}_${data.room_id}`;
 
@@ -83,7 +84,11 @@ const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
 	useEffect(() => {
 		// Check every 5 seconds
 		const interval = setInterval(() => {
-			if (ws.current?.readyState === WebSocket.CLOSED) {
+			if (
+				user &&
+				user.id !== -1 &&
+				ws.current?.readyState === WebSocket.CLOSED
+			) {
 				console.log("[WS] Reconnecting WS connection");
 				connectWebSocket();
 			}

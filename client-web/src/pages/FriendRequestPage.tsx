@@ -13,7 +13,7 @@ import { formatDate } from "../utils/date";
 import { AxiosError } from "axios";
 
 const FriendRequestsPage = () => {
-	const { loading, startLoading, stopLoading } = useLoadingAndError();
+	const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
 	const [friendRequests, setFriendRequests] = useState<IFriendRequests[]>([]);
 	const { user } = useUserCtx();
 	const { showToast } = useToast();
@@ -25,7 +25,7 @@ const FriendRequestsPage = () => {
 		};
 
 		startLoading();
-		fetchFriends().then(stopLoading);
+		fetchFriends().then(() => stopLoading());
 	}, [user.id]);
 
 	const handleRespondToFriendRequest = async (
@@ -76,7 +76,7 @@ const FriendRequestsPage = () => {
 			<TopBarWithBackArrow title="Friend Requests" />
 
 			<div className="w-full h-full flex flex-col items-center px-4 gap-3">
-				{loading ? (
+				{loadingStates[0] ? (
 					<Spinner spinnerSize={{ width: "w-10", height: "h-10" }} />
 				) : (
 					<div

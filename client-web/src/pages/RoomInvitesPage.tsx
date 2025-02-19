@@ -13,7 +13,7 @@ import { ClockIcon } from "@heroicons/react/24/outline";
 import { useToast } from "../context/toast";
 
 const RoomInvitesPage: React.FC = () => {
-	const { loading, startLoading, stopLoading } = useLoadingAndError();
+	const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
 	// TODO: refactor to context
 	const [invites, setInvites] = useState<IRoomInvite[]>([]);
 	const { showToast } = useToast();
@@ -54,14 +54,14 @@ const RoomInvitesPage: React.FC = () => {
 		startLoading();
 		fetchInvites()
 			.then((res) => setInvites(res.data.data))
-			.then(stopLoading);
+			.then(() => stopLoading());
 	}, []);
 
 	return (
 		<div className="h-full flex flex-col items-center gap-4 bg-gray-200">
 			<RoomTopBar title="Room Invites" />
 
-			{loading ? (
+			{loadingStates[0] ? (
 				<Spinner spinnerSize={{ width: "w-16", height: "h-16" }} />
 			) : (
 				<RoomInvites invites={invites} handleInvite={onRespondToInvite} />
@@ -112,8 +112,9 @@ const RoomInviteCard: React.FC<{
 					<div className="leading-snug">
 						<div className="flex items-center gap-2 mb-2">
 							<img
-								src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
-								alt=""
+								// src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
+								src={invite.room.host.pictureUrl}
+								alt="Host Profile Image"
 								className="w-8 h-8 rounded-full"
 							/>
 							<p>{invite.room.host.username}</p>

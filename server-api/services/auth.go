@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -12,13 +13,18 @@ import (
 	"github.com/RowenTey/JustJio/model"
 
 	"github.com/golang-jwt/jwt"
+
+	"golang.org/x/oauth2"
+	googleOAuth2 "google.golang.org/api/oauth2/v2"
+	"google.golang.org/api/option"
 )
 
 type AuthService struct {
-	HashFunc  func(password string) (string, error)
-	JwtSecret string
-	LoginAuth func(username, password string) smtp.Auth
-	SendMail  func(addr string, a smtp.Auth, from string, to []string, msg []byte) error
+	HashFunc    func(password string) (string, error)
+	JwtSecret   string
+	LoginAuth   func(username, password string) smtp.Auth
+	SendMail    func(addr string, a smtp.Auth, from string, to []string, msg []byte) error
+	OAuthConfig *oauth2.Config
 }
 
 const TOKEN_EXPIRY_DURATION = time.Hour * 72 // 3 days
@@ -41,6 +47,7 @@ func (s *AuthService) CreateToken(user *model.User) (string, error) {
 	claims["username"] = user.Username
 	claims["user_id"] = user.ID
 	claims["user_email"] = user.Email
+	claims["picture_url"] = user.PictureUrl
 	claims["exp"] = time.Now().Add(TOKEN_EXPIRY_DURATION).Unix()
 
 	t, err := token.SignedString([]byte(s.JwtSecret))
@@ -91,4 +98,26 @@ func (s *AuthService) GenerateOTP() string {
 		log.Println(err)
 	}
 	return fmt.Sprintf("%x", b)
+}
+
+func (s *AuthService) GetGoogleUser(code string) (*googleOAuth2.Userinfo, error) {
+	ctx := context.Background()
+	// Exchange code for token
+	token, err := s.OAuthConfig.Exchange(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+
+	service, err := googleOAuth2.NewService(
+		ctx, option.WithTokenSource(s.OAuthConfig.TokenSource(ctx, token)))
+	if err != nil {
+		return nil, err
+	}
+
+	userInfo, err := service.Userinfo.Get().Do()
+	if err != nil {
+		return nil, err
+	}
+
+	return userInfo, nil
 }

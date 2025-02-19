@@ -18,7 +18,7 @@ type Message = {
 };
 
 const RoomChatPage: React.FC = () => {
-	const { loading, startLoading, stopLoading } = useLoadingAndError();
+	const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [page, setPage] = useState<number>(1);
 	const [pageCount, setPageCount] = useState<number>();
@@ -95,7 +95,9 @@ const RoomChatPage: React.FC = () => {
 		};
 
 		startLoading();
-		fetchMessages().then(stopLoading).catch(stopLoading);
+		fetchMessages()
+			.then(() => stopLoading())
+			.catch(() => stopLoading());
 	}, [roomId, page]);
 
 	const fetchMoreMessages = () => {
@@ -117,7 +119,7 @@ const RoomChatPage: React.FC = () => {
 	return (
 		<div className="h-full flex flex-col bg-gray-200">
 			<RoomTopBar title="Chat" />
-			{loading ? (
+			{loadingStates[0] ? (
 				<Spinner spinnerSize={{ width: "w-10", height: "h-10" }} />
 			) : (
 				<ChatMessages
@@ -178,7 +180,7 @@ const ChatMessages: React.FC<{
 					>
 						<img
 							src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
-							alt="User"
+							alt="User Profile Picture"
 							className="w-6 h-6 rounded-full"
 						/>
 						<div className="flex flex-col">

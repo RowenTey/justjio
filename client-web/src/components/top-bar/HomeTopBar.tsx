@@ -23,7 +23,7 @@ const HomeTopBar: React.FC<HomeTopBarProps> = ({
 					className="w-8 h-8 rounded-full"
 				/>
 
-				<h1 className="text-lg font-bold text-secondary">
+				<h1 className="text-base font-bold text-secondary">
 					Welcome, {username}!
 				</h1>
 			</div>

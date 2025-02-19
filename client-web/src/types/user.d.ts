@@ -5,6 +5,7 @@ export interface BaseUserInfo {
 	id: number;
 	email: string;
 	username: string;
+	pictureUrl: string;
 }
 
 export interface IUser {
@@ -12,8 +13,7 @@ export interface IUser {
 	username: string;
 	email: string;
 	password: string;
-	name?: string;
-	phoneNum?: string;
+	pictureUrl: string;
 	isEmailValid: boolean;
 	isOnline: boolean;
 	lastSeen: string;

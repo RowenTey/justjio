@@ -53,7 +53,8 @@ const SearchUserModalContent: React.FC<
 						>
 							<div className="flex items-center gap-2">
 								<img
-									src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
+									// src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
+									src={user.pictureUrl}
 									alt="Profile Image"
 									className="w-7 h-7 rounded-full"
 								/>
