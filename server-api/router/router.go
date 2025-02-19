@@ -24,6 +24,7 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService) {
 	auth.Post("/", func(c *fiber.Ctx) error {
 		return handlers.Login(c, kafkaSvc)
 	})
+	auth.Post("/google", handlers.GoogleLogin)
 	auth.Post("/signup", handlers.SignUp)
 	auth.Post("/verify", handlers.VerifyOTP)
 

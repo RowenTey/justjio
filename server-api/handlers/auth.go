@@ -49,15 +49,18 @@ func SignUp(c *fiber.Ctx) error {
 		return util.HandleInternalServerError(c, err)
 	}
 
-	if err := authService.SendOTPEmail(&ClientOTP, user.Email); err != nil {
-		log.Println("Error sending OTP email:", err)
-		delete(ClientOTP, user.Email)
-	}
+	go func() {
+		if err := authService.SendOTPEmail(&ClientOTP, user.Email); err != nil {
+			log.Println("Error sending OTP email:", err)
+			delete(ClientOTP, user.Email)
+		}
+	}()
 
 	response := response.AuthResponse{
-		Email:    createdUser.Email,
-		Username: createdUser.Username,
-		UID:      createdUser.ID,
+		Email:      createdUser.Email,
+		Username:   createdUser.Username,
+		PictureUrl: createdUser.PictureUrl,
+		UID:        createdUser.ID,
 	}
 
 	log.Println("[AUTH] User " + response.Username + " signed up successfully.")
@@ -77,7 +80,7 @@ func Login(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	}
 
 	if !util.CheckPasswordHash(input.Password, user.Password) {
-		return util.HandleError(c, fiber.StatusUnauthorized, "Invalid password", errors.New("Password does not match the user's password"))
+		return util.HandleError(c, fiber.StatusUnauthorized, "Invalid password", errors.New("password does not match the user's password"))
 	}
 
 	authService := &services.AuthService{JwtSecret: config.Config("JWT_SECRET")}
@@ -95,9 +98,10 @@ func Login(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	}()
 
 	response := response.AuthResponse{
-		Username: user.Username,
-		Email:    user.Email,
-		UID:      user.ID,
+		Username:   user.Username,
+		Email:      user.Email,
+		PictureUrl: user.PictureUrl,
+		UID:        user.ID,
 	}
 
 	log.Println("[AUTH] User " + response.Username + " logged in successfully.")
@@ -131,4 +135,67 @@ func VerifyOTP(c *fiber.Ctx) error {
 
 	log.Println("[AUTH] OTP verified successfully for email", request.Email)
 	return util.HandleSuccess(c, "OTP verified successfully", nil)
+}
+
+func GoogleLogin(c *fiber.Ctx) error {
+	type GoogleAuthRequest struct {
+		Code string `json:"code"`
+	}
+
+	var request GoogleAuthRequest
+	if err := c.BodyParser(&request); err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
+
+	authService := &services.AuthService{
+		JwtSecret:   config.Config("JWT_SECRET"),
+		OAuthConfig: config.SetupGoogleOAuthConfig(),
+	}
+	userService := &services.UserService{DB: database.DB}
+
+	googleUser, err := authService.GetGoogleUser(request.Code)
+	if err != nil {
+		return util.HandleInternalServerError(c, err)
+	}
+
+	user, err := userService.GetUserByEmail(googleUser.Email)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return util.HandleInternalServerError(c, err)
+	}
+
+	// Create new user if not found
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		// Random password for OAuth users
+		hashedPassword, err := util.HashPassword(util.GenerateRandomString(32))
+		if err != nil {
+			return util.HandleInternalServerError(c, err)
+		}
+
+		newUser := &model.User{
+			Username:     util.FormatUsername(googleUser.Name),
+			Email:        googleUser.Email,
+			PictureUrl:   googleUser.Picture,
+			Password:     hashedPassword,
+			IsEmailValid: true,
+		}
+		user, err = userService.CreateOrUpdateUser(newUser, true)
+		if err != nil {
+			return util.HandleInternalServerError(c, err)
+		}
+	}
+
+	token, err := authService.CreateToken(user)
+	if err != nil {
+		return util.HandleInternalServerError(c, err)
+	}
+
+	response := response.AuthResponse{
+		Email:      user.Email,
+		Username:   user.Username,
+		PictureUrl: user.PictureUrl,
+		UID:        user.ID,
+	}
+
+	log.Println("[AUTH] User " + response.Username + " authenticated via Google OAuth")
+	return util.HandleLoginSuccess(c, "Authenticated via Google successfully", token, response)
 }

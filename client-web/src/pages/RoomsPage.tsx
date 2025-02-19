@@ -11,7 +11,7 @@ import { IRoom } from "../types/room";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 
 const RoomsPage = () => {
-	const { loading, startLoading, stopLoading } = useLoadingAndError();
+	const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
 	const [searchTerm, setSearchTerm] = useState("");
 	const { user } = useUserCtx();
 	const { rooms, fetchRooms } = useRoomCtx();
@@ -19,7 +19,9 @@ const RoomsPage = () => {
 
 	useEffect(() => {
 		startLoading();
-		fetchRooms().then(stopLoading).catch(stopLoading);
+		fetchRooms()
+			.then(() => stopLoading())
+			.catch(() => stopLoading());
 
 		setFilteredRooms(rooms);
 	}, [user.id]);
@@ -56,7 +58,7 @@ const RoomsPage = () => {
 			</div>
 
 			<div className="w-full h-[92%] flex flex-col items-center px-4 gap-3">
-				{loading ? (
+				{loadingStates[0] ? (
 					<Spinner spinnerSize={{ width: "w-10", height: "h-10" }} />
 				) : filteredRooms.length > 0 ? (
 					filteredRooms.map((room) => (
