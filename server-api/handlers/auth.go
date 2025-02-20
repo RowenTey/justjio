@@ -138,11 +138,7 @@ func VerifyOTP(c *fiber.Ctx) error {
 }
 
 func GoogleLogin(c *fiber.Ctx) error {
-	type GoogleAuthRequest struct {
-		Code string `json:"code"`
-	}
-
-	var request GoogleAuthRequest
+	var request request.GoogleAuthRequest
 	if err := c.BodyParser(&request); err != nil {
 		return util.HandleInvalidInputError(c, err)
 	}
@@ -165,7 +161,7 @@ func GoogleLogin(c *fiber.Ctx) error {
 
 	// Create new user if not found
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		// Random password for OAuth users
+		// Random password for OAuth user
 		hashedPassword, err := util.HashPassword(util.GenerateRandomString(32))
 		if err != nil {
 			return util.HandleInternalServerError(c, err)

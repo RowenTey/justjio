@@ -7,6 +7,7 @@ import { useAuth } from "../context/auth";
 import { getRedirectPath } from "../utils/redirect";
 import { useGoogleLogin } from "@react-oauth/google";
 import GoogleIcon from "../assets/icons/google.svg?react";
+import { BaseContextResponse } from "../types";
 
 type LoginFormData = {
   username: string;
@@ -24,13 +25,10 @@ const LoginPage = () => {
     formState: { errors },
   } = useForm<LoginFormData>();
 
-  const onSubmit: SubmitHandler<LoginFormData> = async (data) => {
-    startLoading(0);
-
-    console.log("[LoginPage] Form data: ", data);
-    const res = await login(data.username, data.password);
-    console.log("[LoginPage] Response: ", res);
-
+  const handleResponse = async (
+    res: BaseContextResponse,
+    loadingIndex: number,
+  ) => {
     if (!res.isSuccessResponse) {
       switch (res.error?.response?.status) {
         case 400:
@@ -45,41 +43,29 @@ const LoginPage = () => {
           setErrorMsg("An error occurred, please try again later.");
           break;
       }
-      stopLoading(0);
-      return;
+      stopLoading(loadingIndex);
+      return false;
     }
 
-    stopLoading(0);
+    stopLoading(loadingIndex);
     const redirectPath = getRedirectPath() || "/";
     navigate(redirectPath);
+    return true;
+  };
+
+  const onSubmit: SubmitHandler<LoginFormData> = async (data) => {
+    startLoading(0);
+    console.log("[LoginPage] Form data: ", data);
+    const res = await login(data.username, data.password);
+    console.log("[LoginPage] Response: ", res);
+    await handleResponse(res, 0);
   };
 
   const loginWithGoogle = useGoogleLogin({
     onSuccess: async (codeResponse) => {
       startLoading(1);
       const res = await googleLogin(codeResponse.code);
-
-      if (!res.isSuccessResponse) {
-        switch (res.error?.response?.status) {
-          case 400:
-            setErrorMsg("Bad request, please check request body.");
-            break;
-          case 401:
-          case 404:
-            setErrorMsg("Invalid username or password.");
-            break;
-          case 500:
-          default:
-            setErrorMsg("An error occurred, please try again later.");
-            break;
-        }
-        stopLoading(1);
-        return;
-      }
-
-      stopLoading(1);
-      const redirectPath = getRedirectPath() || "/";
-      navigate(redirectPath);
+      await handleResponse(res, 1);
     },
     onError: (error) => {
       console.error("An error occurred: ", error);

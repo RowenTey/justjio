@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"log"
 	"strconv"
 
 	"github.com/RowenTey/JustJio/database"
+	"github.com/RowenTey/JustJio/model/request"
 	"github.com/RowenTey/JustJio/services"
 	"github.com/RowenTey/JustJio/util"
 	"github.com/gofiber/fiber/v2"
@@ -11,23 +13,37 @@ import (
 )
 
 // CreateNotification handles the creation of a new notification
-func CreateNotification(c *fiber.Ctx) error {
-	var input struct {
-		UserId  uint   `json:"userId"`
-		Content string `json:"content"`
-	}
-
-	if err := c.BodyParser(&input); err != nil {
+func CreateNotification(c *fiber.Ctx, notificationsChan chan<- NotificationData) error {
+	var request request.CreateNotificationRequest
+	if err := c.BodyParser(&request); err != nil {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	notification, err := (&services.NotificationService{DB: database.DB}).CreateNotification(input.UserId, input.Content)
+	notification, err := (&services.NotificationService{DB: database.DB}).CreateNotification(
+		request.UserId, request.Title, request.Content)
 	if err != nil {
 		if err.Error() == "content cannot be empty" {
 			return util.HandleInvalidInputError(c, err)
 		}
 		return util.HandleInternalServerError(c, err)
 	}
+
+	go func() {
+		subscriptionService := &services.SubscriptionService{DB: database.DB}
+		subscriptions, err := subscriptionService.GetSubscriptionsByUserID(request.UserId)
+		if err != nil {
+			log.Println("[NOTIFICATIONS] Error getting subscriptions: ", err)
+			return
+		}
+
+		for _, sub := range subscriptions {
+			notificationsChan <- NotificationData{
+				Subscription: subscriptionService.NewWebPushSubscriptionObj(&sub),
+				Title:        notification.Title,
+				Message:      notification.Content,
+			}
+		}
+	}()
 
 	return util.HandleSuccess(c, "Notification created successfully", notification)
 }

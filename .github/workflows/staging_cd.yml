@@ -52,9 +52,10 @@ jobs:
             export KAFKA_PORT=${{ vars.KAFKA_PORT }}
             export POSTGRES_HOST=${{ vars.POSTGRES_HOST }}
             export POSTGRES_DB=${{ vars.POSTGRES_DB }}
-            export VITE_GOOGLE_CLIENT_ID=${{ secrets.VITE_GOOGLE_CLIENT_ID }}
             export GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             export GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            export VAPID_PUBLIC_KEY=${{ secrets.VAPID_PUBLIC_KEY }}
+            export VAPID_PRIVATE_KEY=${{ secrets.VAPID_PRIVATE_KEY }}
             cd ~/Documents/Codebase/justjio
             docker compose pull
             docker image prune -f
