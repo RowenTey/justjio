@@ -10,7 +10,8 @@ services:
       APP_ENV_PREFIX: VITE
       VITE_API_URL: https://justjio-api-staging.rowentey.xyz/v1
       VITE_WS_URL: wss://justjio-ws-staging.rowentey.xyz
-      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+      VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      VITE_VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
     depends_on:
       - api-server
       - ws-server
@@ -33,6 +34,9 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URL: https://justjio-staging.rowentey.xyz
+      VAPID_EMAIL: ${VAPID_EMAIL}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
     entrypoint: ["/api-server", "staging"]
 
   ws-server:

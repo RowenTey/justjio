@@ -13,11 +13,13 @@ import { useEffect, useState } from "react";
 import { IRoom } from "../types/room";
 import Spinner from "../components/Spinner";
 import { useTransactionCtx } from "../context/transaction";
+import { useSubscription } from "../context/subscriptions";
 
 const HomePage = () => {
   const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
   const [logoutLoading, setLogoutLoading] = useState(false);
   const { logout } = useAuth();
+  const { unsubscribe } = useSubscription();
   const { rooms, fetchRooms } = useRoomCtx();
   const { fetchTransactions } = useTransactionCtx();
   const { user } = useUserCtx();
@@ -25,6 +27,7 @@ const HomePage = () => {
 
   const onLogout = async () => {
     setLogoutLoading(true);
+    await unsubscribe();
     await logout();
     setLogoutLoading(false);
     navigate("/login");

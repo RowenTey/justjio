@@ -1,6 +1,5 @@
 import { BaseContextResponse } from ".";
 
-/* eslint-disable no-mixed-spaces-and-tabs */
 export interface BaseUserInfo {
   id: number;
   email: string;

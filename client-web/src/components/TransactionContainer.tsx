@@ -72,7 +72,8 @@ const TransactionBox = ({
       await createNotificationApi(
         api,
         transaction.payerId,
-        `Reminder to pay $${transaction.amount.toFixed(2)} to ${
+        "Reminder",
+        `Pay $${transaction.amount.toFixed(2)} to ${
           transaction.payee.username
         }!`,
       );

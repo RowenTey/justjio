@@ -9,6 +9,7 @@ import (
 	"github.com/RowenTey/JustJio/middleware"
 	"github.com/RowenTey/JustJio/router"
 	"github.com/RowenTey/JustJio/services"
+	"github.com/RowenTey/JustJio/worker"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -30,6 +31,8 @@ func main() {
 		}
 	}
 
+	notificationsChan := worker.RunPushNotification()
+
 	app := fiber.New()
 
 	database.ConnectDB()
@@ -46,7 +49,7 @@ func main() {
 	defer kafkaService.Close()
 
 	middleware.Fiber(app)
-	router.Initalize(app, kafkaService)
+	router.Initalize(app, kafkaService, notificationsChan)
 
 	log.Println("Server running on port", config.Config("PORT"))
 	log.Fatal(app.Listen(":" + config.Config("PORT")))

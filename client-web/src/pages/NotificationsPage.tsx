@@ -76,9 +76,14 @@ const NotificationsPage = () => {
                     notification.isRead ? "bg-gray-100" : "bg-white"
                   } rounded-xl shadow-md`}
                 >
-                  <p className="text-sm text-black text-wrap w-[90%]">
-                    {notification.content}
-                  </p>
+                  <div className="flex flex-col justify-between w-[90%]">
+                    <p className="text-base text-secondary font-semibold">
+                      {notification.title}
+                    </p>
+                    <p className="text-sm text-black text-wrap">
+                      {notification.content}
+                    </p>
+                  </div>
                   {!notification.isRead && (
                     <CheckIcon
                       className="w-5 h-5 text-green-500 cursor-pointer"
