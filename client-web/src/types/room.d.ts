@@ -1,4 +1,3 @@
-/* eslint-disable no-mixed-spaces-and-tabs */
 import { BaseContextResponse } from ".";
 import { BaseUserInfo } from "./user";
 

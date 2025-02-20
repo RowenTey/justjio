@@ -1,4 +1,3 @@
-/* eslint-disable no-mixed-spaces-and-tabs */
 import { BaseUserInfo } from "./user";
 
 export interface ITransaction {
