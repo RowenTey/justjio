@@ -43,7 +43,7 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add -A
-          git commit -m "Formatted code with prettier"
+          git commit -m "style: Formatted code with prettier"
 
       - name: Push changes
         if: steps.git-check-react.outputs.changes == 'true'
@@ -102,7 +102,7 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add -A
-          git commit -m "Formatted code with go formatter"
+          git commit -m "style: Formatted code with go formatter"
 
       - name: Push changes
         if: steps.git-check-go.outputs.changes == 'true'
