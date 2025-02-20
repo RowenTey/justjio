@@ -17,28 +17,28 @@ import RoomsPage from "../pages/RoomsPage";
 import NotificationsPage from "../pages/NotificationsPage";
 
 const AppRouter = () => {
-	return (
-		<Routes>
-			<Route element={<ProtectedRoutes />}>
-				<Route element={<TabLayout />}>
-					<Route path="/" element={<HomePage />} />
-					<Route path="/profile" element={<ProfilePage />} />
-					<Route path="/notifications" element={<NotificationsPage />} />
-				</Route>
-				<Route path="/friends" element={<FriendsPage />} />
-				<Route path="/friendRequests" element={<FriendRequestsPage />} />
-				<Route path="/rooms" element={<RoomsPage />} />
-				<Route path="/rooms/create" element={<CreateRoomPage />} />
-				<Route path="/rooms/invites" element={<RoomInvitesPage />} />
-				<Route path="/room/:roomId" element={<RoomPage />} />
-				<Route path="/room/:roomId/chat" element={<RoomChatPage />} />
-				<Route path="/room/:roomId/bill/create" element={<CreateBillPage />} />
-				<Route path="/room/:roomId/bill/split" element={<SplitBillPage />} />
-			</Route>
-			<Route path="/login" element={<LoginPage />} />
-			<Route path="/signup" element={<SignUpPage />} />
-		</Routes>
-	);
+  return (
+    <Routes>
+      <Route element={<ProtectedRoutes />}>
+        <Route element={<TabLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+        </Route>
+        <Route path="/friends" element={<FriendsPage />} />
+        <Route path="/friendRequests" element={<FriendRequestsPage />} />
+        <Route path="/rooms" element={<RoomsPage />} />
+        <Route path="/rooms/create" element={<CreateRoomPage />} />
+        <Route path="/rooms/invites" element={<RoomInvitesPage />} />
+        <Route path="/room/:roomId" element={<RoomPage />} />
+        <Route path="/room/:roomId/chat" element={<RoomChatPage />} />
+        <Route path="/room/:roomId/bill/create" element={<CreateBillPage />} />
+        <Route path="/room/:roomId/bill/split" element={<SplitBillPage />} />
+      </Route>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignUpPage />} />
+    </Routes>
+  );
 };
 
 export default AppRouter;

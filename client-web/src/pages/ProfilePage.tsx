@@ -11,208 +11,211 @@ import { ITransaction } from "../types/transaction";
 import { Link } from "react-router-dom";
 
 const ProfilePage: React.FC = () => {
-	const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
-	const { user } = useUserCtx();
-	const [numFriends, setNumFriends] = useState<number | undefined>(undefined);
-	const [numRooms, setNumRooms] = useState<number | undefined>(undefined);
-	const [transactions, setTransactions] = useState<ITransaction[]>([]);
+  const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
+  const { user } = useUserCtx();
+  const [numFriends, setNumFriends] = useState<number | undefined>(undefined);
+  const [numRooms, setNumRooms] = useState<number | undefined>(undefined);
+  const [transactions, setTransactions] = useState<ITransaction[]>([]);
 
-	const groupedTransactions = useMemo(() => {
-		return transactions.reduce((acc, tx) => {
-			const date = new Date(tx.paidOn);
-			const key = `${date.getDate()} ${date.toLocaleString("default", {
-				month: "short",
-			})}`;
+  const groupedTransactions = useMemo(() => {
+    return transactions.reduce(
+      (acc, tx) => {
+        const date = new Date(tx.paidOn);
+        const key = `${date.getDate()} ${date.toLocaleString("default", {
+          month: "short",
+        })}`;
 
-			if (!acc[key]) {
-				acc[key] = [];
-			}
-			acc[key].push(tx);
-			return acc;
-		}, {} as Record<string, ITransaction[]>);
-	}, [transactions]);
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(tx);
+        return acc;
+      },
+      {} as Record<string, ITransaction[]>,
+    );
+  }, [transactions]);
 
-	useEffect(() => {
-		const fetchData = async () => {
-			const numFriendsPromise = getNumFriendsApi(api, user.id);
-			const numRooomsPromise = fetchNumRoomsApi(api);
-			const fetchTransactionsPromise = fetchTransactionsApi(api, true);
-			return Promise.all([
-				numFriendsPromise,
-				numRooomsPromise,
-				fetchTransactionsPromise,
-			]);
-		};
+  useEffect(() => {
+    const fetchData = async () => {
+      const numFriendsPromise = getNumFriendsApi(api, user.id);
+      const numRooomsPromise = fetchNumRoomsApi(api);
+      const fetchTransactionsPromise = fetchTransactionsApi(api, true);
+      return Promise.all([
+        numFriendsPromise,
+        numRooomsPromise,
+        fetchTransactionsPromise,
+      ]);
+    };
 
-		startLoading();
-		fetchData()
-			.then((res) => {
-				setNumFriends(res[0].data.data.numFriends);
-				setNumRooms(res[1].data.data.count);
-				setTransactions(res[2].data.data);
-			})
-			.then(() => stopLoading());
-	}, [user.id]);
+    startLoading();
+    fetchData()
+      .then((res) => {
+        setNumFriends(res[0].data.data.numFriends);
+        setNumRooms(res[1].data.data.count);
+        setTransactions(res[2].data.data);
+      })
+      .then(() => stopLoading());
+  }, [user.id]);
 
-	if (loadingStates[0]) {
-		return <Spinner bgClass="bg-gray-200" />;
-	}
+  if (loadingStates[0]) {
+    return <Spinner bgClass="bg-gray-200" />;
+  }
 
-	return (
-		<div className="h-full flex flex-col items-center bg-gray-200">
-			<ProfileTopBar />
-			<ProfileContainer
-				username={user.username}
-				pictureUrl={user.pictureUrl}
-				numFriends={numFriends || 0}
-				numRooms={numRooms || 0}
-			/>
-			<TransactionHistory
-				username={user.username}
-				transactions={groupedTransactions}
-			/>
-		</div>
-	);
+  return (
+    <div className="h-full flex flex-col items-center bg-gray-200">
+      <ProfileTopBar />
+      <ProfileContainer
+        username={user.username}
+        pictureUrl={user.pictureUrl}
+        numFriends={numFriends || 0}
+        numRooms={numRooms || 0}
+      />
+      <TransactionHistory
+        username={user.username}
+        transactions={groupedTransactions}
+      />
+    </div>
+  );
 };
 
 const ProfileTopBar: React.FC = () => {
-	return (
-		<div className="relative top-0 flex h-[8%] items-center justify-center w-full py-4 px-6 bg-purple-200">
-			<h1 className="text-xl font-bold text-secondary">Profile</h1>
-		</div>
-	);
+  return (
+    <div className="relative top-0 flex h-[8%] items-center justify-center w-full py-4 px-6 bg-purple-200">
+      <h1 className="text-xl font-bold text-secondary">Profile</h1>
+    </div>
+  );
 };
 
 type ProfileContainerProps = {
-	username: string;
-	pictureUrl: string;
-	numFriends: number;
-	numRooms: number;
+  username: string;
+  pictureUrl: string;
+  numFriends: number;
+  numRooms: number;
 };
 
 const ProfileContainer: React.FC<ProfileContainerProps> = ({
-	username,
-	pictureUrl,
-	numFriends,
-	numRooms,
+  username,
+  pictureUrl,
+  numFriends,
+  numRooms,
 }) => {
-	return (
-		<div className="w-[90%] p-4 flex justify-center items-center bg-white rounded-xl mt-4 shadow-xl">
-			<Link
-				className="w-1/5 flex flex-col gap-3 items-center cursor-pointer"
-				to="/friends"
-				state={{ from: "/profile" }}
-			>
-				<p className="text-4xl font-extrabold text-secondary hover:scale-110">
-					{numFriends}
-				</p>
-				<p className="text-lg font-semibold text-black">Friends</p>
-			</Link>
+  return (
+    <div className="w-[90%] p-4 flex justify-center items-center bg-white rounded-xl mt-4 shadow-xl">
+      <Link
+        className="w-1/5 flex flex-col gap-3 items-center cursor-pointer"
+        to="/friends"
+        state={{ from: "/profile" }}
+      >
+        <p className="text-4xl font-extrabold text-secondary hover:scale-110">
+          {numFriends}
+        </p>
+        <p className="text-lg font-semibold text-black">Friends</p>
+      </Link>
 
-			<div className="w-3/5 flex flex-col gap-2 items-center">
-				<img
-					// src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
-					src={pictureUrl}
-					alt="Profile Image"
-					className="w-24 h-24 rounded-full"
-				/>
+      <div className="w-3/5 flex flex-col gap-2 items-center">
+        <img
+          // src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
+          src={pictureUrl}
+          alt="Profile Image"
+          className="w-24 h-24 rounded-full"
+        />
 
-				<div className="flex justify-center items-center bg-secondary border-black border-[1.5px] rounded-3xl px-2 w-[75%]">
-					<h3 className="text-lg text-white font-semibold break-all text-center leading-tight">
-						{username}
-					</h3>
-				</div>
+        <div className="flex justify-center items-center bg-secondary border-black border-[1.5px] rounded-3xl px-2 w-[75%]">
+          <h3 className="text-lg text-white font-semibold break-all text-center leading-tight">
+            {username}
+          </h3>
+        </div>
 
-				<button className="bg-primary text-black text-sm font-semibold px-4 py-1 rounded-3xl mt-1">
-					Edit Profile
-				</button>
-			</div>
+        <button className="bg-primary text-black text-sm font-semibold px-4 py-1 rounded-3xl mt-1">
+          Edit Profile
+        </button>
+      </div>
 
-			<Link
-				className="w-1/5 flex flex-col gap-3 items-center cursor-pointer"
-				to="/rooms"
-				state={{ from: "/profile" }}
-			>
-				<p className="text-4xl font-extrabold text-secondary hover:scale-110">
-					{numRooms}
-				</p>
-				<p className="text-lg font-semibold text-black">Rooms</p>
-			</Link>
-		</div>
-	);
+      <Link
+        className="w-1/5 flex flex-col gap-3 items-center cursor-pointer"
+        to="/rooms"
+        state={{ from: "/profile" }}
+      >
+        <p className="text-4xl font-extrabold text-secondary hover:scale-110">
+          {numRooms}
+        </p>
+        <p className="text-lg font-semibold text-black">Rooms</p>
+      </Link>
+    </div>
+  );
 };
 
 type TransactionHistoryProps = {
-	username: string;
-	transactions: Record<string, ITransaction[]>;
+  username: string;
+  transactions: Record<string, ITransaction[]>;
 };
 
 const TransactionHistory: React.FC<TransactionHistoryProps> = ({
-	username,
-	transactions,
+  username,
+  transactions,
 }) => {
-	return (
-		<div className="w-[95%] h-[60%] p-4 flex flex-col justify-center mt-1 text-black">
-			<p className="text-md font-semibold mb-1">Transaction History</p>
+  return (
+    <div className="w-[95%] h-[60%] p-4 flex flex-col justify-center mt-1 text-black">
+      <p className="text-md font-semibold mb-1">Transaction History</p>
 
-			<div
-				className={`w-full h-[95%] overflow-y-auto flex flex-col gap-2 py-1 px-1 bg-primary shadow-xl rounded-md ${
-					Object.keys(transactions).length === 0
-						? "items-center justify-center"
-						: ""
-				}`}
-			>
-				{Object.keys(transactions).length === 0 ? (
-					<p className="text-center text-gray-500">
-						No transaction history available
-					</p>
-				) : (
-					Object.entries(transactions)
-						.sort((a, b) => {
-							const dateA = new Date(a[1][0].paidOn);
-							const dateB = new Date(b[1][0].paidOn);
-							return dateB.getTime() - dateA.getTime();
-						})
-						.map(([date, transactionsForDate]) => (
-							<div key={date} className="flex flex-col gap-1 pl-2">
-								<p className="text-sm font-medium ml-1">{date}</p>
-								<div className="w-full flex flex-col items-center pr-1">
-									{transactionsForDate.map((transaction, index) => (
-										<div
-											key={index}
-											className={`w-full flex justify-between items-center bg-white px-3 py-1 ${
-												transactionsForDate.length === 1
-													? "rounded-lg" // Single item: fully rounded
-													: index === 0
-													? "rounded-t-lg border-b-[1px] border-gray-200" // First item
-													: index === transactionsForDate.length - 1
-													? "rounded-b-lg" // Last item
-													: "border-b-[1px] border-gray-200" // Middle items
-											}`}
-										>
-											<p>
-												{transaction.payee.username === username
-													? transaction.payer.username
-													: transaction.payee.username}
-											</p>
-											<p
-												className={`${
-													transaction.payee.username === username
-														? "text-success"
-														: "text-error"
-												}`}
-											>
-												${transaction.amount.toFixed(2)}
-											</p>
-										</div>
-									))}
-								</div>
-							</div>
-						))
-				)}
-			</div>
-		</div>
-	);
+      <div
+        className={`w-full h-[95%] overflow-y-auto flex flex-col gap-2 py-1 px-1 bg-primary shadow-xl rounded-md ${
+          Object.keys(transactions).length === 0
+            ? "items-center justify-center"
+            : ""
+        }`}
+      >
+        {Object.keys(transactions).length === 0 ? (
+          <p className="text-center text-gray-500">
+            No transaction history available
+          </p>
+        ) : (
+          Object.entries(transactions)
+            .sort((a, b) => {
+              const dateA = new Date(a[1][0].paidOn);
+              const dateB = new Date(b[1][0].paidOn);
+              return dateB.getTime() - dateA.getTime();
+            })
+            .map(([date, transactionsForDate]) => (
+              <div key={date} className="flex flex-col gap-1 pl-2">
+                <p className="text-sm font-medium ml-1">{date}</p>
+                <div className="w-full flex flex-col items-center pr-1">
+                  {transactionsForDate.map((transaction, index) => (
+                    <div
+                      key={index}
+                      className={`w-full flex justify-between items-center bg-white px-3 py-1 ${
+                        transactionsForDate.length === 1
+                          ? "rounded-lg" // Single item: fully rounded
+                          : index === 0
+                            ? "rounded-t-lg border-b-[1px] border-gray-200" // First item
+                            : index === transactionsForDate.length - 1
+                              ? "rounded-b-lg" // Last item
+                              : "border-b-[1px] border-gray-200" // Middle items
+                      }`}
+                    >
+                      <p>
+                        {transaction.payee.username === username
+                          ? transaction.payer.username
+                          : transaction.payee.username}
+                      </p>
+                      <p
+                        className={`${
+                          transaction.payee.username === username
+                            ? "text-success"
+                            : "text-error"
+                        }`}
+                      >
+                        ${transaction.amount.toFixed(2)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default ProfilePage;

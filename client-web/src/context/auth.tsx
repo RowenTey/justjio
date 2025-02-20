@@ -12,136 +12,136 @@ export const LOGOUT = "LOGOUT";
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-	children,
+  children,
 }) => {
-	const [authState, setAuthState] = useState<AuthState>({
-		accessToken: undefined,
-		authenticated: false,
-	});
-	const { setUser } = useUserCtx();
+  const [authState, setAuthState] = useState<AuthState>({
+    accessToken: undefined,
+    authenticated: false,
+  });
+  const { setUser } = useUserCtx();
 
-	const checkAuth = (): boolean => {
-		const accessToken = localStorage.getItem("accessToken");
-		if (!accessToken) return false;
+  const checkAuth = (): boolean => {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) return false;
 
-		// Decode the token to get the user's info
-		const decodedToken = jwtDecode<DecodedJWTToken>(accessToken);
-		// Check if token is expired
-		if (decodedToken.exp * 1000 < Date.now()) {
-			return false;
-		}
+    // Decode the token to get the user's info
+    const decodedToken = jwtDecode<DecodedJWTToken>(accessToken);
+    // Check if token is expired
+    if (decodedToken.exp * 1000 < Date.now()) {
+      return false;
+    }
 
-		setUser({
-			id: decodedToken.user_id,
-			email: decodedToken.user_email,
-			username: decodedToken.username,
-			pictureUrl: decodedToken.picture_url,
-		});
+    setUser({
+      id: decodedToken.user_id,
+      email: decodedToken.user_email,
+      username: decodedToken.username,
+      pictureUrl: decodedToken.picture_url,
+    });
 
-		setAuthState({
-			accessToken,
-			authenticated: true,
-		});
+    setAuthState({
+      accessToken,
+      authenticated: true,
+    });
 
-		return true;
-	};
+    return true;
+  };
 
-	const login = async (
-		username: string,
-		password: string
-	): Promise<BaseContextResponse> => {
-		try {
-			const { data: res } = await loginApi(api, username, password, false);
-			const { data, token } = res;
-			setAuthState({
-				accessToken: token,
-				authenticated: true,
-			});
-			localStorage.setItem("accessToken", token);
-			setUser({
-				id: data.id,
-				email: data.email,
-				username: data.username,
-				pictureUrl: data.pictureUrl,
-			});
+  const login = async (
+    username: string,
+    password: string,
+  ): Promise<BaseContextResponse> => {
+    try {
+      const { data: res } = await loginApi(api, username, password, false);
+      const { data, token } = res;
+      setAuthState({
+        accessToken: token,
+        authenticated: true,
+      });
+      localStorage.setItem("accessToken", token);
+      setUser({
+        id: data.id,
+        email: data.email,
+        username: data.username,
+        pictureUrl: data.pictureUrl,
+      });
 
-			return { isSuccessResponse: true, error: null };
-		} catch (error) {
-			console.error("Error logging in: ", error);
-			return {
-				isSuccessResponse: false,
-				error: error as AxiosError,
-			};
-		}
-	};
+      return { isSuccessResponse: true, error: null };
+    } catch (error) {
+      console.error("Error logging in: ", error);
+      return {
+        isSuccessResponse: false,
+        error: error as AxiosError,
+      };
+    }
+  };
 
-	const googleLogin = async (code: string): Promise<BaseContextResponse> => {
-		try {
-			const { data: res } = await googleLoginApi(api, code);
-			const { data, token } = res;
-			console.log("Google login response: ", res);
-			setAuthState({
-				accessToken: token,
-				authenticated: true,
-			});
-			localStorage.setItem("accessToken", token);
-			setUser({
-				id: data.id,
-				email: data.email,
-				username: data.username,
-				pictureUrl: data.pictureUrl,
-			});
+  const googleLogin = async (code: string): Promise<BaseContextResponse> => {
+    try {
+      const { data: res } = await googleLoginApi(api, code);
+      const { data, token } = res;
+      console.log("Google login response: ", res);
+      setAuthState({
+        accessToken: token,
+        authenticated: true,
+      });
+      localStorage.setItem("accessToken", token);
+      setUser({
+        id: data.id,
+        email: data.email,
+        username: data.username,
+        pictureUrl: data.pictureUrl,
+      });
 
-			return { isSuccessResponse: true, error: null };
-		} catch (error) {
-			console.error("Error logging in: ", error);
-			return {
-				isSuccessResponse: false,
-				error: error as AxiosError,
-			};
-		}
-	};
+      return { isSuccessResponse: true, error: null };
+    } catch (error) {
+      console.error("Error logging in: ", error);
+      return {
+        isSuccessResponse: false,
+        error: error as AxiosError,
+      };
+    }
+  };
 
-	const logout = async () => {
-		return new Promise<boolean>((resolve) => {
-			setTimeout(() => {
-				setAuthState({
-					accessToken: undefined,
-					authenticated: false,
-				});
-				localStorage.removeItem("accessToken");
-				setUser({
-					id: -1,
-					email: "",
-					username: "",
-					pictureUrl: "",
-				});
-				resolve(true);
-			}, 500);
-		});
-	};
+  const logout = async () => {
+    return new Promise<boolean>((resolve) => {
+      setTimeout(() => {
+        setAuthState({
+          accessToken: undefined,
+          authenticated: false,
+        });
+        localStorage.removeItem("accessToken");
+        setUser({
+          id: -1,
+          email: "",
+          username: "",
+          pictureUrl: "",
+        });
+        resolve(true);
+      }, 500);
+    });
+  };
 
-	const getAccessToken = () => {
-		return authState.accessToken;
-	};
+  const getAccessToken = () => {
+    return authState.accessToken;
+  };
 
-	const isAuthenticated = () => {
-		return authState.authenticated ? true : checkAuth();
-	};
+  const isAuthenticated = () => {
+    return authState.authenticated ? true : checkAuth();
+  };
 
-	return (
-		<AuthContext.Provider
-			value={{
-				login,
-				logout,
-				googleLogin,
-				getAccessToken,
-				isAuthenticated,
-			}}
-		>
-			{children}
-		</AuthContext.Provider>
-	);
+  return (
+    <AuthContext.Provider
+      value={{
+        login,
+        logout,
+        googleLogin,
+        getAccessToken,
+        isAuthenticated,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 const useAuth = () => useContextWrapper(AuthContext);
