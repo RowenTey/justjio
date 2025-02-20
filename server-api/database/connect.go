@@ -38,6 +38,7 @@ func ConnectDB() {
 		&model.Transaction{},
 		&model.Message{},
 		&model.Notification{},
+		&model.Subscription{},
 	)
 	if err != nil {
 		log.Println("[DB] Migration failed: ", err.Error())

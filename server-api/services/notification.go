@@ -12,13 +12,14 @@ type NotificationService struct {
 }
 
 // CreateNotification creates a new notification for a user
-func (s *NotificationService) CreateNotification(userId uint, content string) (*model.Notification, error) {
+func (s *NotificationService) CreateNotification(userId uint, title, content string) (*model.Notification, error) {
 	if content == "" {
 		return nil, errors.New("content cannot be empty")
 	}
 
 	notification := &model.Notification{
 		UserID:  userId,
+		Title:   title,
 		Content: content,
 		IsRead:  false,
 	}

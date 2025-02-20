@@ -1,6 +1,6 @@
 import React, { createContext, useState } from "react";
 import { AuthContextType, AuthState, BaseContextResponse } from "../types";
-import { googleLoginApi, loginApi } from "../api/auth";
+import { googleLoginApi, loginApi, LoginResponse } from "../api/auth";
 import { api } from "../api";
 import { useUserCtx } from "./user";
 import useContextWrapper from "../hooks/useContextWrapper";
@@ -46,25 +46,28 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return true;
   };
 
+  const handleLoginResponse = (res: LoginResponse) => {
+    const { data, token } = res;
+    localStorage.setItem("accessToken", token);
+    setAuthState({
+      accessToken: token,
+      authenticated: true,
+    });
+    setUser({
+      id: data.id,
+      email: data.email,
+      username: data.username,
+      pictureUrl: data.pictureUrl,
+    });
+  };
+
   const login = async (
     username: string,
     password: string,
   ): Promise<BaseContextResponse> => {
     try {
       const { data: res } = await loginApi(api, username, password, false);
-      const { data, token } = res;
-      setAuthState({
-        accessToken: token,
-        authenticated: true,
-      });
-      localStorage.setItem("accessToken", token);
-      setUser({
-        id: data.id,
-        email: data.email,
-        username: data.username,
-        pictureUrl: data.pictureUrl,
-      });
-
+      handleLoginResponse(res);
       return { isSuccessResponse: true, error: null };
     } catch (error) {
       console.error("Error logging in: ", error);
@@ -78,20 +81,8 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const googleLogin = async (code: string): Promise<BaseContextResponse> => {
     try {
       const { data: res } = await googleLoginApi(api, code);
-      const { data, token } = res;
       console.log("Google login response: ", res);
-      setAuthState({
-        accessToken: token,
-        authenticated: true,
-      });
-      localStorage.setItem("accessToken", token);
-      setUser({
-        id: data.id,
-        email: data.email,
-        username: data.username,
-        pictureUrl: data.pictureUrl,
-      });
-
+      handleLoginResponse(res);
       return { isSuccessResponse: true, error: null };
     } catch (error) {
       console.error("Error logging in: ", error);

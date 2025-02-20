@@ -3,13 +3,16 @@ package router
 import (
 	"github.com/RowenTey/JustJio/handlers"
 	"github.com/RowenTey/JustJio/middleware"
+	model_push_notifications "github.com/RowenTey/JustJio/model/push_notifications"
 	"github.com/RowenTey/JustJio/services"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
 )
 
-func Initalize(router *fiber.App, kafkaSvc *services.KafkaService) {
+type NotificationData = model_push_notifications.NotificationData
+
+func Initalize(router *fiber.App, kafkaSvc *services.KafkaService, notificationsChan chan<- NotificationData) {
 	router.Get("/", func(c *fiber.Ctx) error {
 		return c.Status(200).SendString("Hello world from JustJio :)")
 	})
@@ -87,7 +90,15 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService) {
 
 	notifications := v1.Group("/notifications")
 	notifications.Get("/", handlers.GetNotifications)
-	notifications.Post("/", handlers.CreateNotification)
+	notifications.Post("/", func(c *fiber.Ctx) error {
+		return handlers.CreateNotification(c, notificationsChan)
+	})
+
+	subscriptions := v1.Group("/subscriptions")
+	subscriptions.Post("/", func(c *fiber.Ctx) error {
+		return handlers.CreateSubscription(c, notificationsChan)
+	})
+	subscriptions.Delete("/:subId", handlers.DeleteSubscription)
 
 	// 404 handler
 	router.Use(func(c *fiber.Ctx) error {

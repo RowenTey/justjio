@@ -9,12 +9,14 @@ export interface NotificationResponse extends ApiResponse {
 export const createNotificationApi = (
   api: AxiosInstance,
   userId: number,
+  title: string,
   message: string,
   mock: boolean = false,
 ): Promise<AxiosResponse<ApiResponse>> => {
   if (!mock) {
     return api.post<ApiResponse>("/notifications", {
       userId,
+      title,
       content: message,
     });
   }
