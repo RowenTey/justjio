@@ -1,42 +1,12 @@
 # 🍺 JustJio
 
-> Invite your friends to hangout easily 🀄
+> Invite your friends to hangout easily 🀄 A party-planning app that streamlines all the pain of hosting one 🍻
 
 ![landing](./client/assets/gifs/JustJio.gif)
 
 ## 🛠 Getting Started
 
-> From your command line go to the folder directory and run the following scripts in the terminal.
-
-1\. Go to folder directory
-
-```terminal
-cd <FOLDER-NAME>
-```
-
-2\. Clone the repo
-
-```terminal
-git clone https://github.com/RowenTey/JustJio.git
-```
-
-3\. Go to project directory
-
-```terminal
-cd SC2006-OneStart
-```
-
-4\. Checkout into `dev` branch for development
-
-```terminal
-git checkout dev
-```
-
-5\. Change directory to `client` or `server`
-
-```terminal
-cd <PROJECT-PATH>
-```
+> See specific instructions from respective directories
 
 ## 📂 Project Folder Structure
 
@@ -44,24 +14,28 @@ cd <PROJECT-PATH>
 
 ```terminal
 .
-├── deliverables         # lab deliverables
-├── client               # react native app
-├── server               # go app
+├── .github/                    # CI/CD pipeline
+├── client/                     # legacy react native app
+├── client-web/                 # react web app
+├── server-api/                 # go API server
+├── server-ws/                  # go WebSockets server
+├── docker-compose-staging.yml  # config for staging env
+├── docker-compose.yml          # config for dev env
 ├── .gitignore
 ├── LICENSE
 └── README.md
 ```
 
-## 🧪 Tech Stack
+<!-- ## 🧪 Tech Stack
 
 <p>
   <img src="https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" >
   <img src="https://img.shields.io/badge/React_Native-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" >
   <img src="https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white" >
   <img src="https://img.shields.io/badge/Google_Cloud-FF8552?style=for-the-badge&logo=google-cloud&logoColor=white" >
-</p>
+</p> -->
 
-## 🧠 Contributors - Team OneStart 🏆🤟🏼
+<!-- ## 🧠 Contributors - Team OneStart 🏆🤟🏼
 
 - [@RowenTey](https://github.com/RowenTey)
 - [@czhi-heng](https://github.com/czhi-heng)
@@ -77,4 +51,4 @@ cd <PROJECT-PATH>
 - MySQL: https://dev.mysql.com/doc/
 - Planetscale: https://planetscale.com/docs
 - API Documentation: https://justjio-server-o44bmvzlsa-as.a.run.app/swagger
-- Video Demo: https://www.youtube.com/watch?v=ivcDZ1EqElk
+- Video Demo: https://www.youtube.com/watch?v=ivcDZ1EqElk -->
