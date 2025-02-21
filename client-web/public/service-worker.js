@@ -1,7 +1,7 @@
 self.addEventListener("push", (event) => {
   console.log("[Service Worker] Push notification received!");
   const payload = event.data.json();
-  console.log(`[Service Worker] Push payload: "${payload}"`);
+  console.log(`[Service Worker] Push payload: "${JSON.stringify(payload)}"`);
 
   const title = payload.title;
   const options = {

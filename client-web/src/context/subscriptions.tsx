@@ -57,6 +57,10 @@ const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         await registration.pushManager.getSubscription();
 
       if (existingSubscription) {
+        console.log(
+          "[Push] Subscription already exists:",
+          existingSubscription,
+        );
         const existingSubJson = existingSubscription.toJSON();
         // TODO: Figure out this part
         // Most likely call backend?
