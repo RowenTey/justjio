@@ -103,28 +103,28 @@ func (ts *TransactionService) GetTransactionsByUser(isPaid bool, userId string) 
 	return &transactions, nil
 }
 
-func (ts *TransactionService) SettleTransaction(transactionId string, userId string) error {
+func (ts *TransactionService) SettleTransaction(transactionId string, userId string) (*model.Transaction, error) {
 	db := ts.DB.Table("transactions")
 	var transaction model.Transaction
 
 	if err := db.First(&transaction, transactionId).Error; err != nil {
-		return err
+		return nil, err
 	}
 
 	if transaction.IsPaid {
-		return errors.New("transaction already settled")
+		return nil, errors.New("transaction already settled")
 	}
 
 	if fmt.Sprint(transaction.PayerID) != userId {
-		return errors.New("invalid payer")
+		return nil, errors.New("invalid payer")
 	}
 
 	transaction.IsPaid = true
 	if err := ts.DB.Save(&transaction).Error; err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &transaction, nil
 }
 
 func consolidateTransactions(transactions *[]model.Transaction, consolidatedBill *model.Consolidation) *[]model.Transaction {
