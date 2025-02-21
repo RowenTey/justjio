@@ -14,7 +14,10 @@ type User struct {
 }
 
 func GetCurrentUser(c *websocket.Conn) (*User, error) {
-	tokenStr := c.Query("token")
+	tokenStr := c.Cookies("token", "")
+	if tokenStr == "" {
+		return nil, errors.New("No token provided")
+	}
 
 	// Decode the JWT token
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
