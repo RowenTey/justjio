@@ -14,7 +14,7 @@ type NotificationData = model_push_notifications.NotificationData
 
 func Initalize(router *fiber.App, kafkaSvc *services.KafkaService, notificationsChan chan<- NotificationData) {
 	router.Get("/", func(c *fiber.Ctx) error {
-		return c.Status(200).SendString("Hello world from JustJio :)")
+		return c.Status(200).SendString("Hello world from JustJio API :)")
 	})
 
 	v1 := router.Group("/v1")
@@ -86,7 +86,9 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService, notifications
 
 	transactions := v1.Group("/transactions")
 	transactions.Get("/", handlers.GetTransactionsByUser)
-	transactions.Patch("/:txId/settle", handlers.SettleTransaction)
+	transactions.Patch("/:txId/settle", func(c *fiber.Ctx) error {
+		return handlers.SettleTransaction(c, notificationsChan)
+	})
 
 	notifications := v1.Group("/notifications")
 	notifications.Get("/", handlers.GetNotifications)
