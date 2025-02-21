@@ -64,6 +64,7 @@ func main() {
 
 			if err := c.WriteJSON(fiber.Map{
 				"status": "Unauthorized",
+				"error":  err.Error(),
 			}); err != nil {
 				log.Println("[WebSocket] Error writing JSON:", err)
 			}
