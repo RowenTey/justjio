@@ -76,7 +76,7 @@ func SeedDB(db *gorm.DB) error {
 			continue
 		}
 
-		for _, r := range requests {
+		for _, r := range *requests {
 			err := userService.AcceptFriendRequest(r.ID)
 			if err != nil {
 				log.Println("[SEED] Error accepting friend request: ", err)

@@ -39,15 +39,15 @@ func (ms *MessageService) SaveMessage(room *model.Room, sender *model.User, cont
 	return nil
 }
 
-func (ms *MessageService) GetMessageById(msgId, roomId string) (model.Message, error) {
+func (ms *MessageService) GetMessageById(msgId, roomId string) (*model.Message, error) {
 	db := ms.DB.Table("messages")
 	var message model.Message
 
 	if err := db.Where("id = ? AND room_id = ?", msgId, roomId).First(&message).Error; err != nil {
-		return model.Message{}, err
+		return &model.Message{}, err
 	}
 
-	return message, nil
+	return &message, nil
 }
 
 func (ms *MessageService) DeleteMessage(msgId, roomId string) error {
