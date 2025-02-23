@@ -48,15 +48,15 @@ func (bs *BillService) CreateBill(
 	return &bill, nil
 }
 
-func (bs *BillService) GetBillById(billId uint) (model.Bill, error) {
+func (bs *BillService) GetBillById(billId uint) (*model.Bill, error) {
 	db := bs.DB.Table("bills")
 	var bill model.Bill
 
 	if err := db.Where("id = ?", billId).First(&bill).Error; err != nil {
-		return model.Bill{}, err
+		return &model.Bill{}, err
 	}
 
-	return bill, nil
+	return &bill, nil
 }
 
 func (bs *BillService) GetBillsForRoom(roomId string) (*[]model.Bill, error) {

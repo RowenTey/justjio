@@ -60,7 +60,7 @@ func SettleTransaction(c *fiber.Ctx, notificationsChan chan<- NotificationData) 
 			return
 		}
 
-		for _, sub := range subscriptions {
+		for _, sub := range *subscriptions {
 			notificationsChan <- NotificationData{
 				Subscription: subscriptionService.NewWebPushSubscriptionObj(&sub),
 				Title:        title,

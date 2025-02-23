@@ -48,10 +48,10 @@ func (s *NotificationService) GetNotification(notificationId, user_id uint) (*mo
 }
 
 // GetNotifications retrieves all notifications for a user
-func (s *NotificationService) GetNotifications(userId uint) ([]model.Notification, error) {
+func (s *NotificationService) GetNotifications(userId uint) (*[]model.Notification, error) {
 	var notifications []model.Notification
 	if err := s.DB.Where("user_id = ?", userId).Order("created_at DESC").Find(&notifications).Error; err != nil {
 		return nil, err
 	}
-	return notifications, nil
+	return &notifications, nil
 }

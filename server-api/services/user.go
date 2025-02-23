@@ -294,7 +294,7 @@ func (s *UserService) GetFriends(userID string) ([]model.User, error) {
 	return friends, nil
 }
 
-func (s *UserService) GetFriendRequestsByStatus(userID uint, status string) ([]model.FriendRequest, error) {
+func (s *UserService) GetFriendRequestsByStatus(userID uint, status string) (*[]model.FriendRequest, error) {
 	db := s.DB
 	var requests []model.FriendRequest
 
@@ -312,7 +312,7 @@ func (s *UserService) GetFriendRequestsByStatus(userID uint, status string) ([]m
 		return nil, err
 	}
 
-	return requests, nil
+	return &requests, nil
 }
 
 func (s *UserService) CountPendingFriendRequests(userID uint) (int64, error) {
