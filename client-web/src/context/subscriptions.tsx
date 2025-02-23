@@ -5,6 +5,7 @@ import useContextWrapper from "../hooks/useContextWrapper";
 import { api } from "../api";
 import {
   createSubscriptionApi,
+  getSubscriptionByEndpointApi,
   removeSubscriptionApi,
 } from "../api/subscription";
 import { ISubscription } from "../types/subscription";
@@ -61,17 +62,12 @@ const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           "[Push] Subscription already exists:",
           existingSubscription,
         );
-        const existingSubJson = existingSubscription.toJSON();
-        // TODO: Figure out this part
-        // Most likely call backend?
+        const { data: res } = await getSubscriptionByEndpointApi(
+          api,
+          existingSubscription.endpoint,
+        );
         setSubscriptionState({
-          subscription: {
-            id: "",
-            userId: 0,
-            endpoint: existingSubscription.endpoint,
-            auth: existingSubJson.keys?.auth || "",
-            p256dh: existingSubJson.keys?.p256dh || "",
-          },
+          subscription: res.data,
           isSubscribed: true,
         });
         return true;

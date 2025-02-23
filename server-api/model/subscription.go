@@ -7,10 +7,10 @@ import (
 
 type Subscription struct {
 	ID       string `gorm:"primaryKey; type:uuid" json:"id"`
-	UserID   uint   `json:"userId"`
-	Endpoint string `json:"endpoint"`
-	Auth     string `json:"auth"`
-	P256dh   string `json:"p256dh"`
+	UserID   uint   `gorm:"not null" json:"userId"`
+	Endpoint string `gorm:"unique; not null" json:"endpoint"`
+	Auth     string `gorm:"not null" json:"auth"`
+	P256dh   string `gorm:"not null" json:"p256dh"`
 }
 
 func (sub *Subscription) BeforeCreate(tx *gorm.DB) error {

@@ -97,6 +97,7 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService, notifications
 	})
 
 	subscriptions := v1.Group("/subscriptions")
+	subscriptions.Get("/:endpoint", handlers.GetSubscriptionByEndpoint)
 	subscriptions.Post("/", func(c *fiber.Ctx) error {
 		return handlers.CreateSubscription(c, notificationsChan)
 	})

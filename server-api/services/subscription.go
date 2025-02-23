@@ -17,12 +17,20 @@ func (s *SubscriptionService) CreateSubscription(subscription *model.Subscriptio
 	return subscription, nil
 }
 
-func (s *SubscriptionService) GetSubscriptionsByUserID(userID uint) ([]model.Subscription, error) {
+func (s *SubscriptionService) GetSubscriptionsByUserID(userID uint) (*[]model.Subscription, error) {
 	var subscriptions []model.Subscription
 	if err := s.DB.Where("user_id = ?", userID).Find(&subscriptions).Error; err != nil {
 		return nil, err
 	}
-	return subscriptions, nil
+	return &subscriptions, nil
+}
+
+func (s *SubscriptionService) GetSubscriptionsByEndpoint(endpoint string) (*model.Subscription, error) {
+	var subscription model.Subscription
+	if err := s.DB.Where("endpoint = ?", endpoint).Find(&subscription).Error; err != nil {
+		return nil, err
+	}
+	return &subscription, nil
 }
 
 func (s *SubscriptionService) DeleteSubscription(subId string) error {

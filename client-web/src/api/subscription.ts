@@ -32,6 +32,35 @@ export const createSubscriptionApi = (
   });
 };
 
+export const getSubscriptionByEndpointApi = (
+  api: AxiosInstance,
+  endpoint: string,
+  mock: boolean = false,
+): Promise<AxiosResponse<SubscriptionResponse>> => {
+  const encodedEndpoint = encodeURIComponent(endpoint);
+  if (!mock) {
+    return api.get<SubscriptionResponse>(
+      `/subscriptions/endpoint/${encodedEndpoint}`,
+    );
+  }
+
+  return new Promise<AxiosResponse<SubscriptionResponse>>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        data: {
+          data: { id: "92389183", endpoint },
+          message: "Subscription retrieved successfully",
+          status: "success",
+        },
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      } as AxiosResponse<SubscriptionResponse>);
+    }, 1500);
+  });
+};
+
 export const removeSubscriptionApi = (
   api: AxiosInstance,
   subscriptionId: string,
