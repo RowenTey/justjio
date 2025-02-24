@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/smtp"
 
 	"github.com/RowenTey/JustJio/config"
 	"github.com/RowenTey/JustJio/database"
@@ -29,9 +28,8 @@ func SignUp(c *fiber.Ctx) error {
 	}
 
 	authService := &services.AuthService{
-		HashFunc:  util.HashPassword,
-		LoginAuth: util.NewLoginAuth,
-		SendMail:  smtp.SendMail,
+		HashFunc:      util.HashPassword,
+		SendSMTPEmail: util.SendSMTPEmail,
 	}
 	userService := &services.UserService{DB: database.DB}
 
@@ -50,7 +48,7 @@ func SignUp(c *fiber.Ctx) error {
 	}
 
 	go func() {
-		if err := authService.SendOTPEmail(&ClientOTP, user.Email); err != nil {
+		if err := authService.SendOTPEmail(&ClientOTP, user.Username, user.Email); err != nil {
 			log.Println("Error sending OTP email:", err)
 			delete(ClientOTP, user.Email)
 		}

@@ -2,11 +2,10 @@ package services
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"log"
-	"net/smtp"
+	"math/rand"
 	"time"
 
 	"github.com/RowenTey/JustJio/config"
@@ -20,11 +19,10 @@ import (
 )
 
 type AuthService struct {
-	HashFunc    func(password string) (string, error)
-	JwtSecret   string
-	LoginAuth   func(username, password string) smtp.Auth
-	SendMail    func(addr string, a smtp.Auth, from string, to []string, msg []byte) error
-	OAuthConfig *oauth2.Config
+	HashFunc      func(password string) (string, error)
+	JwtSecret     string
+	SendSMTPEmail func(from, to, subject, textBody string) error
+	OAuthConfig   *oauth2.Config
 }
 
 const TOKEN_EXPIRY_DURATION = time.Hour * 72 // 3 days
@@ -57,47 +55,41 @@ func (s *AuthService) CreateToken(user *model.User) (string, error) {
 	return t, nil
 }
 
-func (s *AuthService) SendOTPEmail(ClientOTP *map[string]string, email string) error {
+func (s *AuthService) SendOTPEmail(clientOTP *map[string]string, username, email string) error {
 	otp := s.GenerateOTP()
-	(*ClientOTP)[email] = otp
+	(*clientOTP)[email] = otp
 
-	from := config.Config("OUTLOOK_EMAIL")
-	password := config.Config("OUTLOOK_PASSWORD")
-	to := []string{email}
-	smtpHost := "smtp-mail.outlook.com"
-	smtpPort := "587"
-
-	// outlook requires LOGIN auth
-	auth := s.LoginAuth(from, password)
-
-	message := []byte("To: " + email + "\r\n" +
-		"Subject: JustJio Email Verification\r\n" +
-		"\r\n" +
+	from := config.Config("ADMIN_EMAIL")
+	message := []byte("Welcome " + username + ",\r\n\r\n" +
+		"We are happy to see you signed up with JustJio.\r\n\r\n" +
 		"Your OTP is: " + otp)
 
-	err := s.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
+	err := s.SendSMTPEmail(from, email, "JustJio Email Verification", string(message))
 	if err != nil {
 		return err
 	}
+	log.Println("[AUTH] OTP send to " + email + " successfully!")
 	return nil
 }
 
-func (s *AuthService) VerifyOTP(ClientOTP *map[string]string, email string, otp string) error {
-	if (*ClientOTP)[email] != otp {
-		return errors.New("Invalid OTP")
+func (s *AuthService) VerifyOTP(clientOTP *map[string]string, email string, otp string) error {
+	if (*clientOTP)[email] != otp {
+		return errors.New("invalid OTP")
 	}
 
-	delete(*ClientOTP, email)
+	delete(*clientOTP, email)
 	return nil
 }
 
 func (s *AuthService) GenerateOTP() string {
-	b := make([]byte, 6)
-	_, err := rand.Read(b)
-	if err != nil {
-		log.Println(err)
-	}
-	return fmt.Sprintf("%x", b)
+	// Seed the random number generator
+	rand.New(rand.NewSource(time.Now().Unix()))
+
+	// Generate a random number between 000000 and 999999
+	randomNumber := rand.Intn(1000000)
+
+	// Format as a zero-padded 6-digit string
+	return fmt.Sprintf("%06d", randomNumber)
 }
 
 func (s *AuthService) GetGoogleUser(code string) (*googleOAuth2.Userinfo, error) {

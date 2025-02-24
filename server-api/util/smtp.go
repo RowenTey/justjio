@@ -1,32 +1,27 @@
 package util
 
 import (
-	"errors"
-	"net/smtp"
+	"github.com/smtp2go-oss/smtp2go-go"
 )
 
-type LoginAuth struct {
-	username, password string
-}
-
-func (a *LoginAuth) Start(server *smtp.ServerInfo) (string, []byte, error) {
-	return "LOGIN", []byte{}, nil
-}
-
-func (a *LoginAuth) Next(fromServer []byte, more bool) ([]byte, error) {
-	if more {
-		switch string(fromServer) {
-		case "Username:":
-			return []byte(a.username), nil
-		case "Password:":
-			return []byte(a.password), nil
-		default:
-			return nil, errors.New("Unknown fromServer")
-		}
+func SendSMTPEmail(from, to, subject, textBody string) error {
+	email := smtp2go.Email{
+		// From: "Matt <matt@example.com>",
+		// To: []string{
+		// 	"Dave <dave@example.com>",
+		// },
+		// Subject:  "Trying out SMTP2GO",
+		// TextBody: "Test Message",
+		From: from,
+		To: []string{
+			to,
+		},
+		Subject:  subject,
+		TextBody: textBody,
 	}
-	return nil, nil
-}
-
-func NewLoginAuth(username, password string) smtp.Auth {
-	return &LoginAuth{username, password}
+	_, err := smtp2go.Send(&email)
+	if err != nil {
+		return err
+	}
+	return nil
 }
