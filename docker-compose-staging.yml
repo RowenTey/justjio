@@ -15,6 +15,11 @@ services:
     depends_on:
       - api-server
       - ws-server
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api-server:
     container_name: justjio-api
@@ -29,15 +34,20 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       KAFKA_TOPIC_PREFIX: justjio
       KAFKA_URL: ${KAFKA_HOST}:${KAFKA_PORT}
-      OUTLOOK_EMAIL: ${OUTLOOK_EMAIL}
-      OUTLOOK_PASSWORD: ${OUTLOOK_PASSWORD}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URL: https://justjio-staging.rowentey.xyz
-      VAPID_EMAIL: ${VAPID_EMAIL}
+      VAPID_EMAIL: ${ADMIN_EMAIL}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      SMTP2GO_API_KEY: ${SMTP2GO_API_KEY}
     entrypoint: ["/api-server", "staging"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ws-server:
     container_name: justjio-ws
@@ -52,6 +62,11 @@ services:
       KAFKA_TOPIC_PREFIX: justjio
       KAFKA_URL: ${KAFKA_HOST}:${KAFKA_PORT}
     entrypoint: ["/ws-server", "staging"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   justjio_network:
