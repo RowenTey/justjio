@@ -45,10 +45,9 @@ const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    // Set the token in the cookie so the server can authenticate the user
-    const token = getAccessToken();
-    document.cookie = `token=${token}`;
-    ws.current = new WebSocket(`${import.meta.env.VITE_WS_URL}`);
+    ws.current = new WebSocket(
+      `${import.meta.env.VITE_WS_URL}?token=${getAccessToken()}`,
+    );
 
     ws.current.onopen = () => {
       console.log("[WS] Opened WS connection");
@@ -77,8 +76,6 @@ const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     connectWebSocket();
 
     return () => {
-      // clear the cookie
-      document.cookie = "token=";
       ws.current?.close();
     };
   }, [user]);
