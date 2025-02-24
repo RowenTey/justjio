@@ -54,10 +54,13 @@ func main() {
 	}
 	consumerName = fmt.Sprintf("%s-%s", utils.Config("KAFKA_TOPIC_PREFIX"), consumerName)
 
-	// handle websocket upgrade
-	app.Use(webSocketUpgrade)
+	// healthcheck endpoint
+	app.Get("/ping", func(c *fiber.Ctx) error {
+		return c.Status(200).SendString("pong")
+	})
 
-	app.Get("/", websocket.New(func(c *websocket.Conn) {
+	// websocket endpoint with middleware to handle websocket upgrade
+	app.Get("/", webSocketUpgrade, websocket.New(func(c *websocket.Conn) {
 		user, err := services.GetCurrentUser(c)
 		if err != nil {
 			log.Println("[AUTH] ", err)
