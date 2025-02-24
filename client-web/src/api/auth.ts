@@ -110,3 +110,30 @@ export const signUpApi = (
     }, 1500);
   });
 };
+
+export const verifyOtpApi = (
+  api: AxiosInstance,
+  email: string,
+  otp: string,
+  mock: boolean = false,
+): Promise<AxiosResponse<ApiResponse>> => {
+  if (!mock) {
+    return api.post<ApiResponse>("/auth/verify", { email, otp });
+  }
+
+  return new Promise<AxiosResponse<ApiResponse>>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        data: {
+          data: {},
+          message: "OTP verified successfully",
+          status: "success",
+        },
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      } as AxiosResponse<ApiResponse>);
+    }, 1500);
+  });
+};

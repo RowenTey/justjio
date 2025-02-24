@@ -104,7 +104,7 @@ const LoginPage = () => {
         />
 
         {errorStates[0] && (
-          <p className="text-error text-md font-semibold text-wrap text-center">
+          <p className="text-error text-md font-semibold text-wrap text-center leading-tight">
             {errorStates[0]}
           </p>
         )}

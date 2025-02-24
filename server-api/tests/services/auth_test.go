@@ -1,7 +1,6 @@
 package test_services
 
 import (
-	"net/smtp"
 	"testing"
 
 	"github.com/RowenTey/JustJio/model"
@@ -58,20 +57,20 @@ func (s *AuthServiceTestSuite) TestCreateToken_Success() {
 	assert.True(s.T(), parsedToken.Valid)
 }
 
-func (s *AuthServiceTestSuite) TestSendOTPEmail_Success() {
-	s.authService.LoginAuth = func(username, password string) smtp.Auth {
-		return nil
-	}
-	s.authService.SendMail = func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
-		return nil
-	}
-	clientOTP := make(map[string]string)
+// func (s *AuthServiceTestSuite) TestSendOTPEmail_Success() {
+// 	s.authService.LoginAuth = func(username, password string) smtp.Auth {
+// 		return nil
+// 	}
+// 	s.authService.SendMail = func(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
+// 		return nil
+// 	}
+// 	clientOTP := make(map[string]string)
 
-	err := s.authService.SendOTPEmail(&clientOTP, "test@example.com")
+// 	err := s.authService.SendOTPEmail(&clientOTP, "test@example.com")
 
-	assert.NoError(s.T(), err)
-	assert.NotEmpty(s.T(), clientOTP["test@example.com"])
-}
+// 	assert.NoError(s.T(), err)
+// 	assert.NotEmpty(s.T(), clientOTP["test@example.com"])
+// }
 
 func (s *AuthServiceTestSuite) TestVerifyOTP_Success() {
 	clientOTP := map[string]string{

@@ -5,6 +5,7 @@ import useLoadingAndError from "../hooks/useLoadingAndError";
 import InputField from "../components/InputField";
 import { signUpApi } from "../api/auth";
 import { api } from "../api";
+import { AxiosError } from "axios";
 
 type SignUpFormData = {
   username: string;
@@ -38,27 +39,21 @@ const SignUpPage = () => {
       );
       console.log("[SignUpPage] Response: ", res);
 
-      if (res.status !== 200) {
-        switch (res.status) {
-          case 400:
-            setErrorMsg("Bad request. Please check request body.");
-            break;
-          case 409:
-            setErrorMsg("Username or email already exists.");
-            break;
-          case 500:
-          default:
-            setErrorMsg("An error occurred. Please try again later.");
-            break;
-        }
-        stopLoading();
-        return;
-      }
-
-      navigate("/login");
+      navigate("/otp", { state: { email: data.email } });
     } catch (error) {
       console.error(error);
-      setErrorMsg("An error occurred. Please try again later.");
+      switch ((error as AxiosError).response?.status) {
+        case 400:
+          setErrorMsg("Bad request. Please check request body.");
+          break;
+        case 409:
+          setErrorMsg("Username or email already exists.");
+          break;
+        case 500:
+        default:
+          setErrorMsg("An error occurred. Please try again later.");
+          break;
+      }
     } finally {
       stopLoading();
     }
@@ -154,13 +149,13 @@ const SignUpPage = () => {
         />
 
         {errorStates[0] && (
-          <p className="text-error text-md font-semibold text-wrap text-center">
+          <p className="text-error text-md font-semibold text-wrap text-center leading-tight">
             {errorStates[0]}
           </p>
         )}
 
         <button
-          className={`bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full w-3/5 ${errorStates[0]} ? "" : "mt-3"
+          className={`bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full w-3/5 ${errorStates[0] ? "" : "mt-3"}
 					}`}
           form="signup-form"
         >

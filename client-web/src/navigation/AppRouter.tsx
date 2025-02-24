@@ -15,6 +15,7 @@ import FriendsPage from "../pages/FriendsPage";
 import FriendRequestsPage from "../pages/FriendRequestPage";
 import RoomsPage from "../pages/RoomsPage";
 import NotificationsPage from "../pages/NotificationsPage";
+import VerifyOTPPage from "../pages/VerifyOTPPage";
 
 const AppRouter = () => {
   return (
@@ -37,6 +38,7 @@ const AppRouter = () => {
       </Route>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/otp" element={<VerifyOTPPage />} />
     </Routes>
   );
 };
