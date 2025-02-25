@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 
 	"github.com/RowenTey/JustJio/database"
@@ -9,6 +10,7 @@ import (
 	"github.com/RowenTey/JustJio/model/response"
 	"github.com/RowenTey/JustJio/services"
 	"github.com/RowenTey/JustJio/util"
+	"gorm.io/gorm"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
@@ -174,13 +176,24 @@ func CloseRoom(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := util.GetUserInfoFromToken(token, "user_id")
 
-	err := (&services.RoomService{DB: database.DB}).CloseRoom(roomId, userId)
+	// check if they are unconsolidated bills
+	consolidated, err := (&services.BillService{DB: database.DB}).IsRoomBillConsolidated(roomId)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return util.HandleInternalServerError(c, err)
+	}
+
+	if !consolidated {
+		return util.HandleError(
+			c, fiber.StatusConflict, "Cannot close room with unconsolidated bills", nil)
+	}
+
+	err = (&services.RoomService{DB: database.DB}).CloseRoom(roomId, userId)
 	if err != nil {
 		if err.Error() == "user is not the host of the room" {
 			return util.HandleError(
 				c, fiber.StatusUnauthorized, "Only hosts are allowed to close rooms", err)
 		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
 	return util.HandleSuccess(c, "Closed room successfully", nil)
@@ -322,6 +335,17 @@ func LeaveRoom(c *fiber.Ctx) error {
 	userId := util.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
+	consolidated, err := (&services.BillService{DB: database.DB}).IsRoomBillConsolidated(roomId)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return util.HandleInternalServerError(c, err)
+	}
+
+	if !consolidated {
+		return util.HandleError(
+			c, fiber.StatusConflict, "Cannot leave room with unconsolidated bills", nil)
+	}
+
+	// TODO: check that user is not the host of the room
 	if err := (&services.RoomService{DB: database.DB}).RemoveUserFromRoom(roomId, userId); err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}

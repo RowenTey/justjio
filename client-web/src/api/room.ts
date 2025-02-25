@@ -254,6 +254,31 @@ export const closeRoomApi = (
   });
 };
 
+export const leaveRoomApi = (
+  api: AxiosInstance,
+  roomId: string,
+  mock: boolean = false,
+): Promise<AxiosResponse<ApiResponse>> => {
+  if (!mock) {
+    return api.patch<ApiResponse>(`/rooms/${roomId}/leave`);
+  }
+
+  return new Promise<AxiosResponse<ApiResponse>>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        data: {
+          message: "Left room successfully",
+          status: "success",
+        },
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      } as AxiosResponse<ApiResponse>);
+    }, 1500);
+  });
+};
+
 export const fetchRoomInvitesApi = (
   api: AxiosInstance,
   mock: boolean = false,

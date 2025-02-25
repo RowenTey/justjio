@@ -5,6 +5,7 @@ import {
   DECLINE_ROOM,
   FETCH_ROOMS,
   JOIN_ROOM,
+  LEAVE_ROOM,
 } from "../context/room";
 import { RoomActionTypes, RoomState } from "../types/room";
 
@@ -24,6 +25,7 @@ const RoomReducer = (state: RoomState, action: RoomActionTypes): RoomState => {
     case CREATE_ROOM:
     case JOIN_ROOM:
     case CLOSE_ROOM:
+    case LEAVE_ROOM:
       return {
         ...state,
         rooms: payload.data,
