@@ -40,6 +40,7 @@ export interface RoomContextType {
     accept: boolean,
   ) => Promise<BaseContextResponse>;
   closeRoom: (roomId: string) => Promise<BaseContextResponse>;
+  leaveRoom: (roomId: string) => Promise<BaseContextResponse>;
 }
 
 interface RoomsPayload {
@@ -48,7 +49,12 @@ interface RoomsPayload {
 
 type RoomActionTypes =
   | {
-      type: "FETCH_ROOMS" | "CREATE_ROOM" | "JOIN_ROOM" | "CLOSE_ROOM";
+      type:
+        | "FETCH_ROOMS"
+        | "CREATE_ROOM"
+        | "JOIN_ROOM"
+        | "CLOSE_ROOM"
+        | "LEAVE_ROOM";
       payload: RoomsPayload;
     }
   | { type: "DECLINE_ROOM"; payload?: never }

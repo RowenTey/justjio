@@ -62,7 +62,7 @@ const RoomPage = () => {
   const [isRoomBillConsolidated, setIsRoomBillConsolidated] = useState(false);
   const roomId = useMandatoryParam("roomId");
   const [subscribe, unsubscribe] = useWs();
-  const { closeRoom } = useRoomCtx();
+  const { closeRoom, leaveRoom } = useRoomCtx();
   const { user } = useUserCtx();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -102,18 +102,57 @@ const RoomPage = () => {
     const res = await closeRoom(roomId);
 
     if (!res.isSuccessResponse) {
-      console.error("Failed to close room", res.error);
+      switch ((res.error as AxiosError).response?.status) {
+        case 403:
+          showToast("You are not the host of this room!", true);
+          break;
+        case 404:
+          showToast("Room not found!", true);
+          break;
+        case 409:
+          showToast("Cannot close room with unconsolidated bills!", true);
+          break;
+        case 500:
+        default:
+          showToast("An error occurred, please try again later.", true);
+          break;
+      }
+      stopLoading();
       return;
     }
 
     stopLoading();
-    navigate("/");
+    navigate("/", { state: { from: `/room/${roomId}` } });
+  };
+
+  const handleLeaveRoom = async () => {
+    startLoading();
+    const res = await leaveRoom(roomId);
+
+    if (!res.isSuccessResponse) {
+      switch ((res.error as AxiosError).response?.status) {
+        case 404:
+          showToast("Room not found!", true);
+          break;
+        case 409:
+          showToast("Cannot leave room with unconsolidated bills!", true);
+          break;
+        case 500:
+        default:
+          showToast("An error occurred, please try again later.", true);
+          break;
+      }
+      stopLoading();
+      return;
+    }
+
+    stopLoading();
+    navigate("/", { state: { from: `/room/${roomId}` } });
   };
 
   const fetchData = async () => {
     const fetchRoom = async (roomId: string) => {
       const res = await fetchRoomApi(api, roomId);
-      console.log("[RoomPage] Room data", res.data.data);
       setRoom(res.data.data);
     };
 
@@ -187,12 +226,13 @@ const RoomPage = () => {
         isRoomBillConsolidated={isRoomBillConsolidated}
         numNewMessages={numNewMessages}
         onCloseRoom={handleCloseRoom}
+        onLeaveRoom={handleLeaveRoom}
       />
 
       <ConfirmJoinModal
         isVisible={isConfirmJoinModalVisible}
         closeModal={() => setConfirmJoinModalVisible(false)}
-        rejectJoin={() => navigate("/")}
+        rejectJoin={() => navigate("/", { state: { from: `/room/${roomId}` } })}
         confirmJoin={() => {
           handleConfirmJoin();
           setConfirmJoinModalVisible(false);
@@ -296,6 +336,7 @@ type RoomActionWidgetsProps = {
   attendees: IUser[];
   numNewMessages: number;
   onCloseRoom: () => void;
+  onLeaveRoom: () => void;
 };
 
 const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
@@ -307,6 +348,7 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
   attendees,
   numNewMessages,
   onCloseRoom,
+  onLeaveRoom,
 }) => {
   const [isQRCodeModalVisible, setIsQRCodeModalVisible] = useState(false);
   const showSplitBill = isHost
@@ -371,7 +413,7 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
           <ButtonCard
             title="Leave Room"
             Icon={ArrowRightStartOnRectangleIcon}
-            onClick={() => {}}
+            onClick={onLeaveRoom}
             isLink={false}
           />
         )}

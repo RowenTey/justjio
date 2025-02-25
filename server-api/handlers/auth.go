@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/RowenTey/JustJio/config"
 	"github.com/RowenTey/JustJio/database"
@@ -19,7 +20,8 @@ import (
 
 // Global variable to access the ClientOTP map
 // Store OTP with email as key
-var ClientOTP = make(map[string]string)
+// TODO: Make thread safe
+var ClientOTP sync.Map
 
 func SignUp(c *fiber.Ctx) error {
 	var user model.User
@@ -50,10 +52,10 @@ func SignUp(c *fiber.Ctx) error {
 	// Send OTP email
 	go func() {
 		otp := authService.GenerateOTP()
-		ClientOTP[user.Email] = otp
+		ClientOTP.Store(user.Email, otp)
 		if err := authService.SendOTPEmail(otp, user.Username, user.Email, "verify-email"); err != nil {
 			log.Println("Error sending OTP email:", err)
-			delete(ClientOTP, user.Email)
+			ClientOTP.Delete(user.Email)
 		}
 	}()
 
@@ -132,10 +134,10 @@ func SendOTPEmail(c *fiber.Ctx) error {
 	}
 
 	otp := authService.GenerateOTP()
-	ClientOTP[user.Email] = otp
+	ClientOTP.Store(user.Email, otp)
 	if err := authService.SendOTPEmail(otp, user.Username, user.Email, request.Purpose); err != nil {
 		log.Println("Error sending OTP email:", err)
-		delete(ClientOTP, user.Email)
+		ClientOTP.Delete(user.Email)
 	}
 
 	log.Println("[AUTH] OTP sent to " + request.Email + " successfully.")
@@ -162,18 +164,18 @@ func VerifyOTP(c *fiber.Ctx) error {
 		return util.HandleInternalServerError(c, err)
 	}
 
-	otp, exists := ClientOTP[user.Email]
+	otpValue, exists := ClientOTP.Load(user.Email)
 	if !exists {
 		return util.HandleError(c, fiber.StatusBadRequest, "OTP not found", errors.New("OTP not found"))
 	}
 
-	isVerified := authService.VerifyOTP(otp, request.Email, request.OTP)
+	isVerified := authService.VerifyOTP(otpValue.(string), request.Email, request.OTP)
 	if !isVerified {
 		return util.HandleError(c, fiber.StatusBadRequest, "Invalid OTP", errors.New("invalid OTP"))
 	}
 
 	// Delete OTP after verification
-	delete(ClientOTP, request.Email)
+	ClientOTP.Delete(user.Email)
 
 	log.Println("[AUTH] OTP verified successfully for email", request.Email)
 	return util.HandleSuccess(c, "OTP verified successfully", nil)

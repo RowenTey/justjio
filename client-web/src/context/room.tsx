@@ -5,6 +5,7 @@ import {
   closeRoomApi,
   createRoomApi,
   fetchRecentRoomsApi,
+  leaveRoomApi,
   respondToInviteApi,
 } from "../api/room";
 import { api } from "../api";
@@ -17,6 +18,7 @@ interface RoomProviderProps {
 }
 
 export const CLOSE_ROOM = "CLOSE_ROOM";
+export const LEAVE_ROOM = "LEAVE_ROOM";
 export const CREATE_ROOM = "CREATE_ROOM";
 export const DECLINE_ROOM = "DECLINE_ROOM";
 export const FETCH_ROOMS = "FETCH_ROOMS";
@@ -106,12 +108,29 @@ const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
     return { isSuccessResponse: true, error: null };
   };
 
+  const leaveRoom = async (roomId: string): Promise<BaseContextResponse> => {
+    try {
+      await leaveRoomApi(api, roomId);
+
+      const updatedRooms = state.rooms.filter((room) => room.id !== roomId);
+      dispatch({
+        type: LEAVE_ROOM,
+        payload: { data: updatedRooms },
+      });
+    } catch (error) {
+      console.error("Failed to close room", error);
+      return { isSuccessResponse: false, error: error as AxiosError };
+    }
+    return { isSuccessResponse: true, error: null };
+  };
+
   const value = {
     rooms: state.rooms,
     fetchRooms,
     createRoom,
     respondToInvite,
     closeRoom,
+    leaveRoom,
   };
 
   return <Provider value={value}>{children}</Provider>;
