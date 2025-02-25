@@ -31,6 +31,8 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService, notifications
 	auth.Post("/google", handlers.GoogleLogin)
 	auth.Post("/signup", handlers.SignUp)
 	auth.Post("/verify", handlers.VerifyOTP)
+	auth.Post("/otp", handlers.SendOTPEmail)
+	auth.Patch("/reset", handlers.ResetPassword)
 
 	/* private routes */
 

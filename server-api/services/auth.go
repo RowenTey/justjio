@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -55,16 +54,24 @@ func (s *AuthService) CreateToken(user *model.User) (string, error) {
 	return t, nil
 }
 
-func (s *AuthService) SendOTPEmail(clientOTP *map[string]string, username, email string) error {
-	otp := s.GenerateOTP()
-	(*clientOTP)[email] = otp
-
+func (s *AuthService) SendOTPEmail(otp, username, email, purpose string) error {
 	from := config.Config("ADMIN_EMAIL")
-	message := []byte("Welcome " + username + ",\r\n\r\n" +
-		"We are happy to see you signed up with JustJio.\r\n\r\n" +
-		"Your OTP is: " + otp)
 
-	err := s.SendSMTPEmail(from, email, "JustJio Email Verification", string(message))
+	title := ""
+	message := []byte("")
+	if purpose == "verify-email" {
+		title = "JustJio Email Verification"
+		message = []byte("Welcome " + username + ",\r\n\r\n" +
+			"We are happy to see you signed up with JustJio.\r\n\r\n" +
+			"Your OTP is: " + otp)
+	} else if purpose == "reset-password" {
+		title = "JustJio Password Reset"
+		message = []byte("Hi " + username + ",\r\n\r\n" +
+			"Please use the following OTP to reset your password.\r\n\r\n" +
+			"Your OTP is: " + otp)
+	}
+
+	err := s.SendSMTPEmail(from, email, title, string(message))
 	if err != nil {
 		return err
 	}
@@ -72,13 +79,8 @@ func (s *AuthService) SendOTPEmail(clientOTP *map[string]string, username, email
 	return nil
 }
 
-func (s *AuthService) VerifyOTP(clientOTP *map[string]string, email string, otp string) error {
-	if (*clientOTP)[email] != otp {
-		return errors.New("invalid OTP")
-	}
-
-	delete(*clientOTP, email)
-	return nil
+func (s *AuthService) VerifyOTP(storedOtp, email string, otp string) bool {
+	return storedOtp == otp
 }
 
 func (s *AuthService) GenerateOTP() string {

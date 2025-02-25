@@ -47,8 +47,11 @@ func SignUp(c *fiber.Ctx) error {
 		return util.HandleInternalServerError(c, err)
 	}
 
+	// Send OTP email
 	go func() {
-		if err := authService.SendOTPEmail(&ClientOTP, user.Username, user.Email); err != nil {
+		otp := authService.GenerateOTP()
+		ClientOTP[user.Email] = otp
+		if err := authService.SendOTPEmail(otp, user.Username, user.Email, "verify-email"); err != nil {
 			log.Println("Error sending OTP email:", err)
 			delete(ClientOTP, user.Email)
 		}
@@ -106,6 +109,39 @@ func Login(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	return util.HandleLoginSuccess(c, "Login successfully", token, response)
 }
 
+func SendOTPEmail(c *fiber.Ctx) error {
+	var request request.SendOTPEmailRequest
+	if err := c.BodyParser(&request); err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
+
+	if request.Purpose != "verify-email" && request.Purpose != "reset-password" {
+		return util.HandleError(c, fiber.StatusBadRequest, "Invalid purpose", errors.New("invalid purpose"))
+	}
+
+	authService := &services.AuthService{SendSMTPEmail: util.SendSMTPEmail}
+	userService := &services.UserService{DB: database.DB}
+
+	user, err := userService.GetUserByEmail(request.Email)
+	if err != nil {
+		return util.HandleError(c, fiber.StatusNotFound, "Invalid email address", err)
+	}
+
+	if request.Purpose == "verify-email" && user.IsEmailValid {
+		return util.HandleError(c, fiber.StatusConflict, "Email already verified", errors.New("email already verified"))
+	}
+
+	otp := authService.GenerateOTP()
+	ClientOTP[user.Email] = otp
+	if err := authService.SendOTPEmail(otp, user.Username, user.Email, request.Purpose); err != nil {
+		log.Println("Error sending OTP email:", err)
+		delete(ClientOTP, user.Email)
+	}
+
+	log.Println("[AUTH] OTP sent to " + request.Email + " successfully.")
+	return util.HandleSuccess(c, "OTP sent successfully", nil)
+}
+
 func VerifyOTP(c *fiber.Ctx) error {
 	var request request.VerifyOTPRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -126,13 +162,50 @@ func VerifyOTP(c *fiber.Ctx) error {
 		return util.HandleInternalServerError(c, err)
 	}
 
-	err = authService.VerifyOTP(&ClientOTP, request.Email, request.OTP)
-	if err != nil {
-		return util.HandleError(c, fiber.StatusBadRequest, "Invalid OTP", err)
+	otp, exists := ClientOTP[user.Email]
+	if !exists {
+		return util.HandleError(c, fiber.StatusBadRequest, "OTP not found", errors.New("OTP not found"))
 	}
+
+	isVerified := authService.VerifyOTP(otp, request.Email, request.OTP)
+	if !isVerified {
+		return util.HandleError(c, fiber.StatusBadRequest, "Invalid OTP", errors.New("invalid OTP"))
+	}
+
+	// Delete OTP after verification
+	delete(ClientOTP, request.Email)
 
 	log.Println("[AUTH] OTP verified successfully for email", request.Email)
 	return util.HandleSuccess(c, "OTP verified successfully", nil)
+}
+
+func ResetPassword(c *fiber.Ctx) error {
+	var request request.ResetPasswordRequest
+	if err := c.BodyParser(&request); err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
+
+	authService := &services.AuthService{HashFunc: util.HashPassword}
+	userService := &services.UserService{DB: database.DB}
+
+	user, err := userService.GetUserByEmail(request.Email)
+	if err != nil {
+		return util.HandleError(c, fiber.StatusNotFound, "Invalid email address", err)
+	}
+
+	hashedPassword, err := authService.HashFunc(request.Password)
+	if err != nil {
+		return util.HandleInternalServerError(c, err)
+	}
+
+	user.Password = hashedPassword
+	_, err = userService.CreateOrUpdateUser(user, false)
+	if err != nil {
+		return util.HandleInternalServerError(c, err)
+	}
+
+	log.Println("[AUTH] Password reset successfully for email", request.Email)
+	return util.HandleSuccess(c, "Password reset successfully", nil)
 }
 
 func GoogleLogin(c *fiber.Ctx) error {

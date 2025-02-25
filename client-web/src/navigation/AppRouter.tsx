@@ -16,6 +16,8 @@ import FriendRequestsPage from "../pages/FriendRequestPage";
 import RoomsPage from "../pages/RoomsPage";
 import NotificationsPage from "../pages/NotificationsPage";
 import VerifyOTPPage from "../pages/VerifyOTPPage";
+import ForgotPasswordPage from "../pages/ForgotPasswordPage";
+import ResetPasswordPage from "../pages/ResetPasswordPage";
 
 const AppRouter = () => {
   return (
@@ -39,6 +41,8 @@ const AppRouter = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/otp" element={<VerifyOTPPage />} />
+      <Route path="/forgotPassword" element={<ForgotPasswordPage />} />
+      <Route path="/resetPassword" element={<ResetPasswordPage />} />
     </Routes>
   );
 };

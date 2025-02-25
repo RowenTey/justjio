@@ -25,6 +25,7 @@ const SignUpPage = () => {
     formState: { errors },
     watch,
   } = useForm<SignUpFormData>();
+  const password = watch("password");
 
   const onSubmit: SubmitHandler<SignUpFormData> = async (data) => {
     startLoading();
@@ -39,7 +40,7 @@ const SignUpPage = () => {
       );
       console.log("[SignUpPage] Response: ", res);
 
-      navigate("/otp", { state: { email: data.email } });
+      navigate("/otp", { state: { email: data.email, from: "/signup" } });
     } catch (error) {
       console.error(error);
       switch ((error as AxiosError).response?.status) {
@@ -58,8 +59,6 @@ const SignUpPage = () => {
       stopLoading();
     }
   };
-
-  const password = watch("password");
 
   return (
     <div className="h-full flex flex-col justify-center items-center xs:border-y-1 border-black overflow-y-auto bg-primary py-4">

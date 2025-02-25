@@ -60,7 +60,7 @@ const InputField: React.FC<InputFieldProps> = ({
         )}
       </div>
       {errors[name] && (
-        <span className="text-error text-wrap">
+        <span className="ml-2 text-error text-wrap">
           {errors[name]?.message?.toString()}
         </span>
       )}
