@@ -137,3 +137,57 @@ export const verifyOtpApi = (
     }, 1500);
   });
 };
+
+export const sendOtpEmailApi = (
+  api: AxiosInstance,
+  email: string,
+  purpose: "reset-password" | "verify-email",
+  mock: boolean = false,
+): Promise<AxiosResponse<ApiResponse>> => {
+  if (!mock) {
+    return api.post<ApiResponse>("/auth/otp", { email, purpose });
+  }
+
+  return new Promise<AxiosResponse<ApiResponse>>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        data: {
+          data: {},
+          message: "OTP sent successfully",
+          status: "success",
+        },
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      } as AxiosResponse<ApiResponse>);
+    }, 1500);
+  });
+};
+
+export const resetPasswordApi = (
+  api: AxiosInstance,
+  email: string,
+  password: string,
+  mock: boolean = false,
+): Promise<AxiosResponse<ApiResponse>> => {
+  if (!mock) {
+    return api.patch<ApiResponse>("/auth/reset", { email, password });
+  }
+
+  return new Promise<AxiosResponse<ApiResponse>>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        data: {
+          data: {},
+          message: "Password reset successfully",
+          status: "success",
+        },
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      } as AxiosResponse<ApiResponse>);
+    }, 1500);
+  });
+};

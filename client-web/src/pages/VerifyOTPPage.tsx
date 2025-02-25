@@ -1,19 +1,72 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import Spinner from "../components/Spinner";
 import { useLocation, useNavigate } from "react-router-dom";
-import { verifyOtpApi } from "../api/auth";
+import { sendOtpEmailApi, verifyOtpApi } from "../api/auth";
 import { api } from "../api";
 import { useToast } from "../context/toast";
+import { AxiosError } from "axios";
 
 const VerifyOTPPage = () => {
   const { loadingStates, startLoading, stopLoading, errorStates, setErrorMsg } =
     useLoadingAndError();
   const { state } = useLocation();
   const email = (state?.email as string) || "";
+  const from = (state?.from as string) || "";
   const [otp, setOtp] = useState("");
+  const [canResend, setCanResend] = useState(false);
+  const [countdown, setCountdown] = useState(30);
   const { showToast } = useToast();
   const navigate = useNavigate();
+
+  // auto-focus first input on page load
+  useEffect(() => {
+    const firstInput = document.querySelector(
+      `input[name="otp-0"]`,
+    ) as HTMLInputElement;
+    if (firstInput) firstInput.focus();
+  }, []);
+
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(
+        () => setCountdown((prevCount) => prevCount - 1),
+        1000,
+      );
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+      setCanResend(true);
+    }
+  }, [countdown]);
+
+  const handleResend = async () => {
+    if (!canResend) return;
+
+    setCanResend(false);
+    setCountdown(30);
+
+    try {
+      await sendOtpEmailApi(api, email, "verify-email");
+      showToast("OTP sent successfully!", false);
+    } catch (error) {
+      console.error(error);
+      switch ((error as AxiosError).response?.status) {
+        case 400:
+          setErrorMsg("Bad request. Please check request body.");
+          break;
+        case 404:
+          setErrorMsg("User not found.");
+          break;
+        case 409:
+          setErrorMsg("User already verified.");
+          break;
+        case 500:
+        default:
+          setErrorMsg("An error occurred. Please try again later.");
+          break;
+      }
+    }
+  };
 
   const handleVerify = async () => {
     if (otp.length !== 6) {
@@ -28,13 +81,26 @@ const VerifyOTPPage = () => {
     try {
       console.log("[VerifyOTPPage] Verifying OTP:", otp, email);
       await verifyOtpApi(api, email, otp);
-      showToast("Email verified successfully", false);
+      showToast("Email verified successfully!", false);
       setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+        if (from === "/forgotPassword")
+          navigate("/resetPassword", { state: { email, from: "/otp" } });
+        else navigate("/login", { state: { from: "/otp" } });
+      }, 1000);
     } catch (error) {
       console.error(error);
-      setErrorMsg("An error occurred. Please try again later.");
+      switch ((error as AxiosError).response?.status) {
+        case 400:
+          setErrorMsg("Bad request. Please check request body.");
+          break;
+        case 404:
+          setErrorMsg("User not found.");
+          break;
+        case 500:
+        default:
+          setErrorMsg("An error occurred. Please try again later.");
+          break;
+      }
     } finally {
       stopLoading(0);
     }
@@ -80,6 +146,10 @@ const VerifyOTPPage = () => {
                   ) as HTMLInputElement;
                   if (prevInput) prevInput.focus();
                 }
+                // Handle enter key on last input
+                if (e.key === "Enter" && index === 5) {
+                  handleVerify();
+                }
               }}
               name={`otp-${index}`}
               className="w-12 h-12 text-center border text-xl text-black font-bold bg-white border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-secondary"
@@ -110,9 +180,15 @@ const VerifyOTPPage = () => {
           )}
         </button>
 
-        <p className="w-4/5 text-sm text-center text-wrap text-tertiary leading-tight mt-2">
+        <p className="w-4/5 text-sm text-center text-wrap text-tertiary leading-tight mt-1">
           Didn't receive an email?{" "}
-          <span className="underline cursor-pointer">Try again.</span>
+          {canResend ? (
+            <span className="underline cursor-pointer" onClick={handleResend}>
+              Try again
+            </span>
+          ) : (
+            <span className="text-gray-600">Try again in {countdown}s</span>
+          )}
         </p>
       </div>
     </div>
