@@ -76,7 +76,7 @@ const CreateRoomPage = () => {
 
     stopLoading();
     showToast("Room created successfully!", false);
-    navigate("/");
+    navigate("/", { state: { from: "/rooms/create" } });
   };
 
   return (

@@ -49,7 +49,7 @@ const LoginPage = () => {
 
     stopLoading(loadingIndex);
     const redirectPath = getRedirectPath() || "/";
-    navigate(redirectPath);
+    navigate(redirectPath, { state: { from: "/login" } });
     return true;
   };
 

@@ -84,6 +84,7 @@ const CreateBillPage = () => {
           setErrorMsg("An error occurred, please try again later.");
           break;
       }
+      stopLoading();
     }
   };
 

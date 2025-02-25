@@ -30,7 +30,7 @@ const HomePage = () => {
     await unsubscribe();
     await logout();
     setLogoutLoading(false);
-    navigate("/login");
+    navigate("/login", { state: { from: "/" } });
   };
 
   useEffect(() => {
