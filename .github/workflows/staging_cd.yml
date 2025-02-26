@@ -1,4 +1,4 @@
-name: Deploy to Staging Environment
+name: Deploy to `staging` Environment
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
             docker-compose-staging.yml
           sparse-checkout-cone-mode: false
 
-      - name: Transfer updated Docker Compose to Staging server
+      - name: Transfer updated Docker Compose to `staging` server
         uses: RowenTey/cloudflared-scp-action@v1.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -33,7 +33,7 @@ jobs:
           service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
           service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
 
-      - name: SSH and run command on Staging server
+      - name: SSH and run command on `staging` server
         uses: and-fm/cloudflared-ssh-action@v3
         with:
           host: ${{ secrets.SSH_HOST }}
