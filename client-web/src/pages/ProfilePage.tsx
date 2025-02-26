@@ -114,7 +114,6 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({
 
       <div className="w-3/5 flex flex-col gap-2 items-center">
         <img
-          // src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
           src={pictureUrl}
           alt="Profile Image"
           className="w-24 h-24 rounded-full"
@@ -126,9 +125,12 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({
           </h3>
         </div>
 
-        <button className="bg-primary text-black text-sm font-semibold px-4 py-1 rounded-3xl mt-1">
+        <Link
+          to="/profile/edit"
+          className="bg-primary text-black text-sm font-semibold px-4 py-1 rounded-3xl mt-1 cursor-pointer"
+        >
           Edit Profile
-        </button>
+        </Link>
       </div>
 
       <Link

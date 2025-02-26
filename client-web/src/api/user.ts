@@ -2,6 +2,11 @@ import { AxiosInstance, AxiosResponse } from "axios";
 import { ApiResponse } from ".";
 import { IFriendRequests, IUser } from "../types/user";
 
+interface UpdateUserRequest {
+  field: string;
+  value: string;
+}
+
 interface GetNumFriendsResponse extends ApiResponse {
   data: {
     numFriends: number;
@@ -20,6 +25,10 @@ interface CountPendingFriendRequestsResponse extends ApiResponse {
   data: {
     count: number;
   };
+}
+
+interface UpdateUserResponse extends ApiResponse {
+  data: UpdateUserRequest;
 }
 
 export const getNumFriendsApi = (
@@ -46,6 +55,40 @@ export const getNumFriendsApi = (
         headers: {},
         config: {},
       } as AxiosResponse<GetNumFriendsResponse>);
+    }, 1500);
+  });
+};
+
+export const updateUserApi = (
+  api: AxiosInstance,
+  userId: number,
+  field: string,
+  value: string,
+  mock: boolean = false,
+): Promise<AxiosResponse<UpdateUserResponse>> => {
+  if (!mock) {
+    return api.patch<UpdateUserResponse>(`/users/${userId}`, {
+      field,
+      value,
+    });
+  }
+
+  return new Promise<AxiosResponse<UpdateUserResponse>>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        data: {
+          data: {
+            field,
+            value,
+          },
+          message: "User successfully updated",
+          status: "success",
+        },
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      } as AxiosResponse<UpdateUserResponse>);
     }, 1500);
   });
 };

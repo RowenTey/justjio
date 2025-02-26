@@ -18,6 +18,7 @@ import NotificationsPage from "../pages/NotificationsPage";
 import VerifyOTPPage from "../pages/VerifyOTPPage";
 import ForgotPasswordPage from "../pages/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/ResetPasswordPage";
+import EditProfilePage from "../pages/EditProfilePage";
 
 const AppRouter = () => {
   return (
@@ -28,6 +29,7 @@ const AppRouter = () => {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
         </Route>
+        <Route path="/profile/edit" element={<EditProfilePage />} />
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/friendRequests" element={<FriendRequestsPage />} />
         <Route path="/rooms" element={<RoomsPage />} />

@@ -64,6 +64,8 @@ func (s *UserService) UpdateUserField(userid string, field string, value interfa
 	// 	user.Name = value.(string)
 	// case "phoneNum":
 	// 	user.PhoneNum = value.(string)
+	case "username":
+		user.Username = value.(string)
 	case "isEmailValid":
 		user.IsEmailValid = value.(bool)
 	case "isOnline":

@@ -31,6 +31,7 @@ const ResetPasswordPage = () => {
     try {
       await resetPasswordApi(api, email, data.password);
       showToast("Password reset successfully!", false);
+      stopLoading();
       setTimeout(
         () =>
           navigate("/login", {
@@ -54,7 +55,6 @@ const ResetPasswordPage = () => {
           setErrorMsg("An error occurred. Please try again later.");
           break;
       }
-    } finally {
       stopLoading();
     }
   };

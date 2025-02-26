@@ -28,7 +28,7 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 
 	id := c.Params("userId")
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 	err := userService.UpdateUserField(id, request.Field, request.Value)
 	if err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
@@ -40,7 +40,7 @@ func UpdateUser(c *fiber.Ctx) error {
 func DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("userId")
 
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 
 	err := userService.DeleteUser(id)
 	if err != nil {
@@ -60,7 +60,7 @@ func SendFriendRequest(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 	if err := userService.SendFriendRequest(uint(userID), request.FriendID); err != nil {
 		if err.Error() == "cannot send friend request to yourself" ||
 			err.Error() == "already friends" ||
@@ -85,7 +85,7 @@ func RemoveFriend(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 	if err := userService.RemoveFriend(uint(userID), uint(friendID)); err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
@@ -96,7 +96,7 @@ func RemoveFriend(c *fiber.Ctx) error {
 func GetFriends(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 
 	friends, err := userService.GetFriends(userID)
 	if err != nil {
@@ -117,7 +117,7 @@ func IsFriend(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 
 	isFriend := userService.IsFriend(uint(userID), request.FriendID)
 
@@ -130,7 +130,7 @@ func IsFriend(c *fiber.Ctx) error {
 func GetNumFriends(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 
 	numFriends, err := userService.GetNumFriends(userID)
 	if err != nil {
@@ -147,7 +147,7 @@ func SearchFriends(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 	query := c.Query("query")
 
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 
 	friends, err := userService.SearchUsers(userID, query)
 	if err != nil {
@@ -164,7 +164,7 @@ func GetFriendRequestsByStatus(c *fiber.Ctx) error {
 	}
 
 	status := c.Query("status")
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 
 	requests, err := userService.GetFriendRequestsByStatus(uint(userID), status)
 	if err != nil {
@@ -183,7 +183,7 @@ func CountPendingFriendRequests(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 
 	count, err := userService.CountPendingFriendRequests(uint(userID))
 	if err != nil {
@@ -202,7 +202,7 @@ func RespondToFriendRequest(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 
 	switch request.Action {
 	case "accept":
