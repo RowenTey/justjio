@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/RowenTey/JustJio/server-ws/services"
@@ -30,12 +31,9 @@ func isAllowedOrigins(c *fiber.Ctx) error {
 	}
 	log.Println("[CORS] Origin:", origin)
 
-	allowedOrigins := []string{
-		"http://localhost:5173",
-		"https://justjio-staging.rowentey.xyz",
-	}
+	allowedOrigins := strings.Split(utils.Config("ALLOWED_ORIGINS"), ",")
 	for _, allowedOrigin := range allowedOrigins {
-		if origin == allowedOrigin {
+		if origin == strings.TrimSpace(allowedOrigin) {
 			return c.Next()
 		}
 	}

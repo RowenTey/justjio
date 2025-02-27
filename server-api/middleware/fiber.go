@@ -9,11 +9,11 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-func Fiber(a *fiber.App) {
+func Fiber(a *fiber.App, allowedOrigins string) {
 	a.Use(
 		// CORS setting
 		cors.New(cors.Config{
-			AllowOrigins: "http://localhost:5173, https://justjio-staging.rowentey.xyz",
+			AllowOrigins: allowedOrigins,
 			AllowHeaders: "Origin, Content-Type, Accept, Authorization, CF-Access-Client-Id, CF-Access-Client-Secret",
 			AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		}),

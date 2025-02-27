@@ -45,6 +45,7 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       SMTP2GO_API_KEY: ${SMTP2GO_API_KEY}
+      ALLOWED_ORIGINS: https://justjio-staging.rowentey.xyz
     entrypoint: ["/api-server", "staging"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
@@ -64,6 +65,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       KAFKA_TOPIC_PREFIX: justjio
       KAFKA_URL: ${KAFKA_HOST}:${KAFKA_PORT}
+      ALLOWED_ORIGINS: https://justjio-staging.rowentey.xyz
     entrypoint: ["/ws-server", "staging"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/ping || exit 1"]

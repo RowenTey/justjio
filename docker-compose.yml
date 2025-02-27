@@ -47,6 +47,7 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       SMTP2GO_API_KEY: ${SMTP2GO_API_KEY}
+      ALLOWED_ORIGINS: http://localhost:80
     entrypoint: ["/api-server", "staging"]
     depends_on:
       kafka:
@@ -69,7 +70,9 @@ services:
     environment:
       PORT: 8081
       JWT_SECRET: ${JWT_SECRET}
+      KAFKA_TOPIC_PREFIX: justjio
       KAFKA_URL: kafka:29092
+      ALLOWED_ORIGINS: http://localhost:80
     depends_on:
       kafka:
         condition: service_started
