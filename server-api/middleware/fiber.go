@@ -13,10 +13,9 @@ func Fiber(a *fiber.App) {
 	a.Use(
 		// CORS setting
 		cors.New(cors.Config{
-			AllowOrigins:     "http://localhost:5173, https://justjio-staging.rowentey.xyz",
-			AllowHeaders:     "Origin, Content-Type, Accept, Authorization, CF-Access-Client-Id, CF-Access-Client-Secret",
-			AllowMethods:     "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-			AllowCredentials: true,
+			AllowOrigins: "http://localhost:5173, https://justjio-staging.rowentey.xyz",
+			AllowHeaders: "Origin, Content-Type, Accept, Authorization, CF-Access-Client-Id, CF-Access-Client-Secret",
+			AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		}),
 
 		// Rate limiting

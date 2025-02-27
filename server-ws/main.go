@@ -22,6 +22,27 @@ type UserKafkaClient struct {
 // maps user ID to Kafka client
 var userKafkaClients = make(map[string]*UserKafkaClient)
 
+// custom CORS middleware for websocket endpoint
+func isAllowedOrigins(c *fiber.Ctx) error {
+	origin := c.Get("Origin")
+	if origin == "" {
+		return c.Status(403).SendString("Forbidden")
+	}
+	log.Println("[CORS] Origin:", origin)
+
+	allowedOrigins := []string{
+		"http://localhost:5173",
+		"https://justjio-staging.rowentey.xyz",
+	}
+	for _, allowedOrigin := range allowedOrigins {
+		if origin == allowedOrigin {
+			return c.Next()
+		}
+	}
+
+	return c.Status(403).SendString("Forbidden")
+}
+
 func webSocketUpgrade(c *fiber.Ctx) error {
 	// IsWebSocketUpgrade returns true if the client
 	// requested upgrade to the WebSocket protocol.
@@ -60,7 +81,7 @@ func main() {
 	})
 
 	// websocket endpoint with middleware to handle websocket upgrade
-	app.Get("/", webSocketUpgrade, websocket.New(func(c *websocket.Conn) {
+	app.Get("/", webSocketUpgrade, isAllowedOrigins, websocket.New(func(c *websocket.Conn) {
 		user, err := services.GetCurrentUser(c)
 		if err != nil {
 			log.Println("[AUTH] ", err)
