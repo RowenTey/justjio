@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   build-and-push-api-image:
-    if: ${{ github.event.label.name == 'ready_for_build' }}
+    if: ${{ github.event.label.name == 'ready_for_build' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -60,13 +60,13 @@ jobs:
 
       - name: Remove `ready_for_build` label
         # always try to run this step, even if the previous steps fail
-        if: always()
+        if: always() && github.event_name != 'workflow_dispatch'
         uses: actions-ecosystem/action-remove-labels@v1
         with:
           labels: ready_for_build
 
   build-and-push-ws-image:
-    if: ${{ github.event.label.name == 'ready_for_build' }}
+    if: ${{ github.event.label.name == 'ready_for_build' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -98,13 +98,13 @@ jobs:
 
       - name: Remove `ready_for_build` label
         # always try to run this step, even if the previous steps fail
-        if: always()
+        if: always() && github.event_name != 'workflow_dispatch'
         uses: actions-ecosystem/action-remove-labels@v1
         with:
           labels: ready_for_build
 
   build-and-push-web-image:
-    if: ${{ github.event.label.name == 'ready_for_build' }}
+    if: ${{ github.event.label.name == 'ready_for_build' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -141,7 +141,7 @@ jobs:
 
       - name: Remove `ready_for_build` label
         # always try to run this step, even if the previous steps fail
-        if: always()
+        if: always() && github.event_name != 'workflow_dispatch'
         uses: actions-ecosystem/action-remove-labels@v1
         with:
           labels: ready_for_build
@@ -162,6 +162,7 @@ jobs:
         uses: actions-ecosystem/action-remove-labels@v1
         with:
           labels: ready_for_build
+
       - name: Add `ready_to_merge` label
         uses: actions-ecosystem/action-add-labels@v1
         with:
