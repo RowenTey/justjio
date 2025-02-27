@@ -28,6 +28,8 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const decodedToken = jwtDecode<DecodedJWTToken>(accessToken);
     // Check if token is expired
     if (decodedToken.exp * 1000 < Date.now()) {
+      // Clear state and log user out
+      logout();
       return false;
     }
 
