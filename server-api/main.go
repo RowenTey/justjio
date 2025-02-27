@@ -48,7 +48,7 @@ func main() {
 	}
 	defer kafkaService.Close()
 
-	middleware.Fiber(app)
+	middleware.Fiber(app, config.Config("ALLOWED_ORIGINS"))
 	router.Initalize(app, kafkaService, notificationsChan)
 
 	log.Println("Server running on port", config.Config("PORT"))
