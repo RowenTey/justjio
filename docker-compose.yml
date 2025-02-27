@@ -12,6 +12,11 @@ services:
       APP_ENV_PREFIX: VITE
       VITE_API_URL: http://localhost:8080/v1
       VITE_WS_URL: ws://localhost:8081
+      VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      VITE_VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VITE_ENV: dev
+      VITE_CF_ACCESS_CLIENT_ID: ${CF_ACCESS_CLIENT_ID}
+      VITE_CF_ACCESS_CLIENT_SECRET: ${CF_ACCESS_CLIENT_SECRET}
     depends_on:
       - api-server
       - ws-server
@@ -32,8 +37,12 @@ services:
       DSN: postgresql://postgres:${POSTGRES_PASSWORD}@postgres/postgres?sslmode=disable
       PORT: 8080
       JWT_SECRET: ${JWT_SECRET}
+      KAFKA_TOPIC_PREFIX: justjio
       KAFKA_URL: kafka:29092
       ADMIN_EMAIL: ${ADMIN_EMAIL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URL: https://justjio-staging.rowentey.xyz
       VAPID_EMAIL: ${ADMIN_EMAIL}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}

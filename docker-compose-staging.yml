@@ -12,6 +12,9 @@ services:
       VITE_WS_URL: wss://justjio-ws-staging.rowentey.xyz
       VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       VITE_VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VITE_ENV: staging
+      VITE_CF_ACCESS_CLIENT_ID: ${CF_ACCESS_CLIENT_ID}
+      VITE_CF_ACCESS_CLIENT_SECRET: ${CF_ACCESS_CLIENT_SECRET}
     depends_on:
       - api-server
       - ws-server
