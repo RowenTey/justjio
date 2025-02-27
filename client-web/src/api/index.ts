@@ -5,9 +5,6 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((req) => {
-  // Set withCredentials to true for all requests (for setting CF cookies)
-  req.withCredentials = true;
-
   const token = localStorage.getItem("accessToken");
   if (token !== null) {
     req.headers.Authorization = `Bearer ${token}`;
