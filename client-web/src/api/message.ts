@@ -6,14 +6,14 @@ interface FetchRoomMessageResponse extends ApiResponse {
   data: {
     messages: {
       id: number;
-      room_id: number;
-      sender_id: number;
+      roomId: number;
+      senderId: number;
       sender: IUser;
       content: string;
-      sent_at: string;
+      sentAt: string;
     }[];
     page: number;
-    page_count: number;
+    pageCount: number;
   };
 }
 
@@ -68,26 +68,25 @@ export const fetchRoomMessageApi = (
             messages: [
               {
                 id: 1,
-                room_id: 1,
-                sender_id: 1,
+                roomId: 1,
+                senderId: 1,
                 sender: {
                   id: 1,
                   name: "User1",
                   email: "user1@example.com",
                   password: "password123",
-                  phone_num: "1234567890",
-                  is_email_valid: true,
-                  is_online: true,
-                  last_seen: new Date().toISOString(),
-                  registered_at: new Date().toISOString(),
+                  isEmailValid: true,
+                  isOnline: true,
+                  lastseen: new Date().toISOString(),
+                  registeredAt: new Date().toISOString(),
                 },
                 content: "Hello",
-                sent_at: new Date().toISOString(),
+                sentAt: new Date().toISOString(),
               },
               {
                 id: 2,
-                room_id: 1,
-                sender_id: 2,
+                roomId: 1,
+                senderId: 2,
                 sender: {
                   id: 2,
                   username: "User2",
@@ -100,11 +99,11 @@ export const fetchRoomMessageApi = (
                   registeredAt: new Date().toISOString(),
                 } as IUser,
                 content: "Hi",
-                sent_at: new Date().toISOString(),
+                sentAt: new Date().toISOString(),
               },
             ],
             page: 1,
-            page_count: 1,
+            pageCount: 1,
           },
           message: "Fetched messages successfully",
           status: "success",
