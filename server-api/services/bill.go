@@ -34,13 +34,12 @@ func (bs *BillService) CreateBill(
 		Date:         time.Now(),
 		IncludeOwner: includeOwner,
 		RoomID:       room.ID,
-		Owner:        *owner,
 		OwnerID:      owner.ID,
 		Payers:       *payers,
 	}
 
 	// Omit to avoid creating new room and set consolidation to null
-	if err := db.Omit("Room").Create(&bill).Error; err != nil {
+	if err := db.Debug().Omit("Room", "Owner").Create(&bill).Error; err != nil {
 		return nil, err
 	}
 

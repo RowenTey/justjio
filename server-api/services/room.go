@@ -24,7 +24,6 @@ func (rs *RoomService) CreateRoom(room *model.Room, host *model.User) (*model.Ro
 	db := rs.DB.Table("rooms")
 
 	room.HostID = host.ID
-	room.Host = *host
 	room.Users = append(room.Users, *host)
 	room.CreatedAt = time.Now()
 	room.UpdatedAt = time.Now()
@@ -37,7 +36,7 @@ func (rs *RoomService) CreateRoom(room *model.Room, host *model.User) (*model.Ro
 }
 
 func (rs *RoomService) GetRooms(userId string, page int) (*[]model.Room, error) {
-	db := database.DB
+	db := rs.DB
 	var rooms []model.Room
 
 	if err := db.
@@ -55,7 +54,7 @@ func (rs *RoomService) GetRooms(userId string, page int) (*[]model.Room, error) 
 }
 
 func (rs *RoomService) GetNumRooms(userId string) (int64, error) {
-	db := database.DB
+	db := rs.DB
 	var count int64
 
 	if err := db.
@@ -252,12 +251,10 @@ func (rs *RoomService) InviteUserToRoom(
 	}
 
 	log.Printf("[ROOM] Inviting users (%v) to room %s", users, roomId)
-	roomsDB := rs.DB.Table("rooms")
-	roomInvitesDB := rs.DB.Table("room_invites")
 	var room model.Room
 	var roomInvites []model.RoomInvite
 
-	if err := roomsDB.First(&room, "id = ?", roomId).Error; err != nil {
+	if err := rs.DB.Table("rooms").First(&room, "id = ?", roomId).Error; err != nil {
 		return nil, err
 	}
 
@@ -280,7 +277,7 @@ func (rs *RoomService) InviteUserToRoom(
 		}
 
 		// Check if user has pending invite
-		if err := roomInvitesDB.
+		if err := rs.DB.Table("room_invites").
 			Where("room_id = ? AND user_id = ? AND status = ?", roomId, user.ID, "pending").
 			Count(&count).Error; err != nil {
 			return nil, err
@@ -294,6 +291,7 @@ func (rs *RoomService) InviteUserToRoom(
 		roomInvite := model.RoomInvite{
 			Room:      room,
 			User:      user,
+			UserID:    user.ID,
 			InviterID: inviter.ID,
 			Inviter:   *inviter,
 			Message:   message,
@@ -304,7 +302,7 @@ func (rs *RoomService) InviteUserToRoom(
 		roomInvites = append(roomInvites, roomInvite)
 	}
 
-	if err := roomInvitesDB.Omit("Room").Create(roomInvites).Error; err != nil {
+	if err := rs.DB.Table("room_invites").Omit("Room", "Inviter", "User").Create(roomInvites).Error; err != nil {
 		return nil, err
 	}
 

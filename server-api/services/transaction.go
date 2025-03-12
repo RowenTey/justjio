@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"sync"
 
 	"github.com/RowenTey/JustJio/model"
@@ -46,15 +47,16 @@ func (ts *TransactionService) GenerateTransactions(consolidatedBill *model.Conso
 				num_payers += 1
 			}
 
-			transactionAmt := bill.Amount / num_payers
+			// hack to round numbers to 2 decimal places
+			transactionAmt := float32(math.Floor(float64(bill.Amount/num_payers)*100) / 100)
 			for _, payers := range bill.Payers {
 				transaction := model.Transaction{
-					Consolidation: *consolidatedBill,
-					Payer:         payers,
-					PayerID:       payers.ID,
-					Payee:         bill.Owner,
-					PayeeID:       bill.OwnerID,
-					Amount:        transactionAmt,
+					ConsolidationID: consolidatedBill.ID,
+					Payer:           payers,
+					PayerID:         payers.ID,
+					Payee:           bill.Owner,
+					PayeeID:         bill.OwnerID,
+					Amount:          transactionAmt,
 				}
 				txChan <- &transaction
 			}
@@ -80,7 +82,7 @@ func (ts *TransactionService) GenerateTransactions(consolidatedBill *model.Conso
 	for _, transaction := range *consolidatedTransactions {
 		log.Printf("[TRANSACTION] After %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
 	}
-	if err := ts.DB.Create(&consolidatedTransactions).Error; err != nil {
+	if err := ts.DB.Omit("Consolidation").Create(&consolidatedTransactions).Error; err != nil {
 		return err
 	}
 
@@ -159,10 +161,10 @@ func consolidateTransactions(transactions *[]model.Transaction, consolidatedBill
 	for startNode, edges := range graph {
 		for _, edge := range edges {
 			transaction := model.Transaction{
-				Consolidation: *consolidatedBill,
-				PayerID:       startNode,
-				PayeeID:       edge.userId,
-				Amount:        edge.amount,
+				ConsolidationID: consolidatedBill.ID,
+				PayerID:         startNode,
+				PayeeID:         edge.userId,
+				Amount:          edge.amount,
 			}
 			newTransactions = append(newTransactions, transaction)
 		}
