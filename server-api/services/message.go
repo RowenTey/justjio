@@ -31,7 +31,7 @@ func (ms *MessageService) SaveMessage(room *model.Room, sender *model.User, cont
 	}
 
 	// Omit to avoid creating new room
-	if err := db.Omit("Room").Create(&msg).Error; err != nil {
+	if err := db.Omit("Room", "Sender").Create(&msg).Error; err != nil {
 		return err
 	}
 

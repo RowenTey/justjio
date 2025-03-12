@@ -85,9 +85,17 @@ func RemoveFriend(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := &services.UserService{DB: database.DB}
+	tx := database.DB.Begin()
+
+	userService := &services.UserService{DB: tx}
 	if err := userService.RemoveFriend(uint(userID), uint(friendID)); err != nil {
+		tx.Rollback()
 		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return util.HandleInternalServerError(c, err)
 	}
 
 	return util.HandleSuccess(c, "Friend successfully removed", nil)

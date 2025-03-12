@@ -15,7 +15,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-// /:roomId/message/:msgId
 func GetMessage(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 	msgId := c.Params("msgId")
@@ -28,7 +27,6 @@ func GetMessage(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Retrieved message successfully", message)
 }
 
-// /:roomId/message?page=1&asc=true
 func GetMessages(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 
@@ -87,11 +85,11 @@ func CreateMessage(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	broadcastPayload := model_kafka.KafkaMessage{
 		MsgType: "CREATE_MESSAGE",
 		Data: struct {
-			RoomID     string `json:"room_id"`
-			SenderID   string `json:"sender_id"`
-			SenderName string `json:"sender_name"`
+			RoomID     string `json:"roomId"`
+			SenderID   string `json:"senderId"`
+			SenderName string `json:"senderName"`
 			Content    string `json:"content"`
-			SentAt     string `json:"sent_at"`
+			SentAt     string `json:"sentAt"`
 		}{
 			RoomID:     roomId,
 			SenderID:   userId,

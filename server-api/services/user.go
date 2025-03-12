@@ -306,7 +306,7 @@ func (s *UserService) GetFriendRequestsByStatus(userID uint, status string) (*[]
 		return nil, errors.New("invalid status")
 	}
 
-	// Fetch friend requests where the user is either sender or receiver
+	// Fetch friend requests where the user is the receiver
 	if err := db.Where("receiver_id = ? AND status = ?", userID, status).
 		Preload("Sender").
 		Preload("Receiver").
