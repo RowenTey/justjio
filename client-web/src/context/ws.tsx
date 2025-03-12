@@ -60,7 +60,7 @@ const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({
     ws.current.onmessage = (message) => {
       console.log("[WS] Received message", JSON.parse(message.data));
       const { type, data } = JSON.parse(message.data);
-      const roomChannel = `${type}_${data.room_id}`;
+      const roomChannel = `${type}_${data.roomId}`;
 
       console.log("[WS] Received message", type, data, roomChannel);
 
