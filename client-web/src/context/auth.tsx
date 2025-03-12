@@ -68,9 +68,8 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     password: string,
   ): Promise<BaseContextResponse> => {
     try {
-      const data = await loginApi(api, username, password, false);
-      console.log("Login data", data.headers);
-      handleLoginResponse(data.data);
+      const { data: res } = await loginApi(api, username, password, false);
+      handleLoginResponse(res);
       return { isSuccessResponse: true, error: null };
     } catch (error) {
       console.error("Error logging in: ", error);
