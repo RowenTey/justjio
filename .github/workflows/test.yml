@@ -22,13 +22,16 @@ jobs:
             const headSha = context.payload.workflow_run.head_sha;
 
             await github.rest.checks.create({
-              name: 'Unit Tests',
+              name: 'unit_tests',
               head_sha: headSha,
               status: 'in_progress',
               output: {
                 title: 'Unit Test Results',
                 summary: ''
               },
+              details_url: `${github.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${github.runId}`,  
+              external_id: `${github.runId}`,            
+              started_at: new Date().toISOString(),
               owner: context.repo.owner,
               repo: context.repo.repo
             });
@@ -64,7 +67,7 @@ jobs:
             const headSha = context.payload.workflow_run.head_sha;
 
             await github.rest.checks.create({
-              name: 'Unit Tests',
+              name: 'unit_tests',
               head_sha: headSha,
               status: 'completed',
               conclusion: conclusion,
@@ -72,6 +75,9 @@ jobs:
                 title: 'Unit Test Results',
                 summary: `Tests completed with status: ${conclusion}`
               },
+              details_url: `${github.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${github.runId}`,  
+              external_id: `${github.runId}`, 
+              completed_at: new Date().toISOString(),
               owner: context.repo.owner,
               repo: context.repo.repo
             });
