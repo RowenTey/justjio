@@ -6,9 +6,6 @@ on:
     workflows: [Lint and Format]
     types:
       - completed
-    branches:
-      - main
-      - dev
 
 jobs:
   test-server-api:
