@@ -4,7 +4,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/RowenTey/JustJio/config"
 	"github.com/RowenTey/JustJio/database"
 	model_kafka "github.com/RowenTey/JustJio/model/kafka"
 	"github.com/RowenTey/JustJio/model/request"
@@ -16,7 +15,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-// /:roomId/message/:msgId
 func GetMessage(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 	msgId := c.Params("msgId")
@@ -29,7 +27,6 @@ func GetMessage(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Retrieved message successfully", message)
 }
 
-// /:roomId/message?page=1&asc=true
 func GetMessages(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 
@@ -57,7 +54,7 @@ func GetMessages(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Retrieved messages successfully", response)
 }
 
-func CreateMessage(c *fiber.Ctx) error {
+func CreateMessage(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	roomId := c.Params("roomId")
 
 	var request request.CreateMessageRequest
@@ -88,11 +85,11 @@ func CreateMessage(c *fiber.Ctx) error {
 	broadcastPayload := model_kafka.KafkaMessage{
 		MsgType: "CREATE_MESSAGE",
 		Data: struct {
-			RoomID     string `json:"room_id"`
-			SenderID   string `json:"sender_id"`
-			SenderName string `json:"sender_name"`
+			RoomID     string `json:"roomId"`
+			SenderID   string `json:"senderId"`
+			SenderName string `json:"senderName"`
 			Content    string `json:"content"`
-			SentAt     string `json:"sent_at"`
+			SentAt     string `json:"sentAt"`
 		}{
 			RoomID:     roomId,
 			SenderID:   userId,
@@ -103,14 +100,10 @@ func CreateMessage(c *fiber.Ctx) error {
 	}
 
 	roomUserIds := c.Locals("roomUserIds").(*[]string)
-	kafkaService, err := services.NewKafkaService(config.Config("KAFKA_URL"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer kafkaService.Close()
-	if err := kafkaService.BroadcastMessage(roomUserIds, broadcastPayload); err != nil {
+	if err := kafkaSvc.BroadcastMessage(roomUserIds, broadcastPayload); err != nil {
 		log.Println("[MESSAGE] Failed to broadcast message:", err)
 	}
+	log.Println("[MESSAGE] Broadcasted message to Kafka")
 
 	return util.HandleSuccess(c, "Message saved successfully", nil)
 }

@@ -9,12 +9,13 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-func Fiber(a *fiber.App) {
+func Fiber(a *fiber.App, allowedOrigins string) {
 	a.Use(
 		// CORS setting
 		cors.New(cors.Config{
-			AllowOrigins: "*",
-			AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+			AllowOrigins: allowedOrigins,
+			AllowHeaders: "Origin, Content-Type, Accept, Authorization, CF-Access-Client-Id, CF-Access-Client-Secret",
+			AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		}),
 
 		// Rate limiting

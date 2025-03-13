@@ -12,9 +12,19 @@ services:
       APP_ENV_PREFIX: VITE
       VITE_API_URL: http://localhost:8080/v1
       VITE_WS_URL: ws://localhost:8081
+      VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      VITE_VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VITE_ENV: dev
+      VITE_CF_ACCESS_CLIENT_ID: ${CF_ACCESS_CLIENT_ID}
+      VITE_CF_ACCESS_CLIENT_SECRET: ${CF_ACCESS_CLIENT_SECRET}
     depends_on:
       - api-server
       - ws-server
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api-server:
     image: ghcr.io/rowentey/justjio/api:latest
@@ -27,15 +37,28 @@ services:
       DSN: postgresql://postgres:${POSTGRES_PASSWORD}@postgres/postgres?sslmode=disable
       PORT: 8080
       JWT_SECRET: ${JWT_SECRET}
+      KAFKA_TOPIC_PREFIX: justjio
       KAFKA_URL: kafka:29092
-      OUTLOOK_EMAIL: ${OUTLOOK_EMAIL}
-      OUTLOOK_PASSWORD: ${OUTLOOK_PASSWORD}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URL: https://justjio-staging.rowentey.xyz
+      VAPID_EMAIL: ${ADMIN_EMAIL}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      SMTP2GO_API_KEY: ${SMTP2GO_API_KEY}
+      ALLOWED_ORIGINS: http://localhost:80
     entrypoint: ["/api-server", "staging"]
     depends_on:
       kafka:
         condition: service_started
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ws-server:
     image: ghcr.io/rowentey/justjio/ws:latest
@@ -47,10 +70,17 @@ services:
     environment:
       PORT: 8081
       JWT_SECRET: ${JWT_SECRET}
+      KAFKA_TOPIC_PREFIX: justjio
       KAFKA_URL: kafka:29092
+      ALLOWED_ORIGINS: http://localhost:80
     depends_on:
       kafka:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:latest

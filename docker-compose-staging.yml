@@ -1,124 +1,80 @@
-name: justjio
-
 services:
   frontend:
+    container_name: justjio-web
     image: ghcr.io/rowentey/justjio/web:latest
-    # build:
-    #   context: ./client-web
-    #   dockerfile: Dockerfile
     networks:
       - justjio_network
       - caddy_network
+    restart: unless-stopped
     environment:
       APP_ENV_PREFIX: VITE
       VITE_API_URL: https://justjio-api-staging.rowentey.xyz/v1
       VITE_WS_URL: wss://justjio-ws-staging.rowentey.xyz
+      VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      VITE_VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VITE_ENV: staging
+      VITE_CF_ACCESS_CLIENT_ID: ${CF_ACCESS_CLIENT_ID}
+      VITE_CF_ACCESS_CLIENT_SECRET: ${CF_ACCESS_CLIENT_SECRET}
     depends_on:
       - api-server
       - ws-server
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api-server:
+    container_name: justjio-api
     image: ghcr.io/rowentey/justjio/api:latest
-    # build:
-    #   context: ./server-api
-    #   dockerfile: Dockerfile
+    restart: unless-stopped
     networks:
       - justjio_network
       - caddy_network
     environment:
-      DSN: postgresql://postgres:${POSTGRES_PASSWORD}@postgres/postgres?sslmode=disable
+      DSN: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}/${POSTGRES_DB}?sslmode=disable
       PORT: 8080
       JWT_SECRET: ${JWT_SECRET}
-      KAFKA_URL: kafka:29092
-      OUTLOOK_EMAIL: ${OUTLOOK_EMAIL}
-      OUTLOOK_PASSWORD: ${OUTLOOK_PASSWORD}
+      KAFKA_TOPIC_PREFIX: justjio
+      KAFKA_URL: ${KAFKA_HOST}:${KAFKA_PORT}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URL: https://justjio-staging.rowentey.xyz
+      VAPID_EMAIL: ${ADMIN_EMAIL}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      SMTP2GO_API_KEY: ${SMTP2GO_API_KEY}
+      ALLOWED_ORIGINS: https://justjio-staging.rowentey.xyz
     entrypoint: ["/api-server", "staging"]
-    depends_on:
-      kafka:
-        condition: service_started
-      postgres:
-        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   ws-server:
+    container_name: justjio-ws
     image: ghcr.io/rowentey/justjio/ws:latest
-    # build:
-    #   context: ./server-ws
-    #   dockerfile: Dockerfile
+    restart: unless-stopped
     networks:
       - justjio_network
       - caddy_network
     environment:
       PORT: 8081
       JWT_SECRET: ${JWT_SECRET}
-      KAFKA_URL: kafka:29092
-    depends_on:
-      kafka:
-        condition: service_started
-
-  kafka:
-    image: confluentinc/cp-kafka:latest
-    restart: unless-stopped
-    networks:
-      - justjio_network
-    environment:
-      KAFKA_BROKER_ID: 0
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Bob is internal docker network listener
-      # Fred is external listener
-      KAFKA_ADVERTISED_LISTENERS: LISTENER_BOB://kafka:29092,LISTENER_FRED://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_BOB:PLAINTEXT,LISTENER_FRED:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_BOB
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
-      # KAFKA_LISTENERS: LISTENER_BOB://kafka:29092,LISTENER_FRED://kafka:9092
-      # KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-    depends_on:
-      - zookeeper
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    networks:
-      - justjio_network
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-
-  postgres:
-    image: postgres:15
-    restart: unless-stopped
-    networks:
-      - justjio_network
-    environment:
-      PG_USER: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: NUv5oMuh1EWV
-      POSTGRES_DB: postgres
-    volumes:
-      - justjio_pg_data:/var/lib/postgresql/data
+      KAFKA_TOPIC_PREFIX: justjio
+      KAFKA_URL: ${KAFKA_HOST}:${KAFKA_PORT}
+      ALLOWED_ORIGINS: https://justjio-staging.rowentey.xyz
+    entrypoint: ["/ws-server", "staging"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/ping || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # redis:
-  #   image: redis:latest
-  #   ports:
-  #     - "6379:6379"
-
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   ports:
-  #     - "5050:80"
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: admin@test.com
-  #     PGADMIN_DEFAULT_PASSWORD: admin
 
 networks:
   justjio_network:
     name: justjio_network
   caddy_network:
     external: true
-
-volumes:
-  justjio_pg_data:

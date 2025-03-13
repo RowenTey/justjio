@@ -1,123 +1,191 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { SubmitHandler, useForm } from "react-hook-form";
 import InputField from "../components/InputField";
-import RoomTopBar from "../components/RoomTopBar";
+import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
 import { useRoomCtx } from "../context/room";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import { useNavigate } from "react-router-dom";
 import Spinner from "../components/Spinner";
+import SearchableDropdown from "../components/SearchableDropdown";
+import { useUserCtx } from "../context/user";
+import { useToast } from "../context/toast";
+import { useEffect } from "react";
 
 type CreateRoomFormData = {
-	roomName: string;
-	date: string;
-	venue: string;
-	time: string;
-	message?: string;
+  name: string;
+  date: string;
+  venue: string;
+  time: string;
+  invitees: string;
+  message?: string;
 };
 
 const CreateRoomPage = () => {
-	const { loading, startLoading, stopLoading, error, setErrorMsg } =
-		useLoadingAndError();
-	const {
-		register,
-		handleSubmit,
-		formState: { errors },
-	} = useForm<CreateRoomFormData>();
-	const { createRoom } = useRoomCtx();
-	const navigate = useNavigate();
+  const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<CreateRoomFormData>();
+  const { user, friends, fetchFriends } = useUserCtx();
+  const { createRoom } = useRoomCtx();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
 
-	const onSubmit: SubmitHandler<CreateRoomFormData> = async (data) => {
-		startLoading();
+  useEffect(() => {
+    fetchFriends(user.id);
+  }, [user]);
 
-		const parsedDate = new Date(data.date);
-		data.date = parsedDate.toISOString();
+  const onSubmit: SubmitHandler<CreateRoomFormData> = async (data) => {
+    startLoading();
 
-		console.log("[CreateRoomPage] Submitted data: ", data);
-		const res = await createRoom(data);
+    console.log("[CreateRoomPage] Date before: ", data.date);
+    const parsedDate = new Date(data.date);
+    data.date = parsedDate.toISOString();
 
-		if (!res.isSuccessResponse) {
-			setErrorMsg("An error occurred: " + res.error);
-			stopLoading();
-			return;
-		}
+    console.log("[CreateRoomPage] Submitted data: ", data);
+    const roomData = {
+      name: data.name,
+      date: data.date,
+      venue: data.venue,
+      time: data.time,
+    };
+    const res = await createRoom(
+      roomData,
+      data.invitees.split(","),
+      data.message,
+    );
 
-		stopLoading();
-		navigate("/");
-	};
+    if (!res.isSuccessResponse) {
+      switch (res.error?.response?.status) {
+        case 400:
+          showToast("Bad request, please check request body.", true);
+          break;
+        case 404:
+          showToast("User not found, please try again later.", true);
+          break;
+        case 500:
+        default:
+          showToast("An error occurred, please try again later.", true);
+          break;
+      }
+      stopLoading();
+      return;
+    }
 
-	return (
-		<div className="h-full flex flex-col items-center gap-4 bg-gray-200">
-			<RoomTopBar title="Create Room" />
+    stopLoading();
+    showToast("Room created successfully!", false);
+    navigate("/", { state: { from: "/rooms/create" } });
+  };
 
-			<form
-				onSubmit={handleSubmit(onSubmit)}
-				id="create-room-form"
-				className="flex flex-col justify-center items-center gap-2 w-[85%]"
-			>
-				<InputField
-					name="name"
-					type="text"
-					label="Room Name"
-					placeholder="Enter room name"
-					errors={errors}
-					register={register}
-					validation={{ required: "Room Name is required" }}
-				/>
+  return (
+    <div className="h-full flex flex-col items-center bg-gray-200">
+      <RoomTopBar title="Create Room" />
 
-				<InputField
-					name="date"
-					type="date"
-					label="Date"
-					placeholder="Enter date"
-					errors={errors}
-					register={register}
-					validation={{ required: "Date is required" }}
-				/>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        id="create-room-form"
+        className={`flex flex-col justify-center items-center p-2 gap-2 w-[85%] h-[92%] overflow-y-auto ${
+          Object.keys(errors).length > 0 && "sm:pt-[15%]"
+        }`}
+      >
+        <InputField
+          name="name"
+          type="text"
+          label="Room Name"
+          placeholder="Enter room name"
+          errors={errors}
+          register={register}
+          validation={{ required: "Room Name is required" }}
+        />
 
-				<InputField
-					name="venue"
-					type="text"
-					label="Venue"
-					placeholder="Enter venue"
-					errors={errors}
-					register={register}
-					validation={{ required: "Venue is required" }}
-				/>
+        <InputField
+          name="venue"
+          type="text"
+          label="Venue"
+          placeholder="Enter venue"
+          errors={errors}
+          register={register}
+          validation={{ required: "Venue is required" }}
+        />
 
-				<InputField
-					name="time"
-					type="time"
-					label="Time"
-					placeholder="Enter time"
-					errors={errors}
-					register={register}
-					validation={{ required: "Time is required" }}
-				/>
+        <InputField
+          name="date"
+          type="date"
+          label="Date"
+          placeholder="Enter date"
+          errors={errors}
+          register={register}
+          validation={{
+            required: "Date is required",
+            min: {
+              value: new Date().toISOString().split("T")[0],
+              message: "Date must be in the future",
+            },
+          }}
+          min={new Date().toISOString().split("T")[0]}
+          defaultValue={new Date().toISOString().split("T")[0]}
+        />
 
-				<InputField
-					name="message"
-					type="text"
-					label="Message"
-					placeholder="Enter invite message (optional)"
-					errors={errors}
-					register={register}
-					validation={{}}
-				/>
+        <InputField
+          name="time"
+          type="time"
+          label="Time"
+          placeholder="Enter time"
+          min="00:00"
+          max="23:59"
+          errors={errors}
+          register={register}
+          validation={{
+            required: "Time is required",
+          }}
+        />
 
-				<button
-					className="bg-justjio-secondary hover:bg-purple-900 text-white font-bold py-2 px-4 rounded-full mt-4 w-2/5"
-					form="create-room-form"
-				>
-					{loading ? (
-						<Spinner spinnerSize={{ width: "w-6", height: "h-6" }} />
-					) : (
-						"Submit"
-					)}
-				</button>
+        <SearchableDropdown
+          label="Invitees"
+          name="invitees"
+          errors={errors}
+          register={register}
+          onSelect={(selected) => {
+            setValue(
+              "invitees",
+              selected.map((option) => option.value).join(","),
+            );
+          }}
+          options={friends.map((friend) => ({
+            label: friend.username,
+            value: friend.id,
+          }))}
+          validation={{}}
+        />
 
-				{error && <p className="text-red-500 text-wrap text-center">{error}</p>}
-			</form>
-		</div>
-	);
+        <InputField
+          name="message"
+          type="text"
+          label="Message"
+          placeholder="Enter invite message (optional)"
+          errors={errors}
+          register={register}
+          validation={{}}
+        />
+
+        <button
+          className="bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full mt-4 w-2/5"
+          form="create-room-form"
+        >
+          {loadingStates[0] ? (
+            <Spinner
+              spinnerColor="border-white"
+              spinnerSize={{ width: "w-6", height: "h-6" }}
+            />
+          ) : (
+            "Submit"
+          )}
+        </button>
+      </form>
+    </div>
+  );
 };
 
 export default CreateRoomPage;

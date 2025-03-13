@@ -14,9 +14,10 @@ type User struct {
 }
 
 func GetCurrentUser(c *websocket.Conn) (*User, error) {
-	tokenStr := c.Query("token")
-
-	fmt.Println("tokenStr: ", tokenStr)
+	tokenStr := c.Query("token", "")
+	if tokenStr == "" {
+		return nil, errors.New("no token provided")
+	}
 
 	// Decode the JWT token
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
@@ -29,12 +30,12 @@ func GetCurrentUser(c *websocket.Conn) (*User, error) {
 	// Extract the user ID from the JWT claims
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, errors.New("Invalid token claims")
+		return nil, errors.New("invalid token claims")
 	}
 
 	userID, ok := claims["user_id"].(float64)
 	if !ok {
-		return nil, errors.New("Invalid user ID")
+		return nil, errors.New("invalid user ID")
 	}
 
 	user := &User{

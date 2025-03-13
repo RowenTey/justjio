@@ -4,91 +4,159 @@ import { Link, useNavigate } from "react-router-dom";
 import InputField from "../components/InputField";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import { useAuth } from "../context/auth";
+import { getRedirectPath } from "../utils/redirect";
+import { useGoogleLogin } from "@react-oauth/google";
+import GoogleIcon from "../assets/icons/google.svg?react";
+import { BaseContextResponse } from "../types";
 
 type LoginFormData = {
-	username: string;
-	password: string;
+  username: string;
+  password: string;
 };
 
 const LoginPage = () => {
-	const { loading, error, startLoading, stopLoading, setErrorMsg } =
-		useLoadingAndError();
-	const { login } = useAuth();
-	const navigate = useNavigate();
-	const {
-		register,
-		handleSubmit,
-		formState: { errors },
-	} = useForm<LoginFormData>();
+  const { loadingStates, errorStates, startLoading, stopLoading, setErrorMsg } =
+    useLoadingAndError(2);
+  const { login, googleLogin } = useAuth();
+  const navigate = useNavigate();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>();
 
-	const onSubmit: SubmitHandler<LoginFormData> = async (data) => {
-		startLoading();
+  const handleResponse = async (
+    res: BaseContextResponse,
+    loadingIndex: number,
+  ) => {
+    if (!res.isSuccessResponse) {
+      switch (res.error?.response?.status) {
+        case 400:
+          setErrorMsg("Bad request, please check request body.");
+          break;
+        case 401:
+        case 404:
+          setErrorMsg("Invalid username or password.");
+          break;
+        case 500:
+        default:
+          setErrorMsg("An error occurred, please try again later.");
+          break;
+      }
+      stopLoading(loadingIndex);
+      return false;
+    }
 
-		console.log(data);
-		const res = await login(data.username, data.password);
-		console.log(res);
+    stopLoading(loadingIndex);
+    const redirectPath = getRedirectPath() || "/";
+    navigate(redirectPath, { state: { from: "/login" } });
+    return true;
+  };
 
-		if (!res.isSuccessResponse) {
-			console.error(res.error);
-			setErrorMsg("An error occurred. Please try again later.");
-			stopLoading();
-			return;
-		}
+  const onSubmit: SubmitHandler<LoginFormData> = async (data) => {
+    startLoading(0);
+    console.log("[LoginPage] Form data: ", data);
+    const res = await login(data.username, data.password);
+    console.log("[LoginPage] Response: ", res);
+    await handleResponse(res, 0);
+  };
 
-		stopLoading();
-		navigate("/");
-	};
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: async (codeResponse) => {
+      startLoading(1);
+      const res = await googleLogin(codeResponse.code);
+      await handleResponse(res, 1);
+    },
+    onError: (error) => {
+      console.error("An error occurred: ", error);
+      setErrorMsg("An error occurred, please try again later.");
+    },
+    flow: "auth-code",
+  });
 
-	if (loading) {
-		return <Spinner bgClass="bg-justjio-primary" />;
-	}
+  return (
+    <div className="h-full flex flex-col justify-center items-center xs:border-y-1 border-black overflow-y-auto bg-primary">
+      <img src="/favicon.svg" alt="JustJio Logo" className="w-36 h-36" />
 
-	return (
-		<div className="h-full flex flex-col justify-center items-center xs:border-y-1 border-black overflow-y-auto bg-justjio-primary">
-			<h1 className="text-justjio-secondary font-bold mb-6">Login</h1>
-			<form
-				onSubmit={handleSubmit(onSubmit)}
-				id="login-form"
-				className="flex flex-col gap-3 p-2 w-[70%]"
-			>
-				<InputField
-					label="Username"
-					name="username"
-					type="text"
-					placeholder="Enter your username"
-					register={register}
-					errors={errors}
-					validation={{ required: "Username is required" }}
-				/>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        id="login-form"
+        className="flex flex-col items-center gap-3 p-2 w-[70%]"
+      >
+        <InputField
+          label="Username"
+          name="username"
+          type="text"
+          placeholder="Enter your username"
+          register={register}
+          errors={errors}
+          validation={{ required: "Username is required" }}
+        />
 
-				<InputField
-					label="Password"
-					name="password"
-					type="password"
-					placeholder="Enter your password"
-					register={register}
-					errors={errors}
-					validation={{ required: "Password is required" }}
-				/>
+        <InputField
+          label="Password"
+          name="password"
+          type="password"
+          placeholder="Enter your password"
+          register={register}
+          errors={errors}
+          validation={{ required: "Password is required" }}
+        />
 
-				<button
-					className="bg-justjio-secondary hover:bg-purple-900 text-white font-bold py-2 px-4 rounded-full mt-3"
-					form="login-form"
-				>
-					Submit
-				</button>
+        {errorStates[0] && (
+          <p className="text-error text-md font-semibold text-wrap text-center leading-tight">
+            {errorStates[0]}
+          </p>
+        )}
 
-				<p className="text-justjio-secondary text-center">
-					Don't have an account?{" "}
-					<Link to="/signup" className="underline cursor-pointer">
-						Sign Up
-					</Link>
-				</p>
+        <button
+          className={`bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full w-3/5 ${
+            errorStates[0] ? "" : "mt-3"
+          }`}
+          form="login-form"
+        >
+          {loadingStates[0] ? (
+            <Spinner
+              spinnerColor="border-white"
+              spinnerSize={{ width: "w-6", height: "h-6" }}
+            />
+          ) : (
+            "Login"
+          )}
+        </button>
 
-				{error && <p className="text-red-500 text-wrap text-center">{error}</p>}
-			</form>
-		</div>
-	);
+        <p className="text-secondary text-sm text-center leading-snug">
+          <Link to="/forgotPassword" className="underline cursor-pointer">
+            Forgot Password?
+          </Link>
+          <br />
+          Don't have an account?{" "}
+          <Link to="/signup" className="underline cursor-pointer">
+            Sign Up
+          </Link>
+        </p>
+
+        <p className="text-secondary font-bold text-center">OR</p>
+
+        <button
+          type="button"
+          className={`bg-white hover:bg-gray-100 text-black font-bold py-2 px-4 rounded-full w-4/5`}
+          onClick={loginWithGoogle}
+        >
+          {loadingStates[1] ? (
+            <Spinner
+              spinnerColor="border-black"
+              spinnerSize={{ width: "w-6", height: "h-6" }}
+            />
+          ) : (
+            <div className="flex items-center justify-between w-full">
+              <span>Login with Google</span> <GoogleIcon className="w-5 h-5" />
+            </div>
+          )}
+        </button>
+      </form>
+    </div>
+  );
 };
 
 export default LoginPage;

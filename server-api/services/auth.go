@@ -1,24 +1,27 @@
 package services
 
 import (
-	"crypto/rand"
-	"errors"
+	"context"
 	"fmt"
 	"log"
-	"net/smtp"
+	"math/rand"
 	"time"
 
 	"github.com/RowenTey/JustJio/config"
 	"github.com/RowenTey/JustJio/model"
 
 	"github.com/golang-jwt/jwt"
+
+	"golang.org/x/oauth2"
+	googleOAuth2 "google.golang.org/api/oauth2/v2"
+	"google.golang.org/api/option"
 )
 
 type AuthService struct {
-	HashFunc  func(password string) (string, error)
-	JwtSecret string
-	LoginAuth func(username, password string) smtp.Auth
-	SendMail  func(addr string, a smtp.Auth, from string, to []string, msg []byte) error
+	HashFunc      func(password string) (string, error)
+	JwtSecret     string
+	SendSMTPEmail func(from, to, subject, textBody string) error
+	OAuthConfig   *oauth2.Config
 }
 
 const TOKEN_EXPIRY_DURATION = time.Hour * 72 // 3 days
@@ -41,6 +44,7 @@ func (s *AuthService) CreateToken(user *model.User) (string, error) {
 	claims["username"] = user.Username
 	claims["user_id"] = user.ID
 	claims["user_email"] = user.Email
+	claims["picture_url"] = user.PictureUrl
 	claims["exp"] = time.Now().Add(TOKEN_EXPIRY_DURATION).Unix()
 
 	t, err := token.SignedString([]byte(s.JwtSecret))
@@ -50,45 +54,64 @@ func (s *AuthService) CreateToken(user *model.User) (string, error) {
 	return t, nil
 }
 
-func (s *AuthService) SendOTPEmail(ClientOTP *map[string]string, email string) error {
-	otp := s.GenerateOTP()
-	(*ClientOTP)[email] = otp
+func (s *AuthService) SendOTPEmail(otp, username, email, purpose string) error {
+	from := config.Config("ADMIN_EMAIL")
 
-	from := config.Config("OUTLOOK_EMAIL")
-	password := config.Config("OUTLOOK_PASSWORD")
-	to := []string{email}
-	smtpHost := "smtp-mail.outlook.com"
-	smtpPort := "587"
+	title := ""
+	message := []byte("")
+	if purpose == "verify-email" {
+		title = "JustJio Email Verification"
+		message = []byte("Welcome " + username + ",\r\n\r\n" +
+			"We are happy to see you signed up with JustJio.\r\n\r\n" +
+			"Your OTP is: " + otp)
+	} else if purpose == "reset-password" {
+		title = "JustJio Password Reset"
+		message = []byte("Hi " + username + ",\r\n\r\n" +
+			"Please use the following OTP to reset your password.\r\n\r\n" +
+			"Your OTP is: " + otp)
+	}
 
-	// outlook requires LOGIN auth
-	auth := s.LoginAuth(from, password)
-
-	message := []byte("To: " + email + "\r\n" +
-		"Subject: JustJio Email Verification\r\n" +
-		"\r\n" +
-		"Your OTP is: " + otp)
-
-	err := s.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
+	err := s.SendSMTPEmail(from, email, title, string(message))
 	if err != nil {
 		return err
 	}
+	log.Println("[AUTH] OTP send to " + email + " successfully!")
 	return nil
 }
 
-func (s *AuthService) VerifyOTP(ClientOTP *map[string]string, email string, otp string) error {
-	if (*ClientOTP)[email] != otp {
-		return errors.New("Invalid OTP")
-	}
-
-	delete(*ClientOTP, email)
-	return nil
+func (s *AuthService) VerifyOTP(storedOtp, email string, otp string) bool {
+	return storedOtp == otp
 }
 
 func (s *AuthService) GenerateOTP() string {
-	b := make([]byte, 6)
-	_, err := rand.Read(b)
+	// Seed the random number generator
+	rand.New(rand.NewSource(time.Now().Unix()))
+
+	// Generate a random number between 000000 and 999999
+	randomNumber := rand.Intn(1000000)
+
+	// Format as a zero-padded 6-digit string
+	return fmt.Sprintf("%06d", randomNumber)
+}
+
+func (s *AuthService) GetGoogleUser(code string) (*googleOAuth2.Userinfo, error) {
+	ctx := context.Background()
+	// Exchange code for token
+	token, err := s.OAuthConfig.Exchange(ctx, code)
 	if err != nil {
-		log.Println(err)
+		return nil, err
 	}
-	return fmt.Sprintf("%x", b)
+
+	service, err := googleOAuth2.NewService(
+		ctx, option.WithTokenSource(s.OAuthConfig.TokenSource(ctx, token)))
+	if err != nil {
+		return nil, err
+	}
+
+	userInfo, err := service.Userinfo.Get().Do()
+	if err != nil {
+		return nil, err
+	}
+
+	return userInfo, nil
 }

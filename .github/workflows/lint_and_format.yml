@@ -1,0 +1,113 @@
+name: Lint and Format
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  lint-and-format-react:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./client-web
+
+      - name: Lint React code
+        run: npm run lint
+        working-directory: ./client-web
+
+      - name: Format React code
+        run: npm run format
+        working-directory: ./client-web
+
+      - name: Check for changes
+        id: git-check-react
+        run: |
+          git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit changes
+        if: steps.git-check-react.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "style: Formatted code with prettier"
+
+      - name: Push changes
+        if: steps.git-check-react.outputs.changes == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
+
+  detect-go-modules:
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.set-modules.outputs.modules }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+      - id: set-modules
+        run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
+
+  lint-and-format-go:
+    runs-on: ubuntu-latest
+    needs: detect-go-modules
+    strategy:
+      matrix:
+        modules: ${{ fromJSON(needs.detect-go-modules.outputs.modules) }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+
+      - name: golangci-lint ${{ matrix.modules }}
+        uses: golangci/golangci-lint-action@v6
+        with:
+          args: --timeout=10m
+          version: v1.60
+          working-directory: ${{ matrix.modules }}
+
+      - name: Format Go code
+        run: |
+          gofmt -s -w ${{ matrix.modules }}
+
+      - name: Check for changes
+        id: git-check-go
+        run: |
+          git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit changes
+        if: steps.git-check-go.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "style: Formatted code with go formatter"
+
+      - name: Push changes
+        if: steps.git-check-go.outputs.changes == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}

@@ -9,6 +9,7 @@ import (
 	"github.com/RowenTey/JustJio/middleware"
 	"github.com/RowenTey/JustJio/router"
 	"github.com/RowenTey/JustJio/services"
+	"github.com/RowenTey/JustJio/worker"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
@@ -25,17 +26,31 @@ func main() {
 	// only load .env file if in dev environment
 	if env == "dev" {
 		log.Println("Loading .env file...")
-		godotenv.Load(".env")
+		if err := godotenv.Load(".env"); err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
+
+	notificationsChan := worker.RunPushNotification()
 
 	app := fiber.New()
 
 	database.ConnectDB()
 	if env == "dev" || env == "staging" {
-		services.SeedDB(database.DB)
+		if err := services.SeedDB(database.DB); err != nil {
+			log.Fatal("Error seeding database:", err)
+		}
 	}
 
-	middleware.Fiber(app)
-	router.Initalize(app)
+	kafkaService, err := services.NewKafkaService(config.Config("KAFKA_URL"), env)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer kafkaService.Close()
+
+	middleware.Fiber(app, config.Config("ALLOWED_ORIGINS"))
+	router.Initalize(app, kafkaService, notificationsChan)
+
+	log.Println("Server running on port", config.Config("PORT"))
 	log.Fatal(app.Listen(":" + config.Config("PORT")))
 }

@@ -1,9 +1,39 @@
 import { Outlet, Navigate } from "react-router-dom";
 import { useAuth } from "../context/auth";
+import { useEffect, useState } from "react";
+import { useUserCtx } from "../context/user";
+import Spinner from "../components/Spinner";
+import { setRedirectPath } from "../utils/redirect";
 
 const ProtectedRoutes = () => {
-	const { isAuthenticated } = useAuth();
-	return isAuthenticated() ? <Outlet /> : <Navigate to="/login" />;
+  const { isAuthenticated } = useAuth();
+  const { user } = useUserCtx();
+  const [allowed, setAllowed] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      setRedirectPath(window.location.pathname + window.location.search);
+      setAllowed(false);
+      setLoading(false);
+      return;
+    }
+
+    // Keep loading if user is still not set by UserContext yet
+    if (!user || !user.id || user.id === -1) {
+      setAllowed(false);
+      return;
+    }
+
+    setAllowed(true);
+    setLoading(false);
+  }, [user, isAuthenticated]);
+
+  if (loading) {
+    return <Spinner bgClass="bg-primary" />;
+  }
+
+  return allowed ? <Outlet /> : <Navigate to="/login" />;
 };
 
 export default ProtectedRoutes;

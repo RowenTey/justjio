@@ -1,44 +1,26 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/RowenTey/JustJio/database"
 	"github.com/RowenTey/JustJio/model/request"
+	"github.com/RowenTey/JustJio/model/response"
 	"github.com/RowenTey/JustJio/services"
 	"github.com/RowenTey/JustJio/util"
 
 	"github.com/gofiber/fiber/v2"
-	"gorm.io/gorm"
 )
 
 func GetUser(c *fiber.Ctx) error {
 	id := c.Params("userId")
 	user, err := (&services.UserService{DB: database.DB}).GetUserByID(id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(
-				c, fiber.StatusNotFound, fmt.Sprintf("No user found with ID %s", id), err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
 	return util.HandleSuccess(c, "User found successfully", user)
 }
 
-// UpdateUser godoc
-// @Summary      Update user attribute
-// @Description  Update user attribute with new value
-// @Tags         users
-// @Accept       json
-// @Produce      json
-// @Param        field   body      string  true  "Field"
-// @Param        value   body      string  true  "Value"
-// @Success      200  {object}  handlers.UpdateUser.UpdateUserInput
-// @Failure      400  {object}  nil
-// @Failure      401  {object}  nil
-// @Failure      404  {object}  nil
-// @Router       /users/{id} [patch]
 func UpdateUser(c *fiber.Ctx) error {
 	var request request.UpdateUserRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -46,174 +28,210 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 
 	id := c.Params("userId")
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 	err := userService.UpdateUserField(id, request.Field, request.Value)
 	if err != nil {
-		if err.Error() == fmt.Sprintf("User field %s not supported for update", request.Field) {
-			return util.HandleInvalidInputError(c, err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
 
 	return util.HandleSuccess(c, "User successfully updated", request)
 }
 
-// DeleteUser godoc
-// @Summary      Delete a user
-// @Description  Delete a user account
-// @Tags         users
-// @Accept       json
-// @Produce      json
-// @Param        password   body      handlers.DeleteUser.PasswordInput  true  "User Password"
-// @Success      200  {object}  nil
-// @Failure      400  {object}  nil
-// @Failure      401  {object}  nil
-// @Router       /users/{id} [delete]
 func DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("userId")
 
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 
 	err := userService.DeleteUser(id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(
-				c, fiber.StatusNotFound, fmt.Sprintf("No user found with ID %s", id), err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
 	return util.HandleSuccess(c, "User successfully deleted", nil)
 }
 
-// AddFriend godoc
-// @Summary      Add a friend
-// @Description  Add a friend to the user
-// @Tags         users
-// @Accept       json
-// @Produce      json
-// @Param        id         path      int  true  "User ID"
-// @Param        friend_id   body      string  true  "Friend ID"
-// @Success      200  {object}  nil
-// @Failure      400  {object}  nil
-// @Failure      404  {object}  nil
-// @Router       /users/{id}/friends [post]
-func AddFriend(c *fiber.Ctx) error {
-	userID := c.Params("userId")
-	var request struct {
-		FriendID string `json:"friend_id"`
+func SendFriendRequest(c *fiber.Ctx) error {
+	userID, err := c.ParamsInt("userId")
+	if err != nil {
+		return util.HandleInvalidInputError(c, err)
 	}
 
+	var request request.ModifyFriendRequest
 	if err := c.BodyParser(&request); err != nil {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.UserService{DB: database.DB}
-
-	if err := userService.AddFriend(userID, request.FriendID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+	userService := &services.UserService{DB: database.DB}
+	if err := userService.SendFriendRequest(uint(userID), request.FriendID); err != nil {
+		if err.Error() == "cannot send friend request to yourself" ||
+			err.Error() == "already friends" ||
+			err.Error() == "friend request already sent" {
 			return util.HandleError(
-				c, fiber.StatusNotFound, fmt.Sprintf("No user found with ID %s", userID), err)
+				c, fiber.StatusConflict, err.Error(), err)
 		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
 
-	return util.HandleSuccess(c, "Friend successfully added", nil)
+	return util.HandleSuccess(c, "Friend request sent", nil)
 }
 
-// RemoveFriend godoc
-// @Summary      Remove a friend
-// @Description  Remove a friend from the user
-// @Tags         users
-// @Accept       json
-// @Produce      json
-// @Param        id         path      int  true  "User ID"
-// @Param        friend_id   body      string  true  "Friend ID"
-// @Success      200  {object}  nil
-// @Failure      400  {object}  nil
-// @Failure      404  {object}  nil
-// @Router       /users/{id}/friends [delete]
 func RemoveFriend(c *fiber.Ctx) error {
-	userID := c.Params("userId")
-	var request struct {
-		FriendID string `json:"friend_id"`
-	}
-
-	if err := c.BodyParser(&request); err != nil {
+	userID, err := c.ParamsInt("userId")
+	if err != nil {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.UserService{DB: database.DB}
+	friendID, err := c.ParamsInt("friendId")
+	if err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
 
-	if err := userService.RemoveFriend(userID, request.FriendID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(
-				c, fiber.StatusNotFound, fmt.Sprintf("No user found with ID %s", userID), err)
-		}
+	tx := database.DB.Begin()
+
+	userService := &services.UserService{DB: tx}
+	if err := userService.RemoveFriend(uint(userID), uint(friendID)); err != nil {
+		tx.Rollback()
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
 		return util.HandleInternalServerError(c, err)
 	}
 
 	return util.HandleSuccess(c, "Friend successfully removed", nil)
 }
 
-// GetFriends godoc
-// @Summary      Get user friends
-// @Description  Get all friends of a user by ID
-// @Tags         users
-// @Accept       json
-// @Produce      json
-// @Param        id   path      int  true  "User ID"
-// @Success      200  {object}  []model.User
-// @Failure      404  {object}  nil
-// @Router       /users/{id}/friends [get]
 func GetFriends(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 
 	friends, err := userService.GetFriends(userID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(
-				c, fiber.StatusNotFound, fmt.Sprintf("No user found with ID %s", userID), err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
 
 	return util.HandleSuccess(c, "Friends retrieved successfully", friends)
 }
 
-// IsFriend godoc
-// @Summary      Check if users are friends
-// @Description  Check if two users are friends
-// @Tags         users
-// @Accept       json
-// @Produce      json
-// @Param        id         path      int  true  "User ID"
-// @Param        friend_id   body      string  true  "Friend ID"
-// @Success      200  {object}  map[string]bool
-// @Failure      400  {object}  nil
-// @Failure      404  {object}  nil
-// @Router       /users/{id}/friends/check [post]
 func IsFriend(c *fiber.Ctx) error {
-	userID := c.Params("userId")
-	var request struct {
-		FriendID string `json:"friend_id"`
+	userID, err := c.ParamsInt("userId")
+	if err != nil {
+		return util.HandleInvalidInputError(c, err)
 	}
 
+	var request request.ModifyFriendRequest
 	if err := c.BodyParser(&request); err != nil {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.UserService{DB: database.DB}
+	userService := &services.UserService{DB: database.DB}
 
-	isFriend, err := userService.IsFriend(userID, request.FriendID)
+	isFriend := userService.IsFriend(uint(userID), request.FriendID)
+
+	response := response.IsFriendResponse{
+		IsFriend: isFriend,
+	}
+	return util.HandleSuccess(c, "Friend check completed", response)
+}
+
+func GetNumFriends(c *fiber.Ctx) error {
+	userID := c.Params("userId")
+
+	userService := &services.UserService{DB: database.DB}
+
+	numFriends, err := userService.GetNumFriends(userID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return util.HandleError(
-				c, fiber.StatusNotFound, fmt.Sprintf("No user found with ID %s", userID), err)
-		}
-		return util.HandleInternalServerError(c, err)
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
 
-	return util.HandleSuccess(c, "Friend check completed", map[string]bool{"isFriend": isFriend})
+	response := response.GetNumFriendsResponse{
+		NumFriends: numFriends,
+	}
+	return util.HandleSuccess(c, "Number of friends retrieved successfully", response)
+}
+
+func SearchFriends(c *fiber.Ctx) error {
+	userID := c.Params("userId")
+	query := c.Query("query")
+
+	userService := &services.UserService{DB: database.DB}
+
+	friends, err := userService.SearchUsers(userID, query)
+	if err != nil {
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
+	}
+
+	return util.HandleSuccess(c, "Friends retrieved successfully", friends)
+}
+
+func GetFriendRequestsByStatus(c *fiber.Ctx) error {
+	userID, err := c.ParamsInt("userId")
+	if err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
+
+	status := c.Query("status")
+	userService := &services.UserService{DB: database.DB}
+
+	requests, err := userService.GetFriendRequestsByStatus(uint(userID), status)
+	if err != nil {
+		if err.Error() == "invalid status" {
+			return util.HandleInvalidInputError(c, err)
+		}
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
+	}
+
+	return util.HandleSuccess(c, "Friend requests retrieved successfully", requests)
+}
+
+func CountPendingFriendRequests(c *fiber.Ctx) error {
+	userID, err := c.ParamsInt("userId")
+	if err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
+
+	userService := &services.UserService{DB: database.DB}
+
+	count, err := userService.CountPendingFriendRequests(uint(userID))
+	if err != nil {
+		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
+	}
+
+	response := response.CountPendingRequestsResponse{
+		Count: count,
+	}
+	return util.HandleSuccess(c, "Pending friend requests counted successfully", response)
+}
+
+func RespondToFriendRequest(c *fiber.Ctx) error {
+	var request request.RespondToFriendRequestRequest
+	if err := c.BodyParser(&request); err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
+
+	userService := &services.UserService{DB: database.DB}
+
+	switch request.Action {
+	case "accept":
+		if err := userService.AcceptFriendRequest(uint(request.RequestID)); err != nil {
+			if err.Error() == "friend request already processed" {
+				return util.HandleError(
+					c, fiber.StatusConflict, err.Error(), err)
+			}
+			return util.HandleNotFoundOrInternalError(c, err, "Error processing friend request")
+		}
+		return util.HandleSuccess(c, "Friend request accepted successfully", nil)
+	case "reject":
+		if err := userService.RejectFriendRequest(uint(request.RequestID)); err != nil {
+			if err.Error() == "friend request already processed" {
+				return util.HandleError(
+					c, fiber.StatusConflict, err.Error(), err)
+			}
+			return util.HandleNotFoundOrInternalError(c, err, "Error processing friend request")
+		}
+		return util.HandleSuccess(c, "Friend request rejected successfully", nil)
+	default:
+		return util.HandleInvalidInputError(c, fmt.Errorf("invalid action: must be 'accept' or 'reject'"))
+	}
 }

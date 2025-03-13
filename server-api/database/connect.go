@@ -30,12 +30,15 @@ func ConnectDB() {
 
 	err = DB.AutoMigrate(
 		&model.User{},
+		&model.FriendRequest{},
 		&model.Room{},
 		&model.RoomInvite{},
 		&model.Bill{},
 		&model.Consolidation{},
 		&model.Transaction{},
 		&model.Message{},
+		&model.Notification{},
+		&model.Subscription{},
 	)
 	if err != nil {
 		log.Println("[DB] Migration failed: ", err.Error())

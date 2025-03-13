@@ -1,22 +1,61 @@
 import { useState } from "react";
 
-const useLoadingAndError = () => {
-	const [loading, setLoading] = useState<boolean>(false);
-	const [error, setError] = useState<string | null>(null);
+const useLoadingAndError = (count: number = 1) => {
+  const [loadingStates, setLoadingStates] = useState<boolean[]>(
+    new Array(count).fill(false),
+  );
+  const [errorStates, setErrorStates] = useState<string[]>(
+    new Array(count).fill(""),
+  );
 
-	const startLoading = () => setLoading(true);
-	const stopLoading = () => setLoading(false);
-	const setErrorMsg = (msg: string) => setError(msg);
-	const clearError = () => setError(null);
+  const startLoading = (index: number = 0) => {
+    if (index >= 0 && index < count) {
+      setLoadingStates((prev) => {
+        const newStates = [...prev];
+        newStates[index] = true;
+        return newStates;
+      });
+    }
+  };
 
-	return {
-		loading,
-		error,
-		startLoading,
-		stopLoading,
-		setErrorMsg,
-		clearError,
-	};
+  const stopLoading = (index: number = 0) => {
+    if (index >= 0 && index < count) {
+      setLoadingStates((prev) => {
+        const newStates = [...prev];
+        newStates[index] = false;
+        return newStates;
+      });
+    }
+  };
+
+  const setErrorMsg = (msg: string, index: number = 0) => {
+    if (index >= 0 && index < count) {
+      setErrorStates((prev) => {
+        const newStates = [...prev];
+        newStates[index] = msg;
+        return newStates;
+      });
+    }
+  };
+
+  const clearError = (index: number = 0) => {
+    if (index >= 0 && index < count) {
+      setErrorStates((prev) => {
+        const newStates = [...prev];
+        newStates[index] = "";
+        return newStates;
+      });
+    }
+  };
+
+  return {
+    loadingStates,
+    errorStates,
+    startLoading,
+    stopLoading,
+    setErrorMsg,
+    clearError,
+  };
 };
 
 export default useLoadingAndError;

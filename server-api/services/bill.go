@@ -25,7 +25,7 @@ func (bs *BillService) CreateBill(
 	db := bs.DB.Table("bills")
 
 	if len(*payers) == 0 {
-		return nil, errors.New("Payers of a bill can't be empty")
+		return nil, errors.New("payers of a bill can't be empty")
 	}
 
 	bill := model.Bill{
@@ -34,13 +34,12 @@ func (bs *BillService) CreateBill(
 		Date:         time.Now(),
 		IncludeOwner: includeOwner,
 		RoomID:       room.ID,
-		Owner:        *owner,
 		OwnerID:      owner.ID,
 		Payers:       *payers,
 	}
 
 	// Omit to avoid creating new room and set consolidation to null
-	if err := db.Omit("Room").Create(&bill).Error; err != nil {
+	if err := db.Debug().Omit("Room", "Owner").Create(&bill).Error; err != nil {
 		return nil, err
 	}
 
@@ -48,15 +47,15 @@ func (bs *BillService) CreateBill(
 	return &bill, nil
 }
 
-func (bs *BillService) GetBillById(billId uint) (model.Bill, error) {
+func (bs *BillService) GetBillById(billId uint) (*model.Bill, error) {
 	db := bs.DB.Table("bills")
 	var bill model.Bill
 
 	if err := db.Where("id = ?", billId).First(&bill).Error; err != nil {
-		return model.Bill{}, err
+		return &model.Bill{}, err
 	}
 
-	return bill, nil
+	return &bill, nil
 }
 
 func (bs *BillService) GetBillsForRoom(roomId string) (*[]model.Bill, error) {

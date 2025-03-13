@@ -41,7 +41,6 @@ func forEachConnection(key string, conns *sync.Map) func(func(*websocket.Conn)) 
 		// k -> connID
 		// v -> ws.Conn
 		conns.Range(func(k, v interface{}) bool {
-			log.Printf("(%s, %s) - callback\n", key, k)
 			callback(v.(*websocket.Conn))
 			return true
 		})
@@ -49,16 +48,20 @@ func forEachConnection(key string, conns *sync.Map) func(func(*websocket.Conn)) 
 }
 
 // HOF to remove a connection from a map
-func onRemove(key, connId string, outer, inner *atomicSyncMap) func(func()) {
-	return func(onInnerEmptycallback func()) {
-		log.Printf("(%s, %s) - remove\n", key, connId)
+func onRemove(key, connId string, outer, inner *atomicSyncMap) func(func()) bool {
+	return func(onInnerEmptycallback func()) bool {
 		inner.Remove(connId)
+		log.Println("[ConnMap] Removed connection by user ", key)
+
 		if inner.Len() == 0 {
-			log.Printf("(%s, %s) - empty\n", key, connId)
 			// unsubscribe from Kafka for this user
 			onInnerEmptycallback()
 			outer.Remove(key)
+			log.Println("[ConnMap] Removed user ", key, " from connMap")
+			return true
 		}
+
+		return false
 	}
 }
 
@@ -67,23 +70,21 @@ type ConnMap struct {
 	outer atomicSyncMap
 }
 
-func (cm *ConnMap) Add(key string, conn *websocket.Conn) (func(func(*websocket.Conn)), func(func()), bool) {
+func (cm *ConnMap) Add(key string, conn *websocket.Conn) (func(func(*websocket.Conn)), func(func()) bool, bool) {
 	connId := uuid.New().String() // Generate unique ID using Go's uuid package
 
 	// connId -> ws.Conn
 	var inner *atomicSyncMap
-	var isInit bool
+	isInit := false
 
 	if value, ok := cm.outer.m.Load(key); ok {
 		inner = value.(*atomicSyncMap)
 		inner.Add(connId, conn)
-		log.Printf("(%s, %s) - add\n", key, connId)
 	} else {
 		inner = newAtomicSyncMap()
 		inner.Add(connId, conn)
 		cm.outer.Add(key, inner)
 		isInit = true
-		log.Printf("(%s, %s) - init\n", key, connId)
 	}
 
 	return forEachConnection(key, inner.m), onRemove(key, connId, &cm.outer, inner), isInit

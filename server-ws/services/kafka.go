@@ -1,23 +1,32 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"log"
 
+	"github.com/RowenTey/JustJio/server-ws/utils"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type KafkaService struct {
 	Consumer *kafka.Consumer
 	Config   *kafka.ConfigMap
+	ctx      context.Context
+	cancel   context.CancelFunc
 }
 
-func GetChannel(userId string) string {
-	return fmt.Sprintf("user-%s", userId)
+func GetUserChannel(userId, env string) string {
+	channel := fmt.Sprintf("user-%s", userId)
+	if env == "dev" || env == "staging" {
+		channel = fmt.Sprintf("%s-%s", env, channel)
+	}
+	channel = fmt.Sprintf("%s-%s", utils.Config("KAFKA_TOPIC_PREFIX"), channel)
+	return channel
 }
 
 // Creates a new KafkaService instance
-func NewKafkaService(brokers string, groupId string) (*KafkaService, error) {
+func NewKafkaService(brokers, groupId string) (*KafkaService, error) {
 	config := &kafka.ConfigMap{
 		"bootstrap.servers":       brokers,
 		"group.id":                groupId,
@@ -32,42 +41,56 @@ func NewKafkaService(brokers string, groupId string) (*KafkaService, error) {
 		return nil, err
 	}
 
-	return &KafkaService{Consumer: consumer, Config: config}, nil
+	ctx, cancel := context.WithCancel(context.Background())
+
+	return &KafkaService{Consumer: consumer, Config: config, ctx: ctx, cancel: cancel}, nil
 }
 
 // Subscribes to a list of Kafka topics
 func (s *KafkaService) Subscribe(topics []string) error {
 	err := s.Consumer.SubscribeTopics(topics, nil)
 	if err != nil {
-		return fmt.Errorf("Failed to subscribe to topics: %w", err)
+		return fmt.Errorf("failed to subscribe to topics: %w", err)
 	}
-	log.Printf("Subscribed to topics: %v\n", topics)
+	log.Printf("[Kafka] Subscribed to topics: %v\n", topics)
 	return nil
 }
 
 // Unsubscribes from Kafka topics
 func (s *KafkaService) Unsubscribe() error {
+	// signal to stop consuming messages
+	s.cancel()
+
 	err := s.Consumer.Unsubscribe()
 	if err != nil {
-		return fmt.Errorf("Failed to unsubscribe from topics: %w", err)
+		return fmt.Errorf("failed to unsubscribe from topics: %w", err)
 	}
-	log.Println("Unsubscribed from topics")
+	log.Println("[Kafka] Unsubscribed from topics")
 	return nil
 }
 
 // Consumes messages from subscribed topics in a loop
-func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) error {
+func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) {
 	for {
-		msg, err := s.Consumer.ReadMessage(-1)
-		if err != nil {
-			log.Printf("Error consuming messages: %v\n", err)
-			return nil
+		select {
+		case <-s.ctx.Done():
+			log.Println("[Kafka] Stopping message consumption")
+			return
+		default:
+			msg, err := s.Consumer.ReadMessage(1)
+			if err != nil && err.(kafka.Error).Code() == kafka.ErrTimedOut {
+				continue
+			} else if err != nil {
+				log.Printf("[Kafka] Failed to consume message: %s", err.Error())
+				return
+			}
+			log.Printf("[Kafka] Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
+			handler(*msg)
 		}
-		handler(*msg)
 	}
 }
 
 func (s *KafkaService) Close() {
-	log.Println("Closing Kafka client")
+	log.Println("[Kafka] Closing Kafka client")
 	s.Consumer.Close()
 }

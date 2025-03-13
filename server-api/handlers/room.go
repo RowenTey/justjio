@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 
 	"github.com/RowenTey/JustJio/database"
@@ -9,6 +10,7 @@ import (
 	"github.com/RowenTey/JustJio/model/response"
 	"github.com/RowenTey/JustJio/services"
 	"github.com/RowenTey/JustJio/util"
+	"gorm.io/gorm"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
@@ -38,6 +40,21 @@ func GetRooms(c *fiber.Ctx) error {
 	}
 
 	return util.HandleSuccess(c, "Retrieved rooms successfully", rooms)
+}
+
+func GetNumRooms(c *fiber.Ctx) error {
+	token := c.Locals("user").(*jwt.Token)
+	userId := util.GetUserInfoFromToken(token, "user_id")
+
+	roomService := &services.RoomService{DB: database.DB}
+
+	numRooms, err := roomService.GetNumRooms(userId)
+	if err != nil {
+		return util.HandleNotFoundOrInternalError(c, err, "No rooms found")
+	}
+
+	response := response.GetNumRoomsResponse{Count: int(numRooms)}
+	return util.HandleSuccess(c, "Retrieved number of rooms successfully", response)
 }
 
 func GetRoomInvitations(c *fiber.Ctx) error {
@@ -82,6 +99,20 @@ func GetRoomAttendees(c *fiber.Ctx) error {
 	return util.HandleSuccess(c, "Retrieved room attendees successfully", attendees)
 }
 
+func GetUninvitedFriendsForRoom(c *fiber.Ctx) error {
+	token := c.Locals("user").(*jwt.Token)
+	userId := util.GetUserInfoFromToken(token, "user_id")
+	roomId := c.Params("roomId")
+
+	roomService := &services.RoomService{DB: database.DB}
+	friends, err := roomService.GetUninvitedFriendsForRoom(roomId, userId)
+	if err != nil {
+		return util.HandleNotFoundOrInternalError(c, err, "No uninvited friends found")
+	}
+
+	return util.HandleSuccess(c, "Retrieved uninvited friends successfully", friends)
+}
+
 func CreateRoom(c *fiber.Ctx) error {
 	var request request.CreateRoomRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -92,7 +123,9 @@ func CreateRoom(c *fiber.Ctx) error {
 	userId := util.GetUserInfoFromToken(token, "user_id")
 
 	var inviteesIds []string
-	json.Unmarshal([]byte(request.InviteesId), &inviteesIds)
+	if err := json.Unmarshal([]byte(request.InviteesId), &inviteesIds); err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
 
 	tx := database.DB.Begin()
 
@@ -143,16 +176,61 @@ func CloseRoom(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := util.GetUserInfoFromToken(token, "user_id")
 
-	err := (&services.RoomService{DB: database.DB}).CloseRoom(roomId, userId)
-	if err != nil {
-		if err.Error() == "User is not the host of the room" {
-			return util.HandleError(
-				c, fiber.StatusUnauthorized, "Only hosts are allowed to close rooms", err)
-		}
+	// check if they are unconsolidated bills
+	consolidated, err := (&services.BillService{DB: database.DB}).IsRoomBillConsolidated(roomId)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return util.HandleInternalServerError(c, err)
 	}
 
+	if !consolidated {
+		return util.HandleError(
+			c, fiber.StatusConflict, "Cannot close room with unconsolidated bills", nil)
+	}
+
+	err = (&services.RoomService{DB: database.DB}).CloseRoom(roomId, userId)
+	if err != nil {
+		if err.Error() == "user is not the host of the room" {
+			return util.HandleError(
+				c, fiber.StatusUnauthorized, "Only hosts are allowed to close rooms", err)
+		}
+		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
+	}
+
 	return util.HandleSuccess(c, "Closed room successfully", nil)
+}
+
+func JoinRoom(c *fiber.Ctx) error {
+	token := c.Locals("user").(*jwt.Token)
+	userId := util.GetUserInfoFromToken(token, "user_id")
+	roomId := c.Params("roomId")
+
+	roomService := &services.RoomService{DB: database.DB}
+
+	err := roomService.JoinRoom(roomId, userId)
+	if err != nil {
+		if err.Error() == "user is already in room" {
+			return util.HandleError(c, fiber.StatusConflict, "User is already in room", err)
+		}
+		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
+	}
+
+	room, err := roomService.GetRoomById(roomId)
+	if err != nil {
+		return util.HandleInternalServerError(c, err)
+	}
+
+	attendees, err := roomService.GetRoomAttendees(roomId)
+	if err != nil {
+		return util.HandleInternalServerError(c, err)
+	}
+
+	roomResponse := response.JoinRoomResponse{
+		Room:      *room,
+		Attendees: *attendees,
+	}
+
+	log.Println("User " + util.GetUserInfoFromToken(token, "username") + " joined Room " + roomId + " successfully.")
+	return util.HandleSuccess(c, "Joined room successfully", roomResponse)
 }
 
 func RespondToRoomInvite(c *fiber.Ctx) error {
@@ -174,7 +252,7 @@ func RespondToRoomInvite(c *fiber.Ctx) error {
 
 	err := roomService.UpdateRoomInviteStatus(roomId, userId, status)
 	if err != nil {
-		return util.HandleNotFoundOrInternalError(c, err, "Room found")
+		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
 	if status == "rejected" {
@@ -212,7 +290,9 @@ func InviteUser(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 
 	var inviteesIds []string
-	json.Unmarshal([]byte(request.InviteesId), &inviteesIds)
+	if err := json.Unmarshal([]byte(request.InviteesId), &inviteesIds); err != nil {
+		return util.HandleInvalidInputError(c, err)
+	}
 
 	tx := database.DB.Begin()
 
@@ -229,11 +309,15 @@ func InviteUser(c *fiber.Ctx) error {
 	}
 
 	roomInvites, err := (&services.RoomService{DB: tx}).InviteUserToRoom(
-		roomId, user, invitees, "You have been invited to join this room")
+		roomId, user, invitees, request.Message)
 	if err != nil {
 		tx.Rollback()
-		if err.Error() == "User is not the host of the room" {
+		if err.Error() == "user is not the host of the room" {
 			return util.HandleError(c, fiber.StatusUnauthorized, "Only hosts are allowed to invite users", err)
+		} else if err.Error() == "user is already in the room" {
+			return util.HandleError(c, fiber.StatusConflict, "User is already in the room", err)
+		} else if err.Error() == "user already has pending invite" {
+			return util.HandleError(c, fiber.StatusConflict, "User already has pending invite", err)
 		}
 		return util.HandleNotFoundOrInternalError(c, err, "Room / User not found")
 	}
@@ -247,21 +331,23 @@ func InviteUser(c *fiber.Ctx) error {
 }
 
 func LeaveRoom(c *fiber.Ctx) error {
-	var err error
 	token := c.Locals("user").(*jwt.Token)
 	userId := util.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	tx := database.DB.Begin()
-	err = (&services.RoomService{DB: tx}).RemoveUserFromRoom(roomId, userId)
-	if err != nil {
-		tx.Rollback()
-		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
+	consolidated, err := (&services.BillService{DB: database.DB}).IsRoomBillConsolidated(roomId)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return util.HandleInternalServerError(c, err)
 	}
 
-	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
-		return util.HandleInternalServerError(c, err)
+	if !consolidated {
+		return util.HandleError(
+			c, fiber.StatusConflict, "Cannot leave room with unconsolidated bills", nil)
+	}
+
+	// TODO: check that user is not the host of the room
+	if err := (&services.RoomService{DB: database.DB}).RemoveUserFromRoom(roomId, userId); err != nil {
+		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
 	return util.HandleSuccess(c, "Left room successfully", nil)

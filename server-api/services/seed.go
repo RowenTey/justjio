@@ -22,6 +22,8 @@ func SeedDB(db *gorm.DB) error {
 
 	userService := UserService{DB: db}
 	roomService := RoomService{DB: db}
+	billService := BillService{DB: db}
+	transactionService := TransactionService{DB: db}
 
 	// create users
 	users := []model.User{
@@ -31,7 +33,10 @@ func SeedDB(db *gorm.DB) error {
 		{Username: "eldrick", Password: "Eldrick123!", Email: "eldrick123@test.com"},
 		{Username: "kaiseong", Password: "Ks12345!", Email: "ks123@test.com"},
 		{Username: "aloysius", Password: "Aloysius12345!", Email: "aloysius123@test.com"},
+		{Username: "test", Password: "Test12345!", Email: "test@test.com"},
+		{Username: "happy", Password: "Happy12345!", Email: "happy@test.com"},
 	}
+
 	for i, u := range users {
 		hashedPassword, err := util.HashPassword(u.Password)
 		if err != nil {
@@ -47,6 +52,9 @@ func SeedDB(db *gorm.DB) error {
 		log.Println("[SEED] User created:\n", users[i])
 	}
 
+	// Remove test user from users
+	users = users[:len(users)-2]
+
 	for _, u := range users {
 		// create friends
 		for _, f := range users {
@@ -54,12 +62,25 @@ func SeedDB(db *gorm.DB) error {
 				continue
 			}
 
-			userIdStr := strconv.FormatUint(uint64(u.ID), 10)
-			friendIdStr := strconv.FormatUint(uint64(f.ID), 10)
-
-			err := userService.AddFriend(userIdStr, friendIdStr)
+			err := userService.SendFriendRequest(u.ID, f.ID)
 			if err != nil {
-				return err
+				log.Println("[SEED] Error sending friend request: ", err)
+				continue
+			}
+		}
+
+		// accept friend requests
+		requests, err := userService.GetFriendRequestsByStatus(u.ID, "pending")
+		if err != nil {
+			log.Println("[SEED] Error getting friend requests: ", err)
+			continue
+		}
+
+		for _, r := range *requests {
+			err := userService.AcceptFriendRequest(r.ID)
+			if err != nil {
+				log.Println("[SEED] Error accepting friend request: ", err)
+				continue
 			}
 		}
 	}
@@ -67,9 +88,12 @@ func SeedDB(db *gorm.DB) error {
 	// create rooms
 	rooms := []model.Room{
 		{Name: "ks birthday", Date: time.Date(2022, time.September, 4, 0, 0, 0, 0, time.UTC), Time: "5:00pm", Venue: "ntu hall 9"},
-		{Name: "harish birthday", Date: time.Date(2022, time.October, 4, 0, 0, 0, 0, time.UTC), Time: "6:00pm", Venue: "clementi mall"},
-		{Name: "amabel birthday", Date: time.Date(2022, time.November, 4, 0, 0, 0, 0, time.UTC), Time: "9:00am", Venue: "marina bay sand"},
+		{Name: "harish birthday", Date: time.Date(2022, time.October, 8, 0, 0, 0, 0, time.UTC), Time: "6:00pm", Venue: "clementi mall"},
+		{Name: "amabel birthday", Date: time.Date(2022, time.November, 12, 0, 0, 0, 0, time.UTC), Time: "9:00am", Venue: "marina bay sand"},
+		{Name: "everyone birthday", Date: time.Date(2022, time.January, 7, 0, 0, 0, 0, time.UTC), Time: "10:00am", Venue: "pulau ubin"},
+		{Name: "mom birthday", Date: time.Date(2022, time.February, 28, 0, 0, 0, 0, time.UTC), Time: "11:00am", Venue: "batam"},
 	}
+
 	for i, r := range rooms {
 		host := users[rand.Intn(len(users))]
 		log.Println("[SEED] User selected as host:\n", host)
@@ -91,6 +115,62 @@ func SeedDB(db *gorm.DB) error {
 
 		_, err = roomService.InviteUserToRoom(
 			rooms[i].ID, &host, &invitees, "Join my party!")
+		if err != nil {
+			log.Fatalf("%s", err.Error())
+			return err
+		}
+
+		// only accept invite for first and second room
+		if i == 2 {
+			continue
+		}
+
+		// accept invite
+		for _, u := range invitees {
+			err := roomService.UpdateRoomInviteStatus(rooms[i].ID, strconv.FormatUint(uint64(u.ID), 10), "accepted")
+			if err != nil {
+				log.Fatalf("%s", err.Error())
+				return err
+			}
+		}
+
+		// only create bills for first room
+		if i != 0 {
+			continue
+		}
+
+		// create bill
+		for j, u := range invitees {
+			var payers = []model.User{}
+			for _, p := range invitees {
+				if p.ID == u.ID {
+					continue
+				}
+				payers = append(payers, p)
+			}
+
+			_, err := billService.CreateBill(&rooms[i], &u, "food", float32(j+10)*10, true, &payers)
+			if err != nil {
+				log.Fatalf("%s", err.Error())
+				return err
+			}
+
+			_, err = billService.CreateBill(&rooms[i], &u, "drinks", rand.Float32()*100, false, &payers)
+			if err != nil {
+				log.Fatalf("%s", err.Error())
+				return err
+			}
+		}
+
+		// consolidate bills for this room
+		consolidation, err := billService.ConsolidateBills(rooms[i].ID)
+		if err != nil {
+			log.Fatalf("%s", err.Error())
+			return err
+		}
+
+		// generate transactions for this room
+		err = transactionService.GenerateTransactions(consolidation)
 		if err != nil {
 			log.Fatalf("%s", err.Error())
 			return err

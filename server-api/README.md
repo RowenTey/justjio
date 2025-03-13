@@ -1,12 +1,12 @@
-# JustJio-Server
+# JustJio-API-Server
 
-> Server-side code for JustJio
+> REST API Server for JustJio
 
 ![server-landing](../client/assets/gifs/JustJio-Server.gif)
 
 ## 🛠 Getting Started
 
-> From your command line go to the project server directory and run the following scripts in the terminal.
+> Make sure you're at the `server-api` directory and run the following scripts in the terminal.
 
 1\. Install dependencies
 
@@ -23,7 +23,7 @@ copy .env.example .env
 3\. Run the code
 
 ```terminal
-air
+air dev
 ```
 
 or if you don't have `air` installed
@@ -38,13 +38,15 @@ go run main.go dev
 
 ```terminal
 .
-├── config
-├── database
-├── handlers
-├── middleware
-├── model
-├── router
-├── main.go
+├── config/            # configurations
+├── database/          # global DB object
+├── handlers/          # API handlers
+├── middleware/        # middleware logic
+├── model/             # model & DTOs
+├── router/            # API routing
+├── main.go            # driver code
+├── Dockerfile
+├── .env.example
 ├── go.mod
 ├── go.sum
 └── README.md
