@@ -37,11 +37,14 @@ jobs:
           script: |
             const conclusion = '${{ steps.test-step.outcome }}';
 
-            // Only create check if we're in a PR context
-            if (context.payload.pull_request) {
+            // Check if this workflow was triggered by another workflow in a PR context
+            if (context.payload.workflow_run) {
+              // Get the head_sha from the workflow that triggered this one
+              const headSha = context.payload.workflow_run.head_sha;
+              
               await github.rest.checks.create({
                 name: 'Unit Tests',
-                head_sha: context.payload.pull_request.head.sha,
+                head_sha: headSha,
                 status: 'completed',
                 conclusion: conclusion,
                 output: {
