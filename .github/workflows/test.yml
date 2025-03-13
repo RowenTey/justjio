@@ -22,7 +22,7 @@ jobs:
             const headSha = context.payload.workflow_run.head_sha;
 
             await github.rest.checks.create({
-              name: 'unit_tests',
+              name: 'run-unit-tests',
               head_sha: headSha,
               status: 'in_progress',
               output: {
@@ -67,7 +67,7 @@ jobs:
             const headSha = context.payload.workflow_run.head_sha;
 
             await github.rest.checks.create({
-              name: 'unit_tests',
+              name: 'run-unit-tests',
               head_sha: headSha,
               status: 'completed',
               conclusion: conclusion,
