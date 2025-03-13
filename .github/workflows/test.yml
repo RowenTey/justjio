@@ -3,12 +3,9 @@ name: Run Unit Tests
 on:
   workflow_dispatch:
   workflow_run:
-    workflows: ["Lint and Format"]
+    workflows: [Lint and Format]
     types:
       - completed
-    branches:
-      - main
-      - dev
 
 jobs:
   test-server-api:
