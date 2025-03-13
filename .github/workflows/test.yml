@@ -1,11 +1,11 @@
 name: Run Unit Tests
 
 on:
-  workflow_dispatch:
   workflow_run:
     workflows: [Lint and Format]
     types:
       - completed
+  workflow_dispatch:
 
 jobs:
   test-server-api:
