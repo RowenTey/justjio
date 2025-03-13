@@ -51,6 +51,7 @@ jobs:
         id: test-step
         run: cd server-api && go test -v ./...
 
+      # custom script to create a check run
       - name: Report test results
         if: ${{ github.event.workflow_run != null && steps.test-step.outcome != null }}
         uses: actions/github-script@v7
