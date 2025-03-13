@@ -17,6 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          # only checkout the docker compose file
           sparse-checkout: |
             docker-compose-staging.yml
           sparse-checkout-cone-mode: false
