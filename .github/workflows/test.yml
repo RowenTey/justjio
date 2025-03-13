@@ -12,6 +12,28 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     steps:
+      - name: Create check
+        if: ${{ github.event.workflow_run != null }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Get the head_sha from the workflow that triggered this one
+            const headSha = context.payload.workflow_run.head_sha;
+
+            await github.rest.checks.create({
+              name: 'Unit Tests',
+              head_sha: headSha,
+              status: 'in_progress',
+              output: {
+                title: 'Unit Test Results',
+                summary: ''
+              },
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            console.log("Created check");
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -30,28 +52,26 @@ jobs:
         run: cd server-api && go test -v ./...
 
       - name: Report test results
-        if: always()
+        if: ${{ github.event.workflow_run != null && steps.test-step.outcome != null }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const conclusion = '${{ steps.test-step.outcome }}';
 
-            // Check if this workflow was triggered by another workflow in a PR context
-            if (context.payload.workflow_run) {
-              // Get the head_sha from the workflow that triggered this one
-              const headSha = context.payload.workflow_run.head_sha;
-              
-              await github.rest.checks.create({
-                name: 'Unit Tests',
-                head_sha: headSha,
-                status: 'completed',
-                conclusion: conclusion,
-                output: {
-                  title: 'Unit Test Results',
-                  summary: `Tests completed with status: ${conclusion}`
-                }
-              });
-            } else {
-              console.log('Not running in PR context, skipping check creation');
-            }
+            // Get the head_sha from the workflow that triggered this one
+            const headSha = context.payload.workflow_run.head_sha;
+
+            await github.rest.checks.create({
+              name: 'Unit Tests',
+              head_sha: headSha,
+              status: 'completed',
+              conclusion: conclusion,
+              output: {
+                title: 'Unit Test Results',
+                summary: `Tests completed with status: ${conclusion}`
+              },
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            console.log("Updated check with conclusion: " + conclusion);
