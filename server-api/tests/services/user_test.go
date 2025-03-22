@@ -57,7 +57,7 @@ func (s *UserServiceTestSuite) SetupTest() {
 	})
 	assert.NoError(s.T(), err)
 
-	s.userService = &services.UserService{DB: s.DB}
+	s.userService = services.NewUserService(s.DB)
 }
 
 func (s *UserServiceTestSuite) AfterTest(_, _ string) {

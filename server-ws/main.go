@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server-ws/services"
 	"github.com/RowenTey/JustJio/server-ws/utils"
@@ -29,7 +30,7 @@ func isAllowedOrigins(c *fiber.Ctx) error {
 	if origin == "" {
 		return c.Status(403).SendString("Forbidden")
 	}
-	log.Println("[CORS] Origin:", origin)
+	log.WithField("service", "CORS").Debug("Origin:", origin)
 
 	allowedOrigins := strings.Split(utils.Config("ALLOWED_ORIGINS"), ",")
 	for _, allowedOrigin := range allowedOrigins {
@@ -64,6 +65,8 @@ func main() {
 		}
 	}
 
+	log.Info("Starting WS server...")
+
 	app := fiber.New()
 	connMap := utils.NewConnMap()
 
@@ -82,13 +85,13 @@ func main() {
 	app.Get("/", webSocketUpgrade, isAllowedOrigins, websocket.New(func(c *websocket.Conn) {
 		user, err := services.GetCurrentUser(c)
 		if err != nil {
-			log.Println("[AUTH] ", err)
+			log.WithField("service", "AUTH").Error(err)
 
 			if err := c.WriteJSON(fiber.Map{
 				"status": "Unauthorized",
 				"error":  err.Error(),
 			}); err != nil {
-				log.Println("[WebSocket] Error writing JSON:", err)
+				log.WithField("service", "WebSocket").Error("Error writing JSON:", err)
 			}
 
 			c.Close()
@@ -102,11 +105,11 @@ func main() {
 
 		onMessage := func(message kafka.Message) {
 			forAllConns(func(conn *websocket.Conn) {
-				log.Println("[WebSocket] Sending message to", user.ID)
+				log.WithField("service", "WebSocket").Info("Sending message to", user.ID)
 				if err := conn.WriteMessage(websocket.TextMessage, []byte(message.Value)); err != nil {
-					log.Println("[WebSocket] WebSocket Error:", err)
+					log.WithField("service", "WebSocket").Error("WebSocket Error:", err)
 				}
-				log.Println("[WebSocket] Sent message to", user.ID)
+				log.WithField("service", "WebSocket").Info("Sent message to", user.ID)
 			})
 		}
 
@@ -114,18 +117,18 @@ func main() {
 		if isInit {
 			kafkaClient, err = services.NewKafkaService(utils.Config("KAFKA_URL"), consumerName)
 			if err != nil {
-				log.Fatal(err)
+				log.WithField("service", "Kafka").Fatal(err)
 			}
 
 			channel = services.GetUserChannel(user.ID, env)
-			log.Println("[Kafka] Channel: ", channel)
+			log.WithField("service", "Kafka").Info("Channel: ", channel)
 
 			userKafkaClients[user.ID] = &UserKafkaClient{
 				client: kafkaClient,
 			}
 
 			if err := kafkaClient.Subscribe([]string{channel}); err != nil {
-				log.Println("[Kafka] Error subscribing to channel:", err)
+				log.WithField("service", "Kafka").Error("Error subscribing to channel:", err)
 			}
 			go kafkaClient.ConsumeMessages(onMessage)
 		} else {
@@ -133,11 +136,11 @@ func main() {
 		}
 
 		onClose := func(code int, text string) error {
-			log.Printf("[WebSocket] User %s disconnected\n", user.ID)
+			log.WithField("service", "WebSocket").Infof("User %s disconnected\n", user.ID)
 			// only runs when the last connection is removed
 			remove(func() {
 				if err := kafkaClient.Unsubscribe(); err != nil {
-					log.Println(err)
+					log.WithField("service", "Kafka").Error(err)
 				}
 				kafkaClient.Close()
 				delete(userKafkaClients, user.ID)
@@ -146,11 +149,11 @@ func main() {
 		}
 		c.SetCloseHandler(onClose)
 
-		log.Printf("[WebSocket] User %s connected\n", user.ID)
+		log.WithField("service", "WebSocket").Infof("User %s connected\n", user.ID)
 
 		// Set up ping/pong handlers
 		c.SetPingHandler(func(appData string) error {
-			log.Println("[WebSocket] Received ping:", appData)
+			log.WithField("service", "WebSocket").Debug("Received ping:", appData)
 			return c.WriteMessage(websocket.PongMessage, []byte(appData))
 		})
 
@@ -169,7 +172,7 @@ func main() {
 				select {
 				case <-heartbeat.C:
 					if err := c.WriteMessage(websocket.PingMessage, nil); err != nil {
-						log.Println("[WebSocket] Ping error:", err)
+						log.WithField("service", "WebSocket").Error("Ping error:", err)
 						c.Close()
 						return
 					}
@@ -187,20 +190,20 @@ func main() {
 		for {
 			if mt, msg, wsErr = c.ReadMessage(); wsErr != nil {
 				if websocket.IsCloseError(wsErr, websocket.CloseNoStatusReceived) {
-					log.Println("[WebSocket] Connection closed by client")
+					log.WithField("service", "WebSocket").Debug("Connection closed by client")
 				} else {
-					log.Println("[WebSocket] Error:", wsErr)
+					log.WithField("service", "WebSocket").Error("Error:", wsErr)
 				}
 				break
 			}
 
-			log.Printf("[WebSocket] Received (%d): %s\n", mt, msg)
+			log.WithField("service", "WebSocket").Infof("Received (%d): %s\n", mt, msg)
 			onMessage(kafka.Message{
 				Value: msg,
 			})
 		}
 	}))
 
-	log.Println("Server running on port", utils.Config("PORT"))
+	log.Info("Server running on port ", utils.Config("PORT"))
 	log.Fatal(app.Listen(":" + utils.Config("PORT")))
 }

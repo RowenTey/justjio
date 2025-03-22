@@ -8,11 +8,14 @@ import (
 	"github.com/RowenTey/JustJio/model/request"
 	"github.com/RowenTey/JustJio/services"
 	"github.com/RowenTey/JustJio/util"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 )
+
+var billLogger = log.WithFields(log.Fields{"service": "BillHandler"})
 
 func CreateBill(c *fiber.Ctx) error {
 	var request request.CreateBillRequest
@@ -23,9 +26,9 @@ func CreateBill(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := util.GetUserInfoFromToken(token, "user_id")
 
-	roomService := &services.RoomService{DB: database.DB}
-	userService := &services.UserService{DB: database.DB}
-	billService := &services.BillService{DB: database.DB}
+	roomService := services.NewRoomService(database.DB)
+	userService := services.NewUserService(database.DB)
+	billService := services.NewBillService(database.DB)
 
 	isConsolidated, err := billService.IsRoomBillConsolidated(request.RoomID)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -67,6 +70,7 @@ func CreateBill(c *fiber.Ctx) error {
 		return util.HandleInternalServerError(c, err)
 	}
 
+	billLogger.Info("Created bill successfully: ", bill.ID)
 	return util.HandleSuccess(c, "Created bill successfully", bill)
 }
 
@@ -76,7 +80,7 @@ func GetBillsByRoom(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, errors.New("missing roomId in query param"))
 	}
 
-	bills, err := (&services.BillService{DB: database.DB}).GetBillsForRoom(roomId)
+	bills, err := services.NewBillService(database.DB).GetBillsForRoom(roomId)
 	if err != nil {
 		return util.HandleInternalServerError(c, err)
 	}
@@ -95,9 +99,9 @@ func ConsolidateBills(c *fiber.Ctx) error {
 
 	tx := database.DB.Begin()
 
-	billService := &services.BillService{DB: tx}
-	transactionService := &services.TransactionService{DB: tx}
-	roomService := &services.RoomService{DB: tx}
+	billService := services.NewBillService(tx)
+	transactionService := services.NewTransactionService(tx)
+	roomService := services.NewRoomService(tx)
 
 	room, err := roomService.GetRoomById(request.RoomID)
 	if err != nil {
@@ -138,16 +142,17 @@ func ConsolidateBills(c *fiber.Ctx) error {
 		return util.HandleInternalServerError(c, err)
 	}
 
+	billLogger.Info("Bills consolidated successfully: ", consolidation.ID)
 	return util.HandleSuccess(c, "Bill consolidated successfully", nil)
 }
 
 func IsRoomBillConsolidated(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 	if roomId == "" {
-		return util.HandleInvalidInputError(c, errors.New("Missing roomId in path param"))
+		return util.HandleInvalidInputError(c, errors.New("missing roomId in path param"))
 	}
 
-	isConsolidated, err := (&services.BillService{DB: database.DB}).IsRoomBillConsolidated(roomId)
+	isConsolidated, err := services.NewBillService(database.DB).IsRoomBillConsolidated(roomId)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return util.HandleInternalServerError(c, err)
 	}

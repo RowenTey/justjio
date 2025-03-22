@@ -1,14 +1,16 @@
 package main
 
 import (
-	"log"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/config"
 	"github.com/RowenTey/JustJio/database"
 	"github.com/RowenTey/JustJio/middleware"
 	"github.com/RowenTey/JustJio/router"
 	"github.com/RowenTey/JustJio/services"
+	"github.com/RowenTey/JustJio/util"
 	"github.com/RowenTey/JustJio/worker"
 
 	"github.com/gofiber/fiber/v2"
@@ -16,20 +18,23 @@ import (
 )
 
 func main() {
-	log.Println("Starting server...")
-
 	env := ""
 	if len(os.Args) > 1 {
 		env = os.Args[1]
 	}
 
+	// initialize logger
+	util.InitLogger(env)
+
 	// only load .env file if in dev environment
 	if env == "dev" {
-		log.Println("Loading .env file...")
+		log.Debug("Loading .env file...")
 		if err := godotenv.Load(".env"); err != nil {
 			log.Fatal("Error loading .env file")
 		}
 	}
+
+	log.Info("Starting API server...")
 
 	notificationsChan := worker.RunPushNotification()
 
@@ -51,6 +56,6 @@ func main() {
 	middleware.Fiber(app, config.Config("ALLOWED_ORIGINS"))
 	router.Initalize(app, kafkaService, notificationsChan)
 
-	log.Println("Server running on port", config.Config("PORT"))
+	log.Info("Server running on port ", config.Config("PORT"))
 	log.Fatal(app.Listen(":" + config.Config("PORT")))
 }

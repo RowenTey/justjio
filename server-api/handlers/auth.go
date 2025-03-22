@@ -3,8 +3,9 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/config"
 	"github.com/RowenTey/JustJio/database"
@@ -23,17 +24,21 @@ import (
 // TODO: Make thread safe
 var ClientOTP sync.Map
 
+var authLogger = log.WithFields(log.Fields{"service": "AuthHandler"})
+
 func SignUp(c *fiber.Ctx) error {
 	var user model.User
 	if err := c.BodyParser(&user); err != nil {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	authService := &services.AuthService{
-		HashFunc:      util.HashPassword,
-		SendSMTPEmail: util.SendSMTPEmail,
-	}
-	userService := &services.UserService{DB: database.DB}
+	authService := services.NewAuthService(
+		util.HashPassword,
+		config.Config("JWT_SECRET"),
+		util.SendSMTPEmail,
+		config.SetupGoogleOAuthConfig(),
+	)
+	userService := services.NewUserService(database.DB)
 
 	hashedPasswordUser, err := authService.SignUp(&user)
 	if err != nil {
@@ -54,7 +59,7 @@ func SignUp(c *fiber.Ctx) error {
 		otp := authService.GenerateOTP()
 		ClientOTP.Store(user.Email, otp)
 		if err := authService.SendOTPEmail(otp, user.Username, user.Email, "verify-email"); err != nil {
-			log.Println("Error sending OTP email:", err)
+			authLogger.Error("Error sending OTP email:", err)
 			ClientOTP.Delete(user.Email)
 		}
 	}()
@@ -66,7 +71,7 @@ func SignUp(c *fiber.Ctx) error {
 		UID:        createdUser.ID,
 	}
 
-	log.Println("[AUTH] User " + response.Username + " signed up successfully.")
+	authLogger.Info("User " + response.Username + " signed up successfully.")
 	return util.HandleSuccess(c, "User signed up successfully", response)
 }
 
@@ -77,7 +82,7 @@ func Login(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	}
 
 	username := input.Username
-	user, err := (&services.UserService{DB: database.DB}).GetUserByUsername(username)
+	user, err := services.NewUserService(database.DB).GetUserByUsername(username)
 	if err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
@@ -86,7 +91,12 @@ func Login(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 		return util.HandleError(c, fiber.StatusUnauthorized, "Invalid password", errors.New("password does not match the user's password"))
 	}
 
-	authService := &services.AuthService{JwtSecret: config.Config("JWT_SECRET")}
+	authService := services.NewAuthService(
+		util.HashPassword,
+		config.Config("JWT_SECRET"),
+		util.SendSMTPEmail,
+		config.SetupGoogleOAuthConfig(),
+	)
 	token, err := authService.CreateToken(user)
 	if err != nil {
 		return util.HandleInternalServerError(c, err)
@@ -96,7 +106,7 @@ func Login(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	go func() {
 		channel := fmt.Sprintf("user-%d", user.ID)
 		if err := kafkaSvc.CreateTopic(channel); err != nil {
-			log.Println("Error creating topic", err)
+			authLogger.Error("Error creating topic", err)
 		}
 	}()
 
@@ -107,7 +117,7 @@ func Login(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 		UID:        user.ID,
 	}
 
-	log.Println("[AUTH] User " + response.Username + " logged in successfully.")
+	authLogger.Info("User " + response.Username + " logged in successfully.")
 	return util.HandleLoginSuccess(c, "Login successfully", token, response)
 }
 
@@ -121,8 +131,13 @@ func SendOTPEmail(c *fiber.Ctx) error {
 		return util.HandleError(c, fiber.StatusBadRequest, "Invalid purpose", errors.New("invalid purpose"))
 	}
 
-	authService := &services.AuthService{SendSMTPEmail: util.SendSMTPEmail}
-	userService := &services.UserService{DB: database.DB}
+	authService := services.NewAuthService(
+		util.HashPassword,
+		config.Config("JWT_SECRET"),
+		util.SendSMTPEmail,
+		config.SetupGoogleOAuthConfig(),
+	)
+	userService := services.NewUserService(database.DB)
 
 	user, err := userService.GetUserByEmail(request.Email)
 	if err != nil {
@@ -136,11 +151,11 @@ func SendOTPEmail(c *fiber.Ctx) error {
 	otp := authService.GenerateOTP()
 	ClientOTP.Store(user.Email, otp)
 	if err := authService.SendOTPEmail(otp, user.Username, user.Email, request.Purpose); err != nil {
-		log.Println("Error sending OTP email:", err)
+		authLogger.Error("Error sending OTP email:", err)
 		ClientOTP.Delete(user.Email)
 	}
 
-	log.Println("[AUTH] OTP sent to " + request.Email + " successfully.")
+	authLogger.Info("OTP sent to " + request.Email + " successfully.")
 	return util.HandleSuccess(c, "OTP sent successfully", nil)
 }
 
@@ -150,8 +165,13 @@ func VerifyOTP(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	authService := &services.AuthService{}
-	userService := &services.UserService{DB: database.DB}
+	authService := services.NewAuthService(
+		util.HashPassword,
+		config.Config("JWT_SECRET"),
+		util.SendSMTPEmail,
+		config.SetupGoogleOAuthConfig(),
+	)
+	userService := services.NewUserService(database.DB)
 
 	user, err := userService.GetUserByEmail(request.Email)
 	if err != nil {
@@ -177,7 +197,7 @@ func VerifyOTP(c *fiber.Ctx) error {
 	// Delete OTP after verification
 	ClientOTP.Delete(user.Email)
 
-	log.Println("[AUTH] OTP verified successfully for email", request.Email)
+	authLogger.Println("OTP verified successfully for email", request.Email)
 	return util.HandleSuccess(c, "OTP verified successfully", nil)
 }
 
@@ -187,8 +207,13 @@ func ResetPassword(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	authService := &services.AuthService{HashFunc: util.HashPassword}
-	userService := &services.UserService{DB: database.DB}
+	authService := services.NewAuthService(
+		util.HashPassword,
+		config.Config("JWT_SECRET"),
+		util.SendSMTPEmail,
+		config.SetupGoogleOAuthConfig(),
+	)
+	userService := services.NewUserService(database.DB)
 
 	user, err := userService.GetUserByEmail(request.Email)
 	if err != nil {
@@ -206,7 +231,7 @@ func ResetPassword(c *fiber.Ctx) error {
 		return util.HandleInternalServerError(c, err)
 	}
 
-	log.Println("[AUTH] Password reset successfully for email", request.Email)
+	authLogger.Info("Password reset successfully for email", request.Email)
 	return util.HandleSuccess(c, "Password reset successfully", nil)
 }
 
@@ -216,11 +241,13 @@ func GoogleLogin(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	authService := &services.AuthService{
-		JwtSecret:   config.Config("JWT_SECRET"),
-		OAuthConfig: config.SetupGoogleOAuthConfig(),
-	}
-	userService := &services.UserService{DB: database.DB}
+	authService := services.NewAuthService(
+		util.HashPassword,
+		config.Config("JWT_SECRET"),
+		util.SendSMTPEmail,
+		config.SetupGoogleOAuthConfig(),
+	)
+	userService := services.NewUserService(database.DB)
 
 	googleUser, err := authService.GetGoogleUser(request.Code)
 	if err != nil {
@@ -265,6 +292,6 @@ func GoogleLogin(c *fiber.Ctx) error {
 		UID:        user.ID,
 	}
 
-	log.Println("[AUTH] User " + response.Username + " authenticated via Google OAuth")
+	authLogger.Println("User " + response.Username + " authenticated via Google OAuth")
 	return util.HandleLoginSuccess(c, "Authenticated via Google successfully", token, response)
 }

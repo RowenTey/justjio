@@ -55,7 +55,7 @@ func (s *NotificationServiceTestSuite) SetupTest() {
 	})
 	assert.NoError(s.T(), err)
 
-	s.notificationService = &services.NotificationService{DB: s.DB}
+	s.notificationService = services.NewNotificationService(s.DB)
 }
 
 func (s *NotificationServiceTestSuite) AfterTest(_, _ string) {

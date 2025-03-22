@@ -3,11 +3,20 @@ package services
 import (
 	"github.com/RowenTey/JustJio/model"
 	"github.com/SherClockHolmes/webpush-go"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 type SubscriptionService struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	logger *log.Entry
+}
+
+func NewSubscriptionService(db *gorm.DB) *SubscriptionService {
+	return &SubscriptionService{
+		DB:     db,
+		logger: log.WithFields(log.Fields{"service": "SubscriptionService"}),
+	}
 }
 
 func (s *SubscriptionService) CreateSubscription(subscription *model.Subscription) (*model.Subscription, error) {

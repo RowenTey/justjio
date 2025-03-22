@@ -2,9 +2,10 @@ package services
 
 import (
 	"errors"
-	"log"
 	"strconv"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/database"
 	"github.com/RowenTey/JustJio/model"
@@ -17,7 +18,15 @@ const (
 )
 
 type RoomService struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	logger *log.Entry
+}
+
+func NewRoomService(db *gorm.DB) *RoomService {
+	return &RoomService{
+		DB:     db,
+		logger: log.WithFields(log.Fields{"service": "RoomService"}),
+	}
 }
 
 func (rs *RoomService) CreateRoom(room *model.Room, host *model.User) (*model.Room, error) {
@@ -31,7 +40,7 @@ func (rs *RoomService) CreateRoom(room *model.Room, host *model.User) (*model.Ro
 		return nil, err
 	}
 
-	log.Println("[ROOM] Created room with ID: ", room.ID)
+	rs.logger.Info("Created room with ID: ", room.ID)
 	return room, nil
 }
 
@@ -250,7 +259,7 @@ func (rs *RoomService) InviteUserToRoom(
 		return &[]model.RoomInvite{}, nil
 	}
 
-	log.Printf("[ROOM] Inviting users (%v) to room %s", users, roomId)
+	rs.logger.Infof("Inviting users (%v) to room %s", users, roomId)
 	var room model.Room
 	var roomInvites []model.RoomInvite
 

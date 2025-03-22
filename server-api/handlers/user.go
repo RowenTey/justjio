@@ -3,6 +3,8 @@ package handlers
 import (
 	"fmt"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/RowenTey/JustJio/database"
 	"github.com/RowenTey/JustJio/model/request"
 	"github.com/RowenTey/JustJio/model/response"
@@ -12,9 +14,11 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+var userLogger = log.WithFields(log.Fields{"service": "UserHandler"})
+
 func GetUser(c *fiber.Ctx) error {
 	id := c.Params("userId")
-	user, err := (&services.UserService{DB: database.DB}).GetUserByID(id)
+	user, err := services.NewUserService(database.DB).GetUserByID(id)
 	if err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
@@ -28,19 +32,20 @@ func UpdateUser(c *fiber.Ctx) error {
 	}
 
 	id := c.Params("userId")
-	userService := &services.UserService{DB: database.DB}
+	userService := services.NewUserService(database.DB)
 	err := userService.UpdateUserField(id, request.Field, request.Value)
 	if err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
 
+	userLogger.Infof("User %s updated field %s to %s", id, request.Field, request.Value)
 	return util.HandleSuccess(c, "User successfully updated", request)
 }
 
 func DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("userId")
 
-	userService := &services.UserService{DB: database.DB}
+	userService := services.NewUserService(database.DB)
 
 	err := userService.DeleteUser(id)
 	if err != nil {
@@ -60,7 +65,7 @@ func SendFriendRequest(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := &services.UserService{DB: database.DB}
+	userService := services.NewUserService(database.DB)
 	if err := userService.SendFriendRequest(uint(userID), request.FriendID); err != nil {
 		if err.Error() == "cannot send friend request to yourself" ||
 			err.Error() == "already friends" ||
@@ -85,17 +90,9 @@ func RemoveFriend(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	tx := database.DB.Begin()
-
-	userService := &services.UserService{DB: tx}
+	userService := services.NewUserService(database.DB)
 	if err := userService.RemoveFriend(uint(userID), uint(friendID)); err != nil {
-		tx.Rollback()
 		return util.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
-		return util.HandleInternalServerError(c, err)
 	}
 
 	return util.HandleSuccess(c, "Friend successfully removed", nil)
@@ -104,7 +101,7 @@ func RemoveFriend(c *fiber.Ctx) error {
 func GetFriends(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 
-	userService := &services.UserService{DB: database.DB}
+	userService := services.NewUserService(database.DB)
 
 	friends, err := userService.GetFriends(userID)
 	if err != nil {
@@ -125,7 +122,7 @@ func IsFriend(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := &services.UserService{DB: database.DB}
+	userService := services.NewUserService(database.DB)
 
 	isFriend := userService.IsFriend(uint(userID), request.FriendID)
 
@@ -138,7 +135,7 @@ func IsFriend(c *fiber.Ctx) error {
 func GetNumFriends(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 
-	userService := &services.UserService{DB: database.DB}
+	userService := services.NewUserService(database.DB)
 
 	numFriends, err := userService.GetNumFriends(userID)
 	if err != nil {
@@ -155,7 +152,7 @@ func SearchFriends(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 	query := c.Query("query")
 
-	userService := &services.UserService{DB: database.DB}
+	userService := services.NewUserService(database.DB)
 
 	friends, err := userService.SearchUsers(userID, query)
 	if err != nil {
@@ -172,7 +169,7 @@ func GetFriendRequestsByStatus(c *fiber.Ctx) error {
 	}
 
 	status := c.Query("status")
-	userService := &services.UserService{DB: database.DB}
+	userService := services.NewUserService(database.DB)
 
 	requests, err := userService.GetFriendRequestsByStatus(uint(userID), status)
 	if err != nil {
@@ -191,7 +188,7 @@ func CountPendingFriendRequests(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := &services.UserService{DB: database.DB}
+	userService := services.NewUserService(database.DB)
 
 	count, err := userService.CountPendingFriendRequests(uint(userID))
 	if err != nil {
@@ -210,7 +207,7 @@ func RespondToFriendRequest(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	userService := &services.UserService{DB: database.DB}
+	userService := services.NewUserService(database.DB)
 
 	switch request.Action {
 	case "accept":
