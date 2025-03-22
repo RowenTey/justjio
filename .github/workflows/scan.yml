@@ -30,8 +30,8 @@ jobs:
                 title: 'Trivy Security Scan Results',
                 summary: ''
             },
-            details_url: `${github.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${github.runId}`,  
-            external_id: `${github.runId}`,            
+            details_url: `${github.server_url}/${context.repo.owner}/${context.repo.repo}/actions/runs/${github.run_id}`,  
+            external_id: `${github.run_id}`,           
             started_at: new Date().toISOString(),
             owner: context.repo.owner,
             repo: context.repo.repo
@@ -75,8 +75,8 @@ jobs:
                 title: 'Trivy Security Scan Results',
                 summary: `Scan completed!`
               },
-              details_url: `${github.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${github.runId}`,  
-              external_id: `${github.runId}`, 
+              details_url: `${github.server_url}/${context.repo.owner}/${context.repo.repo}/actions/runs/${github.run_id}`,  
+              external_id: `${github.run_id}`, 
               completed_at: new Date().toISOString(),
               owner: context.repo.owner,
               repo: context.repo.repo
