@@ -1,10 +1,11 @@
 package services
 
 import (
-	"log"
 	"math/rand"
 	"strconv"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/model"
 	"github.com/RowenTey/JustJio/util"
@@ -13,10 +14,12 @@ import (
 )
 
 func SeedDB(db *gorm.DB) error {
+	logger := log.WithFields(log.Fields{"service": "SeedService"})
+
 	var count int64
 	db.Model(&model.User{}).Count(&count)
 	if count > 0 {
-		log.Println("[SEED] Database already seeded")
+		logger.Info("Database already seeded")
 		return nil
 	}
 
@@ -49,7 +52,7 @@ func SeedDB(db *gorm.DB) error {
 			return err
 		}
 		users[i] = *createdUser
-		log.Println("[SEED] User created:\n", users[i])
+		logger.Info("User created:\n", users[i])
 	}
 
 	// Remove test user from users
@@ -64,7 +67,7 @@ func SeedDB(db *gorm.DB) error {
 
 			err := userService.SendFriendRequest(u.ID, f.ID)
 			if err != nil {
-				log.Println("[SEED] Error sending friend request: ", err)
+				logger.Warn("Error sending friend request: ", err)
 				continue
 			}
 		}
@@ -72,14 +75,14 @@ func SeedDB(db *gorm.DB) error {
 		// accept friend requests
 		requests, err := userService.GetFriendRequestsByStatus(u.ID, "pending")
 		if err != nil {
-			log.Println("[SEED] Error getting friend requests: ", err)
+			logger.Warn("Error getting friend requests: ", err)
 			continue
 		}
 
 		for _, r := range *requests {
 			err := userService.AcceptFriendRequest(r.ID)
 			if err != nil {
-				log.Println("[SEED] Error accepting friend request: ", err)
+				logger.Warn("Error accepting friend request: ", err)
 				continue
 			}
 		}
@@ -96,13 +99,13 @@ func SeedDB(db *gorm.DB) error {
 
 	for i, r := range rooms {
 		host := users[rand.Intn(len(users))]
-		log.Println("[SEED] User selected as host:\n", host)
+		logger.Info("User selected as host:\n", host)
 		createdRoom, err := roomService.CreateRoom(&r, &host)
 		if err != nil {
 			return err
 		}
 		rooms[i] = *createdRoom
-		log.Println("[SEED] Room created: ", rooms[i].ID)
+		logger.Info("Room created: ", rooms[i].ID)
 
 		// invite users to room
 		var invitees = []model.User{}
@@ -116,7 +119,7 @@ func SeedDB(db *gorm.DB) error {
 		_, err = roomService.InviteUserToRoom(
 			rooms[i].ID, &host, &invitees, "Join my party!")
 		if err != nil {
-			log.Fatalf("%s", err.Error())
+			log.Errorf("%s", err.Error())
 			return err
 		}
 
@@ -129,7 +132,7 @@ func SeedDB(db *gorm.DB) error {
 		for _, u := range invitees {
 			err := roomService.UpdateRoomInviteStatus(rooms[i].ID, strconv.FormatUint(uint64(u.ID), 10), "accepted")
 			if err != nil {
-				log.Fatalf("%s", err.Error())
+				log.Errorf("%s", err.Error())
 				return err
 			}
 		}
@@ -151,13 +154,13 @@ func SeedDB(db *gorm.DB) error {
 
 			_, err := billService.CreateBill(&rooms[i], &u, "food", float32(j+10)*10, true, &payers)
 			if err != nil {
-				log.Fatalf("%s", err.Error())
+				log.Errorf("%s", err.Error())
 				return err
 			}
 
 			_, err = billService.CreateBill(&rooms[i], &u, "drinks", rand.Float32()*100, false, &payers)
 			if err != nil {
-				log.Fatalf("%s", err.Error())
+				log.Errorf("%s", err.Error())
 				return err
 			}
 		}
@@ -165,14 +168,14 @@ func SeedDB(db *gorm.DB) error {
 		// consolidate bills for this room
 		consolidation, err := billService.ConsolidateBills(rooms[i].ID)
 		if err != nil {
-			log.Fatalf("%s", err.Error())
+			log.Errorf("%s", err.Error())
 			return err
 		}
 
 		// generate transactions for this room
 		err = transactionService.GenerateTransactions(consolidation)
 		if err != nil {
-			log.Fatalf("%s", err.Error())
+			log.Errorf("%s", err.Error())
 			return err
 		}
 	}

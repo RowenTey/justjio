@@ -2,9 +2,10 @@ package services
 
 import (
 	"errors"
-	"log"
 	"strconv"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/model"
 
@@ -12,7 +13,15 @@ import (
 )
 
 type UserService struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	logger *log.Entry
+}
+
+func NewUserService(db *gorm.DB) *UserService {
+	return &UserService{
+		DB:     db,
+		logger: log.WithFields(log.Fields{"service": "UserService"}),
+	}
 }
 
 func (s *UserService) GetUserByID(userId string) (*model.User, error) {
@@ -131,7 +140,6 @@ func (s *UserService) ValidateUsers(userIds []string) (*[]model.User, error) {
 
 func (s *UserService) MarkOnline(userId string) error {
 	if err := s.UpdateUserField(userId, "isOnline", true); err != nil {
-		log.Println("Error marking user online:", err)
 		return err
 	}
 	return nil
@@ -139,12 +147,10 @@ func (s *UserService) MarkOnline(userId string) error {
 
 func (s *UserService) MarkOffline(userId string) error {
 	if err := s.UpdateUserField(userId, "isOnline", false); err != nil {
-		log.Println("Error marking user offline:", err)
 		return err
 	}
 
 	if err := s.UpdateUserField(userId, "lastSeen", time.Now()); err != nil {
-		log.Println("Error updating last seen:", err)
 		return err
 	}
 	return nil

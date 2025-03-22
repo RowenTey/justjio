@@ -1,9 +1,10 @@
 package services
 
 import (
-	"log"
 	"math"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/database"
 	"github.com/RowenTey/JustJio/model"
@@ -16,7 +17,15 @@ const (
 )
 
 type MessageService struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	logger *log.Entry
+}
+
+func NewMessageService(db *gorm.DB) *MessageService {
+	return &MessageService{
+		DB:     db,
+		logger: log.WithFields(log.Fields{"service": "MessageService"}),
+	}
 }
 
 func (ms *MessageService) SaveMessage(room *model.Room, sender *model.User, content string) error {
@@ -35,7 +44,7 @@ func (ms *MessageService) SaveMessage(room *model.Room, sender *model.User, cont
 		return err
 	}
 
-	log.Printf("[MESSAGE] Saved message to room %s", msg.RoomID)
+	ms.logger.Infof("Saved message to room %s", msg.RoomID)
 	return nil
 }
 

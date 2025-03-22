@@ -2,8 +2,9 @@ package services
 
 import (
 	"errors"
-	"log"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/model"
 
@@ -11,7 +12,15 @@ import (
 )
 
 type BillService struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	logger *log.Entry
+}
+
+func NewBillService(db *gorm.DB) *BillService {
+	return &BillService{
+		DB:     db,
+		logger: log.WithFields(log.Fields{"service": "BillService"}),
+	}
 }
 
 func (bs *BillService) CreateBill(
@@ -39,11 +48,11 @@ func (bs *BillService) CreateBill(
 	}
 
 	// Omit to avoid creating new room and set consolidation to null
-	if err := db.Debug().Omit("Room", "Owner").Create(&bill).Error; err != nil {
+	if err := db.Omit("Room", "Owner").Create(&bill).Error; err != nil {
 		return nil, err
 	}
 
-	log.Println("[BILL] Bill created in room:", bill.RoomID)
+	bs.logger.Info("Bill created in room:", bill.RoomID)
 	return &bill, nil
 }
 
@@ -100,7 +109,7 @@ func (bs *BillService) ConsolidateBills(roomId string) (*model.Consolidation, er
 		Create(&consolidation).Error; err != nil {
 		return nil, err
 	}
-	log.Println("[BILL] Created consolidation of bills: ", consolidation.ID)
+	bs.logger.Info("Created bills consolidation: ", consolidation.ID)
 
 	if err := db.
 		Where("room_id = ?", roomId).

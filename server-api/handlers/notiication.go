@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"log"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/database"
 	"github.com/RowenTey/JustJio/model/request"
@@ -12,6 +13,8 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+var notificationLogger = log.WithFields(log.Fields{"service": "NotificationHandler"})
+
 // CreateNotification handles the creation of a new notification
 func CreateNotification(c *fiber.Ctx, notificationsChan chan<- NotificationData) error {
 	var request request.CreateNotificationRequest
@@ -19,7 +22,7 @@ func CreateNotification(c *fiber.Ctx, notificationsChan chan<- NotificationData)
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	notification, err := (&services.NotificationService{DB: database.DB}).CreateNotification(
+	notification, err := services.NewNotificationService(database.DB).CreateNotification(
 		request.UserId, request.Title, request.Content)
 	if err != nil {
 		if err.Error() == "content cannot be empty" {
@@ -29,10 +32,10 @@ func CreateNotification(c *fiber.Ctx, notificationsChan chan<- NotificationData)
 	}
 
 	go func() {
-		subscriptionService := &services.SubscriptionService{DB: database.DB}
+		subscriptionService := services.NewSubscriptionService(database.DB)
 		subscriptions, err := subscriptionService.GetSubscriptionsByUserID(request.UserId)
 		if err != nil {
-			log.Println("[NOTIFICATIONS] Error getting subscriptions: ", err)
+			notificationLogger.Error("Error getting subscriptions: ", err)
 			return
 		}
 
@@ -60,7 +63,9 @@ func MarkNotificationAsRead(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	if err := (&services.NotificationService{DB: database.DB}).MarkNotificationAsRead(uint(notificationId), uint(userId)); err != nil {
+	if err := services.
+		NewNotificationService(database.DB).
+		MarkNotificationAsRead(uint(notificationId), uint(userId)); err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, "Notification not found")
 	}
 
@@ -79,7 +84,9 @@ func GetNotification(c *fiber.Ctx) error {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	notification, err := (&services.NotificationService{DB: database.DB}).GetNotification(uint(notificationId), uint(userId))
+	notification, err := services.
+		NewNotificationService(database.DB).
+		GetNotification(uint(notificationId), uint(userId))
 	if err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, "Notification not found")
 	}
@@ -97,7 +104,7 @@ func GetNotifications(c *fiber.Ctx) error {
 		return util.HandleInternalServerError(c, err)
 	}
 
-	notifications, err := (&services.NotificationService{DB: database.DB}).GetNotifications(uint(userIdInt))
+	notifications, err := services.NewNotificationService(database.DB).GetNotifications(uint(userIdInt))
 	if err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, "User not found")
 	}

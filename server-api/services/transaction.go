@@ -3,9 +3,10 @@ package services
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/model"
 
@@ -13,12 +14,20 @@ import (
 )
 
 type TransactionService struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	logger *log.Entry
 }
 
 type edge struct {
 	userId uint
 	amount float32
+}
+
+func NewTransactionService(db *gorm.DB) *TransactionService {
+	return &TransactionService{
+		DB:     db,
+		logger: log.WithFields(log.Fields{"service": "TransactionService"}),
+	}
 }
 
 func (ts *TransactionService) GenerateTransactions(consolidatedBill *model.Consolidation) error {
@@ -39,8 +48,8 @@ func (ts *TransactionService) GenerateTransactions(consolidatedBill *model.Conso
 		wg.Add(1)
 		go func(bill *model.Bill) {
 			defer wg.Done()
-			log.Printf("[TRANSACTION] Processing bill: %s with amount %f\n", bill.Name, bill.Amount)
-			log.Println("[TRANSACTION] Payers: ", len(bill.Payers))
+			ts.logger.Infof("Processing bill: %s with amount %f\n", bill.Name, bill.Amount)
+			ts.logger.Info("Payers: ", len(bill.Payers))
 
 			num_payers := float32(len(bill.Payers))
 			if bill.IncludeOwner {
@@ -75,12 +84,12 @@ func (ts *TransactionService) GenerateTransactions(consolidatedBill *model.Conso
 	}
 
 	for _, transaction := range transactions {
-		log.Printf("[TRANSACTION] Before %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
+		ts.logger.Debugf("Before %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
 	}
 
-	consolidatedTransactions := consolidateTransactions(&transactions, consolidatedBill)
+	consolidatedTransactions := ts.consolidateTransactions(&transactions, consolidatedBill)
 	for _, transaction := range *consolidatedTransactions {
-		log.Printf("[TRANSACTION] After %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
+		ts.logger.Debugf("After %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
 	}
 	if err := ts.DB.Omit("Consolidation").Create(&consolidatedTransactions).Error; err != nil {
 		return err
@@ -129,7 +138,7 @@ func (ts *TransactionService) SettleTransaction(transactionId string, userId str
 	return &transaction, nil
 }
 
-func consolidateTransactions(transactions *[]model.Transaction, consolidatedBill *model.Consolidation) *[]model.Transaction {
+func (ts *TransactionService) consolidateTransactions(transactions *[]model.Transaction, consolidatedBill *model.Consolidation) *[]model.Transaction {
 	graph := make(map[uint][]edge)
 	visited := make(map[uint]bool)
 
@@ -152,8 +161,8 @@ func consolidateTransactions(transactions *[]model.Transaction, consolidatedBill
 		for hasCycle != -1 {
 			// 0 -> Start from source node
 			visited[transaction.PayerID] = true
-			hasCycle, _ = removeCycle(transaction.PayerID, graph, visited)
-			resetVisited(visited)
+			hasCycle, _ = ts.removeCycle(transaction.PayerID, graph, visited)
+			ts.resetVisited(visited)
 		}
 	}
 
@@ -173,20 +182,20 @@ func consolidateTransactions(transactions *[]model.Transaction, consolidatedBill
 	return &newTransactions
 }
 
-func resetVisited(visited map[uint]bool) {
+func (ts *TransactionService) resetVisited(visited map[uint]bool) {
 	for key := range visited {
 		visited[key] = false
 	}
 }
 
-func removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) (float32, uint) {
+func (ts *TransactionService) removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) (float32, uint) {
 	neighbors := graph[startNode]
 	for i, neighbor := range neighbors {
-		log.Println("[DEBUG] Current node ", startNode, " with neighbor: ", neighbor.userId)
+		ts.logger.Debug("Current node ", startNode, " with neighbor: ", neighbor.userId)
 
 		// cycle detected
 		if isVisited := visited[neighbor.userId]; isVisited {
-			log.Println("[DEBUG] Cycle detected: ", startNode, " -> ", neighbor.userId)
+			ts.logger.Debug("Cycle detected: ", startNode, " -> ", neighbor.userId)
 
 			// remove the edge
 			neighbors = append(neighbors[:i], neighbors[i+1:]...)
@@ -197,7 +206,7 @@ func removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) (
 		}
 
 		visited[neighbor.userId] = true
-		amtToDeduct, stopAt := removeCycle(neighbor.userId, graph, visited)
+		amtToDeduct, stopAt := ts.removeCycle(neighbor.userId, graph, visited)
 		visited[neighbor.userId] = false
 
 		// no cycle -> nothing to deduct

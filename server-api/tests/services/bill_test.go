@@ -56,7 +56,7 @@ func (s *BillServiceTestSuite) SetupTest() {
 	})
 	assert.NoError(s.T(), err)
 
-	s.billService = &services.BillService{DB: s.DB}
+	s.billService = services.NewBillService(s.DB)
 }
 
 func (s *BillServiceTestSuite) AfterTest(_, _ string) {

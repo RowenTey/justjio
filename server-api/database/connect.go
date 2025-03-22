@@ -1,7 +1,7 @@
 package database
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/config"
 	"github.com/RowenTey/JustJio/model"
@@ -17,16 +17,18 @@ func ConnectDB() {
 	// define error here to prevent overshadowing the global DB
 	var err error
 
+	logger := log.WithFields(log.Fields{"service": "Database"})
+
 	dsn := config.Config("DSN")
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
 		TranslateError: true,
 		// SkipDefaultTransaction: true,
 	})
 	if err != nil {
-		log.Println("[DB] Failed to connect to database")
-		log.Fatal(err)
+		logger.Error("Failed to connect to database")
+		logger.Fatal(err)
 	}
-	log.Println("[DB] Connection opened to database")
+	logger.Info("Connection opened to database")
 
 	err = DB.AutoMigrate(
 		&model.User{},
@@ -41,9 +43,9 @@ func ConnectDB() {
 		&model.Subscription{},
 	)
 	if err != nil {
-		log.Println("[DB] Migration failed: ", err.Error())
+		logger.Error("Migration failed: ", err.Error())
 	}
-	log.Println("[DB] Database migrated")
+	logger.Info("Database migrated")
 }
 
 func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {

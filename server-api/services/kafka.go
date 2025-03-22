@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/config"
 	model_kafka "github.com/RowenTey/JustJio/model/kafka"
@@ -17,6 +18,7 @@ type KafkaService struct {
 	Producer *kafka.Producer
 	Admin    *kafka.AdminClient
 	Env      string
+	logger   *log.Entry
 }
 
 func NewKafkaService(bootstrapServers, env string) (*KafkaService, error) {
@@ -34,6 +36,7 @@ func NewKafkaService(bootstrapServers, env string) (*KafkaService, error) {
 		Producer: p,
 		Admin:    a,
 		Env:      env,
+		logger:   log.WithFields(log.Fields{"service": "KafkaService"}),
 	}, nil
 }
 
@@ -70,6 +73,7 @@ func (ks *KafkaService) BroadcastMessage(userIds *[]string, message model_kafka.
 		wg.Add(1)
 		go func(userId string) {
 			defer wg.Done()
+
 			channel := fmt.Sprintf("user-%s", userId)
 			if ks.Env == "dev" || ks.Env == "staging" {
 				channel = fmt.Sprintf("%s-%s", ks.Env, channel)
@@ -92,7 +96,7 @@ func (ks *KafkaService) BroadcastMessage(userIds *[]string, message model_kafka.
 	// BLOCKING until all goroutines finish
 	for err := range errors {
 		if err != nil {
-			log.Printf("Error publishing message: %v", err)
+			ks.logger.Errorf("Error publishing message: %v", err)
 			return err
 		}
 	}
@@ -125,7 +129,7 @@ func (ks *KafkaService) PublishMessage(topic string, message string) error {
 func (ks *KafkaService) Close() {
 	// Flush and close the producer and the events channel
 	for ks.Producer.Flush(10000) > 0 {
-		log.Println("Still waiting to flush outstanding messages")
+		ks.logger.Warn("Still waiting to flush outstanding messages")
 	}
 	ks.Producer.Close()
 }

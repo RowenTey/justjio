@@ -1,9 +1,10 @@
 package utils
 
 import (
-	"log"
 	"sync"
 	"sync/atomic"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gofiber/websocket/v2"
 	"github.com/google/uuid"
@@ -36,11 +37,11 @@ func newAtomicSyncMap() *atomicSyncMap {
 }
 
 // HOF to iterate over all connections in a map
-func forEachConnection(key string, conns *sync.Map) func(func(*websocket.Conn)) {
+func forEachConnection(conns *sync.Map) func(func(*websocket.Conn)) {
 	return func(callback func(*websocket.Conn)) {
 		// k -> connID
 		// v -> ws.Conn
-		conns.Range(func(k, v interface{}) bool {
+		conns.Range(func(_, v any) bool {
 			callback(v.(*websocket.Conn))
 			return true
 		})
@@ -51,13 +52,13 @@ func forEachConnection(key string, conns *sync.Map) func(func(*websocket.Conn)) 
 func onRemove(key, connId string, outer, inner *atomicSyncMap) func(func()) bool {
 	return func(onInnerEmptycallback func()) bool {
 		inner.Remove(connId)
-		log.Println("[ConnMap] Removed connection by user ", key)
+		log.WithField("service", "ConnMap").Info("Removed connection by user ", key)
 
 		if inner.Len() == 0 {
 			// unsubscribe from Kafka for this user
 			onInnerEmptycallback()
 			outer.Remove(key)
-			log.Println("[ConnMap] Removed user ", key, " from connMap")
+			log.WithField("service", "ConnMap").Info("Removed user ", key, " from connMap")
 			return true
 		}
 
@@ -70,7 +71,10 @@ type ConnMap struct {
 	outer atomicSyncMap
 }
 
-func (cm *ConnMap) Add(key string, conn *websocket.Conn) (func(func(*websocket.Conn)), func(func()) bool, bool) {
+func (cm *ConnMap) Add(
+	key string,
+	conn *websocket.Conn,
+) (func(func(*websocket.Conn)), func(func()) bool, bool) {
 	connId := uuid.New().String() // Generate unique ID using Go's uuid package
 
 	// connId -> ws.Conn
@@ -87,7 +91,7 @@ func (cm *ConnMap) Add(key string, conn *websocket.Conn) (func(func(*websocket.C
 		isInit = true
 	}
 
-	return forEachConnection(key, inner.m), onRemove(key, connId, &cm.outer, inner), isInit
+	return forEachConnection(inner.m), onRemove(key, connId, &cm.outer, inner), isInit
 }
 
 func NewConnMap() *ConnMap {

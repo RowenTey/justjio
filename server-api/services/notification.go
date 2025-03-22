@@ -3,12 +3,22 @@ package services
 import (
 	"errors"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/RowenTey/JustJio/model"
 	"gorm.io/gorm"
 )
 
 type NotificationService struct {
-	DB *gorm.DB
+	DB     *gorm.DB
+	logger *log.Entry
+}
+
+func NewNotificationService(db *gorm.DB) *NotificationService {
+	return &NotificationService{
+		DB:     db,
+		logger: log.WithFields(log.Fields{"service": "NotificationService"}),
+	}
 }
 
 // CreateNotification creates a new notification for a user

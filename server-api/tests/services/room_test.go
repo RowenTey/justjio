@@ -54,7 +54,7 @@ func (s *RoomServiceTestSuite) SetupTest() {
 	})
 	assert.NoError(s.T(), err)
 
-	s.roomService = &services.RoomService{DB: s.DB}
+	s.roomService = services.NewRoomService(s.DB)
 }
 
 func (s *RoomServiceTestSuite) AfterTest(_, _ string) {

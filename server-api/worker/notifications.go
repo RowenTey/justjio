@@ -2,11 +2,12 @@ package worker
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
+
+	log "github.com/sirupsen/logrus"
 
 	model_push_notifications "github.com/RowenTey/JustJio/model/push_notifications"
 	"github.com/RowenTey/JustJio/server-ws/utils"
@@ -16,9 +17,15 @@ import (
 type NotificationData = model_push_notifications.NotificationData
 type WebPushPayload = model_push_notifications.WebPushPayload
 
-func notificationWorker(id int, notifications <-chan NotificationData, vapidEmail, vapidPublicKey, vapidPrivateKey string, wg *sync.WaitGroup) {
+func notificationWorker(
+	id int,
+	notifications <-chan NotificationData,
+	vapidEmail, vapidPublicKey, vapidPrivateKey string,
+	wg *sync.WaitGroup,
+	logger *log.Entry,
+) {
 	defer wg.Done()
-	log.Println("[PUSH-WORKER] Worker", id, "started")
+	logger.Info("Worker ", id, " started")
 	for notification := range notifications {
 		webPushPayload := WebPushPayload{
 			Title:   notification.Title,
@@ -26,7 +33,7 @@ func notificationWorker(id int, notifications <-chan NotificationData, vapidEmai
 		}
 		webPushPayloadJson, err := json.Marshal(webPushPayload)
 		if err != nil {
-			log.Printf("[PUSH-WORKER] Worker %d: Error marshalling payload: %s\n", id, err.Error())
+			logger.Infof("Worker %d: Error marshalling payload: %s\n", id, err.Error())
 			continue
 		}
 
@@ -38,16 +45,18 @@ func notificationWorker(id int, notifications <-chan NotificationData, vapidEmai
 			TTL:             30,
 		})
 		if err != nil {
-			log.Printf("[PUSH-WORKER] Worker %d: Error sending notification: %s\n", id, err.Error())
+			logger.Infof("Worker %d: Error sending notification: %s\n", id, err.Error())
 			continue
 		}
-		log.Printf("[PUSH-WORKER] Worker %d: Sent notification! Response: %v\n", id, resp)
+		logger.Infof("Worker %d: Sent notification! Response: %v\n", id, resp)
 		resp.Body.Close()
 	}
 }
 
 func RunPushNotification() chan<- NotificationData {
-	log.Println("[PUSH-WORKER] Starting push notification workers...")
+	logger := log.WithFields(log.Fields{"service": "PushNotificationService"})
+
+	logger.Info("Starting push notification workers...")
 
 	// VAPID keys
 	vapidEmail := utils.Config("VAPID_EMAIL")
@@ -59,7 +68,8 @@ func RunPushNotification() chan<- NotificationData {
 	var wg sync.WaitGroup
 	for i := 1; i <= 3; i++ {
 		wg.Add(1)
-		go notificationWorker(i, notifications, vapidEmail, vapidPublicKey, vapidPrivateKey, &wg)
+		workerLogger := logger.WithFields(log.Fields{"service": "PushNotificationService", "worker": i})
+		go notificationWorker(i, notifications, vapidEmail, vapidPublicKey, vapidPrivateKey, &wg, workerLogger)
 	}
 
 	// Handle SIGINT and SIGTERM signals to gracefully shutdown
@@ -67,11 +77,11 @@ func RunPushNotification() chan<- NotificationData {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigChan
-		log.Println("[PUSH-WORKER] Received shutdown signal, closing notification channel...")
+		logger.Info("Received shutdown signal, closing notification channel...")
 		close(notifications)
 
 		wg.Wait()
-		log.Println("[PUSH-WORKER] All workers have finished processing")
+		logger.Info("All workers have finished processing!")
 		os.Exit(0)
 	}()
 
