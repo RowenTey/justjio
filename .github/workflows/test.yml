@@ -30,7 +30,7 @@ jobs:
                 title: 'Unit Test Results',
                 summary: ''
               },
-              details_url: `${github.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${github.runId}`,  
+              details_url: `${github.server_url}/${context.repo.owner}/${context.repo.repo}/actions/runs/${github.run_id}`,  
               external_id: `${github.runId}`,            
               started_at: new Date().toISOString(),
               owner: context.repo.owner,
@@ -76,7 +76,7 @@ jobs:
                 title: 'Unit Test Results',
                 summary: `Tests completed with status: ${conclusion}`
               },
-              details_url: `${github.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${github.runId}`,  
+              details_url: `${github.server_url}/${context.repo.owner}/${context.repo.repo}/actions/runs/${github.run_id}`,  
               external_id: `${github.runId}`, 
               completed_at: new Date().toISOString(),
               owner: context.repo.owner,
