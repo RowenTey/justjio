@@ -170,7 +170,7 @@ func CreateRoom(c *fiber.Ctx) error {
 		Invites: *invites,
 	}
 
-	log.Info("Room " + room.Name + " created successfully.")
+	roomLogger.Info("Room " + room.Name + " created successfully.")
 	return util.HandleSuccess(c, "Created room successfully", response)
 }
 
@@ -233,7 +233,7 @@ func JoinRoom(c *fiber.Ctx) error {
 		Attendees: *attendees,
 	}
 
-	log.Info("User " + util.GetUserInfoFromToken(token, "username") + " joined Room " + roomId + " successfully.")
+	roomLogger.Info("User " + util.GetUserInfoFromToken(token, "username") + " joined Room " + roomId + " successfully.")
 	return util.HandleSuccess(c, "Joined room successfully", roomResponse)
 }
 
@@ -278,7 +278,7 @@ func RespondToRoomInvite(c *fiber.Ctx) error {
 		Attendees: *attendees,
 	}
 
-	log.Info(
+	roomLogger.Info(
 		"User " + util.GetUserInfoFromToken(token, "username") + " joined Room " + roomId + " successfully.")
 	return util.HandleSuccess(c, "Joined room successfully", roomResponse)
 }
