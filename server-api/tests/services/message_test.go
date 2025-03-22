@@ -55,7 +55,7 @@ func (s *MessageServiceTestSuite) SetupTest() {
 	})
 	assert.NoError(s.T(), err)
 
-	s.messageService = &services.MessageService{DB: s.DB}
+	s.messageService = services.NewMessageService(s.DB)
 }
 
 func (s *MessageServiceTestSuite) AfterTest(_, _ string) {

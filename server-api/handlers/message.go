@@ -1,8 +1,9 @@
 package handlers
 
 import (
-	"log"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/database"
 	model_kafka "github.com/RowenTey/JustJio/model/kafka"
@@ -15,11 +16,13 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+var messageLogger = log.WithFields(log.Fields{"service": "MessageHandler"})
+
 func GetMessage(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 	msgId := c.Params("msgId")
 
-	message, err := (&services.MessageService{DB: database.DB}).GetMessageById(msgId, roomId)
+	message, err := services.NewMessageService(database.DB).GetMessageById(msgId, roomId)
 	if err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, "No message found")
 	}
@@ -33,7 +36,7 @@ func GetMessages(c *fiber.Ctx) error {
 	page := c.QueryInt("page", 1)
 	asc := c.QueryBool("asc", true)
 
-	msgService := &services.MessageService{DB: database.DB}
+	msgService := services.NewMessageService(database.DB)
 
 	messages, err := msgService.GetMessagesByRoomId(roomId, page, asc)
 	if err != nil {
@@ -67,17 +70,17 @@ func CreateMessage(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 
 	var err error
 
-	room, err := (&services.RoomService{DB: database.DB}).GetRoomById(roomId)
+	room, err := services.NewRoomService(database.DB).GetRoomById(roomId)
 	if err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
-	user, err := (&services.UserService{DB: database.DB}).GetUserByID(userId)
+	user, err := services.NewUserService(database.DB).GetUserByID(userId)
 	if err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
 
-	err = (&services.MessageService{DB: database.DB}).SaveMessage(room, user, request.Content)
+	err = services.NewMessageService(database.DB).SaveMessage(room, user, request.Content)
 	if err != nil {
 		return util.HandleInternalServerError(c, err)
 	}
@@ -101,9 +104,9 @@ func CreateMessage(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 
 	roomUserIds := c.Locals("roomUserIds").(*[]string)
 	if err := kafkaSvc.BroadcastMessage(roomUserIds, broadcastPayload); err != nil {
-		log.Println("[MESSAGE] Failed to broadcast message:", err)
+		messageLogger.Error("Failed to broadcast message:", err)
 	}
-	log.Println("[MESSAGE] Broadcasted message to Kafka")
+	messageLogger.Debug("Broadcasted message to Kafka!")
 
 	return util.HandleSuccess(c, "Message saved successfully", nil)
 }

@@ -3,6 +3,8 @@ package handlers
 import (
 	"net/url"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/RowenTey/JustJio/database"
 	"github.com/RowenTey/JustJio/model"
 	model_push_notifications "github.com/RowenTey/JustJio/model/push_notifications"
@@ -13,13 +15,15 @@ import (
 
 type NotificationData = model_push_notifications.NotificationData
 
+var subscriptionLogger = log.WithField("service", "SubscriptionHandler")
+
 func CreateSubscription(c *fiber.Ctx, notificationsChan chan<- NotificationData) error {
 	var subscription model.Subscription
 	if err := c.BodyParser(&subscription); err != nil {
 		return util.HandleInvalidInputError(c, err)
 	}
 
-	subscriptionService := &services.SubscriptionService{DB: database.DB}
+	subscriptionService := services.NewSubscriptionService(database.DB)
 	createdSubscription, err := subscriptionService.CreateSubscription(&subscription)
 	if err != nil {
 		return util.HandleInternalServerError(c, err)
@@ -31,6 +35,7 @@ func CreateSubscription(c *fiber.Ctx, notificationsChan chan<- NotificationData)
 		Message:      "Subscribed to JustJio! You will now receive notifications for app events.",
 	}
 
+	subscriptionLogger.Info("Subscription created successfully: ", createdSubscription.ID)
 	return util.HandleSuccess(c, "Subscription created successfully", createdSubscription)
 }
 
@@ -40,7 +45,8 @@ func GetSubscriptionByEndpoint(c *fiber.Ctx) error {
 	if err != nil {
 		return util.HandleInvalidInputError(c, err)
 	}
-	subscriptionService := &services.SubscriptionService{DB: database.DB}
+
+	subscriptionService := services.NewSubscriptionService(database.DB)
 	subscription, err := subscriptionService.GetSubscriptionsByEndpoint(decodedEndpoint)
 	if err != nil {
 		return util.HandleInternalServerError(c, err)
@@ -51,7 +57,7 @@ func GetSubscriptionByEndpoint(c *fiber.Ctx) error {
 
 func DeleteSubscription(c *fiber.Ctx) error {
 	subId := c.Params("subId")
-	subscriptionService := &services.SubscriptionService{DB: database.DB}
+	subscriptionService := services.NewSubscriptionService(database.DB)
 	if err := subscriptionService.DeleteSubscription(subId); err != nil {
 		return util.HandleInternalServerError(c, err)
 	}

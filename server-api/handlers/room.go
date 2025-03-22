@@ -3,7 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/database"
 	"github.com/RowenTey/JustJio/model/request"
@@ -16,10 +17,12 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+var roomLogger = log.WithFields(log.Fields{"service": "RoomHandler"})
+
 func GetRoom(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 
-	room, err := (&services.RoomService{DB: database.DB}).GetRoomById(roomId)
+	room, err := services.NewRoomService(database.DB).GetRoomById(roomId)
 	if err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
@@ -32,7 +35,7 @@ func GetRooms(c *fiber.Ctx) error {
 	userId := util.GetUserInfoFromToken(token, "user_id")
 	page := c.QueryInt("page", 1)
 
-	roomService := &services.RoomService{DB: database.DB}
+	roomService := services.NewRoomService(database.DB)
 
 	rooms, err := roomService.GetRooms(userId, page)
 	if err != nil {
@@ -46,7 +49,7 @@ func GetNumRooms(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := util.GetUserInfoFromToken(token, "user_id")
 
-	roomService := &services.RoomService{DB: database.DB}
+	roomService := services.NewRoomService(database.DB)
 
 	numRooms, err := roomService.GetNumRooms(userId)
 	if err != nil {
@@ -61,7 +64,7 @@ func GetRoomInvitations(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := util.GetUserInfoFromToken(token, "user_id")
 
-	roomService := &services.RoomService{DB: database.DB}
+	roomService := services.NewRoomService(database.DB)
 
 	invites, err := roomService.GetRoomInvites(userId)
 	if err != nil {
@@ -75,7 +78,7 @@ func GetNumRoomInvitations(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := util.GetUserInfoFromToken(token, "user_id")
 
-	roomService := &services.RoomService{DB: database.DB}
+	roomService := services.NewRoomService(database.DB)
 
 	numInvites, err := roomService.GetNumRoomInvites(userId)
 	if err != nil {
@@ -89,7 +92,7 @@ func GetNumRoomInvitations(c *fiber.Ctx) error {
 func GetRoomAttendees(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 
-	roomService := &services.RoomService{DB: database.DB}
+	roomService := services.NewRoomService(database.DB)
 
 	attendees, err := roomService.GetRoomAttendees(roomId)
 	if err != nil {
@@ -104,7 +107,7 @@ func GetUninvitedFriendsForRoom(c *fiber.Ctx) error {
 	userId := util.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	roomService := &services.RoomService{DB: database.DB}
+	roomService := services.NewRoomService(database.DB)
 	friends, err := roomService.GetUninvitedFriendsForRoom(roomId, userId)
 	if err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, "No uninvited friends found")
@@ -129,8 +132,8 @@ func CreateRoom(c *fiber.Ctx) error {
 
 	tx := database.DB.Begin()
 
-	userService := &services.UserService{DB: tx}
-	roomService := &services.RoomService{DB: tx}
+	userService := services.NewUserService(tx)
+	roomService := services.NewRoomService(tx)
 
 	user, err := userService.GetUserByID(userId)
 	if err != nil {
@@ -167,7 +170,7 @@ func CreateRoom(c *fiber.Ctx) error {
 		Invites: *invites,
 	}
 
-	log.Println("Room " + room.Name + " created successfully.")
+	log.Info("Room " + room.Name + " created successfully.")
 	return util.HandleSuccess(c, "Created room successfully", response)
 }
 
@@ -176,8 +179,9 @@ func CloseRoom(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := util.GetUserInfoFromToken(token, "user_id")
 
+	// TODO: user can close room if they are not any bills to consolidate
 	// check if they are unconsolidated bills
-	consolidated, err := (&services.BillService{DB: database.DB}).IsRoomBillConsolidated(roomId)
+	consolidated, err := services.NewBillService(database.DB).IsRoomBillConsolidated(roomId)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return util.HandleInternalServerError(c, err)
 	}
@@ -187,7 +191,7 @@ func CloseRoom(c *fiber.Ctx) error {
 			c, fiber.StatusConflict, "Cannot close room with unconsolidated bills", nil)
 	}
 
-	err = (&services.RoomService{DB: database.DB}).CloseRoom(roomId, userId)
+	err = services.NewRoomService(database.DB).CloseRoom(roomId, userId)
 	if err != nil {
 		if err.Error() == "user is not the host of the room" {
 			return util.HandleError(
@@ -204,7 +208,7 @@ func JoinRoom(c *fiber.Ctx) error {
 	userId := util.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	roomService := &services.RoomService{DB: database.DB}
+	roomService := services.NewRoomService(database.DB)
 
 	err := roomService.JoinRoom(roomId, userId)
 	if err != nil {
@@ -229,7 +233,7 @@ func JoinRoom(c *fiber.Ctx) error {
 		Attendees: *attendees,
 	}
 
-	log.Println("User " + util.GetUserInfoFromToken(token, "username") + " joined Room " + roomId + " successfully.")
+	log.Info("User " + util.GetUserInfoFromToken(token, "username") + " joined Room " + roomId + " successfully.")
 	return util.HandleSuccess(c, "Joined room successfully", roomResponse)
 }
 
@@ -243,7 +247,7 @@ func RespondToRoomInvite(c *fiber.Ctx) error {
 	userId := util.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	roomService := &services.RoomService{DB: database.DB}
+	roomService := services.NewRoomService(database.DB)
 
 	status := "accepted"
 	if !request.Accept {
@@ -274,7 +278,7 @@ func RespondToRoomInvite(c *fiber.Ctx) error {
 		Attendees: *attendees,
 	}
 
-	log.Println(
+	log.Info(
 		"User " + util.GetUserInfoFromToken(token, "username") + " joined Room " + roomId + " successfully.")
 	return util.HandleSuccess(c, "Joined room successfully", roomResponse)
 }
@@ -296,7 +300,7 @@ func InviteUser(c *fiber.Ctx) error {
 
 	tx := database.DB.Begin()
 
-	userService := &services.UserService{DB: tx}
+	userService := services.NewUserService(tx)
 
 	user, err := userService.GetUserByID(userId)
 	if err != nil {
@@ -308,7 +312,7 @@ func InviteUser(c *fiber.Ctx) error {
 		return util.HandleError(c, fiber.StatusNotFound, "User doesn't exist", err)
 	}
 
-	roomInvites, err := (&services.RoomService{DB: tx}).InviteUserToRoom(
+	roomInvites, err := services.NewRoomService(tx).InviteUserToRoom(
 		roomId, user, invitees, request.Message)
 	if err != nil {
 		tx.Rollback()
@@ -335,7 +339,7 @@ func LeaveRoom(c *fiber.Ctx) error {
 	userId := util.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	consolidated, err := (&services.BillService{DB: database.DB}).IsRoomBillConsolidated(roomId)
+	consolidated, err := services.NewBillService(database.DB).IsRoomBillConsolidated(roomId)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return util.HandleInternalServerError(c, err)
 	}
@@ -346,7 +350,7 @@ func LeaveRoom(c *fiber.Ctx) error {
 	}
 
 	// TODO: check that user is not the host of the room
-	if err := (&services.RoomService{DB: database.DB}).RemoveUserFromRoom(roomId, userId); err != nil {
+	if err := services.NewRoomService(database.DB).RemoveUserFromRoom(roomId, userId); err != nil {
 		return util.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 

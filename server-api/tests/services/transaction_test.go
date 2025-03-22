@@ -71,7 +71,7 @@ func (s *TransactionServiceTestSuite) SetupTest() {
 	})
 	assert.NoError(s.T(), err)
 
-	s.transactionService = &services.TransactionService{DB: s.DB}
+	s.transactionService = services.NewTransactionService(s.DB)
 }
 
 func (s *TransactionServiceTestSuite) AfterTest(_, _ string) {

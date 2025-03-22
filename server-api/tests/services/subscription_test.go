@@ -57,7 +57,7 @@ func (s *SubscriptionServiceTestSuite) SetupTest() {
 	})
 	assert.NoError(s.T(), err)
 
-	s.subscriptionService = &services.SubscriptionService{DB: s.DB}
+	s.subscriptionService = services.NewSubscriptionService(s.DB)
 }
 
 func (s *SubscriptionServiceTestSuite) AfterTest(_, _ string) {

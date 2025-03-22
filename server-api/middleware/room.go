@@ -15,7 +15,7 @@ func IsUserInRoom(c *fiber.Ctx) error {
 	userId := util.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	userIds, err := (&services.RoomService{DB: database.DB}).GetRoomAttendeesIds(roomId)
+	userIds, err := (services.NewRoomService(database.DB)).GetRoomAttendeesIds(roomId)
 	if err != nil {
 		return util.HandleInternalServerError(c, err)
 	}

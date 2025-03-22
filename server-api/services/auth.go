@@ -3,9 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/config"
 	"github.com/RowenTey/JustJio/model"
@@ -22,6 +23,22 @@ type AuthService struct {
 	JwtSecret     string
 	SendSMTPEmail func(from, to, subject, textBody string) error
 	OAuthConfig   *oauth2.Config
+	logger        *log.Entry
+}
+
+func NewAuthService(
+	hashFunc func(password string) (string, error),
+	jwtSecret string,
+	sendSMTPEmail func(from, to, subject, textBody string) error,
+	oauthConfig *oauth2.Config,
+) *AuthService {
+	return &AuthService{
+		HashFunc:      hashFunc,
+		JwtSecret:     jwtSecret,
+		SendSMTPEmail: sendSMTPEmail,
+		OAuthConfig:   oauthConfig,
+		logger:        log.WithFields(log.Fields{"service": "AuthService"}),
+	}
 }
 
 const TOKEN_EXPIRY_DURATION = time.Hour * 72 // 3 days
@@ -75,7 +92,7 @@ func (s *AuthService) SendOTPEmail(otp, username, email, purpose string) error {
 	if err != nil {
 		return err
 	}
-	log.Println("[AUTH] OTP send to " + email + " successfully!")
+	s.logger.Info("OTP send to " + email + " successfully!")
 	return nil
 }
 

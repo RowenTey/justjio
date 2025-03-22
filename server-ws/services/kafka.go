@@ -3,7 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server-ws/utils"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
@@ -14,6 +15,7 @@ type KafkaService struct {
 	Config   *kafka.ConfigMap
 	ctx      context.Context
 	cancel   context.CancelFunc
+	logger   *log.Entry
 }
 
 func GetUserChannel(userId, env string) string {
@@ -43,7 +45,13 @@ func NewKafkaService(brokers, groupId string) (*KafkaService, error) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &KafkaService{Consumer: consumer, Config: config, ctx: ctx, cancel: cancel}, nil
+	return &KafkaService{
+		Consumer: consumer,
+		Config:   config,
+		ctx:      ctx,
+		cancel:   cancel,
+		logger:   log.WithField("service", "Kafka"),
+	}, nil
 }
 
 // Subscribes to a list of Kafka topics
@@ -52,7 +60,7 @@ func (s *KafkaService) Subscribe(topics []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to topics: %w", err)
 	}
-	log.Printf("[Kafka] Subscribed to topics: %v\n", topics)
+	s.logger.Infof("Subscribed to topics: %v\n", topics)
 	return nil
 }
 
@@ -65,7 +73,7 @@ func (s *KafkaService) Unsubscribe() error {
 	if err != nil {
 		return fmt.Errorf("failed to unsubscribe from topics: %w", err)
 	}
-	log.Println("[Kafka] Unsubscribed from topics")
+	s.logger.Info("Unsubscribed from topics")
 	return nil
 }
 
@@ -74,23 +82,23 @@ func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) {
 	for {
 		select {
 		case <-s.ctx.Done():
-			log.Println("[Kafka] Stopping message consumption")
+			s.logger.Info("Stopping message consumption")
 			return
 		default:
 			msg, err := s.Consumer.ReadMessage(1)
 			if err != nil && err.(kafka.Error).Code() == kafka.ErrTimedOut {
 				continue
 			} else if err != nil {
-				log.Printf("[Kafka] Failed to consume message: %s", err.Error())
+				s.logger.Printf("Failed to consume message: %s", err.Error())
 				return
 			}
-			log.Printf("[Kafka] Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
+			s.logger.Debugf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
 			handler(*msg)
 		}
 	}
 }
 
 func (s *KafkaService) Close() {
-	log.Println("[Kafka] Closing Kafka client")
+	s.logger.Info("Closing Kafka client")
 	s.Consumer.Close()
 }
