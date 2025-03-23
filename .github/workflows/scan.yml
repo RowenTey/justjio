@@ -36,7 +36,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             // Get the head_sha from the workflow that triggered this one
-            const headSha = ${{ steps.get-sha.outputs.HEAD_SHA }};
+            const headSha = '${{ steps.get-sha.outputs.HEAD_SHA }}';
 
             const { data: checkRun } = await github.rest.checks.create({
               name: 'trivy-security-scan',
