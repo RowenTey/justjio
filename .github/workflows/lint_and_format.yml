@@ -20,6 +20,10 @@ jobs:
           cache: "npm"
           cache-dependency-path: ./client-web/package-lock.json
 
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./client-web
+
       - name: Lint React code
         run: npm run lint
         working-directory: ./client-web
