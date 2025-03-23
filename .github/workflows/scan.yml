@@ -72,6 +72,8 @@ jobs:
       - name: Convert to SARIF
         env:
           TRIVY_EXIT_CODE: 0
+          TRIVY_FORMAT: sarif
+          TRIVY_OUTPUT: trivy-results.sarif
         run: |
           trivy convert --format=sarif --output="trivy-results.sarif" results.json
 
@@ -83,6 +85,7 @@ jobs:
       - name: View readable report
         env:
           TRIVY_EXIT_CODE: 0
+          TRIVY_FORMAT: table
         run: |
           trivy convert --scanners=vuln,secret --format=table results.json && exit 1
 
