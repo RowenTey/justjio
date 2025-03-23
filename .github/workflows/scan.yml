@@ -70,7 +70,8 @@ jobs:
       #   uses: aquasecurity/setup-trivy@v0.2.2
 
       - name: Convert to SARIF
-        continue-on-error: true
+        env:
+          TRIVY_EXIT_CODE: 0
         run: |
           trivy convert --format=sarif --output="trivy-results.sarif" results.json
 
@@ -80,13 +81,14 @@ jobs:
           sarif_file: "trivy-results.sarif"
 
       - name: View readable report
-        continue-on-error: true
+        env:
+          TRIVY_EXIT_CODE: 0
         run: |
-          trivy convert --scanners=vuln,secret --format=table results.json
+          trivy convert --scanners=vuln,secret --format=table results.json && exit 1
 
       # custom script to report scan results
       - name: Report scan results
-        if: ${{ github.event.workflow_run != null && steps.trivy-scan-step.outcome != null }}
+        if: ${{ (failure() || success()) && github.event.workflow_run != null && steps.trivy-scan-step.outcome != null }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
