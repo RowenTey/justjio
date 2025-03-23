@@ -66,8 +66,8 @@ jobs:
           severity: "CRITICAL"
           exit-code: "1"
 
-      - name: Setup trivy for SARIF upload
-        uses: aquasecurity/setup-trivy@v0.2.2
+      # - name: Setup trivy for SARIF upload
+      #   uses: aquasecurity/setup-trivy@v0.2.2
 
       - name: Convert to SARIF
         continue-on-error: true
@@ -82,7 +82,7 @@ jobs:
       - name: View readable report
         continue-on-error: true
         run: |
-          trivy convert --format=table results.json
+          trivy convert --scanners=vuln,secret --format=table results.json
 
       # custom script to report scan results
       - name: Report scan results
