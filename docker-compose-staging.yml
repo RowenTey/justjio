@@ -1,11 +1,21 @@
+name: justjio-backend
+
+x-common-config: &common-config
+  restart: unless-stopped
+  networks:
+    - justjio_network
+    - caddy_network
+
+x-common-healthcheck: &common-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 5
+
 services:
   frontend:
     container_name: justjio-web
     image: ghcr.io/rowentey/justjio/web:latest
-    networks:
-      - justjio_network
-      - caddy_network
-    restart: unless-stopped
+    <<: *common-config
     environment:
       APP_ENV_PREFIX: VITE
       VITE_API_URL: https://justjio-api-staging.rowentey.xyz/v1
@@ -20,17 +30,12 @@ services:
       - ws-server
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      <<: *common-healthcheck
 
   api-server:
     container_name: justjio-api
     image: ghcr.io/rowentey/justjio/api:latest
-    restart: unless-stopped
-    networks:
-      - justjio_network
-      - caddy_network
+    <<: *common-config
     environment:
       DSN: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}/${POSTGRES_DB}?sslmode=disable
       PORT: 8080
@@ -49,17 +54,12 @@ services:
     entrypoint: ["/api-server", "staging"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      <<: *common-healthcheck
 
   ws-server:
     container_name: justjio-ws
     image: ghcr.io/rowentey/justjio/ws:latest
-    restart: unless-stopped
-    networks:
-      - justjio_network
-      - caddy_network
+    <<: *common-config
     environment:
       PORT: 8081
       JWT_SECRET: ${JWT_SECRET}
@@ -69,9 +69,7 @@ services:
     entrypoint: ["/ws-server", "staging"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/ping || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      <<: *common-healthcheck
 
 networks:
   justjio_network:

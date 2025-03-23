@@ -1,5 +1,10 @@
 name: justjio-backend
 
+x-common-healthcheck: &common-healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 5
+
 services:
   frontend:
     image: ghcr.io/rowentey/justjio/web:latest
@@ -22,9 +27,7 @@ services:
       - ws-server
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      <<: *common-healthcheck
 
   api-server:
     image: ghcr.io/rowentey/justjio/api:latest
@@ -56,9 +59,7 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      <<: *common-healthcheck
 
   ws-server:
     image: ghcr.io/rowentey/justjio/ws:latest
@@ -78,9 +79,7 @@ services:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/ping || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      <<: *common-healthcheck
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -124,9 +123,7 @@ services:
       - justjio-postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      <<: *common-healthcheck
 
   # redis:
   #   image: redis:latest
