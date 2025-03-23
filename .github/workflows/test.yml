@@ -74,11 +74,10 @@ jobs:
       - name: Run unit tests
         id: test-step
         run: cd server-api && go test -v ./...
-        continue-on-error: true
 
       # custom script to report test results
       - name: Report test results
-        if: ${{ github.event.workflow_run != null && steps.test-step.outcome != null }}
+        if: ${{ always() && github.event.workflow_run != null && steps.test-step.outcome != null }}
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
