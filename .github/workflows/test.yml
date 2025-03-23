@@ -21,11 +21,9 @@ jobs:
           script: |
             const headSha = context.payload.workflow_run.head_sha;
 
-            // Also save to a file for the artifact
+            // Save to a file for the artifact
             const fs = require('fs');
             fs.writeFileSync('head_sha.txt', headSha);
-
-            core.setOutput('head_sha', headSha);
 
       # create a workflow artifact containing the SHA
       - name: Upload head SHA artifact

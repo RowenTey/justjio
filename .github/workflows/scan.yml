@@ -15,18 +15,21 @@ jobs:
       # get SHA of PR from the workflow that triggered this one
       - name: Download workflow data
         if: ${{ github.event.workflow_run != null }}
-        uses: actions/download-artifact@v4
+        id: download-sha
+        uses: dawidd6/action-download-artifact@v9
         with:
           name: pr-head-sha
+          workflow: ${{ github.event.workflow_run.workflow_id }}
+          workflow_conclusion: success
 
       - name: Get head SHA
-        if: ${{ github.event.workflow_run != null }}
+        if: ${{ github.event.workflow_run != null && success() }}
         id: get-sha
         run: echo "HEAD_SHA=$(cat head_sha.txt)" >> $GITHUB_OUTPUT
 
       # custom script to create a check run
       - name: Create check
-        if: ${{ github.event.workflow_run != null }}
+        if: ${{ github.event.workflow_run != null && success() }}
         id: create-check
         uses: actions/github-script@v7
         with:
@@ -63,7 +66,7 @@ jobs:
           exit-code: "1"
 
       - name: Upload Trivy scan results to GitHub Security tab
-        if: always()
+        if: ${{ github.event.workflow_run != null && steps.trivy-scan-step.outcome != null }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-results.sarif"
