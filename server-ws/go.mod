@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/confluentinc/confluent-kafka-go/v2 v2.4.0
-	github.com/gofiber/fiber/v2 v2.52.4
+	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/gofiber/websocket/v2 v2.2.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
