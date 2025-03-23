@@ -1,5 +1,11 @@
 name: justjio-backend
 
+x-common-env: &common-env
+  JWT_SECRET: ${JWT_SECRET}
+  KAFKA_TOPIC_PREFIX: justjio
+  KAFKA_URL: ${KAFKA_HOST}:${KAFKA_PORT}
+  ALLOWED_ORIGINS: https://justjio-staging.rowentey.xyz
+
 x-common-config: &common-config
   restart: unless-stopped
   networks:
@@ -39,9 +45,6 @@ services:
     environment:
       DSN: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}/${POSTGRES_DB}?sslmode=disable
       PORT: 8080
-      JWT_SECRET: ${JWT_SECRET}
-      KAFKA_TOPIC_PREFIX: justjio
-      KAFKA_URL: ${KAFKA_HOST}:${KAFKA_PORT}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
@@ -50,7 +53,7 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       SMTP2GO_API_KEY: ${SMTP2GO_API_KEY}
-      ALLOWED_ORIGINS: https://justjio-staging.rowentey.xyz
+      <<: *common-env
     entrypoint: ["/api-server", "staging"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
@@ -62,10 +65,7 @@ services:
     <<: *common-config
     environment:
       PORT: 8081
-      JWT_SECRET: ${JWT_SECRET}
-      KAFKA_TOPIC_PREFIX: justjio
-      KAFKA_URL: ${KAFKA_HOST}:${KAFKA_PORT}
-      ALLOWED_ORIGINS: https://justjio-staging.rowentey.xyz
+      <<: *common-env
     entrypoint: ["/ws-server", "staging"]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/ping || exit 1"]
