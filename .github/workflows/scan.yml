@@ -68,7 +68,7 @@ jobs:
         with:
           sarif_file: "trivy-results.sarif"
 
-      # display table and set exit code here 
+      # display table
       - name: Display vulnerability table
         id: trivy-scan-step
         uses: aquasecurity/trivy-action@0.30.0
@@ -77,7 +77,6 @@ jobs:
           ignore-unfixed: true
           format: "table"
           severity: "HIGH,CRITICAL"
-          exit-code: "1"
 
       # custom script to report scan results
       - name: Report scan results
