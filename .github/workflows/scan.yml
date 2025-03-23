@@ -60,16 +60,27 @@ jobs:
         with:
           scan-type: "fs"
           ignore-unfixed: true
-          format: "sarif"
-          output: "trivy-results.sarif"
+          format: "json"
+          output: "results.json"
           severity: "CRITICAL"
           exit-code: "1"
+        continue-on-error: true
+
+      - name: Setup trivy for SARIF upload
+        uses: aquasecurity/setup-trivy@v0.2.0
+
+      - name: Convert to SARIF
+        run: |
+          trivy convert --format=sarif --output="trivy-results.sarif" "results.json"
 
       - name: Upload Trivy scan results to GitHub Security tab
-        if: ${{ github.event.workflow_run != null && steps.trivy-scan-step.outcome != null }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-results.sarif"
+
+      - name: View readable report
+        run: |
+          trivy convert --format=table results.json
 
       # custom script to report scan results
       - name: Report scan results
