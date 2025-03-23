@@ -74,6 +74,7 @@ jobs:
       - name: Run unit tests
         id: test-step
         run: cd server-api && go test -v ./...
+        continue-on-error: true
 
       # custom script to report test results
       - name: Report test results
