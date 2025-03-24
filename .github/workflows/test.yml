@@ -107,4 +107,4 @@ jobs:
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: Run Security Scan
-          ref: ${{ github.sha }}
+          ref: ${{ github.head_ref }}
