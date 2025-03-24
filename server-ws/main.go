@@ -105,11 +105,11 @@ func main() {
 
 		onMessage := func(message kafka.Message) {
 			forAllConns(func(conn *websocket.Conn) {
-				log.WithField("service", "WebSocket").Info("Sending message to", user.ID)
+				log.WithField("service", "WebSocket").Info("Sending message to ", user.ID)
 				if err := conn.WriteMessage(websocket.TextMessage, []byte(message.Value)); err != nil {
 					log.WithField("service", "WebSocket").Error("WebSocket Error:", err)
 				}
-				log.WithField("service", "WebSocket").Info("Sent message to", user.ID)
+				log.WithField("service", "WebSocket").Info("Sent message to ", user.ID)
 			})
 		}
 
@@ -128,7 +128,7 @@ func main() {
 			}
 
 			if err := kafkaClient.Subscribe([]string{channel}); err != nil {
-				log.WithField("service", "Kafka").Error("Error subscribing to channel:", err)
+				log.WithField("service", "Kafka").Error("Error subscribing to channel: ", err)
 			}
 			go kafkaClient.ConsumeMessages(onMessage)
 		} else {
@@ -153,7 +153,7 @@ func main() {
 
 		// Set up ping/pong handlers
 		c.SetPingHandler(func(appData string) error {
-			log.WithField("service", "WebSocket").Debug("Received ping:", appData)
+			log.WithField("service", "WebSocket").Debug("Received ping: ", appData)
 			return c.WriteMessage(websocket.PongMessage, []byte(appData))
 		})
 
@@ -172,7 +172,7 @@ func main() {
 				select {
 				case <-heartbeat.C:
 					if err := c.WriteMessage(websocket.PingMessage, nil); err != nil {
-						log.WithField("service", "WebSocket").Error("Ping error:", err)
+						log.WithField("service", "WebSocket").Error("Ping error: ", err)
 						c.Close()
 						return
 					}
@@ -192,7 +192,7 @@ func main() {
 				if websocket.IsCloseError(wsErr, websocket.CloseNoStatusReceived) {
 					log.WithField("service", "WebSocket").Debug("Connection closed by client")
 				} else {
-					log.WithField("service", "WebSocket").Error("Error:", wsErr)
+					log.WithField("service", "WebSocket").Error("Error: ", wsErr)
 				}
 				break
 			}
