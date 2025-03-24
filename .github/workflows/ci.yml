@@ -12,6 +12,11 @@ env:
   REGISTRY: ghcr.io
   REPOSITORY: ${{ github.repository }}
 
+# Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this workflow.
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-and-push-images:
     if: ${{ github.event.label.name == 'ready_for_build' || github.event_name == 'workflow_dispatch' }}
@@ -33,7 +38,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.PAT }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
