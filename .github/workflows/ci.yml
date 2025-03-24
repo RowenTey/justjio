@@ -52,24 +52,22 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
 
-      - name: Remove `ready_for_build` label
-        if: always() && github.event_name != 'workflow_dispatch'
-        uses: actions-ecosystem/action-remove-labels@v1
-        with:
-          labels: ready_for_build
-
-  add-ready-to-merge-label:
-    if: ${{ github.event.label.name == 'ready_for_build' }}
+  remove-ready-for-build-label:
+    if: always() && ${{ github.event.label.name == 'ready_for_build' }}
     needs: [build-and-push-images]
     runs-on: ubuntu-latest
     steps:
       - name: Remove `ready_for_build` label
-        if: always()
         uses: actions-ecosystem/action-remove-labels@v1
         with:
           github_token: ${{ secrets.PAT }}
           labels: ready_for_build
 
+  add-ready-to-merge-label:
+    if: success() && ${{ github.event.label.name == 'ready_for_build' }}
+    needs: [build-and-push-images]
+    runs-on: ubuntu-latest
+    steps:
       - name: Add `ready_to_merge` label
         uses: actions-ecosystem/action-add-labels@v1
         with:
