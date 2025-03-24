@@ -51,5 +51,5 @@ jobs:
         if: always()
         uses: actions-ecosystem/action-remove-labels@v1
         with:
-          github-token: ${{ secrets.PAT }}
+          github_token: ${{ secrets.PAT }}
           labels: ready_for_scan
