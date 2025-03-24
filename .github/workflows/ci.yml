@@ -53,8 +53,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
 
   remove-ready-for-build-label:
-    if: always() && ${{ github.event.label.name == 'ready_for_build' }}
     needs: [build-and-push-images]
+    if: always() && ${{ github.event.label.name == 'ready_for_build' }}
     runs-on: ubuntu-latest
     steps:
       - name: Remove `ready_for_build` label
@@ -64,8 +64,8 @@ jobs:
           labels: ready_for_build
 
   add-ready-to-merge-label:
-    if: success() && ${{ github.event.label.name == 'ready_for_build' }}
     needs: [build-and-push-images]
+    if: success() && ${{ github.event.label.name == 'ready_for_build' }}
     runs-on: ubuntu-latest
     steps:
       - name: Add `ready_to_merge` label
