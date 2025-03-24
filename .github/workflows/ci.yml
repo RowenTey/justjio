@@ -12,12 +12,6 @@ env:
   REGISTRY: ghcr.io
   REPOSITORY: ${{ github.repository }}
 
-# Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this workflow.
-permissions:
-  contents: read
-  packages: write
-  pull-requests: write
-
 jobs:
   build-and-push-images:
     if: ${{ github.event.label.name == 'ready_for_build' || github.event_name == 'workflow_dispatch' }}
@@ -39,7 +33,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.PAT }}
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -73,9 +67,11 @@ jobs:
         if: always()
         uses: actions-ecosystem/action-remove-labels@v1
         with:
+          github-token: ${{ secrets.PAT }}
           labels: ready_for_build
 
       - name: Add `ready_to_merge` label
         uses: actions-ecosystem/action-add-labels@v1
         with:
+          github-token: ${{ secrets.PAT }}
           labels: ready_to_merge
