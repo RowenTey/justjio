@@ -7,7 +7,7 @@ require (
 	github.com/RowenTey/JustJio/server-ws v0.0.0-20250125123342-89cf25c22c13
 	github.com/SherClockHolmes/webpush-go v1.4.0
 	github.com/confluentinc/confluent-kafka-go/v2 v2.4.0
-	github.com/gofiber/fiber/v2 v2.52.4
+	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/gofiber/jwt/v3 v3.3.1
 	github.com/gofiber/swagger v1.0.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
