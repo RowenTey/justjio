@@ -31,8 +31,8 @@ jobs:
         run: cd server-api && go test -v ./...
 
   remove-ready-for-tests-label:
-    if: always() && ${{ github.event.label.name == 'ready_for_tests' }}
     needs: [test-api-server]
+    if: always() && ${{ github.event.label.name == 'ready_for_tests' }}
     runs-on: ubuntu-latest
     steps:
       - name: Remove `ready_for_tests` label
@@ -42,8 +42,8 @@ jobs:
           labels: ready_for_tests
 
   add-ready-for-scan-label:
-    if: success() && ${{ github.event.label.name == 'ready_for_tests' }}
     needs: [test-api-server]
+    if: success() && ${{ github.event.label.name == 'ready_for_tests' }}
     runs-on: ubuntu-latest
     steps:
       - name: Add `ready_for_scan` label
