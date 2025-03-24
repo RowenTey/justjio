@@ -16,8 +16,6 @@ env:
 permissions:
   contents: read
   packages: write
-  attestations: write
-  id-token: write
   pull-requests: write
 
 jobs:
@@ -66,7 +64,7 @@ jobs:
         with:
           labels: ready_for_build
 
-  manage-pr-label:
+  add-ready-to-merge-label:
     if: ${{ github.event.label.name == 'ready_for_build' }}
     needs: [build-and-push-images]
     runs-on: ubuntu-latest
