@@ -44,7 +44,7 @@ jobs:
 
   remove-ready-for-scan-label:
     needs: [security-scan]
-    if: always() && ${{ github.event.label.name == 'ready_for_scan' }}
+    if: ${{ always() && github.event.label.name == 'ready_for_scan' }}
     runs-on: ubuntu-latest
     steps:
       - name: Remove `ready_for_scan` label
