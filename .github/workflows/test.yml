@@ -30,18 +30,22 @@ jobs:
         id: test-step
         run: cd server-api && go test -v ./...
 
-  add-ready-for-scan-label:
-    if: ${{ github.event.label.name == 'ready_for_tests' }}
+  remove-ready-for-tests-label:
+    if: always() && ${{ github.event.label.name == 'ready_for_tests' }}
     needs: [test-api-server]
     runs-on: ubuntu-latest
     steps:
       - name: Remove `ready_for_tests` label
-        if: always()
         uses: actions-ecosystem/action-remove-labels@v1
         with:
           github_token: ${{ secrets.PAT }}
           labels: ready_for_tests
 
+  add-ready-for-scan-label:
+    if: success() && ${{ github.event.label.name == 'ready_for_tests' }}
+    needs: [test-api-server]
+    runs-on: ubuntu-latest
+    steps:
       - name: Add `ready_for_scan` label
         uses: actions-ecosystem/action-add-labels@v1
         with:
