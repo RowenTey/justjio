@@ -6,11 +6,6 @@ on:
       - main
       - dev
 
-# Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this workflow.
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
   lint-and-format-react:
     runs-on: ubuntu-latest
@@ -125,4 +120,5 @@ jobs:
       - name: Add `ready_for_tests` label
         uses: actions-ecosystem/action-add-labels@v1
         with:
+          github-token: ${{ secrets.PAT }}
           labels: ready_for_tests
