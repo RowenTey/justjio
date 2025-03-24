@@ -231,7 +231,7 @@ func ResetPassword(c *fiber.Ctx) error {
 		return util.HandleInternalServerError(c, err)
 	}
 
-	authLogger.Info("Password reset successfully for email", request.Email)
+	authLogger.Info("Password reset successfully for email ", request.Email)
 	return util.HandleSuccess(c, "Password reset successfully", nil)
 }
 

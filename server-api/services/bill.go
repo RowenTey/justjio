@@ -52,7 +52,7 @@ func (bs *BillService) CreateBill(
 		return nil, err
 	}
 
-	bs.logger.Info("Bill created in room:", bill.RoomID)
+	bs.logger.Info("Bill created in room: ", bill.RoomID)
 	return &bill, nil
 }
 
