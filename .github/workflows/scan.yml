@@ -12,6 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     steps:
+      # Print the branch it is running on
+      - name: Print branch
+        run: echo "Running on branch $GITHUB_REF"
+
       # get SHA of PR from the workflow that triggered this one
       - name: Download workflow data
         if: ${{ github.event.workflow_run != null }}
