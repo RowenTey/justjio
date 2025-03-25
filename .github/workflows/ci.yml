@@ -1,80 +1,168 @@
-name: CI Pipeline to build Docker Images
+name: CI Pipeline
 
 on:
   pull_request:
-    types: [labeled]
     branches:
       - main
       - dev
   workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io
-  REPOSITORY: ${{ github.repository }}
-
-# Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this workflow.
-permissions:
-  contents: read
-  packages: write
-
 jobs:
-  build-and-push-images:
-    if: ${{ github.event.label.name == 'ready_for_build' || github.event_name == 'workflow_dispatch' }}
+  lint-and-format-react:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: ./client-web/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./client-web
+
+      - name: Lint React code
+        run: npm run lint
+        working-directory: ./client-web
+
+      - name: Format React code
+        run: npm run format
+        working-directory: ./client-web
+
+      - name: Check for changes
+        id: git-check-react
+        run: |
+          git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit changes
+        if: steps.git-check-react.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "style: Formatted code with prettier"
+
+      - name: Push changes
+        if: steps.git-check-react.outputs.changes == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
+
+  lint-and-format-go:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service:
-          [
-            { name: api, directory: server-api },
-            { name: ws, directory: server-ws },
-            { name: web, directory: client-web },
-          ]
+        modules: ["./server-api", "./server-ws"]
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          go-version: 1.23
+          cache-dependency-path: |
+            ${{ matrix.modules }}/go.sum
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+      - name: golangci-lint ${{ matrix.modules }}
+        uses: golangci/golangci-lint-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/${{ matrix.service.name }}
-          tags: |
-            type=sha
-            latest
+          args: --timeout=10m
+          version: v1.60
+          working-directory: ${{ matrix.modules }}
 
-      - name: Build and push Docker image
-        id: push
-        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+      - name: Format Go code
+        run: |
+          gofmt -s -w ${{ matrix.modules }}
+
+      - name: Check for changes
+        id: git-check-go
+        run: |
+          git diff --exit-code || echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit changes
+        if: steps.git-check-go.outputs.changes == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          git commit -m "style: Formatted code with go formatter"
+
+      - name: Push changes
+        if: steps.git-check-go.outputs.changes == 'true'
+        uses: ad-m/github-push-action@master
         with:
-          context: ./${{ matrix.service.directory }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref }}
 
-  remove-ready-for-build-label:
-    needs: [build-and-push-images]
-    if: ${{ always() && github.event.label.name == 'ready_for_build' }}
+  test-api-server:
     runs-on: ubuntu-latest
+    needs: [lint-and-format-go, lint-and-format-react]
     steps:
-      - name: Remove `ready_for_build` label
-        uses: actions-ecosystem/action-remove-labels@v1
-        with:
-          github_token: ${{ secrets.PAT }}
-          labels: ready_for_build
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  add-ready-to-merge-label:
-    needs: [build-and-push-images, remove-ready-for-build-label]
-    if: ${{ needs.build-and-push-images.result == 'success' && github.event.label.name == 'ready_for_build' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Add `ready_to_merge` label
-        uses: actions-ecosystem/action-add-labels@v1
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          github_token: ${{ secrets.PAT }}
-          labels: ready_to_merge
+          go-version: 1.23
+          cache: true
+          cache-dependency-path: server-api/go.sum
+
+      - name: Install dependencies
+        run: cd server-api && go mod download
+
+      - name: Run unit tests
+        run: cd server-api && go test -v ./...
+
+  run-security-scan:
+    runs-on: ubuntu-latest
+    needs: [test-api-server]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # display table
+      - name: Display vulnerability table
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          scan-type: "fs"
+          ignore-unfixed: true
+          format: "table"
+          severity: "HIGH,CRITICAL"
+
+      - name: Run Trivy vulnerability scanner in repo mode
+        id: trivy-scan-step
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          scan-type: "fs"
+          ignore-unfixed: true
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "HIGH,CRITICAL"
+          exit-code: "1"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  run-sonarqube-scan:
+    runs-on: ubuntu-latest
+    needs: [run-security-scan]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
