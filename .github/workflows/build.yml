@@ -10,7 +10,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  REPOSITORY: ${{ github.repository }}
 
 # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this workflow.
 permissions:
@@ -18,7 +17,7 @@ permissions:
   packages: write
 
 jobs:
-  build-and-push-images:
+  build-and-push-image:
     if: ${{ github.event.label.name == 'ready_for_build' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     strategy:
@@ -29,12 +28,22 @@ jobs:
             { name: ws, directory: server-ws },
             { name: web, directory: client-web },
           ]
+        platform:
+          - linux/amd64
+          - linux/arm64
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      # transform linux/arm64 into linux-arm64 & linux/arm64 into arm64
+      # transform RowenTey/teybot into rowentey/teybot
+      - name: Prepare PLATFORM_PAIR & ARCH & REPOSITORY
+        run: |
+          platform=${{ matrix.platform }}
+          repo=${{ github.repository }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+          echo "ARCH=${platform#*/}" >> $GITHUB_ENV
+          echo "REPOSITORY=${repo,,}" >> $GITHUB_ENV
 
       - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -42,23 +51,101 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/${{ matrix.service.name }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: ${{ matrix.platform }}
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service.directory }}
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            GOARCH=${{ env.ARCH }}
+          push: true
+          # can only use repository name if push-by-digest is true
+          # see https://github.com/docker/build-push-action/discussions/1213
+          tags: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/${{ matrix.service.name }}
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          # cache layers in Github Actions Cache to speed up builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Export digest
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          digest="${{ steps.push.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    runs-on: ubuntu-latest
+    needs:
+      - build-and-push-image
+    strategy:
+      matrix:
+        service:
+          - api
+          - ws
+          - web
+    steps:
+      # transform RowenTey/teybot into rowentey/teybot
+      - name: Prepare REPOSITORY
+        run: |
+          repo=${{ github.repository }}
+          echo "REPOSITORY=${repo,,}" >> $GITHUB_ENV
+
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/${{ matrix.service }}
           tags: |
             type=sha
             latest
 
-      - name: Build and push Docker image
-        id: push
-        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
-        with:
-          context: ./${{ matrix.service.directory }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
+      - name: Create manifest list and push
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY }}/${{ env.REPOSITORY }}/${{ matrix.service }}@sha256:%s ' *)
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/${{ matrix.service }}:${{ steps.meta.outputs.version }}
 
   remove-ready-for-build-label:
-    needs: [build-and-push-images]
+    needs: [merge]
     if: ${{ always() && github.event.label.name == 'ready_for_build' }}
     runs-on: ubuntu-latest
     steps:
@@ -69,8 +156,8 @@ jobs:
           labels: ready_for_build
 
   add-ready-to-merge-label:
-    needs: [build-and-push-images, remove-ready-for-build-label]
-    if: ${{ needs.build-and-push-images.result == 'success' && github.event.label.name == 'ready_for_build' }}
+    needs: [merge, remove-ready-for-build-label]
+    if: ${{ needs.merge.result == 'success' && github.event.label.name == 'ready_for_build' }}
     runs-on: ubuntu-latest
     steps:
       - name: Add `ready_to_merge` label
