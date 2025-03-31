@@ -3,6 +3,7 @@ package middleware
 import (
 	"time"
 
+	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
@@ -10,6 +11,11 @@ import (
 )
 
 func Fiber(a *fiber.App, allowedOrigins string) {
+	prometheus := fiberprometheus.New("justjio-api")
+	prometheus.RegisterAt(a, "/metrics")
+	// Skip the root path (healthcheck) and favicon path for metrics
+	prometheus.SetSkipPaths([]string{"/", "/favicon.ico"})
+
 	a.Use(
 		// CORS setting
 		cors.New(cors.Config{
@@ -32,12 +38,15 @@ func Fiber(a *fiber.App, allowedOrigins string) {
 			},
 		}),
 
+		// Prometheus metrics
+		prometheus.Middleware,
+
 		// Logging
 		logger.New(logger.Config{
 			Next: func(c *fiber.Ctx) bool {
 				return c.IP() == "127.0.0.1" // Don't log from localhost
 			},
-			Format:     "[${ip}@${time}] | ${latency} | ${status} - ${method} ${path}\n",
+			Format:     "time=${time} level=info | ${latency} | ${status} - ${method} ${path}\n",
 			TimeZone:   "Asia/Singapore",
 			TimeFormat: time.RFC3339,
 		}),
