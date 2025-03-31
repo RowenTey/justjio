@@ -1,11 +1,13 @@
 # Build the application from source
 FROM golang:1.23-alpine AS build-stage
 
+ARG GOARCH=amd64
+
 # Kafka dependencies
 RUN set -ex &&\
-    apk add --no-progress --no-cache \
-      gcc \
-      musl-dev
+  apk add --no-progress --no-cache \
+  gcc \
+  musl-dev
 
 WORKDIR /app
 
@@ -13,11 +15,9 @@ COPY go.* ./
 RUN go mod download
 
 COPY . .
-RUN go get -d -v
-RUN GOOS=linux GOARCH=amd64 go build -v -tags musl -o /ws-server
+RUN GOOS=linux GOARCH=${GOARCH} go build -v -tags musl -o /ws-server
 
 # Deploy the application binary into a lean image
-# FROM gcr.io/distroless/base-debian11 AS build-release-stage
 FROM alpine:latest AS build-release-stage
 
 WORKDIR /
