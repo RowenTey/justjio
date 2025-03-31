@@ -127,17 +127,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # display table
-      - name: Display vulnerability table
-        uses: aquasecurity/trivy-action@0.30.0
-        with:
-          scan-type: "fs"
-          ignore-unfixed: true
-          format: "table"
-          severity: "HIGH,CRITICAL"
-
       - name: Run Trivy vulnerability scanner in repo mode
-        id: trivy-scan-step
         uses: aquasecurity/trivy-action@0.30.0
         with:
           scan-type: "fs"
@@ -145,13 +135,24 @@ jobs:
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "HIGH,CRITICAL"
-          exit-code: "1"
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "trivy-results.sarif"
+
+      # display table and fail if severity detected
+      - name: Display vulnerability table
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          scan-type: "fs"
+          ignore-unfixed: true
+          format: "table"
+          severity: "HIGH,CRITICAL"
+          exit-code: "1"
+          # skip setting up trivy
+          skip-setup-trivy: true
 
   run-sonarqube-scan:
     runs-on: ubuntu-latest
