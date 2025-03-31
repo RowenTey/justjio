@@ -42,6 +42,10 @@ jobs:
           echo "ARCH=${platform#*/}" >> $GITHUB_ENV
           echo "REPOSITORY=${repo,,}" >> $GITHUB_ENV
 
+      # required for path context in docker build push action
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
