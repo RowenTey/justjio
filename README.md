@@ -10,7 +10,7 @@
 
 ## 📂 Project Folder Structure
 
-#### Top Level Directory Layout
+### Top Level Directory Layout
 
 ```terminal
 .
@@ -21,9 +21,6 @@
 ├── server-ws/                  # go WebSockets server
 ├── docker-compose-staging.yml  # config for staging env
 ├── docker-compose.yml          # config for dev env
-├── .gitignore
-├── LICENSE
-└── README.md
 ```
 
 <!-- ## 🧪 Tech Stack
