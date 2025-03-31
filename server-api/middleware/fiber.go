@@ -10,8 +10,12 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-func Fiber(a *fiber.App, allowedOrigins string) {
-	prometheus := fiberprometheus.New("justjio-api")
+func Fiber(a *fiber.App, env, allowedOrigins string) {
+	serviceName := "justjio-api"
+	if env == "dev" || env == "staging" {
+		serviceName += "-" + env
+	}
+	prometheus := fiberprometheus.New(serviceName)
 	prometheus.RegisterAt(a, "/metrics")
 	// Skip the root path (healthcheck) and favicon path for metrics
 	prometheus.SetSkipPaths([]string{"/", "/favicon.ico"})
