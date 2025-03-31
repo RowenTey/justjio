@@ -135,6 +135,7 @@ jobs:
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "HIGH,CRITICAL"
+          exit-code: 0
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
@@ -150,9 +151,13 @@ jobs:
           ignore-unfixed: true
           format: "table"
           severity: "HIGH,CRITICAL"
-          exit-code: "1"
+          exit-code: 1
           # skip setting up trivy
           skip-setup-trivy: true
+        # skip updating the database on 2nd run
+        env:
+          TRIVY_SKIP_DB_UPDATE: true
+          TRIVY_SKIP_JAVA_DB_UPDATE: true
 
   run-sonarqube-scan:
     runs-on: ubuntu-latest
