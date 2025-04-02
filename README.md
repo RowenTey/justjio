@@ -1,6 +1,6 @@
 # JustJio 🎉 ![Endpoint Badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fgomon.rowentey.xyz%2Fapi%2Fwebsites%2Fbadge%3FwebsiteUrl%3Dhttps%3A%2F%2Fjustjio-staging.rowentey.xyz)
 
-> Invite your friends to hangout easily 🀄 A party-planning app that streamlines all the pain of hosting one 🍻
+> A party-planning app that streamlines all the pain of hosting one 🍻
 
 ![landing](./client/assets/gifs/JustJio.gif)
 
@@ -20,7 +20,7 @@
 ├── server-api/                 # go API server
 ├── server-ws/                  # go WebSockets server
 ├── docker-compose-staging.yml  # config for staging env
-├── docker-compose.yml          # config for dev env
+└── docker-compose.yml          # config for dev env
 ```
 
 <!-- ## 🧪 Tech Stack
