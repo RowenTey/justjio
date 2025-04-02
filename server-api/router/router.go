@@ -7,7 +7,6 @@ import (
 	"github.com/RowenTey/JustJio/services"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/swagger"
 )
 
 type NotificationData = model_push_notifications.NotificationData
@@ -21,8 +20,6 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService, notifications
 	v1 := router.Group("/v1")
 
 	/* public routes */
-
-	v1.Get("/swagger/*", swagger.HandlerDefault)
 
 	auth := v1.Group("/auth")
 	auth.Post("/", func(c *fiber.Ctx) error {
