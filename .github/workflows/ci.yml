@@ -143,6 +143,12 @@ jobs:
         with:
           sarif_file: "trivy-results.sarif"
 
+      # reset trivy for next step
+      - name: Unset TRIVY_FORMAT & TRIVY_OUTPUT
+        run: |
+          unset TRIVY_FORMAT
+          unset TRIVY_OUTPUT
+
       # display table and fail if severity detected
       - name: Display vulnerability table
         uses: aquasecurity/trivy-action@0.30.0
@@ -151,13 +157,14 @@ jobs:
           ignore-unfixed: true
           format: "table"
           severity: "HIGH,CRITICAL"
-          exit-code: 0
+          exit-code: 1
           # skip setting up trivy
           skip-setup-trivy: true
-        # skip updating the database on 2nd run
         env:
+          # skip updating the database on 2nd run
           TRIVY_SKIP_DB_UPDATE: true
           TRIVY_SKIP_JAVA_DB_UPDATE: true
+          TRIVY_DEBUG: true
 
   run-sonarqube-scan:
     runs-on: ubuntu-latest
