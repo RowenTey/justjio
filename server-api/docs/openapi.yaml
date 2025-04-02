@@ -1,0 +1,1402 @@
+openapi: 3.0.3
+
+info:
+  title: JustJio API Server
+  description: REST API Server for JustJio
+  version: 1.0.0
+  # contact:
+  #   name: API Support
+  #   email: support@justjio.com
+
+servers:
+  - url: http://localhost:{port}
+    description: Local development server
+    variables:
+      port:
+        default: "8080"
+        description: Port number where the server is running
+  - url: https://justjio-api-staging.rowentey.xyz
+    description: Staging server
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Users
+    description: User management
+  - name: Rooms
+    description: Room management for group orders
+  - name: Messages
+    description: Room message management
+  - name: Bills
+    description: Bill splitting and payment management
+  - name: Notifications
+    description: User notification management
+  - name: Transactions
+    description: Payment transaction history
+  - name: Subscriptions
+    description: Premium subscription management
+
+paths:
+  /api/v1/auth:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and return JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  user:
+                    $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: User signup
+      description: Register a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignUpRequest"
+      responses:
+        "201":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User created successfully"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/auth/verify:
+    post:
+      tags:
+        - Authentication
+      summary: Verify OTP
+      description: Verify user's email with OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyOTPRequest"
+      responses:
+        "200":
+          description: OTP verified successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified:
+                    type: boolean
+                    example: true
+        "400":
+          description: Invalid OTP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Get user details
+      description: Retrieve details of a specific user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: User details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      tags:
+        - Users
+      summary: Update user details
+      description: Update details of a specific user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Updated Name"
+                phone:
+                  type: string
+                  example: "+6587654321"
+      responses:
+        "200":
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      tags:
+        - Users
+      summary: Delete user account
+      description: Delete a specific user account
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: User deleted successfully
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/rooms:
+    get:
+      tags:
+        - Rooms
+      summary: Get all rooms
+      description: Retrieve list of all rooms
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of rooms retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Room"
+    post:
+      tags:
+        - Rooms
+      summary: Create a new room
+      description: Create a new room for group orders
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "Dinner Group"
+      responses:
+        "201":
+          description: Room created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/rooms/{id}:
+    get:
+      tags:
+        - Rooms
+      summary: Get room details
+      description: Retrieve details of a specific room
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Room details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "404":
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - Rooms
+      summary: Invite users to room
+      description: Invite users to join a room
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomInviteRequest"
+      responses:
+        "200":
+          description: Users invited successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invitations sent successfully"
+        "404":
+          description: Room or users not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      tags:
+        - Rooms
+      summary: Respond to room invite
+      description: Accept or decline a room invitation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomResponseRequest"
+      responses:
+        "200":
+          description: Response recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Invitation accepted"
+        "404":
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/rooms/invites:
+    get:
+      tags:
+        - Rooms
+      summary: Get room invitations
+      description: Retrieve list of room invitations for current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Room"
+  /api/v1/rooms/attendees/{id}:
+    get:
+      tags:
+        - Rooms
+      summary: Get room attendees
+      description: Retrieve list of attendees in a room
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of attendees retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+        "404":
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/rooms/close/{id}:
+    patch:
+      tags:
+        - Rooms
+      summary: Close a room
+      description: Close a room (mark as completed)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Room closed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "404":
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/rooms/leave/{id}:
+    patch:
+      tags:
+        - Rooms
+      summary: Leave a room
+      description: Leave a room as an attendee
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Successfully left the room
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Successfully left the room"
+        "404":
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/rooms/{roomId}/messages:
+    get:
+      tags:
+        - Messages
+      summary: Get room messages
+      description: Retrieve messages in a room
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of messages retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+        "403":
+          description: User not in room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - Messages
+      summary: Create a message
+      description: Send a message in a room
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMessageRequest"
+      responses:
+        "201":
+          description: Message created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "403":
+          description: User not in room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/v1/rooms/{roomId}/messages/{id}:
+    get:
+      tags:
+        - Messages
+      summary: Get message details
+      description: Retrieve details of a specific message
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Message details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "403":
+          description: User not in room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Message not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    /api/v1/bills:
+    post:
+      tags:
+        - Bills
+      summary: Create a new bill
+      description: Create a new bill for a room
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBillRequest"
+      responses:
+        "201":
+          description: Bill created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bill"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/bills/{id}:
+    get:
+      tags:
+        - Bills
+      summary: Get bill details
+      description: Retrieve details of a specific bill
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Bill details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bill"
+        "404":
+          description: Bill not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    patch:
+      tags:
+        - Bills
+      summary: Update bill status
+      description: Update the status of a bill (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [pending, paid, cancelled]
+      responses:
+        "200":
+          description: Bill updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bill"
+        "404":
+          description: Bill not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/bills/{id}/pay:
+    post:
+      tags:
+        - Bills
+      summary: Pay a bill
+      description: Make payment for a bill
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayBillRequest"
+      responses:
+        "200":
+          description: Payment initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/bills/room/{roomId}:
+    get:
+      tags:
+        - Bills
+      summary: Get room bills
+      description: Retrieve all bills for a room
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: roomId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: List of bills retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bill"
+        "404":
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/notifications:
+    get:
+      tags:
+        - Notifications
+      summary: Get user notifications
+      description: Retrieve all notifications for current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: read
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+    post:
+      tags:
+        - Notifications
+      summary: Create notification
+      description: Create a new notification (admin/system only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNotificationRequest"
+      responses:
+        "201":
+          description: Notification created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/notifications/{id}:
+    patch:
+      tags:
+        - Notifications
+      summary: Mark notification as read
+      description: Update notification read status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - read
+              properties:
+                read:
+                  type: boolean
+      responses:
+        "200":
+          description: Notification updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "404":
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/transactions:
+    get:
+      tags:
+        - Transactions
+      summary: Get user transactions
+      description: Retrieve transaction history for current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [payment, refund, topup, subscription]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of transactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+
+    post:
+      tags:
+        - Transactions
+      summary: Create transaction
+      description: Create a new transaction (system only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTransactionRequest"
+      responses:
+        "201":
+          description: Transaction created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/subscriptions:
+    get:
+      tags:
+        - Subscriptions
+      summary: Get user subscription
+      description: Retrieve current user's subscription details
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Subscription details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "404":
+          description: No subscription found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      tags:
+        - Subscriptions
+      summary: Create subscription
+      description: Create or upgrade a subscription
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubscriptionRequest"
+      responses:
+        "201":
+          description: Subscription created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/subscriptions/{id}:
+    patch:
+      tags:
+        - Subscriptions
+      summary: Update subscription
+      description: Update subscription details (cancel or change auto-renew)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                autoRenew:
+                  type: boolean
+                status:
+                  type: string
+                  enum: [active, cancelled]
+      responses:
+        "200":
+          description: Subscription updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "404":
+          description: Subscription not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        phone:
+          type: string
+          example: "+6512345678"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Room:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          example: "Lunch Group"
+        status:
+          type: string
+          enum: [open, closed]
+          example: "open"
+        creatorId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content:
+          type: string
+          example: "Let's order pizza!"
+        senderId:
+          type: string
+          format: uuid
+        roomId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    Bill:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        roomId:
+          type: string
+          format: uuid
+        totalAmount:
+          type: number
+          format: float
+          example: 50.75
+        status:
+          type: string
+          enum: [pending, paid, cancelled]
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              price:
+                type: number
+                format: float
+              quantity:
+                type: integer
+              orderedBy:
+                type: string
+                format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # TODO: Change to consolidation
+    BillSplit:
+      type: object
+      properties:
+        userId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [pending, paid]
+
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+            [
+              room_invite,
+              payment_request,
+              payment_received,
+              subscription,
+              general,
+            ]
+        title:
+          type: string
+        message:
+          type: string
+        read:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: float
+        type:
+          type: string
+          enum: [payment, refund, topup, subscription]
+        status:
+          type: string
+          enum: [pending, completed, failed]
+        reference:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        plan:
+          type: string
+          enum: [free, premium, business]
+        status:
+          type: string
+          enum: [active, cancelled, expired]
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        autoRenew:
+          type: boolean
+        paymentMethodId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Invalid request"
+        message:
+          type: string
+          example: "The request contains invalid parameters"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          example: "securepassword123"
+
+    SignUpRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - phone
+      properties:
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          example: "securepassword123"
+        phone:
+          type: string
+          example: "+6512345678"
+
+    VerifyOTPRequest:
+      type: object
+      required:
+        - email
+        - otp
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        otp:
+          type: string
+          example: "123456"
+
+    RoomInviteRequest:
+      type: object
+      required:
+        - userIds
+      properties:
+        userIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    RoomResponseRequest:
+      type: object
+      required:
+        - accept
+      properties:
+        accept:
+          type: boolean
+          example: true
+
+    CreateMessageRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          example: "Hello everyone!"
+
+    CreateBillRequest:
+      type: object
+      required:
+        - roomId
+        - items
+      properties:
+        roomId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - name
+              - price
+              - quantity
+              - orderedBy
+            properties:
+              name:
+                type: string
+              price:
+                type: number
+                format: float
+              quantity:
+                type: integer
+              orderedBy:
+                type: string
+                format: uuid
+
+    PayBillRequest:
+      type: object
+      required:
+        - amount
+        - paymentMethodId
+      properties:
+        amount:
+          type: number
+          format: float
+        paymentMethodId:
+          type: string
+          format: uuid
+        notes:
+          type: string
+
+    CreateNotificationRequest:
+      type: object
+      required:
+        - userId
+        - type
+        - title
+        - message
+      properties:
+        userId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+            [
+              room_invite,
+              payment_request,
+              payment_received,
+              subscription,
+              general,
+            ]
+        title:
+          type: string
+        message:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+
+    CreateTransactionRequest:
+      type: object
+      required:
+        - amount
+        - type
+      properties:
+        amount:
+          type: number
+          format: float
+        type:
+          type: string
+          enum: [payment, refund, topup, subscription]
+        reference:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+
+    CreateSubscriptionRequest:
+      type: object
+      required:
+        - plan
+        - paymentMethodId
+      properties:
+        plan:
+          type: string
+          enum: [free, premium, business]
+        paymentMethodId:
+          type: string
+          format: uuid
+        autoRenew:
+          type: boolean
+          default: true

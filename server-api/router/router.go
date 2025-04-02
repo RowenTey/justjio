@@ -7,6 +7,7 @@ import (
 	"github.com/RowenTey/JustJio/services"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/swagger"
 )
 
 type NotificationData = model_push_notifications.NotificationData
@@ -16,6 +17,14 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService, notifications
 	router.Get("/", func(c *fiber.Ctx) error {
 		return c.Status(200).SendString("Hello world from JustJio API :)")
 	})
+
+	router.Get("/openapi.yaml", func(c *fiber.Ctx) error {
+		c.Set("Content-Type", "text/yaml")
+		return c.SendFile("./docs/openapi.yaml")
+	})
+	router.Get("/docs/*", swagger.New(swagger.Config{
+		URL: "/openapi.yaml",
+	}))
 
 	v1 := router.Group("/v1")
 
