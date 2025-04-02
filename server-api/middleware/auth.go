@@ -24,8 +24,8 @@ func jwtError(c *fiber.Ctx, err error) error {
 }
 
 func whitelist(c *fiber.Ctx) bool {
-	whitelistPaths := []string{"/v1/auth", "/v1/swagger-ui"}
-	whitelistEndpoints := []string{"/"}
+	whitelistPaths := []string{"/v1/auth", "/docs"}
+	whitelistEndpoints := []string{"/", "/openapi.yaml"}
 
 	for _, url := range whitelistPaths {
 		if strings.HasPrefix(c.Path(), url) {
