@@ -28,6 +28,9 @@ func Fiber(a *fiber.App, env, allowedOrigins string) {
 			AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		}),
 
+		// Prometheus metrics
+		prometheus.Middleware,
+
 		// Rate limiting
 		limiter.New(limiter.Config{
 			Next: func(c *fiber.Ctx) bool {
@@ -41,9 +44,6 @@ func Fiber(a *fiber.App, env, allowedOrigins string) {
 					SendString("Rate Limit Exceeded! Please wait 30s before making a request again...")
 			},
 		}),
-
-		// Prometheus metrics
-		prometheus.Middleware,
 
 		// Logging
 		logger.New(logger.Config{
