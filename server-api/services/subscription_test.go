@@ -1,23 +1,17 @@
-package test_services
+package services
 
 import (
-	"database/sql"
 	"errors"
-	"log"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/SherClockHolmes/webpush-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
 	"github.com/RowenTey/JustJio/model"
-	"github.com/RowenTey/JustJio/services"
+	"github.com/RowenTey/JustJio/util"
 )
 
 type SubscriptionServiceTestSuite struct {
@@ -25,39 +19,19 @@ type SubscriptionServiceTestSuite struct {
 	DB   *gorm.DB
 	mock sqlmock.Sqlmock
 
-	subscriptionService *services.SubscriptionService
+	subscriptionService *SubscriptionService
+}
+
+func TestSubscriptionServiceTestSuite(t *testing.T) {
+	suite.Run(t, new(SubscriptionServiceTestSuite))
 }
 
 func (s *SubscriptionServiceTestSuite) SetupTest() {
-	var (
-		db  *sql.DB
-		err error
-	)
-
-	db, s.mock, err = sqlmock.New()
+	var err error
+	s.DB, s.mock, err = util.SetupTestDB()
 	assert.NoError(s.T(), err)
 
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-		logger.Config{
-			SlowThreshold:             time.Second, // Slow SQL threshold
-			LogLevel:                  logger.Info, // Log level
-			IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
-			ParameterizedQueries:      false,       // Don't include params in the SQL log
-			Colorful:                  false,       // Disable color
-		},
-	)
-
-	dialector := postgres.New(postgres.Config{
-		Conn:       db,
-		DriverName: "postgres",
-	})
-	s.DB, err = gorm.Open(dialector, &gorm.Config{
-		Logger: newLogger,
-	})
-	assert.NoError(s.T(), err)
-
-	s.subscriptionService = services.NewSubscriptionService(s.DB)
+	s.subscriptionService = NewSubscriptionService(s.DB)
 }
 
 func (s *SubscriptionServiceTestSuite) AfterTest(_, _ string) {
@@ -367,8 +341,4 @@ func (s *SubscriptionServiceTestSuite) TestNewWebPushSubscriptionObj() {
 	assert.Equal(s.T(), subscription.P256dh, webpushObj.Keys.P256dh)
 	assert.Equal(s.T(), subscription.Auth, webpushObj.Keys.Auth)
 	assert.IsType(s.T(), &webpush.Subscription{}, webpushObj)
-}
-
-func TestSubscriptionServiceTestSuite(t *testing.T) {
-	suite.Run(t, new(SubscriptionServiceTestSuite))
 }

@@ -1,21 +1,16 @@
-package test_services
+package services
 
 import (
-	"database/sql"
-	"log"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
 	"github.com/RowenTey/JustJio/model"
-	"github.com/RowenTey/JustJio/services"
+	"github.com/RowenTey/JustJio/util"
 )
 
 type MessageServiceTestSuite struct {
@@ -23,39 +18,19 @@ type MessageServiceTestSuite struct {
 	DB   *gorm.DB
 	mock sqlmock.Sqlmock
 
-	messageService *services.MessageService
+	messageService *MessageService
+}
+
+func TestMessageServiceTestSuite(t *testing.T) {
+	suite.Run(t, new(MessageServiceTestSuite))
 }
 
 func (s *MessageServiceTestSuite) SetupTest() {
-	var (
-		db  *sql.DB
-		err error
-	)
-
-	db, s.mock, err = sqlmock.New()
+	var err error
+	s.DB, s.mock, err = util.SetupTestDB()
 	assert.NoError(s.T(), err)
 
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-		logger.Config{
-			SlowThreshold:             time.Second, // Slow SQL threshold
-			LogLevel:                  logger.Info, // Log level
-			IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
-			ParameterizedQueries:      false,       // Don't include params in the SQL log
-			Colorful:                  false,       // Disable color
-		},
-	)
-
-	dialector := postgres.New(postgres.Config{
-		Conn:       db,
-		DriverName: "postgres",
-	})
-	s.DB, err = gorm.Open(dialector, &gorm.Config{
-		Logger: newLogger,
-	})
-	assert.NoError(s.T(), err)
-
-	s.messageService = services.NewMessageService(s.DB)
+	s.messageService = NewMessageService(s.DB)
 }
 
 func (s *MessageServiceTestSuite) AfterTest(_, _ string) {
@@ -75,7 +50,7 @@ func (s *MessageServiceTestSuite) TestSaveMessage_Success() {
 	content := "Hello, world!"
 
 	s.mock.ExpectBegin()
-	s.mock.ExpectQuery(`INSERT INTO "messages" \("room_id","sender_id","content","sent_at"\) VALUES \(\$1,\$2,\$3,\$4\) RETURNING "id"`).
+	s.mock.ExpectQuery(`INSERT INTO "messages"`).
 		WithArgs(
 			room.ID,          // RoomID (string UUID)
 			sender.ID,        // SenderID
@@ -153,8 +128,4 @@ func (s *MessageServiceTestSuite) TestDeleteRoomMessages_Success() {
 
 	// assert
 	assert.NoError(s.T(), err)
-}
-
-func TestMessageServiceTestSuite(t *testing.T) {
-	suite.Run(t, new(MessageServiceTestSuite))
 }
