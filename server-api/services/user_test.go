@@ -1,10 +1,7 @@
-package test_services
+package services
 
 import (
-	"database/sql"
 	"errors"
-	"log"
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -12,12 +9,10 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
 	"github.com/RowenTey/JustJio/model"
-	"github.com/RowenTey/JustJio/services"
+	"github.com/RowenTey/JustJio/util"
 )
 
 type UserServiceTestSuite struct {
@@ -25,39 +20,15 @@ type UserServiceTestSuite struct {
 	DB   *gorm.DB
 	mock sqlmock.Sqlmock
 
-	userService *services.UserService
+	userService *UserService
 }
 
 func (s *UserServiceTestSuite) SetupTest() {
-	var (
-		db  *sql.DB
-		err error
-	)
-
-	db, s.mock, err = sqlmock.New()
+	var err error
+	s.DB, s.mock, err = util.SetupTestDB()
 	assert.NoError(s.T(), err)
 
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-		logger.Config{
-			SlowThreshold:             time.Second, // Slow SQL threshold
-			LogLevel:                  logger.Info, // Log level
-			IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
-			ParameterizedQueries:      false,       // Don't include params in the SQL log
-			Colorful:                  false,       // Disable color
-		},
-	)
-
-	dialector := postgres.New(postgres.Config{
-		Conn:       db,
-		DriverName: "postgres",
-	})
-	s.DB, err = gorm.Open(dialector, &gorm.Config{
-		Logger: newLogger,
-	})
-	assert.NoError(s.T(), err)
-
-	s.userService = services.NewUserService(s.DB)
+	s.userService = NewUserService(s.DB)
 }
 
 func (s *UserServiceTestSuite) AfterTest(_, _ string) {

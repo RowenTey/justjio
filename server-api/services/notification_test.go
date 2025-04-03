@@ -1,21 +1,15 @@
-package test_services
+package services
 
 import (
-	"database/sql"
 	"errors"
-	"log"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/RowenTey/JustJio/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
-
-	"github.com/RowenTey/JustJio/services"
 )
 
 type NotificationServiceTestSuite struct {
@@ -23,39 +17,19 @@ type NotificationServiceTestSuite struct {
 	DB   *gorm.DB
 	mock sqlmock.Sqlmock
 
-	notificationService *services.NotificationService
+	notificationService *NotificationService
+}
+
+func TestNotificationServiceTestSuite(t *testing.T) {
+	suite.Run(t, new(NotificationServiceTestSuite))
 }
 
 func (s *NotificationServiceTestSuite) SetupTest() {
-	var (
-		db  *sql.DB
-		err error
-	)
-
-	db, s.mock, err = sqlmock.New()
+	var err error
+	s.DB, s.mock, err = util.SetupTestDB()
 	assert.NoError(s.T(), err)
 
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-		logger.Config{
-			SlowThreshold:             time.Second, // Slow SQL threshold
-			LogLevel:                  logger.Info, // Log level
-			IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
-			ParameterizedQueries:      false,       // Don't include params in the SQL log
-			Colorful:                  false,       // Disable color
-		},
-	)
-
-	dialector := postgres.New(postgres.Config{
-		Conn:       db,
-		DriverName: "postgres",
-	})
-	s.DB, err = gorm.Open(dialector, &gorm.Config{
-		Logger: newLogger,
-	})
-	assert.NoError(s.T(), err)
-
-	s.notificationService = services.NewNotificationService(s.DB)
+	s.notificationService = NewNotificationService(s.DB)
 }
 
 func (s *NotificationServiceTestSuite) AfterTest(_, _ string) {
@@ -70,7 +44,7 @@ func (s *NotificationServiceTestSuite) TestCreateNotification_Success() {
 	now := time.Now()
 
 	s.mock.ExpectBegin()
-	s.mock.ExpectQuery(`INSERT INTO "notifications" \("user_id","title","content","created_at","is_read","updated_at"\) VALUES \(\$1,\$2,\$3,\$4,\$5,\$6\) RETURNING "id"`).
+	s.mock.ExpectQuery(`INSERT INTO "notifications"`).
 		WithArgs(
 			userId,
 			title,
@@ -117,7 +91,7 @@ func (s *NotificationServiceTestSuite) TestCreateNotification_DatabaseError() {
 	content := "Test Content"
 
 	s.mock.ExpectBegin()
-	s.mock.ExpectQuery(`INSERT INTO "notifications" \("user_id","title","content","created_at","is_read","updated_at"\) VALUES \(\$1,\$2,\$3,\$4,\$5,\$6\) RETURNING "id"`).
+	s.mock.ExpectQuery(`INSERT INTO "notifications"`).
 		WithArgs(
 			userId,
 			title,
@@ -136,8 +110,4 @@ func (s *NotificationServiceTestSuite) TestCreateNotification_DatabaseError() {
 	assert.Error(s.T(), err)
 	assert.Nil(s.T(), result)
 	assert.Contains(s.T(), err.Error(), "database error")
-}
-
-func TestNotificationServiceTestSuite(t *testing.T) {
-	suite.Run(t, new(NotificationServiceTestSuite))
 }
