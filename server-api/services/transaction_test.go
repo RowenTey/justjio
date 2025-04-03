@@ -1,37 +1,21 @@
-package test_services
+package services
 
 import (
-	"database/sql"
-	"database/sql/driver"
 	"errors"
-	"log"
-	"math"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
 	"github.com/RowenTey/JustJio/model"
-	"github.com/RowenTey/JustJio/services"
+	"github.com/RowenTey/JustJio/util"
 )
 
-type floatMatcher struct {
-	expected float64
-	epsilon  float64
-}
-
-func (m floatMatcher) Match(v driver.Value) bool {
-	actual, ok := v.(float64)
-	if !ok {
-		return false
-	}
-	return math.Abs(actual-m.expected) < m.epsilon
+func TestTransactionServiceTestSuite(t *testing.T) {
+	suite.Run(t, new(TransactionServiceTestSuite))
 }
 
 type TransactionServiceTestSuite struct {
@@ -39,39 +23,15 @@ type TransactionServiceTestSuite struct {
 	DB   *gorm.DB
 	mock sqlmock.Sqlmock
 
-	transactionService *services.TransactionService
+	transactionService *TransactionService
 }
 
 func (s *TransactionServiceTestSuite) SetupTest() {
-	var (
-		db  *sql.DB
-		err error
-	)
-
-	db, s.mock, err = sqlmock.New()
+	var err error
+	s.DB, s.mock, err = util.SetupTestDB()
 	assert.NoError(s.T(), err)
 
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-		logger.Config{
-			SlowThreshold:             time.Second, // Slow SQL threshold
-			LogLevel:                  logger.Info, // Log level
-			IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
-			ParameterizedQueries:      false,       // Don't include params in the SQL log
-			Colorful:                  false,       // Disable color
-		},
-	)
-
-	dialector := postgres.New(postgres.Config{
-		Conn:       db,
-		DriverName: "postgres",
-	})
-	s.DB, err = gorm.Open(dialector, &gorm.Config{
-		Logger: newLogger,
-	})
-	assert.NoError(s.T(), err)
-
-	s.transactionService = services.NewTransactionService(s.DB)
+	s.transactionService = NewTransactionService(s.DB)
 }
 
 func (s *TransactionServiceTestSuite) AfterTest(_, _ string) {
@@ -183,12 +143,12 @@ func (s *TransactionServiceTestSuite) TestGenerateTransactions_Success() {
 			consolidatedBill.ID, // 1st row consolidation_id
 			payer1.ID,           // 1st row payer_id
 			owner.ID,            // 1st row payee_id
-			floatMatcher{expected: 33.33, epsilon: 0.01}, // 1st row amount
+			util.FloatMatcher{Expected: 33.33, Epsilon: 0.01}, // 1st row amount
 			false,               // 1st row is_paid
 			consolidatedBill.ID, // 2nd row consolidation_id
 			payer2.ID,           // 2nd row payer_id
 			owner.ID,            // 2nd row payee_id
-			floatMatcher{expected: 33.33, epsilon: 0.01}, // 2nd row amount
+			util.FloatMatcher{Expected: 33.33, Epsilon: 0.01}, // 2nd row amount
 			false, // 2nd row is_paid
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"paid_on", "id"}).
@@ -510,8 +470,4 @@ func (s *TransactionServiceTestSuite) TestSettleTransaction_DatabaseError() {
 	assert.Error(s.T(), err)
 	assert.Nil(s.T(), result)
 	assert.Contains(s.T(), err.Error(), "database error")
-}
-
-func TestTransactionServiceTestSuite(t *testing.T) {
-	suite.Run(t, new(TransactionServiceTestSuite))
 }
