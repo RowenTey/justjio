@@ -15,10 +15,10 @@
 ```terminal
 .
 ├── .github/                    # CI/CD pipeline
-├── client/                     # legacy react native app
-├── client-web/                 # react web app
-├── server-api/                 # go API server
-├── server-ws/                  # go WebSockets server
+├── client/                 # react web app
+├── server/
+  └── api/                      # go API server
+  └── ws/                       # go websockets server
 ├── docker-compose-staging.yml  # config for staging env
 └── docker-compose.yml          # config for dev env
 ```
