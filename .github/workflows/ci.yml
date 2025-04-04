@@ -100,9 +100,30 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: ${{ github.head_ref }}
 
-  test-api-server:
+  build-go-app:
     runs-on: ubuntu-latest
     needs: [lint-and-format-go, lint-and-format-react]
+    strategy:
+      matrix:
+        modules: ["./server/api", "./server/ws"]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23
+          cache-dependency-path: |
+            ${{ matrix.modules }}/go.sum
+
+      - name: Build Go app
+        run: go build -v ./...
+        working-directory: ${{ matrix.modules }}
+
+  test-api-server:
+    runs-on: ubuntu-latest
+    needs: [build-go-app]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -112,13 +133,13 @@ jobs:
         with:
           go-version: 1.23
           cache: true
-          cache-dependency-path: server-api/go.sum
+          cache-dependency-path: ./server/api/go.sum
 
       - name: Install dependencies
-        run: cd server-api && go mod download
+        run: cd ./server/api && go mod download
 
       - name: Run unit tests
-        run: cd server-api && go test -v ./...
+        run: cd ./server/api && go test -v ./...
 
   run-security-scan:
     runs-on: ubuntu-latest
