@@ -19,19 +19,19 @@ jobs:
         with:
           node-version: "18"
           cache: "npm"
-          cache-dependency-path: ./client-web/package-lock.json
+          cache-dependency-path: ./client/package-lock.json
 
       - name: Install dependencies
         run: npm install
-        working-directory: ./client-web
+        working-directory: ./client
 
       - name: Lint React code
         run: npm run lint
-        working-directory: ./client-web
+        working-directory: ./client
 
       - name: Format React code
         run: npm run format
-        working-directory: ./client-web
+        working-directory: ./client
 
       - name: Check for changes
         id: git-check-react
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        modules: ["./server-api", "./server-ws"]
+        modules: ["./server/api", "./server/ws"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

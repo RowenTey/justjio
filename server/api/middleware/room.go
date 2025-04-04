@@ -1,0 +1,32 @@
+package middleware
+
+import (
+	"github.com/RowenTey/JustJio/server/api/database"
+	"github.com/RowenTey/JustJio/server/api/services"
+	"github.com/RowenTey/JustJio/server/api/utils"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v4"
+)
+
+func IsUserInRoom(c *fiber.Ctx) error {
+	// Check if user is in room
+	token := c.Locals("user").(*jwt.Token)
+	userId := utils.GetUserInfoFromToken(token, "user_id")
+	roomId := c.Params("roomId")
+
+	userIds, err := (services.NewRoomService(database.DB)).GetRoomAttendeesIds(roomId)
+	if err != nil {
+		return utils.HandleInternalServerError(c, err)
+	}
+
+	// Check if user is in room
+	for _, id := range *userIds {
+		if id == userId {
+			c.Locals("roomUserIds", userIds)
+			return c.Next()
+		}
+	}
+
+	return utils.HandleError(c, fiber.StatusUnauthorized, "User is not in room", nil)
+}
