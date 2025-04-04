@@ -15,7 +15,7 @@
 ```terminal
 .
 ├── .github/                    # CI/CD pipeline
-├── client/                 # react web app
+├── client/                     # react web app
 ├── server/
   └── api/                      # go API server
   └── ws/                       # go websockets server
