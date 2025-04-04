@@ -2,7 +2,7 @@
 
 > REST API Server for JustJio
 
-![server-landing](../client/assets/gifs/JustJio-Server.gif)
+![server-landing](../client/public/assets/JustJio-Server.gif)
 
 ## 🛠 Getting Started
 

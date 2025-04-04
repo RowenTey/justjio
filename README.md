@@ -2,7 +2,7 @@
 
 > A party-planning app that streamlines all the pain of hosting one 🍻
 
-![landing](./client/assets/gifs/JustJio.gif)
+![landing](./client/public/assets/JustJio.gif)
 
 ## 🛠 Getting Started
 

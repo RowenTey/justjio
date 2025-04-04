@@ -2,7 +2,7 @@
 
 > Client-side code for JustJio web app
 
-<!-- ![landing](./assets/gifs/JustJio-Client.gif) -->
+![landing](./public/assets/JustJio-Client.gif)
 
 ## 🛠 Getting Started
 
