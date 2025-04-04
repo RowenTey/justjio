@@ -18,6 +18,9 @@ type NotificationServiceTestSuite struct {
 	mock sqlmock.Sqlmock
 
 	notificationService *NotificationService
+
+	userId uint
+	title  string
 }
 
 func TestNotificationServiceTestSuite(t *testing.T) {
@@ -30,6 +33,9 @@ func (s *NotificationServiceTestSuite) SetupTest() {
 	assert.NoError(s.T(), err)
 
 	s.notificationService = NewNotificationService(s.DB)
+
+	s.userId = uint(1)
+	s.title = "Test Title"
 }
 
 func (s *NotificationServiceTestSuite) AfterTest(_, _ string) {
@@ -38,63 +44,55 @@ func (s *NotificationServiceTestSuite) AfterTest(_, _ string) {
 
 func (s *NotificationServiceTestSuite) TestCreateNotification_Success() {
 	// arrange
-	userId := uint(1)
-	title := "Test Title"
 	content := "Test Content"
 	now := time.Now()
 
 	s.mock.ExpectBegin()
 	s.mock.ExpectQuery(`INSERT INTO "notifications"`).
 		WithArgs(
-			userId,
-			title,
+			s.userId,
+			s.title,
 			content,
 			sqlmock.AnyArg(), // createdAt
 			false,            // isRead
 			sqlmock.AnyArg(), // updatedAt
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "user_id", "title", "content", "created_at", "is_read", "updated_at"}).
-			AddRow(1, userId, title, content, now, false, now))
+			AddRow(1, s.userId, s.title, content, now, false, now))
 	s.mock.ExpectCommit()
 
 	// act
-	result, err := s.notificationService.CreateNotification(userId, title, content)
+	result, err := s.notificationService.CreateNotification(s.userId, s.title, content)
 
 	// assert
-	assert.NoError(s.T(), err)
-	assert.NotNil(s.T(), result)
-	assert.Equal(s.T(), userId, result.UserID)
-	assert.Equal(s.T(), title, result.Title)
+	util.AssertNoErrAndNotNil(s.T(), err, result)
+	assert.Equal(s.T(), s.userId, result.UserID)
+	assert.Equal(s.T(), s.title, result.Title)
 	assert.Equal(s.T(), content, result.Content)
 	assert.Equal(s.T(), false, result.IsRead)
 }
 
 func (s *NotificationServiceTestSuite) TestCreateNotification_EmptyContent() {
 	// arrange
-	userId := uint(1)
-	title := "Test Title"
 	content := "" // Empty content
 
 	// act
-	result, err := s.notificationService.CreateNotification(userId, title, content)
+	result, err := s.notificationService.CreateNotification(s.userId, s.title, content)
 
 	// assert
-	assert.Error(s.T(), err)
-	assert.Nil(s.T(), result)
+	util.AssertErrAndNil(s.T(), err, result)
 	assert.Equal(s.T(), "content cannot be empty", err.Error())
 }
 
 func (s *NotificationServiceTestSuite) TestCreateNotification_DatabaseError() {
 	// arrange
-	userId := uint(1)
-	title := "Test Title"
 	content := "Test Content"
 
 	s.mock.ExpectBegin()
 	s.mock.ExpectQuery(`INSERT INTO "notifications"`).
 		WithArgs(
-			userId,
-			title,
+			s.userId,
+			s.title,
 			content,
 			sqlmock.AnyArg(), // createdAt
 			false,            // isRead
@@ -104,10 +102,9 @@ func (s *NotificationServiceTestSuite) TestCreateNotification_DatabaseError() {
 	s.mock.ExpectRollback()
 
 	// act
-	result, err := s.notificationService.CreateNotification(userId, title, content)
+	result, err := s.notificationService.CreateNotification(s.userId, s.title, content)
 
 	// assert
-	assert.Error(s.T(), err)
-	assert.Nil(s.T(), result)
+	util.AssertErrAndNil(s.T(), err, result)
 	assert.Contains(s.T(), err.Error(), "database error")
 }
