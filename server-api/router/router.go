@@ -18,6 +18,7 @@ func Initalize(router *fiber.App, kafkaSvc *services.KafkaService, notifications
 		return c.Status(200).SendString("Hello world from JustJio API :)")
 	})
 
+	// OpenAPI docs
 	router.Get("/openapi.yaml", func(c *fiber.Ctx) error {
 		c.Set("Content-Type", "text/yaml")
 		return c.SendFile("./docs/openapi.yaml")

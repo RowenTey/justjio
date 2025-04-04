@@ -8,9 +8,9 @@ x-common-healthcheck: &common-healthcheck
 services:
   frontend:
     image: ghcr.io/rowentey/justjio/web:latest
-    # build:
-    #   context: ./client-web
-    #   dockerfile: Dockerfile
+    build:
+      context: ./client-web
+      dockerfile: Dockerfile
     ports:
       - "80:80"
     environment:
@@ -31,9 +31,9 @@ services:
 
   api-server:
     image: ghcr.io/rowentey/justjio/api:latest
-    # build:
-    #   context: ./server-api
-    #   dockerfile: Dockerfile
+    build:
+      context: ./server-api
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     environment:
@@ -63,9 +63,9 @@ services:
 
   ws-server:
     image: ghcr.io/rowentey/justjio/ws:latest
-    # build:
-    #   context: ./server-ws
-    #   dockerfile: Dockerfile
+    build:
+      context: ./server-ws
+      dockerfile: Dockerfile
     ports:
       - "8081:8081"
     environment:
