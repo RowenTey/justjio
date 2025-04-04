@@ -21,6 +21,14 @@ type UserServiceTestSuite struct {
 	mock sqlmock.Sqlmock
 
 	userService *UserService
+
+	userId   uint
+	username string
+	email    string
+}
+
+func TestUserServiceTestSuite(t *testing.T) {
+	suite.Run(t, new(UserServiceTestSuite))
 }
 
 func (s *UserServiceTestSuite) SetupTest() {
@@ -29,6 +37,10 @@ func (s *UserServiceTestSuite) SetupTest() {
 	assert.NoError(s.T(), err)
 
 	s.userService = NewUserService(s.DB)
+
+	s.userId = 1
+	s.username = "johndoe"
+	s.email = "john@example.com"
 }
 
 func (s *UserServiceTestSuite) AfterTest(_, _ string) {
@@ -37,18 +49,7 @@ func (s *UserServiceTestSuite) AfterTest(_, _ string) {
 
 func (s *UserServiceTestSuite) TestGetUserByID_Success() {
 	// arrange
-	expectedUser := &model.User{
-		ID:           1,
-		Username:     "johndoe",
-		Email:        "john@example.com",
-		Password:     "hashedpassword",
-		IsEmailValid: true,
-		IsOnline:     false,
-		LastSeen:     time.Now(),
-		RegisteredAt: time.Now(),
-		UpdatedAt:    time.Now(),
-	}
-
+	expectedUser := createTestUser(s.userId, s.username, s.email)
 	rows := sqlmock.NewRows([]string{
 		"id", "username", "email", "password",
 		"is_email_valid", "is_online", "last_seen", "registered_at", "updated_at"}).
@@ -73,13 +74,7 @@ func (s *UserServiceTestSuite) TestGetUserByID_Success() {
 
 	// assert
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedUser.ID, user.ID)
-	assert.Equal(s.T(), expectedUser.Username, user.Username)
-	assert.Equal(s.T(), expectedUser.Email, user.Email)
-	assert.Equal(s.T(), expectedUser.IsEmailValid, user.IsEmailValid)
-	assert.Equal(s.T(), expectedUser.IsOnline, user.IsOnline)
-	assert.Equal(s.T(), expectedUser.LastSeen.Unix(), user.LastSeen.Unix())
-	assert.Equal(s.T(), expectedUser.RegisteredAt.Unix(), user.RegisteredAt.Unix())
+	assertUserEqual(s.T(), expectedUser, user)
 }
 
 func (s *UserServiceTestSuite) TestGetUserByID_NotFound() {
@@ -92,9 +87,8 @@ func (s *UserServiceTestSuite) TestGetUserByID_NotFound() {
 	user, err := s.userService.GetUserByID("1")
 
 	// assert
-	assert.Error(s.T(), err)
+	util.AssertErrAndNil(s.T(), err, user)
 	assert.True(s.T(), err == gorm.ErrRecordNotFound)
-	assert.Nil(s.T(), user)
 }
 
 func (s *UserServiceTestSuite) TestUpdateUserField_Username() {
@@ -465,19 +459,7 @@ func (s *UserServiceTestSuite) TestSendFriendRequest_DatabaseError() {
 
 func (s *UserServiceTestSuite) TestGetUserByUsername_Success() {
 	// arrange
-	expectedUser := &model.User{
-		ID:           1,
-		Username:     "johndoe",
-		Email:        "john@example.com",
-		Password:     "hashedpassword",
-		PictureUrl:   "https://default-image.jpg",
-		IsEmailValid: true,
-		IsOnline:     false,
-		LastSeen:     time.Now(),
-		RegisteredAt: time.Now(),
-		UpdatedAt:    time.Now(),
-	}
-
+	expectedUser := createTestUser(s.userId, s.username, s.email)
 	rows := sqlmock.NewRows([]string{
 		"id", "username", "email", "password", "picture_url",
 		"is_email_valid", "is_online", "last_seen", "registered_at", "updated_at"}).
@@ -503,12 +485,7 @@ func (s *UserServiceTestSuite) TestGetUserByUsername_Success() {
 
 	// assert
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedUser.ID, user.ID)
-	assert.Equal(s.T(), expectedUser.Username, user.Username)
-	assert.Equal(s.T(), expectedUser.Email, user.Email)
-	assert.Equal(s.T(), expectedUser.PictureUrl, user.PictureUrl)
-	assert.Equal(s.T(), expectedUser.IsEmailValid, user.IsEmailValid)
-	assert.Equal(s.T(), expectedUser.IsOnline, user.IsOnline)
+	assertUserEqual(s.T(), expectedUser, user)
 }
 
 func (s *UserServiceTestSuite) TestGetUserByUsername_NotFound() {
@@ -521,26 +498,13 @@ func (s *UserServiceTestSuite) TestGetUserByUsername_NotFound() {
 	user, err := s.userService.GetUserByUsername("nonexistentuser")
 
 	// assert
-	assert.Error(s.T(), err)
+	util.AssertErrAndNil(s.T(), err, user)
 	assert.True(s.T(), err == gorm.ErrRecordNotFound)
-	assert.Nil(s.T(), user)
 }
 
 func (s *UserServiceTestSuite) TestGetUserByEmail_Success() {
 	// arrange
-	expectedUser := &model.User{
-		ID:           1,
-		Username:     "johndoe",
-		Email:        "john@example.com",
-		Password:     "hashedpassword",
-		PictureUrl:   "https://default-image.jpg",
-		IsEmailValid: true,
-		IsOnline:     false,
-		LastSeen:     time.Now(),
-		RegisteredAt: time.Now(),
-		UpdatedAt:    time.Now(),
-	}
-
+	expectedUser := createTestUser(s.userId, s.username, s.email)
 	rows := sqlmock.NewRows([]string{
 		"id", "username", "email", "password", "picture_url",
 		"is_email_valid", "is_online", "last_seen", "registered_at", "updated_at"}).
@@ -1144,21 +1108,17 @@ func (s *UserServiceTestSuite) TestRemoveFriend_Success() {
 				"https://default-image.jpg", true, false, now, now, now))
 
 	s.mock.ExpectBegin()
-
 	// Remove friend from user's friends
 	s.mock.ExpectExec(`DELETE FROM "user_friends" WHERE "user_friends"."user_id" = \$1 AND "user_friends"."friend_id" = \$2`).
 		WithArgs(userID, friendID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
-
 	s.mock.ExpectCommit()
 
 	s.mock.ExpectBegin()
-
 	// Remove user from friend's friends
 	s.mock.ExpectExec(`DELETE FROM "user_friends" WHERE "user_friends"."user_id" = \$1 AND "user_friends"."friend_id" = \$2`).
 		WithArgs(friendID, userID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
-
 	s.mock.ExpectCommit()
 
 	// act
@@ -1539,6 +1499,31 @@ func (s *UserServiceTestSuite) TestIsFriend_FriendNotFound() {
 	assert.False(s.T(), result)
 }
 
-func TestUserServiceTestSuite(t *testing.T) {
-	suite.Run(t, new(UserServiceTestSuite))
+func createTestUser(id uint, username, email string) *model.User {
+	now := time.Now()
+	return &model.User{
+		ID:           id,
+		Username:     username,
+		Email:        email,
+		Password:     "hashedpassword",
+		PictureUrl:   "https://default-image.jpg",
+		IsEmailValid: true,
+		IsOnline:     false,
+		LastSeen:     now,
+		RegisteredAt: now,
+		UpdatedAt:    now,
+	}
+}
+
+func assertUserEqual(t *testing.T, expected, actual *model.User) {
+	assert.Equal(t, expected.ID, actual.ID)
+	assert.Equal(t, expected.Username, actual.Username)
+	assert.Equal(t, expected.Email, actual.Email)
+	assert.Equal(t, expected.Password, actual.Password)
+	// assert.Equal(t, expected.PictureUrl, actual.PictureUrl)
+	assert.Equal(t, expected.IsEmailValid, actual.IsEmailValid)
+	assert.Equal(t, expected.IsOnline, actual.IsOnline)
+	assert.Equal(t, expected.LastSeen, actual.LastSeen)
+	assert.Equal(t, expected.RegisteredAt.Unix(), actual.RegisteredAt.Unix())
+	assert.Equal(t, expected.UpdatedAt.Unix(), actual.UpdatedAt.Unix())
 }
