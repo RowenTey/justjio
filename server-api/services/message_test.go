@@ -19,6 +19,8 @@ type MessageServiceTestSuite struct {
 	mock sqlmock.Sqlmock
 
 	messageService *MessageService
+
+	roomId string
 }
 
 func TestMessageServiceTestSuite(t *testing.T) {
@@ -31,6 +33,8 @@ func (s *MessageServiceTestSuite) SetupTest() {
 	assert.NoError(s.T(), err)
 
 	s.messageService = NewMessageService(s.DB)
+
+	s.roomId = "room-123"
 }
 
 func (s *MessageServiceTestSuite) AfterTest(_, _ string) {
@@ -40,7 +44,7 @@ func (s *MessageServiceTestSuite) AfterTest(_, _ string) {
 func (s *MessageServiceTestSuite) TestSaveMessage_Success() {
 	// arrange
 	room := &model.Room{
-		ID:   "room-uuid-123",
+		ID:   s.roomId,
 		Name: "Test Room",
 	}
 	sender := &model.User{
@@ -52,9 +56,9 @@ func (s *MessageServiceTestSuite) TestSaveMessage_Success() {
 	s.mock.ExpectBegin()
 	s.mock.ExpectQuery(`INSERT INTO "messages"`).
 		WithArgs(
-			room.ID,          // RoomID (string UUID)
-			sender.ID,        // SenderID
-			content,          // Content
+			room.ID,          
+			sender.ID,        
+			content,          
 			sqlmock.AnyArg(), // SentAt
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1)) // ID = 1
@@ -70,26 +74,25 @@ func (s *MessageServiceTestSuite) TestSaveMessage_Success() {
 func (s *MessageServiceTestSuite) TestGetMessageById_Success() {
 	// arrange
 	messageID := "1"
-	roomID := "room-uuid-123"
 	now := time.Now()
 
 	rows := sqlmock.NewRows([]string{
 		"id", "room_id", "sender_id", "content", "sent_at",
 	}).AddRow(
-		messageID, roomID, 1, "Hello, world!", now,
+		messageID, s.roomId, 1, "Hello, world!", now,
 	)
 
 	s.mock.ExpectQuery(`SELECT \* FROM "messages" WHERE id = \$1 AND room_id = \$2 ORDER BY "messages"."id" LIMIT \$3`).
-		WithArgs(messageID, roomID, 1).
+		WithArgs(messageID, s.roomId, 1).
 		WillReturnRows(rows)
 
 	// act
-	message, err := s.messageService.GetMessageById(messageID, roomID)
+	message, err := s.messageService.GetMessageById(messageID, s.roomId)
 
 	// assert
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), uint(1), message.ID)
-	assert.Equal(s.T(), roomID, message.RoomID)
+	assert.Equal(s.T(), s.roomId, message.RoomID)
 	assert.Equal(s.T(), uint(1), message.SenderID)
 	assert.Equal(s.T(), "Hello, world!", message.Content)
 	assert.Equal(s.T(), now.Unix(), message.SentAt.Unix())
@@ -98,16 +101,15 @@ func (s *MessageServiceTestSuite) TestGetMessageById_Success() {
 func (s *MessageServiceTestSuite) TestDeleteMessage_Success() {
 	// arrange
 	messageID := "1"
-	roomID := "room-uuid-123"
 
 	s.mock.ExpectBegin()
 	s.mock.ExpectExec(`DELETE FROM "messages" WHERE id = \$1 AND room_id = \$2`).
-		WithArgs(messageID, roomID).
+		WithArgs(messageID, s.roomId).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	s.mock.ExpectCommit()
 
 	// act
-	err := s.messageService.DeleteMessage(messageID, roomID)
+	err := s.messageService.DeleteMessage(messageID, s.roomId)
 
 	// assert
 	assert.NoError(s.T(), err)
@@ -115,16 +117,14 @@ func (s *MessageServiceTestSuite) TestDeleteMessage_Success() {
 
 func (s *MessageServiceTestSuite) TestDeleteRoomMessages_Success() {
 	// arrange
-	roomID := "room-uuid-123"
-
 	s.mock.ExpectBegin()
 	s.mock.ExpectExec(`DELETE FROM "messages" WHERE room_id = \$1`).
-		WithArgs(roomID).
+		WithArgs(s.roomId).
 		WillReturnResult(sqlmock.NewResult(0, 5)) // 5 messages deleted
 	s.mock.ExpectCommit()
 
 	// act
-	err := s.messageService.DeleteRoomMessages(roomID)
+	err := s.messageService.DeleteRoomMessages(s.roomId)
 
 	// assert
 	assert.NoError(s.T(), err)
