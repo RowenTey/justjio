@@ -456,22 +456,6 @@ func createTestRoom(id string) *model.Room {
 	}
 }
 
-func createTestUser(id uint, username, email string) *model.User {
-	now := time.Now()
-	return &model.User{
-		ID:           id,
-		Username:     username,
-		Email:        email,
-		Password:     "password",
-		PictureUrl:   "https://example.com/pic.jpg",
-		IsEmailValid: true,
-		IsOnline:     true,
-		LastSeen:     now,
-		RegisteredAt: now,
-		UpdatedAt:    now,
-	}
-}
-
 func createTestBill(id uint, name string, amount float32, roomId string, ownerId uint) model.Bill {
 	now := time.Now()
 	return model.Bill{
