@@ -25,9 +25,9 @@ jobs:
       matrix:
         service:
           [
-            { name: api, directory: server-api },
-            { name: ws, directory: server-ws },
-            { name: web, directory: client-web },
+            { name: api, directory: server/api },
+            { name: ws, directory: server/ws },
+            { name: web, directory: client },
           ]
         platform:
           - linux/amd64
