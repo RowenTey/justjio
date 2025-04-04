@@ -20,6 +20,11 @@ type SubscriptionServiceTestSuite struct {
 	mock sqlmock.Sqlmock
 
 	subscriptionService *SubscriptionService
+
+	endpoint string
+	p256dh   string
+	auth     string
+	subCols  []string
 }
 
 func TestSubscriptionServiceTestSuite(t *testing.T) {
@@ -32,6 +37,13 @@ func (s *SubscriptionServiceTestSuite) SetupTest() {
 	assert.NoError(s.T(), err)
 
 	s.subscriptionService = NewSubscriptionService(s.DB)
+
+	s.endpoint = "https://fcm.googleapis.com/fcm/send/token1"
+	s.p256dh = "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtfZOYo0X1"
+	s.auth = "Q2QVd5bPkMEwMKKKv5gV11"
+	s.subCols = []string{
+		"id", "user_id", "endpoint", "p256dh", "auth",
+	}
 }
 
 func (s *SubscriptionServiceTestSuite) AfterTest(_, _ string) {
@@ -40,12 +52,7 @@ func (s *SubscriptionServiceTestSuite) AfterTest(_, _ string) {
 
 func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Success() {
 	// arrange
-	subscription := &model.Subscription{
-		UserID:   1,
-		Endpoint: "https://fcm.googleapis.com/fcm/send/example-token",
-		P256dh:   "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtfZOYo0XAbn1zhRsz1You9yOFCdVV1cVniWhbGrQJq2Q",
-		Auth:     "Q2QVd5bPkMEwMKKKv5gVAQ",
-	}
+	subscription := createSubscription(1, s.endpoint, s.p256dh, s.auth)
 
 	s.mock.ExpectBegin()
 	// Use ExpectExec instead of ExpectQuery for INSERT operations that use ExecQuery
@@ -75,12 +82,7 @@ func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Success() {
 
 func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Error() {
 	// arrange
-	subscription := &model.Subscription{
-		UserID:   1,
-		Endpoint: "https://fcm.googleapis.com/fcm/send/example-token",
-		P256dh:   "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtfZOYo0XAbn1zhRsz1You9yOFCdVV1cVniWh",
-		Auth:     "Q2QVd5bPkMEwMKKKv5gVAQ",
-	}
+	subscription := createSubscription(1, s.endpoint, s.p256dh, s.auth)
 
 	s.mock.ExpectBegin()
 	s.mock.ExpectExec(`INSERT INTO "subscriptions"`).
@@ -124,10 +126,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_Success() {
 		},
 	}
 
-	rows := sqlmock.NewRows([]string{
-		"id", "user_id", "endpoint", "p256dh", "auth",
-	})
-
+	rows := sqlmock.NewRows(s.subCols)
 	for _, sub := range expectedSubscriptions {
 		rows.AddRow(
 			sub.ID,
@@ -149,19 +148,16 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_Success() {
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), subscriptions)
 	assert.Equal(s.T(), 2, len(*subscriptions))
-	assert.Equal(s.T(), expectedSubscriptions[0].ID, (*subscriptions)[0].ID)
-	assert.Equal(s.T(), expectedSubscriptions[0].Endpoint, (*subscriptions)[0].Endpoint)
-	assert.Equal(s.T(), expectedSubscriptions[1].ID, (*subscriptions)[1].ID)
-	assert.Equal(s.T(), expectedSubscriptions[1].Endpoint, (*subscriptions)[1].Endpoint)
+	for i, sub := range expectedSubscriptions {
+		assertSubscriptionEqual(s.T(), &sub, &(*subscriptions)[i])
+	}
 }
 
 func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_EmptyResult() {
 	// arrange
 	userID := uint(1)
 
-	rows := sqlmock.NewRows([]string{
-		"id", "user_id", "endpoint", "p256dh", "auth",
-	})
+	rows := sqlmock.NewRows(s.subCols)
 
 	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE user_id = \$1`).
 		WithArgs(userID).
@@ -171,8 +167,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_EmptyResult(
 	subscriptions, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
 
 	// assert
-	assert.NoError(s.T(), err)
-	assert.NotNil(s.T(), subscriptions)
+	util.AssertNoErrAndNotNil(s.T(), err, subscriptions)
 	assert.Equal(s.T(), 0, len(*subscriptions))
 }
 
@@ -188,26 +183,21 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_DatabaseErro
 	subscriptions, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
 
 	// assert
-	assert.Error(s.T(), err)
-	assert.Nil(s.T(), subscriptions)
+	util.AssertErrAndNil(s.T(), err, subscriptions)
 	assert.Contains(s.T(), err.Error(), "database error")
 }
 
 func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_Success() {
 	// arrange
-	endpoint := "https://fcm.googleapis.com/fcm/send/example-token"
-
 	expectedSubscription := model.Subscription{
 		ID:       "1",
 		UserID:   1,
-		Endpoint: endpoint,
-		P256dh:   "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtfZOYo0X1",
-		Auth:     "Q2QVd5bPkMEwMKKKv5gV11",
+		Endpoint: s.endpoint,
+		P256dh:   s.p256dh,
+		Auth:     s.auth,
 	}
 
-	rows := sqlmock.NewRows([]string{
-		"id", "user_id", "endpoint", "p256dh", "auth",
-	}).AddRow(
+	rows := sqlmock.NewRows(s.subCols).AddRow(
 		expectedSubscription.ID,
 		expectedSubscription.UserID,
 		expectedSubscription.Endpoint,
@@ -216,29 +206,22 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_Success() 
 	)
 
 	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE endpoint = \$1`).
-		WithArgs(endpoint).
+		WithArgs(s.endpoint).
 		WillReturnRows(rows)
 
 	// act
-	subscription, err := s.subscriptionService.GetSubscriptionsByEndpoint(endpoint)
+	subscription, err := s.subscriptionService.GetSubscriptionsByEndpoint(s.endpoint)
 
 	// assert
-	assert.NoError(s.T(), err)
-	assert.NotNil(s.T(), subscription)
-	assert.Equal(s.T(), expectedSubscription.ID, subscription.ID)
-	assert.Equal(s.T(), expectedSubscription.UserID, subscription.UserID)
-	assert.Equal(s.T(), expectedSubscription.Endpoint, subscription.Endpoint)
-	assert.Equal(s.T(), expectedSubscription.P256dh, subscription.P256dh)
-	assert.Equal(s.T(), expectedSubscription.Auth, subscription.Auth)
+	util.AssertNoErrAndNotNil(s.T(), err, subscription)
+	assertSubscriptionEqual(s.T(), &expectedSubscription, subscription)
 }
 
 func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_NotFound() {
 	// arrange
 	endpoint := "https://fcm.googleapis.com/fcm/send/nonexistent-token"
 
-	rows := sqlmock.NewRows([]string{
-		"id", "user_id", "endpoint", "p256dh", "auth", "created_at",
-	})
+	rows := sqlmock.NewRows(append(s.subCols, "created_at"))
 
 	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE endpoint = \$1`).
 		WithArgs(endpoint).
@@ -248,8 +231,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_NotFound()
 	subscription, err := s.subscriptionService.GetSubscriptionsByEndpoint(endpoint)
 
 	// assert
-	assert.NoError(s.T(), err)
-	assert.NotNil(s.T(), subscription)
+	util.AssertNoErrAndNotNil(s.T(), err, subscription)
 	assert.Equal(s.T(), "", subscription.ID) // Empty ID indicates no subscription found
 }
 
@@ -265,8 +247,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_DatabaseEr
 	subscription, err := s.subscriptionService.GetSubscriptionsByEndpoint(endpoint)
 
 	// assert
-	assert.Error(s.T(), err)
-	assert.Nil(s.T(), subscription)
+	util.AssertErrAndNil(s.T(), err, subscription)
 	assert.Contains(s.T(), err.Error(), "database error")
 }
 
@@ -327,9 +308,9 @@ func (s *SubscriptionServiceTestSuite) TestNewWebPushSubscriptionObj() {
 	// arrange
 	subscription := &model.Subscription{
 		UserID:   1,
-		Endpoint: "https://fcm.googleapis.com/fcm/send/example-token",
-		P256dh:   "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtfZOYo0XAbn1zhRsz1You9yOFCdVV1cVniWh",
-		Auth:     "Q2QVd5bPkMEwMKKKv5gVAQ",
+		Endpoint: s.endpoint,
+		P256dh:   s.p256dh,
+		Auth:     s.auth,
 	}
 
 	// act
@@ -341,4 +322,21 @@ func (s *SubscriptionServiceTestSuite) TestNewWebPushSubscriptionObj() {
 	assert.Equal(s.T(), subscription.P256dh, webpushObj.Keys.P256dh)
 	assert.Equal(s.T(), subscription.Auth, webpushObj.Keys.Auth)
 	assert.IsType(s.T(), &webpush.Subscription{}, webpushObj)
+}
+
+func createSubscription(userID uint, endpoint, p256dh, auth string) *model.Subscription {
+	return &model.Subscription{
+		UserID:   userID,
+		Endpoint: endpoint,
+		P256dh:   p256dh,
+		Auth:     auth,
+	}
+}
+
+func assertSubscriptionEqual(t assert.TestingT, expected, actual *model.Subscription) {
+	assert.Equal(t, expected.ID, actual.ID)
+	assert.Equal(t, expected.UserID, actual.UserID)
+	assert.Equal(t, expected.Endpoint, actual.Endpoint)
+	assert.Equal(t, expected.P256dh, actual.P256dh)
+	assert.Equal(t, expected.Auth, actual.Auth)
 }
