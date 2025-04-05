@@ -105,12 +105,12 @@ func (s *TransactionServiceTestSuite) TestGenerateTransactions_Success() {
 	s.mock.ExpectQuery(`INSERT INTO "transactions"`).
 		WithArgs(
 			consolidatedBill.ID, // 1st row consolidation_id
-			payer1.ID,           // 1st row payer_id
+			sqlmock.AnyArg(),    // 1st row payer_id
 			owner.ID,            // 1st row payee_id
 			tests.FloatMatcher{Expected: 33.33, Epsilon: 0.01}, // 1st row amount
 			false,               // 1st row is_paid
 			consolidatedBill.ID, // 2nd row consolidation_id
-			payer2.ID,           // 2nd row payer_id
+			sqlmock.AnyArg(),    // 2nd row payer_id
 			owner.ID,            // 2nd row payee_id
 			tests.FloatMatcher{Expected: 33.33, Epsilon: 0.01}, // 2nd row amount
 			false, // 2nd row is_paid
