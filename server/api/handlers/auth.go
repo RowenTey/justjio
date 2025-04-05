@@ -21,7 +21,6 @@ import (
 
 // Global variable to access the ClientOTP map
 // Store OTP with email as key
-// TODO: Make thread safe
 var ClientOTP sync.Map
 
 var authLogger = log.WithFields(log.Fields{"service": "AuthHandler"})
@@ -31,6 +30,7 @@ func SignUp(c *fiber.Ctx) error {
 	if err := c.BodyParser(&user); err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
+	authLogger.Info("Received sign up request for user: ", user.Username)
 
 	authService := services.NewAuthService(
 		utils.HashPassword,
@@ -58,10 +58,13 @@ func SignUp(c *fiber.Ctx) error {
 	go func() {
 		otp := authService.GenerateOTP()
 		ClientOTP.Store(user.Email, otp)
+		authLogger.Info("Generated OTP for user: ", user.Username)
+
 		if err := authService.SendOTPEmail(otp, user.Username, user.Email, "verify-email"); err != nil {
 			authLogger.Error("Error sending OTP email:", err)
 			ClientOTP.Delete(user.Email)
 		}
+		authLogger.Info("Sent OTP email to user: ", user.Username)
 	}()
 
 	response := response.AuthResponse{

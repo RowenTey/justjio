@@ -128,8 +128,8 @@ func (ks *KafkaService) PublishMessage(topic string, message string) error {
 
 func (ks *KafkaService) Close() {
 	// Flush and close the producer and the events channel
-	for ks.Producer.Flush(10000) > 0 {
-		ks.logger.Warn("Still waiting to flush outstanding messages")
-	}
+	unflushed := ks.Producer.Flush(10000)
+	ks.logger.Warnf("Unflushed messages: %d\n", unflushed)
+
 	ks.Producer.Close()
 }

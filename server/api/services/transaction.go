@@ -15,7 +15,7 @@ import (
 
 type TransactionService struct {
 	DB     *gorm.DB
-	logger *log.Entry
+	Logger *log.Entry
 }
 
 type edge struct {
@@ -23,10 +23,11 @@ type edge struct {
 	amount float32
 }
 
-func NewTransactionService(db *gorm.DB) *TransactionService {
+// NOTE: used var instead of func to enable mocking in tests
+var NewTransactionService = func(db *gorm.DB) *TransactionService {
 	return &TransactionService{
 		DB:     db,
-		logger: log.WithFields(log.Fields{"service": "TransactionService"}),
+		Logger: log.WithFields(log.Fields{"service": "TransactionService"}),
 	}
 }
 
@@ -48,8 +49,8 @@ func (ts *TransactionService) GenerateTransactions(consolidatedBill *model.Conso
 		wg.Add(1)
 		go func(bill *model.Bill) {
 			defer wg.Done()
-			ts.logger.Infof("Processing bill: %s with amount %f\n", bill.Name, bill.Amount)
-			ts.logger.Info("Payers: ", len(bill.Payers))
+			ts.Logger.Infof("Processing bill: %s with amount %f\n", bill.Name, bill.Amount)
+			ts.Logger.Info("Payers: ", len(bill.Payers))
 
 			num_payers := float32(len(bill.Payers))
 			if bill.IncludeOwner {
@@ -84,12 +85,12 @@ func (ts *TransactionService) GenerateTransactions(consolidatedBill *model.Conso
 	}
 
 	for _, transaction := range transactions {
-		ts.logger.Debugf("Before %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
+		ts.Logger.Debugf("Before %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
 	}
 
 	consolidatedTransactions := ts.consolidateTransactions(&transactions, consolidatedBill)
 	for _, transaction := range *consolidatedTransactions {
-		ts.logger.Debugf("After %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
+		ts.Logger.Debugf("After %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
 	}
 	if err := ts.DB.Omit("Consolidation").Create(&consolidatedTransactions).Error; err != nil {
 		return err
@@ -191,11 +192,11 @@ func (ts *TransactionService) resetVisited(visited map[uint]bool) {
 func (ts *TransactionService) removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) (float32, uint) {
 	neighbors := graph[startNode]
 	for i, neighbor := range neighbors {
-		ts.logger.Debug("Current node ", startNode, " with neighbor: ", neighbor.userId)
+		ts.Logger.Debug("Current node ", startNode, " with neighbor: ", neighbor.userId)
 
 		// cycle detected
 		if isVisited := visited[neighbor.userId]; isVisited {
-			ts.logger.Debug("Cycle detected: ", startNode, " -> ", neighbor.userId)
+			ts.Logger.Debug("Cycle detected: ", startNode, " -> ", neighbor.userId)
 
 			// remove the edge
 			neighbors = append(neighbors[:i], neighbors[i+1:]...)
