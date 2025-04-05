@@ -13,13 +13,14 @@ import (
 
 type BillService struct {
 	DB     *gorm.DB
-	logger *log.Entry
+	Logger *log.Entry
 }
 
-func NewBillService(db *gorm.DB) *BillService {
+// NOTE: used var instead of func to enable mocking in tests
+var NewBillService = func(db *gorm.DB) *BillService {
 	return &BillService{
 		DB:     db,
-		logger: log.WithFields(log.Fields{"service": "BillService"}),
+		Logger: log.WithFields(log.Fields{"service": "BillService"}),
 	}
 }
 
@@ -52,7 +53,7 @@ func (bs *BillService) CreateBill(
 		return nil, err
 	}
 
-	bs.logger.Info("Bill created in room: ", bill.RoomID)
+	bs.Logger.Info("Bill created in room: ", bill.RoomID)
 	return &bill, nil
 }
 
@@ -108,7 +109,7 @@ func (bs *BillService) ConsolidateBills(roomId string) (*model.Consolidation, er
 	if err := tx.Create(&consolidation).Error; err != nil {
 		return nil, err
 	}
-	bs.logger.Info("Created bills consolidation: ", consolidation.ID)
+	bs.Logger.Info("Created bills consolidation: ", consolidation.ID)
 
 	if err := tx.Table("bills").
 		Where("room_id = ?", roomId).
