@@ -19,8 +19,7 @@
 ├── server/
   ├── api/                      # go API server
   └── ws/                       # go websockets server
-├── docker-compose-staging.yml  # config for staging env
-└── docker-compose.yml          # config for dev env
+└── infra/                      # infra configs
 ```
 
 <!-- ## 🧪 Tech Stack

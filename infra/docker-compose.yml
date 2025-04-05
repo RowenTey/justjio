@@ -9,7 +9,7 @@ services:
   frontend:
     image: ghcr.io/rowentey/justjio/web:latest
     build:
-      context: ./client-web
+      context: ../client
       dockerfile: Dockerfile
     ports:
       - "80:80"
@@ -32,7 +32,7 @@ services:
   api-server:
     image: ghcr.io/rowentey/justjio/api:latest
     build:
-      context: ./server-api
+      context: ../server/api
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
@@ -64,7 +64,7 @@ services:
   ws-server:
     image: ghcr.io/rowentey/justjio/ws:latest
     build:
-      context: ./server-ws
+      context: ../server/ws
       dockerfile: Dockerfile
     ports:
       - "8081:8081"
