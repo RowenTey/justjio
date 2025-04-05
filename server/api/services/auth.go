@@ -23,10 +23,11 @@ type AuthService struct {
 	JwtSecret     string
 	SendSMTPEmail func(from, to, subject, textBody string) error
 	OAuthConfig   *oauth2.Config
-	logger        *log.Entry
+	Logger        *log.Entry
 }
 
-func NewAuthService(
+// NOTE: used var instead of func to enable mocking in tests
+var NewAuthService = func(
 	hashFunc func(password string) (string, error),
 	jwtSecret string,
 	sendSMTPEmail func(from, to, subject, textBody string) error,
@@ -37,7 +38,7 @@ func NewAuthService(
 		JwtSecret:     jwtSecret,
 		SendSMTPEmail: sendSMTPEmail,
 		OAuthConfig:   oauthConfig,
-		logger:        log.WithFields(log.Fields{"service": "AuthService"}),
+		Logger:        log.WithFields(log.Fields{"service": "AuthService"}),
 	}
 }
 
@@ -92,7 +93,8 @@ func (s *AuthService) SendOTPEmail(otp, username, email, purpose string) error {
 	if err != nil {
 		return err
 	}
-	s.logger.Info("OTP send to " + email + " successfully!")
+
+	s.Logger.Info("OTP send to " + email + " successfully!")
 	return nil
 }
 

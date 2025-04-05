@@ -30,7 +30,15 @@ func ConnectDB() {
 	}
 	logger.Info("Connection opened to database")
 
-	err = DB.AutoMigrate(
+	err = Migrate(DB)
+	if err != nil {
+		logger.Error("Migration failed: ", err.Error())
+	}
+	logger.Info("Database migrated")
+}
+
+func Migrate(db *gorm.DB) error {
+	if err := db.AutoMigrate(
 		&model.User{},
 		&model.FriendRequest{},
 		&model.Room{},
@@ -40,12 +48,10 @@ func ConnectDB() {
 		&model.Transaction{},
 		&model.Message{},
 		&model.Notification{},
-		&model.Subscription{},
-	)
-	if err != nil {
-		logger.Error("Migration failed: ", err.Error())
+	); err != nil {
+		return err
 	}
-	logger.Info("Database migrated")
+	return nil
 }
 
 func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
@@ -64,4 +70,14 @@ func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 		offset := (page - 1) * pageSize
 		return db.Offset(offset).Limit(pageSize)
 	}
+}
+
+func InitTestDB(dsn string) (*gorm.DB, error) {
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		TranslateError: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
