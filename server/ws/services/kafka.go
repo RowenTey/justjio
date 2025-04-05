@@ -6,7 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/RowenTey/JustJio/server-ws/utils"
+	"github.com/RowenTey/JustJio/server/ws/utils"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 

@@ -9,7 +9,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/RowenTey/JustJio/server-ws/utils"
+	"github.com/RowenTey/JustJio/server/api/config"
 	model_push_notifications "github.com/RowenTey/JustJio/server/api/model/push_notifications"
 	"github.com/SherClockHolmes/webpush-go"
 )
@@ -59,9 +59,9 @@ func RunPushNotification() chan<- NotificationData {
 	logger.Info("Starting push notification workers...")
 
 	// VAPID keys
-	vapidEmail := utils.Config("VAPID_EMAIL")
-	vapidPublicKey := utils.Config("VAPID_PUBLIC_KEY")
-	vapidPrivateKey := utils.Config("VAPID_PRIVATE_KEY")
+	vapidEmail := config.Config("VAPID_EMAIL")
+	vapidPublicKey := config.Config("VAPID_PUBLIC_KEY")
+	vapidPrivateKey := config.Config("VAPID_PRIVATE_KEY")
 
 	notifications := make(chan NotificationData, 100)
 
