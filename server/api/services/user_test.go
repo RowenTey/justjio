@@ -785,41 +785,11 @@ func (s *UserServiceTestSuite) TestMarkOnline_UserNotFound() {
 func (s *UserServiceTestSuite) TestMarkOffline_Success() {
 	// arrange
 	userId := "1"
-	now := time.Now()
-
-	// First query to update isOnline
-	s.mock.ExpectQuery(`SELECT \* FROM "users" WHERE "users"."id" = \$1 ORDER BY "users"."id" LIMIT \$2`).
-		WithArgs(userId, 1).
-		WillReturnRows(sqlmock.NewRows([]string{
-			"id", "username", "email", "password", "picture_url",
-			"is_email_valid", "is_online", "last_seen",
-			"registered_at", "updated_at"}).
-			AddRow(1, "johndoe", "john@example.com", "hashedpassword",
-				"https://default-image.jpg", true, true, now, now, now))
 
 	s.mock.ExpectBegin()
 	s.mock.ExpectExec(`UPDATE "users" SET`).
-		WithArgs("johndoe", "john@example.com", "hashedpassword",
-			"https://default-image.jpg", true, false, sqlmock.AnyArg(),
-			sqlmock.AnyArg(), sqlmock.AnyArg(), 1).
-		WillReturnResult(sqlmock.NewResult(1, 1))
-	s.mock.ExpectCommit()
-
-	// Second query to update lastSeen
-	s.mock.ExpectQuery(`SELECT \* FROM "users" WHERE "users"."id" = \$1 ORDER BY "users"."id" LIMIT \$2`).
-		WithArgs(userId, 1).
-		WillReturnRows(sqlmock.NewRows([]string{
-			"id", "username", "email", "password", "picture_url",
-			"is_email_valid", "is_online", "last_seen",
-			"registered_at", "updated_at"}).
-			AddRow(1, "johndoe", "john@example.com", "hashedpassword",
-				"https://default-image.jpg", true, false, now, now, now))
-
-	s.mock.ExpectBegin()
-	s.mock.ExpectExec(`UPDATE "users" SET`).
-		WithArgs("johndoe", "john@example.com", "hashedpassword",
-			"https://default-image.jpg", true, false, sqlmock.AnyArg(),
-			sqlmock.AnyArg(), sqlmock.AnyArg(), 1).
+		WithArgs(false, sqlmock.AnyArg(),
+			sqlmock.AnyArg(), userId).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	s.mock.ExpectCommit()
 
