@@ -11,13 +11,14 @@ import (
 
 type NotificationService struct {
 	DB     *gorm.DB
-	logger *log.Entry
+	Logger *log.Entry
 }
 
-func NewNotificationService(db *gorm.DB) *NotificationService {
+// NOTE: used var instead of func to enable mocking in tests
+var NewNotificationService = func(db *gorm.DB) *NotificationService {
 	return &NotificationService{
 		DB:     db,
-		logger: log.WithFields(log.Fields{"service": "NotificationService"}),
+		Logger: log.WithFields(log.Fields{"service": "NotificationService"}),
 	}
 }
 

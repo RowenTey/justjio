@@ -14,13 +14,14 @@ import (
 
 type UserService struct {
 	DB     *gorm.DB
-	logger *log.Entry
+	Logger *log.Entry
 }
 
-func NewUserService(db *gorm.DB) *UserService {
+// NOTE: used var instead of func to enable mocking in tests
+var NewUserService = func(db *gorm.DB) *UserService {
 	return &UserService{
 		DB:     db,
-		logger: log.WithFields(log.Fields{"service": "UserService"}),
+		Logger: log.WithFields(log.Fields{"service": "UserService"}),
 	}
 }
 
