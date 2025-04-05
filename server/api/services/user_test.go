@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/RowenTey/JustJio/server/api/model"
-	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/RowenTey/JustJio/server/api/tests"
 )
 
 type UserServiceTestSuite struct {
@@ -33,7 +33,7 @@ func TestUserServiceTestSuite(t *testing.T) {
 
 func (s *UserServiceTestSuite) SetupTest() {
 	var err error
-	s.DB, s.mock, err = utils.SetupTestDB()
+	s.DB, s.mock, err = tests.SetupTestDB()
 	assert.NoError(s.T(), err)
 
 	s.userService = NewUserService(s.DB)
@@ -49,7 +49,7 @@ func (s *UserServiceTestSuite) AfterTest(_, _ string) {
 
 func (s *UserServiceTestSuite) TestGetUserByID_Success() {
 	// arrange
-	expectedUser := createTestUser(s.userId, s.username, s.email)
+	expectedUser := tests.CreateTestUser(s.userId, s.username, s.email)
 	rows := sqlmock.NewRows([]string{
 		"id", "username", "email", "password",
 		"is_email_valid", "is_online", "last_seen", "registered_at", "updated_at"}).
@@ -87,7 +87,7 @@ func (s *UserServiceTestSuite) TestGetUserByID_NotFound() {
 	user, err := s.userService.GetUserByID("1")
 
 	// assert
-	utils.AssertErrAndNil(s.T(), err, user)
+	tests.AssertErrAndNil(s.T(), err, user)
 	assert.True(s.T(), err == gorm.ErrRecordNotFound)
 }
 
@@ -459,7 +459,7 @@ func (s *UserServiceTestSuite) TestSendFriendRequest_DatabaseError() {
 
 func (s *UserServiceTestSuite) TestGetUserByUsername_Success() {
 	// arrange
-	expectedUser := createTestUser(s.userId, s.username, s.email)
+	expectedUser := tests.CreateTestUser(s.userId, s.username, s.email)
 	rows := sqlmock.NewRows([]string{
 		"id", "username", "email", "password", "picture_url",
 		"is_email_valid", "is_online", "last_seen", "registered_at", "updated_at"}).
@@ -498,13 +498,13 @@ func (s *UserServiceTestSuite) TestGetUserByUsername_NotFound() {
 	user, err := s.userService.GetUserByUsername("nonexistentuser")
 
 	// assert
-	utils.AssertErrAndNil(s.T(), err, user)
+	tests.AssertErrAndNil(s.T(), err, user)
 	assert.True(s.T(), err == gorm.ErrRecordNotFound)
 }
 
 func (s *UserServiceTestSuite) TestGetUserByEmail_Success() {
 	// arrange
-	expectedUser := createTestUser(s.userId, s.username, s.email)
+	expectedUser := tests.CreateTestUser(s.userId, s.username, s.email)
 	rows := sqlmock.NewRows([]string{
 		"id", "username", "email", "password", "picture_url",
 		"is_email_valid", "is_online", "last_seen", "registered_at", "updated_at"}).
@@ -1497,22 +1497,6 @@ func (s *UserServiceTestSuite) TestIsFriend_FriendNotFound() {
 
 	// assert
 	assert.False(s.T(), result)
-}
-
-func createTestUser(id uint, username, email string) *model.User {
-	now := time.Now()
-	return &model.User{
-		ID:           id,
-		Username:     username,
-		Email:        email,
-		Password:     "hashedpassword",
-		PictureUrl:   "https://default-image.jpg",
-		IsEmailValid: true,
-		IsOnline:     false,
-		LastSeen:     now,
-		RegisteredAt: now,
-		UpdatedAt:    now,
-	}
 }
 
 func assertUserEqual(t *testing.T, expected, actual *model.User) {

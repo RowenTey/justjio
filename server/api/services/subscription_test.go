@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/RowenTey/JustJio/server/api/model"
-	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/RowenTey/JustJio/server/api/tests"
 )
 
 type SubscriptionServiceTestSuite struct {
@@ -33,7 +33,7 @@ func TestSubscriptionServiceTestSuite(t *testing.T) {
 
 func (s *SubscriptionServiceTestSuite) SetupTest() {
 	var err error
-	s.DB, s.mock, err = utils.SetupTestDB()
+	s.DB, s.mock, err = tests.SetupTestDB()
 	assert.NoError(s.T(), err)
 
 	s.subscriptionService = NewSubscriptionService(s.DB)
@@ -52,7 +52,7 @@ func (s *SubscriptionServiceTestSuite) AfterTest(_, _ string) {
 
 func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Success() {
 	// arrange
-	subscription := createSubscription(1, s.endpoint, s.p256dh, s.auth)
+	subscription := tests.CreateTestSubscription(1, "1", s.endpoint, s.p256dh, s.auth)
 
 	s.mock.ExpectBegin()
 	// Use ExpectExec instead of ExpectQuery for INSERT operations that use ExecQuery
@@ -82,7 +82,7 @@ func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Success() {
 
 func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Error() {
 	// arrange
-	subscription := createSubscription(1, s.endpoint, s.p256dh, s.auth)
+	subscription := tests.CreateTestSubscription(1, "1", s.endpoint, s.p256dh, s.auth)
 
 	s.mock.ExpectBegin()
 	s.mock.ExpectExec(`INSERT INTO "subscriptions"`).
@@ -110,20 +110,12 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_Success() {
 	userID := uint(1)
 
 	expectedSubscriptions := []model.Subscription{
-		{
-			ID:       "1",
-			UserID:   userID,
-			Endpoint: "https://fcm.googleapis.com/fcm/send/token1",
-			P256dh:   "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtfZOYo0X1",
-			Auth:     "Q2QVd5bPkMEwMKKKv5gV11",
-		},
-		{
-			ID:       "2",
-			UserID:   userID,
-			Endpoint: "https://fcm.googleapis.com/fcm/send/token2",
-			P256dh:   "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtfZOYo0X2",
-			Auth:     "Q2QVd5bPkMEwMKKKv5gV22",
-		},
+		*tests.CreateTestSubscription(userID, "1", s.endpoint, s.p256dh, s.auth),
+		*tests.CreateTestSubscription(userID, "2",
+			"https://fcm.googleapis.com/fcm/send/token2",
+			"BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtfZOYo0X2",
+			"Q2QVd5bPkMEwMKKKv5gV22",
+		),
 	}
 
 	rows := sqlmock.NewRows(s.subCols)
@@ -167,7 +159,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_EmptyResult(
 	subscriptions, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
 
 	// assert
-	utils.AssertNoErrAndNotNil(s.T(), err, subscriptions)
+	tests.AssertNoErrAndNotNil(s.T(), err, subscriptions)
 	assert.Equal(s.T(), 0, len(*subscriptions))
 }
 
@@ -183,19 +175,13 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_DatabaseErro
 	subscriptions, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
 
 	// assert
-	utils.AssertErrAndNil(s.T(), err, subscriptions)
+	tests.AssertErrAndNil(s.T(), err, subscriptions)
 	assert.Contains(s.T(), err.Error(), "database error")
 }
 
 func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_Success() {
 	// arrange
-	expectedSubscription := model.Subscription{
-		ID:       "1",
-		UserID:   1,
-		Endpoint: s.endpoint,
-		P256dh:   s.p256dh,
-		Auth:     s.auth,
-	}
+	expectedSubscription := tests.CreateTestSubscription(1, "1", s.endpoint, s.p256dh, s.auth)
 
 	rows := sqlmock.NewRows(s.subCols).AddRow(
 		expectedSubscription.ID,
@@ -213,8 +199,8 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_Success() 
 	subscription, err := s.subscriptionService.GetSubscriptionsByEndpoint(s.endpoint)
 
 	// assert
-	utils.AssertNoErrAndNotNil(s.T(), err, subscription)
-	assertSubscriptionEqual(s.T(), &expectedSubscription, subscription)
+	tests.AssertNoErrAndNotNil(s.T(), err, subscription)
+	assertSubscriptionEqual(s.T(), expectedSubscription, subscription)
 }
 
 func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_NotFound() {
@@ -231,7 +217,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_NotFound()
 	subscription, err := s.subscriptionService.GetSubscriptionsByEndpoint(endpoint)
 
 	// assert
-	utils.AssertNoErrAndNotNil(s.T(), err, subscription)
+	tests.AssertNoErrAndNotNil(s.T(), err, subscription)
 	assert.Equal(s.T(), "", subscription.ID) // Empty ID indicates no subscription found
 }
 
@@ -247,7 +233,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_DatabaseEr
 	subscription, err := s.subscriptionService.GetSubscriptionsByEndpoint(endpoint)
 
 	// assert
-	utils.AssertErrAndNil(s.T(), err, subscription)
+	tests.AssertErrAndNil(s.T(), err, subscription)
 	assert.Contains(s.T(), err.Error(), "database error")
 }
 
@@ -306,12 +292,7 @@ func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_DatabaseError() {
 
 func (s *SubscriptionServiceTestSuite) TestNewWebPushSubscriptionObj() {
 	// arrange
-	subscription := &model.Subscription{
-		UserID:   1,
-		Endpoint: s.endpoint,
-		P256dh:   s.p256dh,
-		Auth:     s.auth,
-	}
+	subscription := tests.CreateTestSubscription(1, "1", s.endpoint, s.p256dh, s.auth)
 
 	// act
 	webpushObj := s.subscriptionService.NewWebPushSubscriptionObj(subscription)
@@ -322,15 +303,6 @@ func (s *SubscriptionServiceTestSuite) TestNewWebPushSubscriptionObj() {
 	assert.Equal(s.T(), subscription.P256dh, webpushObj.Keys.P256dh)
 	assert.Equal(s.T(), subscription.Auth, webpushObj.Keys.Auth)
 	assert.IsType(s.T(), &webpush.Subscription{}, webpushObj)
-}
-
-func createSubscription(userID uint, endpoint, p256dh, auth string) *model.Subscription {
-	return &model.Subscription{
-		UserID:   userID,
-		Endpoint: endpoint,
-		P256dh:   p256dh,
-		Auth:     auth,
-	}
 }
 
 func assertSubscriptionEqual(t assert.TestingT, expected, actual *model.Subscription) {
