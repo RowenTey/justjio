@@ -8,7 +8,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/RowenTey/JustJio/server/api/model"
-	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/RowenTey/JustJio/server/api/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
@@ -32,7 +32,7 @@ func TestBillServiceTestSuite(t *testing.T) {
 
 func (s *BillServiceTestSuite) SetupTest() {
 	var err error
-	s.DB, s.mock, err = utils.SetupTestDB()
+	s.DB, s.mock, err = tests.SetupTestDB()
 	assert.NoError(s.T(), err)
 
 	s.billService = NewBillService(s.DB)
@@ -48,10 +48,10 @@ func (s *BillServiceTestSuite) AfterTest(_, _ string) {
 
 func (s *BillServiceTestSuite) TestCreateBill_Success() {
 	// arrange
-	room := createTestRoom(s.roomId)
-	owner := createTestUser(1, "owner1", "owner@example.com")
-	payer1 := createTestUser(2, "payer1", "payer1@example.com")
-	payer2 := createTestUser(3, "payer2", "payer2@example.com")
+	room := tests.CreateTestRoom(s.roomId, "Test Room", 1)
+	owner := tests.CreateTestUser(1, "owner1", "owner@example.com")
+	payer1 := tests.CreateTestUser(2, "payer1", "payer1@example.com")
+	payer2 := tests.CreateTestUser(3, "payer2", "payer2@example.com")
 	payers := []model.User{*payer1, *payer2}
 	name, amount, includeOwner := prepareBillDetails()
 
@@ -94,7 +94,7 @@ func (s *BillServiceTestSuite) TestCreateBill_Success() {
 	bill, err := s.billService.CreateBill(room, owner, name, amount, includeOwner, &payers)
 
 	// assert
-	utils.AssertNoErrAndNotNil(s.T(), err, bill)
+	tests.AssertNoErrAndNotNil(s.T(), err, bill)
 	assert.Equal(s.T(), name, bill.Name)
 	assert.Equal(s.T(), amount, bill.Amount)
 	assert.Equal(s.T(), includeOwner, bill.IncludeOwner)
@@ -105,8 +105,8 @@ func (s *BillServiceTestSuite) TestCreateBill_Success() {
 
 func (s *BillServiceTestSuite) TestCreateBill_EmptyPayers() {
 	// arrange
-	room := createTestRoom(s.roomId)
-	owner := createTestUser(1, "owner1", "owner@example.com")
+	room := tests.CreateTestRoom(s.roomId, "Test Room", 1)
+	owner := tests.CreateTestUser(1, "owner1", "owner@example.com")
 	payers := []model.User{}
 	name, amount, includeOwner := prepareBillDetails()
 
@@ -114,15 +114,15 @@ func (s *BillServiceTestSuite) TestCreateBill_EmptyPayers() {
 	bill, err := s.billService.CreateBill(room, owner, name, amount, includeOwner, &payers)
 
 	// assert
-	utils.AssertErrAndNil(s.T(), err, bill)
+	tests.AssertErrAndNil(s.T(), err, bill)
 	assert.Contains(s.T(), err.Error(), "payers of a bill can't be empty")
 }
 
 func (s *BillServiceTestSuite) TestCreateBill_DatabaseError() {
 	// arrange
-	room := createTestRoom(s.roomId)
-	owner := createTestUser(1, "owner1", "owner@example.com")
-	payer1 := createTestUser(2, "payer1", "payer1@example.com")
+	room := tests.CreateTestRoom(s.roomId, "Test Room", 1)
+	owner := tests.CreateTestUser(1, "owner1", "owner@example.com")
+	payer1 := tests.CreateTestUser(2, "payer1", "payer1@example.com")
 	payers := []model.User{*payer1}
 	name, amount, includeOwner := prepareBillDetails()
 
@@ -144,7 +144,7 @@ func (s *BillServiceTestSuite) TestCreateBill_DatabaseError() {
 	bill, err := s.billService.CreateBill(room, owner, name, amount, includeOwner, &payers)
 
 	// assert
-	utils.AssertErrAndNil(s.T(), err, bill)
+	tests.AssertErrAndNil(s.T(), err, bill)
 	assert.Contains(s.T(), err.Error(), "database error")
 }
 
@@ -172,7 +172,7 @@ func (s *BillServiceTestSuite) TestGetBillById_Success() {
 	result, err := s.billService.GetBillById(billId)
 
 	// assert
-	utils.AssertNoErrAndNotNil(s.T(), err, result)
+	tests.AssertNoErrAndNotNil(s.T(), err, result)
 	assert.Equal(s.T(), billId, result.ID)
 	assert.Equal(s.T(), "Dinner", result.Name)
 	assert.Equal(s.T(), float32(100.0), result.Amount)
@@ -251,7 +251,7 @@ func (s *BillServiceTestSuite) TestGetBillsForRoom_Success() {
 	result, err := s.billService.GetBillsForRoom(s.roomId)
 
 	// assert
-	utils.AssertNoErrAndNotNil(s.T(), err, result)
+	tests.AssertNoErrAndNotNil(s.T(), err, result)
 	assert.Equal(s.T(), 2, len(*result))
 	assert.Equal(s.T(), uint(1), (*result)[0].ID)
 	assert.Equal(s.T(), uint(2), (*result)[1].ID)
@@ -269,7 +269,7 @@ func (s *BillServiceTestSuite) TestGetBillsForRoom_EmptyResult() {
 	result, err := s.billService.GetBillsForRoom(s.roomId)
 
 	// assert
-	utils.AssertNoErrAndNotNil(s.T(), err, result)
+	tests.AssertNoErrAndNotNil(s.T(), err, result)
 	assert.Equal(s.T(), 0, len(*result))
 }
 
@@ -283,7 +283,7 @@ func (s *BillServiceTestSuite) TestGetBillsForRoom_DatabaseError() {
 	result, err := s.billService.GetBillsForRoom(s.roomId)
 
 	// assert
-	utils.AssertErrAndNil(s.T(), err, result)
+	tests.AssertErrAndNil(s.T(), err, result)
 	assert.Contains(s.T(), err.Error(), "database error")
 }
 
@@ -383,10 +383,8 @@ func (s *BillServiceTestSuite) TestConsolidateBills_Success() {
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).
 			AddRow(consolidationId))
-	s.mock.ExpectCommit()
 
 	// Expect updating the bills
-	s.mock.ExpectBegin()
 	s.mock.ExpectExec(`UPDATE "bills" SET "consolidation_id"=\$1 WHERE room_id = \$2`).
 		WithArgs(consolidationId, s.roomId).
 		WillReturnResult(sqlmock.NewResult(0, 2)) // 2 rows affected
@@ -396,7 +394,7 @@ func (s *BillServiceTestSuite) TestConsolidateBills_Success() {
 	result, err := s.billService.ConsolidateBills(s.roomId)
 
 	// assert
-	utils.AssertNoErrAndNotNil(s.T(), err, result)
+	tests.AssertNoErrAndNotNil(s.T(), err, result)
 	assert.Equal(s.T(), consolidationId, result.ID)
 }
 
@@ -414,7 +412,7 @@ func (s *BillServiceTestSuite) TestConsolidateBills_CreateError() {
 	result, err := s.billService.ConsolidateBills(s.roomId)
 
 	// assert
-	utils.AssertErrAndNil(s.T(), err, result)
+	tests.AssertErrAndNil(s.T(), err, result)
 	assert.Contains(s.T(), err.Error(), "database error")
 }
 
@@ -430,10 +428,8 @@ func (s *BillServiceTestSuite) TestConsolidateBills_UpdateError() {
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).
 			AddRow(consolidationId))
-	s.mock.ExpectCommit()
 
 	// Expect updating the bills with error
-	s.mock.ExpectBegin()
 	s.mock.ExpectExec(`UPDATE "bills" SET "consolidation_id"=\$1 WHERE room_id = \$2`).
 		WithArgs(consolidationId, s.roomId).
 		WillReturnError(errors.New("database error"))
@@ -442,17 +438,8 @@ func (s *BillServiceTestSuite) TestConsolidateBills_UpdateError() {
 	result, err := s.billService.ConsolidateBills(s.roomId)
 
 	// assert
-	utils.AssertErrAndNil(s.T(), err, result)
+	tests.AssertErrAndNil(s.T(), err, result)
 	assert.Contains(s.T(), err.Error(), "database error")
-}
-
-func createTestRoom(id string) *model.Room {
-	now := time.Now()
-	return &model.Room{
-		ID:        id,
-		Name:      "Test Room",
-		CreatedAt: now,
-	}
 }
 
 func createTestBill(id uint, name string, amount float32, roomId string, ownerId uint) model.Bill {

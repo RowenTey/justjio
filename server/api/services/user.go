@@ -146,14 +146,14 @@ func (s *UserService) MarkOnline(userId string) error {
 }
 
 func (s *UserService) MarkOffline(userId string) error {
-	if err := s.UpdateUserField(userId, "isOnline", false); err != nil {
-		return err
+	updates := map[string]interface{}{
+		"isOnline": false,
+		"lastSeen": time.Now(),
 	}
 
-	if err := s.UpdateUserField(userId, "lastSeen", time.Now()); err != nil {
-		return err
-	}
-	return nil
+	err := s.DB.Model(&model.User{}).
+		Where("id = ?", userId).Updates(updates).Error
+	return err
 }
 
 func (s *UserService) SearchUsers(currentUserID, query string) (*[]model.User, error) {

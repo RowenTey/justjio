@@ -6,7 +6,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/RowenTey/JustJio/server/api/model"
-	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/RowenTey/JustJio/server/api/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
@@ -26,7 +26,7 @@ func TestRoomServiceSuite(t *testing.T) {
 
 func (s *RoomServiceTestSuite) SetupTest() {
 	var err error
-	s.DB, s.mock, err = utils.SetupTestDB()
+	s.DB, s.mock, err = tests.SetupTestDB()
 	assert.NoError(s.T(), err)
 
 	s.roomService = NewRoomService(s.DB)
@@ -38,17 +38,8 @@ func (s *RoomServiceTestSuite) AfterTest(_, _ string) {
 
 func (s *RoomServiceTestSuite) TestCreateRoom_Success() {
 	// arrange
-	host := &model.User{
-		ID:       1,
-		Username: "testuser",
-		Email:    "test@example.com",
-	}
-
-	room := &model.Room{
-		Name:           "Test Room",
-		AttendeesCount: 1,
-		IsClosed:       false,
-	}
+	host := tests.CreateTestUser(1, "testuser", "user@test.com")
+	room := tests.CreateTestRoom("room-123", "Test Room", 1)
 
 	s.mock.ExpectBegin()
 
@@ -96,27 +87,9 @@ func (s *RoomServiceTestSuite) TestGetRooms_Success() {
 	// arrange
 	userID := "1"
 	page := 1
-	now := time.Now()
-
 	expectedRooms := []model.Room{
-		{
-			ID:             "1",
-			Name:           "Room 1",
-			HostID:         1,
-			AttendeesCount: 2,
-			IsClosed:       false,
-			CreatedAt:      now,
-			UpdatedAt:      now,
-		},
-		{
-			ID:             "2",
-			Name:           "Room 2",
-			HostID:         2,
-			AttendeesCount: 3,
-			IsClosed:       false,
-			CreatedAt:      now.Add(-1 * time.Hour),
-			UpdatedAt:      now.Add(-1 * time.Hour),
-		},
+		*tests.CreateTestRoom("1", "Room 1", 1),
+		*tests.CreateTestRoom("2", "Room 2", 1),
 	}
 
 	rows := sqlmock.NewRows([]string{
@@ -170,17 +143,7 @@ func (s *RoomServiceTestSuite) TestGetNumRooms_Success() {
 func (s *RoomServiceTestSuite) TestGetRoomById_Success() {
 	// arrange
 	roomID := "1"
-	now := time.Now()
-
-	expectedRoom := model.Room{
-		ID:             "1",
-		Name:           "Test Room",
-		HostID:         1,
-		AttendeesCount: 2,
-		IsClosed:       false,
-		CreatedAt:      now,
-		UpdatedAt:      now,
-	}
+	expectedRoom := tests.CreateTestRoom(roomID, "Test Room", 1)
 
 	rows := sqlmock.NewRows([]string{
 		"id", "name", "host_id",
@@ -226,25 +189,9 @@ func (s *RoomServiceTestSuite) TestGetRoomById_NotFound() {
 func (s *RoomServiceTestSuite) TestGetRoomInvites_Success() {
 	// arrange
 	userID := "1"
-	now := time.Now()
-
 	expectedInvites := []model.RoomInvite{
-		{
-			ID:        1,
-			RoomID:    "1",
-			UserID:    1,
-			InviterID: 2,
-			Status:    "pending",
-			CreatedAt: now,
-		},
-		{
-			ID:        2,
-			RoomID:    "2",
-			UserID:    1,
-			InviterID: 3,
-			Status:    "pending",
-			CreatedAt: now.Add(-1 * time.Hour),
-		},
+		*tests.CreateTestRoomInvite(1, "1", 1, 2),
+		*tests.CreateTestRoomInvite(2, "2", 1, 3),
 	}
 
 	rows := sqlmock.NewRows([]string{
@@ -325,14 +272,8 @@ func (s *RoomServiceTestSuite) TestGetRoomAttendees_Success() {
 	// arrange
 	roomID := "1"
 	expectedUsers := []model.User{
-		{
-			ID:       1,
-			Username: "user1",
-		},
-		{
-			ID:       2,
-			Username: "user2",
-		},
+		*tests.CreateTestUser(1, "user1", "user1@test.com"),
+		*tests.CreateTestUser(2, "user2", "user2@test.com"),
 	}
 
 	// Mock room query first
@@ -389,14 +330,8 @@ func (s *RoomServiceTestSuite) TestGetRoomAttendeesIds_Success() {
 	// arrange
 	roomID := "1"
 	expectedUsers := []model.User{
-		{
-			ID:       1,
-			Username: "user1",
-		},
-		{
-			ID:       2,
-			Username: "user2",
-		},
+		*tests.CreateTestUser(1, "user1", "user1@test.com"),
+		*tests.CreateTestUser(2, "user2", "user2@test.com"),
 	}
 
 	// Mock room query first
@@ -453,17 +388,7 @@ func (s *RoomServiceTestSuite) TestCloseRoom_Success() {
 	// arrange
 	roomID := "1"
 	userID := "1"
-	now := time.Now()
-
-	room := model.Room{
-		ID:             roomID,
-		Name:           "Test Room",
-		HostID:         1,
-		AttendeesCount: 2,
-		IsClosed:       false,
-		CreatedAt:      now.Add(-1 * time.Hour),
-		UpdatedAt:      now.Add(-1 * time.Hour),
-	}
+	room := tests.CreateTestRoom(roomID, "Test Room", 1)
 
 	// Find room
 	roomRows := sqlmock.NewRows([]string{
@@ -504,17 +429,8 @@ func (s *RoomServiceTestSuite) TestCloseRoom_NotHost() {
 	// arrange
 	roomID := "1"
 	userID := "2" // Different from host ID
-	now := time.Now()
-
-	room := model.Room{
-		ID:             roomID,
-		Name:           "Test Room",
-		HostID:         1, // Host ID is 1, not 2
-		AttendeesCount: 2,
-		IsClosed:       false,
-		CreatedAt:      now.Add(-1 * time.Hour),
-		UpdatedAt:      now.Add(-1 * time.Hour),
-	}
+	// host ID is 1
+	room := tests.CreateTestRoom(roomID, "Test Room", 1)
 
 	// Find room
 	roomRows := sqlmock.NewRows([]string{
@@ -735,26 +651,11 @@ func (s *RoomServiceTestSuite) TestInviteUserToRoom_Success() {
 	// arrange
 	roomID := "1"
 	now := time.Now()
-
-	inviter := &model.User{
-		ID:       1,
-		Username: "hostuser",
-		Email:    "host@test.com",
+	inviter := tests.CreateTestUser(1, "hostuser", "host@test.com")
+	users := []model.User{
+		*tests.CreateTestUser(2, "user2", "user2@test.com"),
+		*tests.CreateTestUser(3, "user3", "user3@test.com"),
 	}
-
-	users := &[]model.User{
-		{
-			ID:       2,
-			Username: "user2",
-			Email:    "user2@test.com",
-		},
-		{
-			ID:       3,
-			Username: "user3",
-			Email:    "user3@test.com",
-		},
-	}
-
 	message := "Please join my room!"
 
 	// Find room
@@ -801,7 +702,7 @@ func (s *RoomServiceTestSuite) TestInviteUserToRoom_Success() {
 	s.mock.ExpectCommit()
 
 	// act
-	invites, err := s.roomService.InviteUserToRoom(roomID, inviter, users, message)
+	invites, err := s.roomService.InviteUserToRoom(roomID, inviter, &users, message)
 
 	// assert
 	assert.NoError(s.T(), err)
@@ -817,21 +718,11 @@ func (s *RoomServiceTestSuite) TestInviteUserToRoom_UserAlreadyInRoom() {
 	// arrange
 	roomID := "1"
 	now := time.Now()
-
-	inviter := &model.User{
-		ID:       1,
-		Username: "hostuser",
-		Email:    "host@test.com",
+	inviter := tests.CreateTestUser(1, "hostuser", "host@test.com")
+	users := []model.User{
+		*tests.CreateTestUser(2, "user2", "user2@test.com"),
+		*tests.CreateTestUser(3, "user3", "user3@test.com"),
 	}
-
-	users := &[]model.User{
-		{
-			ID:       2,
-			Username: "user2",
-			Email:    "user2@test.com",
-		},
-	}
-
 	message := "Please join my room!"
 
 	// Find room
@@ -853,7 +744,7 @@ func (s *RoomServiceTestSuite) TestInviteUserToRoom_UserAlreadyInRoom() {
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
 	// act
-	invites, err := s.roomService.InviteUserToRoom(roomID, inviter, users, message)
+	invites, err := s.roomService.InviteUserToRoom(roomID, inviter, &users, message)
 
 	// assert
 	assert.Error(s.T(), err)
@@ -865,21 +756,10 @@ func (s *RoomServiceTestSuite) TestInviteUserToRoom_UserAlreadyInvited() {
 	// arrange
 	roomID := "1"
 	now := time.Now()
-
-	inviter := &model.User{
-		ID:       1,
-		Username: "hostuser",
-		Email:    "host@test.com",
+	inviter := tests.CreateTestUser(1, "hostuser", "host@test.com")
+	users := []model.User{
+		*tests.CreateTestUser(2, "user2", "user2@test.com"),
 	}
-
-	users := &[]model.User{
-		{
-			ID:       2,
-			Username: "user2",
-			Email:    "user2@test.com",
-		},
-	}
-
 	message := "Please join my room!"
 
 	// Find room
@@ -906,7 +786,7 @@ func (s *RoomServiceTestSuite) TestInviteUserToRoom_UserAlreadyInvited() {
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
 	// act
-	invites, err := s.roomService.InviteUserToRoom(roomID, inviter, users, message)
+	invites, err := s.roomService.InviteUserToRoom(roomID, inviter, &users, message)
 
 	// assert
 	assert.Error(s.T(), err)
@@ -918,21 +798,11 @@ func (s *RoomServiceTestSuite) TestInviteUserToRoom_NotHost() {
 	// arrange
 	roomID := "1"
 	now := time.Now()
-
-	inviter := &model.User{
-		ID:       2, // Not the host
-		Username: "nothost",
-		Email:    "nothost@test.com",
+	// Not the host
+	inviter := tests.CreateTestUser(2, "user2", "user2@test.com")
+	users := []model.User{
+		*tests.CreateTestUser(3, "user3", "user3@test.com"),
 	}
-
-	users := &[]model.User{
-		{
-			ID:       3,
-			Username: "user3",
-			Email:    "user3@test.com",
-		},
-	}
-
 	message := "Please join my room!"
 
 	// Find room with different host ID
@@ -949,7 +819,7 @@ func (s *RoomServiceTestSuite) TestInviteUserToRoom_NotHost() {
 		WillReturnRows(roomRows)
 
 	// act
-	invites, err := s.roomService.InviteUserToRoom(roomID, inviter, users, message)
+	invites, err := s.roomService.InviteUserToRoom(roomID, inviter, &users, message)
 
 	// assert
 	assert.Error(s.T(), err)
@@ -960,13 +830,7 @@ func (s *RoomServiceTestSuite) TestInviteUserToRoom_NotHost() {
 func (s *RoomServiceTestSuite) TestInviteUserToRoom_EmptyUsersList() {
 	// arrange
 	roomID := "1"
-
-	inviter := &model.User{
-		ID:       1,
-		Username: "hostuser",
-		Email:    "host@test.com",
-	}
-
+	inviter := tests.CreateTestUser(1, "hostuser", "host@test.com")
 	users := &[]model.User{} // Empty list
 	message := "Please join my room!"
 
@@ -1001,22 +865,9 @@ func (s *RoomServiceTestSuite) TestGetUninvitedFriendsForRoom_Success() {
 	roomID := "1"
 	userID := "1"
 	now := time.Now()
-
 	expectedFriends := []model.User{
-		{
-			ID:           2,
-			Username:     "friend1",
-			Email:        "friend1@test.com",
-			RegisteredAt: now,
-			UpdatedAt:    now,
-		},
-		{
-			ID:           3,
-			Username:     "friend2",
-			Email:        "friend2@test.com",
-			RegisteredAt: now,
-			UpdatedAt:    now,
-		},
+		*tests.CreateTestUser(2, "friend1", "friend1@test.com"),
+		*tests.CreateTestUser(3, "friend2", "friend2@test.com"),
 	}
 
 	// Expected query will be complex with multiple joins and subqueries
