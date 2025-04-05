@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/RowenTey/JustJio/server/api/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
@@ -29,7 +29,7 @@ func TestNotificationServiceTestSuite(t *testing.T) {
 
 func (s *NotificationServiceTestSuite) SetupTest() {
 	var err error
-	s.DB, s.mock, err = utils.SetupTestDB()
+	s.DB, s.mock, err = tests.SetupTestDB()
 	assert.NoError(s.T(), err)
 
 	s.notificationService = NewNotificationService(s.DB)
@@ -65,7 +65,7 @@ func (s *NotificationServiceTestSuite) TestCreateNotification_Success() {
 	result, err := s.notificationService.CreateNotification(s.userId, s.title, content)
 
 	// assert
-	utils.AssertNoErrAndNotNil(s.T(), err, result)
+	tests.AssertNoErrAndNotNil(s.T(), err, result)
 	assert.Equal(s.T(), s.userId, result.UserID)
 	assert.Equal(s.T(), s.title, result.Title)
 	assert.Equal(s.T(), content, result.Content)
@@ -80,7 +80,7 @@ func (s *NotificationServiceTestSuite) TestCreateNotification_EmptyContent() {
 	result, err := s.notificationService.CreateNotification(s.userId, s.title, content)
 
 	// assert
-	utils.AssertErrAndNil(s.T(), err, result)
+	tests.AssertErrAndNil(s.T(), err, result)
 	assert.Equal(s.T(), "content cannot be empty", err.Error())
 }
 
@@ -105,6 +105,6 @@ func (s *NotificationServiceTestSuite) TestCreateNotification_DatabaseError() {
 	result, err := s.notificationService.CreateNotification(s.userId, s.title, content)
 
 	// assert
-	utils.AssertErrAndNil(s.T(), err, result)
+	tests.AssertErrAndNil(s.T(), err, result)
 	assert.Contains(s.T(), err.Error(), "database error")
 }

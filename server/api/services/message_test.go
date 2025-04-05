@@ -9,8 +9,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 
-	"github.com/RowenTey/JustJio/server/api/model"
-	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/RowenTey/JustJio/server/api/tests"
 )
 
 type MessageServiceTestSuite struct {
@@ -29,7 +28,7 @@ func TestMessageServiceTestSuite(t *testing.T) {
 
 func (s *MessageServiceTestSuite) SetupTest() {
 	var err error
-	s.DB, s.mock, err = utils.SetupTestDB()
+	s.DB, s.mock, err = tests.SetupTestDB()
 	assert.NoError(s.T(), err)
 
 	s.messageService = NewMessageService(s.DB)
@@ -43,14 +42,8 @@ func (s *MessageServiceTestSuite) AfterTest(_, _ string) {
 
 func (s *MessageServiceTestSuite) TestSaveMessage_Success() {
 	// arrange
-	room := &model.Room{
-		ID:   s.roomId,
-		Name: "Test Room",
-	}
-	sender := &model.User{
-		ID:       1,
-		Username: "testuser",
-	}
+	room := tests.CreateTestRoom(s.roomId, "Test Room", 1)
+	sender := tests.CreateTestUser(1, "testuser", "user@test.com")
 	content := "Hello, world!"
 
 	s.mock.ExpectBegin()

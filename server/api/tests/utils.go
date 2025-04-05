@@ -1,4 +1,4 @@
-package utils
+package tests
 
 import (
 	"database/sql"
@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -77,4 +78,65 @@ func AssertErrAndNil(t assert.TestingT, err error, obj any) {
 func AssertNoErrAndNotNil(t assert.TestingT, err error, obj any) {
 	assert.NoError(t, err)
 	assert.NotNil(t, obj)
+}
+
+func CreateTestUser(id uint, username, email string) *model.User {
+	now := time.Now()
+	return &model.User{
+		ID:           id,
+		Username:     username,
+		Email:        email,
+		Password:     "hashedpassword",
+		PictureUrl:   "https://default-image.jpg",
+		IsEmailValid: true,
+		IsOnline:     false,
+		LastSeen:     now,
+		RegisteredAt: now,
+		UpdatedAt:    now,
+	}
+}
+
+func CreateTestRoom(id, name string, hostId uint) *model.Room {
+	now := time.Now()
+	return &model.Room{
+		ID:             id,
+		Name:           name,
+		CreatedAt:      now,
+		HostID:         hostId,
+		AttendeesCount: 1,
+		IsClosed:       false,
+	}
+}
+
+func CreateTestRoomInvite(id uint, roomId string, userId, inviterId uint) *model.RoomInvite {
+	now := time.Now()
+	return &model.RoomInvite{
+		ID:        id,
+		RoomID:    roomId,
+		UserID:    userId,
+		InviterID: inviterId,
+		Status:    "pending",
+		CreatedAt: now,
+	}
+}
+
+func CreateTestSubscription(userID uint, id, endpoint, p256dh, auth string) *model.Subscription {
+	return &model.Subscription{
+		ID:       id,
+		UserID:   userID,
+		Endpoint: endpoint,
+		P256dh:   p256dh,
+		Auth:     auth,
+	}
+}
+
+func CreateTestTransaction(id, consolidationID, payerID, payeeID uint, amount float32) *model.Transaction {
+	return &model.Transaction{
+		ID:              id,
+		ConsolidationID: consolidationID,
+		PayerID:         payerID,
+		PayeeID:         payeeID,
+		Amount:          amount,
+		IsPaid:          false,
+	}
 }

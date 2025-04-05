@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/RowenTey/JustJio/server/api/model"
-	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/RowenTey/JustJio/server/api/tests"
 )
 
 func TestTransactionServiceTestSuite(t *testing.T) {
@@ -28,7 +28,7 @@ type TransactionServiceTestSuite struct {
 
 func (s *TransactionServiceTestSuite) SetupTest() {
 	var err error
-	s.DB, s.mock, err = utils.SetupTestDB()
+	s.DB, s.mock, err = tests.SetupTestDB()
 	assert.NoError(s.T(), err)
 
 	s.transactionService = NewTransactionService(s.DB)
@@ -46,46 +46,10 @@ func (s *TransactionServiceTestSuite) TestGenerateTransactions_Success() {
 		CreatedAt: now,
 	}
 
-	// Setup mock data for bills with more complete User objects
-	owner := model.User{
-		ID:           1,
-		Username:     "owner1",
-		Email:        "owner@example.com",
-		Password:     "password",
-		PictureUrl:   "https://example.com/pic1.jpg",
-		IsEmailValid: true,
-		IsOnline:     true,
-		LastSeen:     now,
-		RegisteredAt: now,
-		UpdatedAt:    now,
-	}
-
-	payer1 := model.User{
-		ID:           2,
-		Username:     "payer1",
-		Email:        "payer1@example.com",
-		Password:     "password",
-		PictureUrl:   "https://example.com/pic2.jpg",
-		IsEmailValid: true,
-		IsOnline:     true,
-		LastSeen:     now,
-		RegisteredAt: now,
-		UpdatedAt:    now,
-	}
-
-	payer2 := model.User{
-		ID:           3,
-		Username:     "payer2",
-		Email:        "payer2@example.com",
-		Password:     "password",
-		PictureUrl:   "https://example.com/pic3.jpg",
-		IsEmailValid: true,
-		IsOnline:     true,
-		LastSeen:     now,
-		RegisteredAt: now,
-		UpdatedAt:    now,
-	}
-
+	// Setup mock data for bills
+	owner := tests.CreateTestUser(1, "owner", "owner@example.com")
+	payer1 := tests.CreateTestUser(2, "payer1", "payer1@example.com")
+	payer2 := tests.CreateTestUser(3, "payer2", "payer2@example.com")
 	bills := []model.Bill{
 		{
 			ID:              1,
@@ -96,8 +60,8 @@ func (s *TransactionServiceTestSuite) TestGenerateTransactions_Success() {
 			RoomID:          "room-123",
 			OwnerID:         owner.ID,
 			ConsolidationID: consolidatedBill.ID,
-			Owner:           owner,
-			Payers:          []model.User{payer1, payer2},
+			Owner:           *owner,
+			Payers:          []model.User{*payer1, *payer2},
 		},
 	}
 
@@ -143,12 +107,12 @@ func (s *TransactionServiceTestSuite) TestGenerateTransactions_Success() {
 			consolidatedBill.ID, // 1st row consolidation_id
 			payer1.ID,           // 1st row payer_id
 			owner.ID,            // 1st row payee_id
-			utils.FloatMatcher{Expected: 33.33, Epsilon: 0.01}, // 1st row amount
+			tests.FloatMatcher{Expected: 33.33, Epsilon: 0.01}, // 1st row amount
 			false,               // 1st row is_paid
 			consolidatedBill.ID, // 2nd row consolidation_id
 			payer2.ID,           // 2nd row payer_id
 			owner.ID,            // 2nd row payee_id
-			utils.FloatMatcher{Expected: 33.33, Epsilon: 0.01}, // 2nd row amount
+			tests.FloatMatcher{Expected: 33.33, Epsilon: 0.01}, // 2nd row amount
 			false, // 2nd row is_paid
 		).
 		WillReturnRows(sqlmock.NewRows([]string{"paid_on", "id"}).
@@ -189,24 +153,8 @@ func (s *TransactionServiceTestSuite) TestGetTransactionsByUser_Success() {
 	userId := "1"
 
 	expectedTransactions := []model.Transaction{
-		{
-			ID:              1,
-			ConsolidationID: 1,
-			PayerID:         2,
-			PayeeID:         1,
-			Amount:          50.0,
-			IsPaid:          isPaid,
-			PaidOn:          time.Time{},
-		},
-		{
-			ID:              2,
-			ConsolidationID: 1,
-			PayerID:         1,
-			PayeeID:         3,
-			Amount:          30.0,
-			IsPaid:          isPaid,
-			PaidOn:          time.Time{},
-		},
+		*tests.CreateTestTransaction(1, 1, 2, 1, 50.0),
+		*tests.CreateTestTransaction(2, 1, 1, 3, 30.0),
 	}
 
 	rows := sqlmock.NewRows([]string{
@@ -298,14 +246,7 @@ func (s *TransactionServiceTestSuite) TestSettleTransaction_Success() {
 	// arrange
 	transactionId := "1"
 	userId := "2"
-	transaction := model.Transaction{
-		ID:              1,
-		ConsolidationID: 1,
-		PayerID:         2,
-		PayeeID:         1,
-		Amount:          50.0,
-		IsPaid:          false,
-	}
+	transaction := tests.CreateTestTransaction(1, 1, 2, 1, 50.0)
 
 	rows := sqlmock.NewRows([]string{
 		"id", "consolidation_id", "payer_id", "payee_id", "amount", "is_paid",
@@ -359,14 +300,8 @@ func (s *TransactionServiceTestSuite) TestSettleTransaction_AlreadySettled() {
 	// arrange
 	transactionId := "1"
 	userId := "2"
-	transaction := model.Transaction{
-		ID:              1,
-		ConsolidationID: 1,
-		PayerID:         2,
-		PayeeID:         1,
-		Amount:          50.0,
-		IsPaid:          true, // Already settled
-	}
+	transaction := tests.CreateTestTransaction(1, 1, 2, 1, 50.0)
+	transaction.IsPaid = true // Already settled
 
 	rows := sqlmock.NewRows([]string{
 		"id", "consolidation_id", "payer_id", "payee_id", "amount", "is_paid",
@@ -396,14 +331,8 @@ func (s *TransactionServiceTestSuite) TestSettleTransaction_InvalidPayer() {
 	// arrange
 	transactionId := "1"
 	userId := "3" // Different from PayerID
-	transaction := model.Transaction{
-		ID:              1,
-		ConsolidationID: 1,
-		PayerID:         2, // Different from userId
-		PayeeID:         1,
-		Amount:          50.0,
-		IsPaid:          false,
-	}
+	// Create a transaction with PayerID = 2 and PayeeID = 1
+	transaction := tests.CreateTestTransaction(1, 1, 2, 1, 50.0)
 
 	rows := sqlmock.NewRows([]string{
 		"id", "consolidation_id", "payer_id", "payee_id", "amount", "is_paid",
@@ -433,14 +362,7 @@ func (s *TransactionServiceTestSuite) TestSettleTransaction_DatabaseError() {
 	// arrange
 	transactionId := "1"
 	userId := "2"
-	transaction := model.Transaction{
-		ID:              1,
-		ConsolidationID: 1,
-		PayerID:         2,
-		PayeeID:         1,
-		Amount:          50.0,
-		IsPaid:          false,
-	}
+	transaction := tests.CreateTestTransaction(1, 1, 2, 1, 50.0)
 
 	rows := sqlmock.NewRows([]string{
 		"id", "consolidation_id", "payer_id", "payee_id", "amount", "is_paid",
