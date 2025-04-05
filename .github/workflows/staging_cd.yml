@@ -19,7 +19,7 @@ jobs:
         with:
           # only checkout the docker compose file
           sparse-checkout: |
-            docker-compose-staging.yml
+            infra/docker-compose-staging.yml
           sparse-checkout-cone-mode: false
 
       # Create the .env file to use with docker-compose
@@ -52,7 +52,7 @@ jobs:
           private_key: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
           port: ${{ secrets.SSH_PORT }}
           from: |
-            ./docker-compose-staging.yml
+            ./infra/docker-compose-staging.yml
             ./.env
           to: ~/Documents/Codebase/justjio/
           service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
