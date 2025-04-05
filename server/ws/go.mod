@@ -3,7 +3,6 @@ module github.com/RowenTey/JustJio/server/ws
 go 1.23.0
 
 require (
-	github.com/RowenTey/JustJio/server-ws v0.0.0-20250125123342-89cf25c22c13
 	github.com/confluentinc/confluent-kafka-go/v2 v2.4.0
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/gofiber/websocket/v2 v2.2.1
