@@ -1,8 +1,22 @@
-# JustJio 🎉 ![Endpoint Badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fgomon.rowentey.xyz%2Fapi%2Fwebsites%2Fbadge%3FwebsiteUrl%3Dhttps%3A%2F%2Fjustjio-staging.rowentey.xyz)
+<div align="center">
+  <img alt="logo" width="840" src="./client/public/assets/JustJio.gif" />
+  <h1>JustJio</h1>
+</div>
 
-> A party-planning app that streamlines all the pain of hosting one 🍻
+<div align="center">
+  <a href="https://github.com/RowenTey/justjio/actions/workflows/ci.yaml" target="_blank">
+    <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fgomon.rowentey.xyz%2Fapi%2Fwebsites%2Fbadge%3FwebsiteUrl%3Dhttps%3A%2F%2Fjustjio-staging.rowentey.xyz" alt="CI status" />
+  </a>
+  <a href="https://github.com/RowenTey/justjio/actions/workflows/ci.yaml" target="_blank">
+    <img src="https://github.com/RowenTey/justjio/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status" />
+  </a>
+</div>
 
-![landing](./client/public/assets/JustJio.gif)
+<br>
+
+<div align="center">
+ <p>A party-planning app that streamlines all the pain of hosting one 🍻</p>
+</div>
 
 ## 🛠 Getting Started
 
