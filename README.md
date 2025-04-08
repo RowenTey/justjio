@@ -18,7 +18,7 @@
 <br>
 
 <div align="center">
- <p>A party-planning app that streamlines all the pain of hosting one 🍻</p>
+  <i>A party-planning app that streamlines all the pain of hosting one 🍻</i>
 </div>
 
 ## 🛠 Getting Started
