@@ -10,6 +10,9 @@
   <a href="https://github.com/RowenTey/justjio/actions/workflows/ci.yaml" target="_blank">
     <img src="https://github.com/RowenTey/justjio/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status" />
   </a>
+  <a href="https://github.com/RowenTey/justjio/actions/workflows/staging_cd.yaml" target="_blank">
+    <img src="https://github.com/RowenTey/justjio/actions/workflows/staging_cd.yml/badge.svg" alt="Deploy to Staging status" />
+  </a>
 </div>
 
 <br>
