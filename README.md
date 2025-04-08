@@ -7,10 +7,10 @@
   <a href="https://github.com/RowenTey/justjio/actions/workflows/ci.yaml" target="_blank">
     <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fgomon.rowentey.xyz%2Fapi%2Fwebsites%2Fbadge%3FwebsiteUrl%3Dhttps%3A%2F%2Fjustjio-staging.rowentey.xyz" alt="CI status" />
   </a>
-  <a href="https://github.com/RowenTey/justjio/actions/workflows/ci.yaml" target="_blank">
+  <a href="https://github.com/RowenTey/justjio/actions/workflows/ci.yml" target="_blank">
     <img src="https://github.com/RowenTey/justjio/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status" />
   </a>
-  <a href="https://github.com/RowenTey/justjio/actions/workflows/staging_cd.yaml" target="_blank">
+  <a href="https://github.com/RowenTey/justjio/actions/workflows/staging_cd.yml" target="_blank">
     <img src="https://github.com/RowenTey/justjio/actions/workflows/staging_cd.yml/badge.svg" alt="Deploy to Staging status" />
   </a>
 </div>
