@@ -3,6 +3,7 @@ package middleware
 import (
 	"time"
 
+	"github.com/RowenTey/JustJio/server/api/config"
 	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -62,6 +63,6 @@ func Fiber(a *fiber.App, env, allowedOrigins string) {
 		},
 
 		// JWT middleware
-		Authenticated(),
+		Authenticated(config.Config("JWT_SECRET")),
 	)
 }

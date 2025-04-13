@@ -101,15 +101,12 @@ func (bs *BillService) IsRoomBillConsolidated(roomId string) (bool, error) {
 }
 
 // Consolidate bills for a room
-func (bs *BillService) ConsolidateBills(roomId string) (*model.Consolidation, error) {
-	tx := bs.DB.Begin()
-
+func (bs *BillService) ConsolidateBills(tx *gorm.DB, roomId string) (*model.Consolidation, error) {
 	// Create empty struct as fields will be auto populated by DB
 	consolidation := model.Consolidation{}
 	if err := tx.Create(&consolidation).Error; err != nil {
 		return nil, err
 	}
-	bs.Logger.Info("Created bills consolidation: ", consolidation.ID)
 
 	if err := tx.Table("bills").
 		Where("room_id = ?", roomId).
@@ -117,10 +114,6 @@ func (bs *BillService) ConsolidateBills(roomId string) (*model.Consolidation, er
 		return nil, err
 	}
 
-	err := tx.Commit().Error
-	if err != nil {
-		return nil, err
-	}
-
+	bs.Logger.Info("Created bills consolidation: ", consolidation.ID)
 	return &consolidation, nil
 }
