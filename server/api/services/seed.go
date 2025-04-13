@@ -166,7 +166,7 @@ func SeedDB(db *gorm.DB) error {
 		}
 
 		// consolidate bills for this room
-		consolidation, err := billService.ConsolidateBills(rooms[i].ID)
+		consolidation, err := billService.ConsolidateBills(db, rooms[i].ID)
 		if err != nil {
 			log.Errorf("%s", err.Error())
 			return err

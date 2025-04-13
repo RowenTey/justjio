@@ -375,7 +375,7 @@ func (s *BillServiceTestSuite) TestConsolidateBills_Success() {
 	// arrange
 	consolidationId := uint(1)
 
-	// Expect creating the consolidation
+	// Expect creating the consolidation within the transaction
 	s.mock.ExpectBegin()
 	s.mock.ExpectQuery(`INSERT INTO "consolidations"`).
 		WithArgs(
@@ -384,14 +384,16 @@ func (s *BillServiceTestSuite) TestConsolidateBills_Success() {
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).
 			AddRow(consolidationId))
 
-	// Expect updating the bills
+	// Expect updating the bills within the transaction
 	s.mock.ExpectExec(`UPDATE "bills" SET "consolidation_id"=\$1 WHERE room_id = \$2`).
 		WithArgs(consolidationId, s.roomId).
 		WillReturnResult(sqlmock.NewResult(0, 2)) // 2 rows affected
 	s.mock.ExpectCommit()
 
 	// act
-	result, err := s.billService.ConsolidateBills(s.roomId)
+	tx := s.DB.Begin() // Start a mock transaction for the test
+	result, err := s.billService.ConsolidateBills(tx, s.roomId)
+	tx.Commit() // Commit the mock transaction
 
 	// assert
 	tests.AssertNoErrAndNotNil(s.T(), err, result)
@@ -400,16 +402,19 @@ func (s *BillServiceTestSuite) TestConsolidateBills_Success() {
 
 func (s *BillServiceTestSuite) TestConsolidateBills_CreateError() {
 	// arrange
-	// Expect creating the consolidation with error
+	// Expect creating the consolidation with error within the transaction
 	s.mock.ExpectBegin()
 	s.mock.ExpectQuery(`INSERT INTO "consolidations"`).
 		WithArgs(
 			sqlmock.AnyArg(), // CreatedAt
 		).
 		WillReturnError(errors.New("database error"))
+	s.mock.ExpectRollback() // Expect rollback on error
 
 	// act
-	result, err := s.billService.ConsolidateBills(s.roomId)
+	tx := s.DB.Begin() // Start a mock transaction for the test
+	result, err := s.billService.ConsolidateBills(tx, s.roomId)
+	tx.Rollback() // Rollback the mock transaction
 
 	// assert
 	tests.AssertErrAndNil(s.T(), err, result)
@@ -420,7 +425,7 @@ func (s *BillServiceTestSuite) TestConsolidateBills_UpdateError() {
 	// arrange
 	consolidationId := uint(1)
 
-	// Expect creating the consolidation
+	// Expect creating the consolidation within the transaction
 	s.mock.ExpectBegin()
 	s.mock.ExpectQuery(`INSERT INTO "consolidations"`).
 		WithArgs(
@@ -429,13 +434,16 @@ func (s *BillServiceTestSuite) TestConsolidateBills_UpdateError() {
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).
 			AddRow(consolidationId))
 
-	// Expect updating the bills with error
+	// Expect updating the bills with error within the transaction
 	s.mock.ExpectExec(`UPDATE "bills" SET "consolidation_id"=\$1 WHERE room_id = \$2`).
 		WithArgs(consolidationId, s.roomId).
 		WillReturnError(errors.New("database error"))
+	s.mock.ExpectRollback() // Expect rollback on error
 
 	// act
-	result, err := s.billService.ConsolidateBills(s.roomId)
+	tx := s.DB.Begin() // Start a mock transaction for the test
+	result, err := s.billService.ConsolidateBills(tx, s.roomId)
+	tx.Rollback() // Rollback the mock transaction
 
 	// assert
 	tests.AssertErrAndNil(s.T(), err, result)
