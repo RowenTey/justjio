@@ -58,6 +58,9 @@ func (s *UserService) GetUsersByID(userIds []uint) (*[]model.User, error) {
 	if err := db.Where("id IN ?", userIds).Find(&users).Error; err != nil {
 		return nil, err
 	}
+	if len(users) != len(userIds) {
+		return nil, gorm.ErrRecordNotFound
+	}
 	return &users, nil
 }
 
