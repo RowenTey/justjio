@@ -1,4 +1,4 @@
-# JustJio 🎉 ![Endpoint Badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fgomon.rowentey.xyz%2Fapi%2Fwebsites%2Fbadge%3FwebsiteUrl%3Dhttps%3A%2F%2Fjustjio-staging.rowentey.xyz)
+# JustJio 🎉 ![Endpoint Badge](https://img.shields.io/endpoint?url=https%3A%2F%2Fgomon.rowentey.xyz%2Fapi%2Fwebsites%2Fbadge%3FwebsiteUrl%3Dhttps%3A%2F%2Fjustjio-staging.rowentey.xyz) [![CI Pipeline](https://github.com/RowenTey/justjio/actions/workflows/ci.yml/badge.svg)](https://github.com/RowenTey/justjio/actions/workflows/ci.yml) [![Staging Environment](https://github.com/RowenTey/justjio/actions/workflows/staging_cd.yml/badge.svg)](https://github.com/RowenTey/justjio/actions/workflows/staging_cd.yml)
 
 > A party-planning app that streamlines all the pain of hosting one 🍻
 
