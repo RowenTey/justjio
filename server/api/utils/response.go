@@ -39,7 +39,7 @@ func HandleNotFoundOrInternalError(c *fiber.Ctx, err error, notFoundMsg string) 
 	return HandleInternalServerError(c, nil)
 }
 
-func HandleSuccess(c *fiber.Ctx, message string, data interface{}) error {
+func HandleSuccess(c *fiber.Ctx, message string, data any) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":  "success",
 		"message": message,
@@ -47,7 +47,7 @@ func HandleSuccess(c *fiber.Ctx, message string, data interface{}) error {
 	})
 }
 
-func HandleLoginSuccess(c *fiber.Ctx, message string, token string, data interface{}) error {
+func HandleLoginSuccess(c *fiber.Ctx, message string, token string, data any) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"status":  "success",
 		"message": message,

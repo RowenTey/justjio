@@ -3,8 +3,6 @@ package middleware
 import (
 	"strings"
 
-	"github.com/RowenTey/JustJio/server/api/config"
-
 	"github.com/gofiber/fiber/v2"
 	jwtware "github.com/gofiber/jwt/v3"
 )
@@ -42,10 +40,10 @@ func whitelist(c *fiber.Ctx) bool {
 	return false
 }
 
-func Authenticated() fiber.Handler {
+func Authenticated(secret string) fiber.Handler {
 	return jwtware.New(jwtware.Config{
 		Filter:       whitelist,
-		SigningKey:   []byte(config.Config("JWT_SECRET")),
+		SigningKey:   []byte(secret),
 		ErrorHandler: jwtError,
 	})
 }

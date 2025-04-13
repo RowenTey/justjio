@@ -2,7 +2,7 @@
 
 > REST API Server for JustJio
 
-![server-landing](../client/public/assets/JustJio-Server.gif)
+![server-landing](../../client/public/assets/JustJio-Server.gif)
 
 ## 🛠 Getting Started
 
@@ -50,6 +50,26 @@ go run main.go dev
 ├── go.mod
 ├── go.sum
 └── README.md
+```
+
+## Testing
+
+Run tests with
+
+```
+go test -v ./...
+```
+
+Running a specific suite
+
+```
+go test -v -run ^<suite-name>$ ./...
+```
+
+Running a specific test
+
+```
+go test -v -testify.m ^(<test-name>)$ ./...
 ```
 
 ### API Testing Tracker

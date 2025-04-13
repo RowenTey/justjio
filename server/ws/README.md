@@ -2,7 +2,7 @@
 
 > WebSockets Server for JustJio
 
-![server-landing](../client/assets/gifs/JustJio-Server.gif)
+![server-landing](../../client/assets/gifs/JustJio-Server.gif)
 
 ## 🛠 Getting Started
 
