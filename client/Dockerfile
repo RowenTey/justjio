@@ -17,8 +17,10 @@ COPY --from=build-env app/dist /usr/share/nginx/html/web-app
 COPY --from=build-env app/dist/* /tmpl/dist/web-app/
 
 COPY env.sh /docker-entrypoint.d/env.sh
-RUN dos2unix /docker-entrypoint.d/env.sh
-RUN chmod +x /docker-entrypoint.d/env.sh
+
+# Convert to Unix file format and make executable
+RUN dos2unix /docker-entrypoint.d/env.sh && \
+    chmod +x /docker-entrypoint.d/env.sh
 
 EXPOSE 80
 
