@@ -14,13 +14,14 @@ import (
 
 type UserService struct {
 	DB     *gorm.DB
-	logger *log.Entry
+	Logger *log.Entry
 }
 
-func NewUserService(db *gorm.DB) *UserService {
+// NOTE: used var instead of func to enable mocking in tests
+var NewUserService = func(db *gorm.DB) *UserService {
 	return &UserService{
 		DB:     db,
-		logger: log.WithFields(log.Fields{"service": "UserService"}),
+		Logger: log.WithFields(log.Fields{"service": "UserService"}),
 	}
 }
 
@@ -56,6 +57,9 @@ func (s *UserService) GetUsersByID(userIds []uint) (*[]model.User, error) {
 	var users []model.User
 	if err := db.Where("id IN ?", userIds).Find(&users).Error; err != nil {
 		return nil, err
+	}
+	if len(users) != len(userIds) {
+		return nil, gorm.ErrRecordNotFound
 	}
 	return &users, nil
 }

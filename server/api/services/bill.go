@@ -13,13 +13,14 @@ import (
 
 type BillService struct {
 	DB     *gorm.DB
-	logger *log.Entry
+	Logger *log.Entry
 }
 
-func NewBillService(db *gorm.DB) *BillService {
+// NOTE: used var instead of func to enable mocking in tests
+var NewBillService = func(db *gorm.DB) *BillService {
 	return &BillService{
 		DB:     db,
-		logger: log.WithFields(log.Fields{"service": "BillService"}),
+		Logger: log.WithFields(log.Fields{"service": "BillService"}),
 	}
 }
 
@@ -52,7 +53,7 @@ func (bs *BillService) CreateBill(
 		return nil, err
 	}
 
-	bs.logger.Info("Bill created in room: ", bill.RoomID)
+	bs.Logger.Info("Bill created in room: ", bill.RoomID)
 	return &bill, nil
 }
 
@@ -100,15 +101,12 @@ func (bs *BillService) IsRoomBillConsolidated(roomId string) (bool, error) {
 }
 
 // Consolidate bills for a room
-func (bs *BillService) ConsolidateBills(roomId string) (*model.Consolidation, error) {
-	tx := bs.DB.Begin()
-
+func (bs *BillService) ConsolidateBills(tx *gorm.DB, roomId string) (*model.Consolidation, error) {
 	// Create empty struct as fields will be auto populated by DB
 	consolidation := model.Consolidation{}
 	if err := tx.Create(&consolidation).Error; err != nil {
 		return nil, err
 	}
-	bs.logger.Info("Created bills consolidation: ", consolidation.ID)
 
 	if err := tx.Table("bills").
 		Where("room_id = ?", roomId).
@@ -116,10 +114,6 @@ func (bs *BillService) ConsolidateBills(roomId string) (*model.Consolidation, er
 		return nil, err
 	}
 
-	err := tx.Commit().Error
-	if err != nil {
-		return nil, err
-	}
-
+	bs.Logger.Info("Created bills consolidation: ", consolidation.ID)
 	return &consolidation, nil
 }

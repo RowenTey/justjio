@@ -9,13 +9,14 @@ import (
 
 type SubscriptionService struct {
 	DB     *gorm.DB
-	logger *log.Entry
+	Logger *log.Entry
 }
 
-func NewSubscriptionService(db *gorm.DB) *SubscriptionService {
+// NOTE: used var instead of func to enable mocking in tests
+var NewSubscriptionService = func(db *gorm.DB) *SubscriptionService {
 	return &SubscriptionService{
 		DB:     db,
-		logger: log.WithFields(log.Fields{"service": "SubscriptionService"}),
+		Logger: log.WithFields(log.Fields{"service": "SubscriptionService"}),
 	}
 }
 

@@ -18,13 +18,14 @@ const (
 
 type MessageService struct {
 	DB     *gorm.DB
-	logger *log.Entry
+	Logger *log.Entry
 }
 
-func NewMessageService(db *gorm.DB) *MessageService {
+// NOTE: used var instead of func to enable mocking in tests
+var NewMessageService = func(db *gorm.DB) *MessageService {
 	return &MessageService{
 		DB:     db,
-		logger: log.WithFields(log.Fields{"service": "MessageService"}),
+		Logger: log.WithFields(log.Fields{"service": "MessageService"}),
 	}
 }
 
@@ -44,7 +45,7 @@ func (ms *MessageService) SaveMessage(room *model.Room, sender *model.User, cont
 		return err
 	}
 
-	ms.logger.Infof("Saved message to room %s", msg.RoomID)
+	ms.Logger.Infof("Saved message to room %s", msg.RoomID)
 	return nil
 }
 

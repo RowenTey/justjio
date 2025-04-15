@@ -19,13 +19,14 @@ const (
 
 type RoomService struct {
 	DB     *gorm.DB
-	logger *log.Entry
+	Logger *log.Entry
 }
 
-func NewRoomService(db *gorm.DB) *RoomService {
+// NOTE: used var instead of func to enable mocking in tests
+var NewRoomService = func(db *gorm.DB) *RoomService {
 	return &RoomService{
 		DB:     db,
-		logger: log.WithFields(log.Fields{"service": "RoomService"}),
+		Logger: log.WithFields(log.Fields{"service": "RoomService"}),
 	}
 }
 
@@ -40,7 +41,7 @@ func (rs *RoomService) CreateRoom(room *model.Room, host *model.User) (*model.Ro
 		return nil, err
 	}
 
-	rs.logger.Info("Created room with ID: ", room.ID)
+	rs.Logger.Info("Created room with ID: ", room.ID)
 	return room, nil
 }
 
@@ -259,7 +260,7 @@ func (rs *RoomService) InviteUserToRoom(
 		return &[]model.RoomInvite{}, nil
 	}
 
-	rs.logger.Infof("Inviting users (%v) to room %s", users, roomId)
+	rs.Logger.Infof("Inviting users (%v) to room %s", users, roomId)
 	var room model.Room
 	var roomInvites []model.RoomInvite
 

@@ -52,7 +52,7 @@ func CreateBill(c *fiber.Ctx) error {
 
 	payers, err := userService.GetUsersByID(request.Payers)
 	if err != nil {
-		return utils.HandleNotFoundOrInternalError(c, err, "Payer not found")
+		return utils.HandleNotFoundOrInternalError(c, err, "Payer(s) not found")
 	}
 
 	bill, err := billService.CreateBill(
@@ -126,7 +126,7 @@ func ConsolidateBills(c *fiber.Ctx) error {
 			c, fiber.StatusBadRequest, "Bills for this room have already been consolidated", nil)
 	}
 
-	consolidation, err := billService.ConsolidateBills(request.RoomID)
+	consolidation, err := billService.ConsolidateBills(tx, request.RoomID)
 	if err != nil {
 		tx.Rollback()
 		return utils.HandleInternalServerError(c, err)
