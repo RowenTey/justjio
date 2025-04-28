@@ -16,6 +16,12 @@ x-common-healthcheck: &common-healthcheck
   interval: 10s
   timeout: 5s
   retries: 5
+  
+x-common-dns: &common-dns
+  dns:
+    # gateway ip 
+    - 172.22.0.1
+    - 1.1.1.1
 
 services:
   frontend:
@@ -43,7 +49,7 @@ services:
     image: ghcr.io/rowentey/justjio/api:latest
     <<: *common-config
     environment:
-      DSN: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}/${POSTGRES_DB}?sslmode=disable
+      DSN: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
       PORT: 8080
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
@@ -55,6 +61,7 @@ services:
       SMTP2GO_API_KEY: ${SMTP2GO_API_KEY}
       <<: *common-env
     entrypoint: ["/api-server", "staging"]
+    <<: *common-dns
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
       <<: *common-healthcheck
@@ -67,6 +74,7 @@ services:
       PORT: 8081
       <<: *common-env
     entrypoint: ["/ws-server", "staging"]
+    <<: *common-dns
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/ping || exit 1"]
       <<: *common-healthcheck
