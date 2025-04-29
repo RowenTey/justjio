@@ -18,7 +18,7 @@ type Bill struct {
 
 	// Associations
 	Owner         User          `gorm:"not null; foreignKey:owner_id" json:"owner"`
-	Room          Room          `gorm:"not null" json:"room"`
+	Room          Room          `gorm:"not null; foreignKey:room_id" json:"room"`
 	Consolidation Consolidation `json:"consolidation"`
 	Payers        []User        `gorm:"many2many:payers" json:"payers"`
 }
