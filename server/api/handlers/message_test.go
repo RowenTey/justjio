@@ -14,7 +14,6 @@ import (
 	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/model/request"
-	"github.com/RowenTey/JustJio/server/api/model/response"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/tests"
 	"github.com/RowenTey/JustJio/server/api/utils"
@@ -232,14 +231,21 @@ func (suite *MessageHandlerTestSuite) TestGetMessages_Success_Ascending() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-	var responseBody response.GetMessagesResponse
+	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), responseBody.Messages, 2)
-	assert.Equal(suite.T(), "Msg 1", responseBody.Messages[0].Content)
-	assert.Equal(suite.T(), "Msg 2", responseBody.Messages[1].Content)
-	assert.Equal(suite.T(), 1, responseBody.Page)
-	assert.Equal(suite.T(), 1, responseBody.PageCount) // Assuming default page size
+	assert.Equal(suite.T(), "Retrieved messages successfully", responseBody["message"])
+
+	msgResponse := responseBody["data"].(map[string]any)
+	assert.NotNil(suite.T(), msgResponse)
+	assert.Equal(suite.T(), 1, int(msgResponse["page"].(float64)))
+	assert.Equal(suite.T(), 1, int(msgResponse["pageCount"].(float64)))
+
+	msgData := msgResponse["messages"].([]any)
+	assert.Len(suite.T(), msgData, 2)
+	assert.Equal(suite.T(), "Msg 1", msgData[0].(map[string]any)["content"])
+	assert.Equal(suite.T(), "Msg 2", msgData[1].(map[string]any)["content"])
+
 }
 
 func (suite *MessageHandlerTestSuite) TestGetMessages_Success_Descending() {
@@ -261,12 +267,20 @@ func (suite *MessageHandlerTestSuite) TestGetMessages_Success_Descending() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-	var responseBody response.GetMessagesResponse
+	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), responseBody.Messages, 2)
-	assert.Equal(suite.T(), "Msg 2", responseBody.Messages[0].Content)
-	assert.Equal(suite.T(), "Msg 1", responseBody.Messages[1].Content)
+	assert.Equal(suite.T(), "Retrieved messages successfully", responseBody["message"])
+
+	msgResponse := responseBody["data"].(map[string]any)
+	assert.NotNil(suite.T(), msgResponse)
+	assert.Equal(suite.T(), 1, int(msgResponse["page"].(float64)))
+	assert.Equal(suite.T(), 1, int(msgResponse["pageCount"].(float64)))
+
+	msgData := msgResponse["messages"].([]any)
+	assert.Len(suite.T(), msgData, 2)
+	assert.Equal(suite.T(), "Msg 2", msgData[0].(map[string]any)["content"])
+	assert.Equal(suite.T(), "Msg 1", msgData[1].(map[string]any)["content"])
 }
 
 func (suite *MessageHandlerTestSuite) TestGetMessages_Empty() {
@@ -277,12 +291,13 @@ func (suite *MessageHandlerTestSuite) TestGetMessages_Empty() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-	var responseBody response.GetMessagesResponse
+	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), responseBody.Messages, 0)
-	assert.Equal(suite.T(), 1, responseBody.Page)
-	assert.Equal(suite.T(), 0, responseBody.PageCount)
+	assert.Equal(suite.T(), "Retrieved messages successfully", responseBody["message"])
+
+	msgData := responseBody["data"].(map[string]any)["messages"].([]any)
+	assert.Empty(suite.T(), msgData)
 }
 
 func (suite *MessageHandlerTestSuite) TestCreateMessage_Success() {
