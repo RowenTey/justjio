@@ -22,6 +22,7 @@ func GetMessage(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 	msgId := c.Params("msgId")
 
+	messageLogger.Info("Fetching message with ID:", msgId)
 	message, err := services.NewMessageService(database.DB).GetMessageById(msgId, roomId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No message found")
@@ -61,14 +62,13 @@ func CreateMessage(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	roomId := c.Params("roomId")
 
 	var request request.CreateMessageRequest
+	var err error
 	if err := c.BodyParser(&request); err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
 	token := c.Locals("user").(*jwt.Token)
 	userId := utils.GetUserInfoFromToken(token, "user_id")
-
-	var err error
 
 	room, err := services.NewRoomService(database.DB).GetRoomById(roomId)
 	if err != nil {
@@ -79,6 +79,7 @@ func CreateMessage(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
+	messageLogger.Info("User found:", user.Username)
 
 	err = services.NewMessageService(database.DB).SaveMessage(room, user, request.Content)
 	if err != nil {

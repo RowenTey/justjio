@@ -2,8 +2,6 @@ package model
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
 type Message struct {
@@ -14,11 +12,6 @@ type Message struct {
 	SentAt   time.Time `gorm:"autoCreateTime" json:"sentAt"`
 
 	// Associations
-	Sender User `gorm:"not null" json:"sender"`
-	Room   Room `gorm:"not null" json:"room"`
-}
-
-func (msg *Message) BeforeCreate(tx *gorm.DB) error {
-	msg.RoomID = msg.Room.ID
-	return nil
+	Sender User `gorm:"not null; foreignKey:sender_id" json:"sender"`
+	Room   Room `gorm:"not null; foreignKey:room_id" json:"room"`
 }
