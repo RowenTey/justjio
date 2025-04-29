@@ -43,16 +43,23 @@ func (s *NotificationService) CreateNotification(userId uint, title, content str
 }
 
 // MarkNotificationAsRead updates a notification's read status
-func (s *NotificationService) MarkNotificationAsRead(notificationId, user_id uint) error {
+func (s *NotificationService) MarkNotificationAsRead(notificationId, userId uint) error {
+	var notification model.Notification
+	// ErrRecordNotFound is only returned for methods First/Take/Last
+	err := s.DB.Model(&model.Notification{}).Where("id = ? AND user_id = ?", notificationId, userId).First(&notification).Error
+	if err != nil {
+		return err
+	}
+
 	return s.DB.Model(&model.Notification{}).
-		Where("id = ? AND user_id = ?", notificationId, user_id).
+		Where("id = ? AND user_id = ?", notificationId, userId).
 		Update("is_read", true).Error
 }
 
 // GetNotification retrieves a notification by ID
-func (s *NotificationService) GetNotification(notificationId, user_id uint) (*model.Notification, error) {
+func (s *NotificationService) GetNotification(notificationId, userId uint) (*model.Notification, error) {
 	var notification model.Notification
-	if err := s.DB.Model(&model.Notification{}).Where("id = ? AND user_id = ?", notificationId, user_id).First(&notification).Error; err != nil {
+	if err := s.DB.Model(&model.Notification{}).Where("id = ? AND user_id = ?", notificationId, userId).First(&notification).Error; err != nil {
 		return nil, err
 	}
 	return &notification, nil

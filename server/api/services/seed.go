@@ -23,10 +23,10 @@ func SeedDB(db *gorm.DB) error {
 		return nil
 	}
 
-	userService := UserService{DB: db}
-	roomService := RoomService{DB: db}
-	billService := BillService{DB: db}
-	transactionService := TransactionService{DB: db}
+	userService := NewUserService(db)
+	roomService := NewRoomService(db)
+	billService := NewBillService(db)
+	transactionService := NewTransactionService(db)
 
 	// create users
 	users := []model.User{
