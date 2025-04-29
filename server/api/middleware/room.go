@@ -17,7 +17,7 @@ func IsUserInRoom(c *fiber.Ctx) error {
 
 	userIds, err := (services.NewRoomService(database.DB)).GetRoomAttendeesIds(roomId)
 	if err != nil {
-		return utils.HandleInternalServerError(c, err)
+		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
 	// Check if user is in room

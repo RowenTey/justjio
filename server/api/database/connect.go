@@ -48,6 +48,7 @@ func Migrate(db *gorm.DB) error {
 		&model.Transaction{},
 		&model.Message{},
 		&model.Notification{},
+		&model.Subscription{},
 	); err != nil {
 		return err
 	}

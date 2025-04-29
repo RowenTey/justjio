@@ -63,6 +63,7 @@ func MarkNotificationAsRead(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
+	notificationLogger.Infof("Marking notification %d as read for user %d", notificationId, userId)
 	if err := services.
 		NewNotificationService(database.DB).
 		MarkNotificationAsRead(uint(notificationId), uint(userId)); err != nil {

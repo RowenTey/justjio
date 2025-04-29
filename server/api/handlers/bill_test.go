@@ -349,17 +349,20 @@ func (suite *BillHandlerTestSuite) TestCreateBill_RoomAlreadyConsolidated() {
 		RoomID: suite.testRoomID, OwnerID: suite.testUser1ID, Name: "Bill 1", Amount: 100.00,
 		Payers: []model.User{{ID: suite.testUser1ID}, {ID: suite.testUser2ID}},
 	}
-	suite.db.Create(&bill)
+	err := suite.db.Create(&bill).Error
+	assert.NoError(suite.T(), err)
 
 	// 2. Create a Consolidation record for the room
 	consolidation := model.Consolidation{}
-	err := suite.db.Create(&consolidation).Error
+	err = suite.db.Create(&consolidation).Error
 	assert.NoError(suite.T(), err)
 
 	// 3. Associate the bill with the consolidation
-	suite.db.Table("bills").
+	err = suite.db.Table("bills").
 		Where("room_id = ?", suite.testRoomID).
-		Update("consolidation_id", consolidation.ID)
+		Update("consolidation_id", consolidation.ID).
+		Error
+	assert.NoError(suite.T(), err)
 
 	// 4. Attempt to create a new bill for the same room
 	createReq := request.CreateBillRequest{

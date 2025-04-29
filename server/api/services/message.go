@@ -33,9 +33,8 @@ func (ms *MessageService) SaveMessage(room *model.Room, sender *model.User, cont
 	db := ms.DB.Table("messages")
 
 	msg := model.Message{
-		Room:     *room,
+		RoomID:   room.ID,
 		SenderID: sender.ID,
-		Sender:   *sender,
 		Content:  content,
 		SentAt:   time.Now(),
 	}
