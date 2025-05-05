@@ -299,11 +299,9 @@ func (rs *RoomService) InviteUserToRoom(
 
 	for _, user := range *users {
 		roomInvite := model.RoomInvite{
-			Room:      room,
-			User:      user,
+			RoomID:    room.ID,
 			UserID:    user.ID,
 			InviterID: inviter.ID,
-			Inviter:   *inviter,
 			Message:   message,
 			CreatedAt: time.Now(),
 			Status:    "pending",

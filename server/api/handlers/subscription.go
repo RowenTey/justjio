@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/url"
 
 	log "github.com/sirupsen/logrus"
@@ -21,6 +22,10 @@ func CreateSubscription(c *fiber.Ctx, notificationsChan chan<- NotificationData)
 	var subscription model.Subscription
 	if err := c.BodyParser(&subscription); err != nil {
 		return utils.HandleInvalidInputError(c, err)
+	}
+
+	if subscription.Auth == "" || subscription.P256dh == "" || subscription.Endpoint == "" {
+		return utils.HandleInvalidInputError(c, errors.New("missing required fields"))
 	}
 
 	subscriptionService := services.NewSubscriptionService(database.DB)
@@ -49,7 +54,7 @@ func GetSubscriptionByEndpoint(c *fiber.Ctx) error {
 	subscriptionService := services.NewSubscriptionService(database.DB)
 	subscription, err := subscriptionService.GetSubscriptionsByEndpoint(decodedEndpoint)
 	if err != nil {
-		return utils.HandleInternalServerError(c, err)
+		return utils.HandleNotFoundOrInternalError(c, err, "Subscription not found")
 	}
 
 	return utils.HandleSuccess(c, "Subscription retrieved successfully", subscription)
@@ -59,7 +64,7 @@ func DeleteSubscription(c *fiber.Ctx) error {
 	subId := c.Params("subId")
 	subscriptionService := services.NewSubscriptionService(database.DB)
 	if err := subscriptionService.DeleteSubscription(subId); err != nil {
-		return utils.HandleInternalServerError(c, err)
+		return utils.HandleNotFoundOrInternalError(c, err, "Subscription not found")
 	}
 
 	return utils.HandleSuccess(c, "Subscription deleted successfully", nil)

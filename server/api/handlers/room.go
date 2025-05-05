@@ -186,7 +186,7 @@ func CloseRoom(c *fiber.Ctx) error {
 		return utils.HandleInternalServerError(c, err)
 	}
 
-	if !consolidated {
+	if !consolidated && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return utils.HandleError(
 			c, fiber.StatusConflict, "Cannot close room with unconsolidated bills", nil)
 	}
@@ -344,7 +344,7 @@ func LeaveRoom(c *fiber.Ctx) error {
 		return utils.HandleInternalServerError(c, err)
 	}
 
-	if !consolidated {
+	if !consolidated && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return utils.HandleError(
 			c, fiber.StatusConflict, "Cannot leave room with unconsolidated bills", nil)
 	}
