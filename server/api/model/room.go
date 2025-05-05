@@ -49,7 +49,7 @@ func (room *Room) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-func (invite *RoomInvite) BeforeCreate(tx *gorm.DB) error {
-	invite.RoomID = invite.Room.ID
-	return nil
-}
+// func (invite *RoomInvite) BeforeCreate(tx *gorm.DB) error {
+// 	invite.RoomID = invite.Room.ID
+// 	return nil
+// }
