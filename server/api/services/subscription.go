@@ -37,13 +37,17 @@ func (s *SubscriptionService) GetSubscriptionsByUserID(userID uint) (*[]model.Su
 
 func (s *SubscriptionService) GetSubscriptionsByEndpoint(endpoint string) (*model.Subscription, error) {
 	var subscription model.Subscription
-	if err := s.DB.Where("endpoint = ?", endpoint).Find(&subscription).Error; err != nil {
+	if err := s.DB.Where("endpoint = ?", endpoint).First(&subscription).Error; err != nil {
 		return nil, err
 	}
 	return &subscription, nil
 }
 
 func (s *SubscriptionService) DeleteSubscription(subId string) error {
+	if err := s.DB.Where("id = ?", subId).First(&model.Subscription{}).Error; err != nil {
+		return err
+	}
+
 	if err := s.DB.Where("id = ?", subId).Delete(&model.Subscription{}).Error; err != nil {
 		return err
 	}
