@@ -191,8 +191,8 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_Success() 
 		expectedSubscription.Auth,
 	)
 
-	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE endpoint = \$1`).
-		WithArgs(s.endpoint).
+	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE endpoint = \$1 ORDER BY "subscriptions"."id" LIMIT \$2`).
+		WithArgs(s.endpoint, 1).
 		WillReturnRows(rows)
 
 	// act
@@ -207,26 +207,23 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_NotFound()
 	// arrange
 	endpoint := "https://fcm.googleapis.com/fcm/send/nonexistent-token"
 
-	rows := sqlmock.NewRows(append(s.subCols, "created_at"))
-
-	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE endpoint = \$1`).
-		WithArgs(endpoint).
-		WillReturnRows(rows)
+	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE endpoint = \$1 ORDER BY "subscriptions"."id" LIMIT \$2`).
+		WithArgs(endpoint, 1).
+		WillReturnError(gorm.ErrRecordNotFound)
 
 	// act
 	subscription, err := s.subscriptionService.GetSubscriptionsByEndpoint(endpoint)
 
 	// assert
-	tests.AssertNoErrAndNotNil(s.T(), err, subscription)
-	assert.Equal(s.T(), "", subscription.ID) // Empty ID indicates no subscription found
+	tests.AssertErrAndNil(s.T(), err, subscription)
 }
 
 func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_DatabaseError() {
 	// arrange
 	endpoint := "https://fcm.googleapis.com/fcm/send/example-token"
 
-	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE endpoint = \$1`).
-		WithArgs(endpoint).
+	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE endpoint = \$1 ORDER BY "subscriptions"."id" LIMIT \$2`).
+		WithArgs(endpoint, 1).
 		WillReturnError(errors.New("database error"))
 
 	// act
@@ -239,16 +236,28 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_DatabaseEr
 
 func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_Success() {
 	// arrange
-	subID := "1"
+	expectedSubscription := tests.CreateTestSubscription(1, "1", s.endpoint, s.p256dh, s.auth)
+
+	rows := sqlmock.NewRows(s.subCols).AddRow(
+		expectedSubscription.ID,
+		expectedSubscription.UserID,
+		expectedSubscription.Endpoint,
+		expectedSubscription.P256dh,
+		expectedSubscription.Auth,
+	)
+
+	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE id = \$1 ORDER BY "subscriptions"."id" LIMIT \$2`).
+		WithArgs(expectedSubscription.ID, 1).
+		WillReturnRows(rows)
 
 	s.mock.ExpectBegin()
 	s.mock.ExpectExec(`DELETE FROM "subscriptions" WHERE id = \$1`).
-		WithArgs(subID).
+		WithArgs(expectedSubscription.ID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	s.mock.ExpectCommit()
 
 	// act
-	err := s.subscriptionService.DeleteSubscription(subID)
+	err := s.subscriptionService.DeleteSubscription(expectedSubscription.ID)
 
 	// assert
 	assert.NoError(s.T(), err)
@@ -258,29 +267,25 @@ func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_NotFound() {
 	// arrange
 	subID := "999"
 
-	s.mock.ExpectBegin()
-	s.mock.ExpectExec(`DELETE FROM "subscriptions" WHERE id = \$1`).
-		WithArgs(subID).
-		WillReturnResult(sqlmock.NewResult(0, 0))
-	s.mock.ExpectCommit()
+	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE id = \$1 ORDER BY "subscriptions"."id" LIMIT \$2`).
+		WithArgs(subID, 1).
+		WillReturnError(gorm.ErrRecordNotFound)
 
 	// act
 	err := s.subscriptionService.DeleteSubscription(subID)
 
 	// assert
-	// No error should be returned even if no record was deleted
-	assert.NoError(s.T(), err)
+	assert.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "record not found")
 }
 
 func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_DatabaseError() {
 	// arrange
 	subID := "1"
 
-	s.mock.ExpectBegin()
-	s.mock.ExpectExec(`DELETE FROM "subscriptions" WHERE id = \$1`).
-		WithArgs(subID).
+	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE id = \$1 ORDER BY "subscriptions"."id" LIMIT \$2`).
+		WithArgs(subID, 1).
 		WillReturnError(errors.New("database error"))
-	s.mock.ExpectRollback()
 
 	// act
 	err := s.subscriptionService.DeleteSubscription(subID)
