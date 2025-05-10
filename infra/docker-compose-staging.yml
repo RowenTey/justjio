@@ -11,18 +11,16 @@ x-common-config: &common-config
   networks:
     - justjio_network
     - caddy_network
+  dns:
+    # gateway ip 
+    - 172.22.0.1
+    - 1.1.1.1
 
 x-common-healthcheck: &common-healthcheck
   interval: 10s
   timeout: 5s
   retries: 5
   
-x-common-dns: &common-dns
-  dns:
-    # gateway ip 
-    - 172.22.0.1
-    - 1.1.1.1
-
 services:
   frontend:
     container_name: justjio-web
@@ -61,7 +59,6 @@ services:
       SMTP2GO_API_KEY: ${SMTP2GO_API_KEY}
       <<: *common-env
     entrypoint: ["/api-server", "staging"]
-    <<: *common-dns
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8080/ || exit 1"]
       <<: *common-healthcheck
@@ -74,7 +71,6 @@ services:
       PORT: 8081
       <<: *common-env
     entrypoint: ["/ws-server", "staging"]
-    <<: *common-dns
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/ping || exit 1"]
       <<: *common-healthcheck
