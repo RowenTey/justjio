@@ -47,7 +47,8 @@ services:
     image: ghcr.io/rowentey/justjio/api:latest
     <<: *common-config
     environment:
-      DSN: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
+      # DSN: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
+      DSN: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:7000/${POSTGRES_DB}?sslmode=disable
       PORT: 8080
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
