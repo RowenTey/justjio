@@ -33,6 +33,7 @@ jobs:
           KAFKA_PORT=${{ vars.KAFKA_PORT }}
           POSTGRES_HOST=${{ vars.POSTGRES_HOST }}
           POSTGRES_DB=${{ vars.POSTGRES_DB }}
+          POSTGRES_PORT=${{ vars.POSTGRES_PORT }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
           VAPID_EMAIL=${{ secrets.ADMIN_EMAIL }}
