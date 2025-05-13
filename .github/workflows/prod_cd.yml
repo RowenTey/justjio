@@ -41,7 +41,8 @@ jobs:
           export CF_ACCESS_CLIENT_SECRET=$(echo -n "${{ secrets.CF_ACCESS_CLIENT_SECRET }}" | base64 -w 0)
 
           find infra/k8s/ -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
-            if [[ -f "$dir/secret.template.yaml" ]]; then
+            echo "Processing $dir"
+            if [[ -f "$dir/secrets.template.yaml" ]]; then
               echo "Processing $dir/secret-template.yaml"
               
               # Encode secrets (if needed)
