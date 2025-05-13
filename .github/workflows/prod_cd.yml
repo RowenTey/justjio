@@ -44,13 +44,9 @@ jobs:
             echo "Processing $dir"
             if [[ -f "$dir/secrets.template.yaml" ]]; then
               echo "Processing $dir/secret-template.yaml"
-              
-              # Encode secrets (if needed)
-              export DB_PASSWORD_B64=$(echo -n "$DB_PASSWORD" | base64 -w 0)
-              export API_KEY_B64=$(echo -n "$API_KEY" | base64 -w 0)
 
               # Substitute env vars and generate secrets.yaml
-              envsubst < "$dir/secret-template.yaml" > "$dir/secrets.yaml"
+              envsubst < "$dir/secrets.template.yaml" > "$dir/secrets.yaml"
               echo "Generated $dir/secrets.yaml"
             fi
           done
