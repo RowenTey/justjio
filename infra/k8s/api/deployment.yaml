@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: justjio-api-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: justjio-api
+  template:
+    metadata:
+      labels:
+        app: justjio-api
+    spec:
+      containers:
+        - name: justjio-api-container
+          image: ghcr.io/rowentey/justjio/api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m" # 0.1 CPU core
+              memory: "256Mi" # 256 Megabytes
+            limits:
+              cpu: "500m" # 0.5 CPU core
+              memory: "512Mi" # 512 Megabytes
+          envFrom:
+            - configMapRef:
+                name: justjio-api-config
+            - secretRef:
+                name: justjio-api-secret
