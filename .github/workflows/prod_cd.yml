@@ -54,7 +54,7 @@ jobs:
             fi
           done
 
-          // TODO: Remove this after testing
+          # TODO: Remove this after testing
           find infra/k8s/ -name "secrets.yaml" -exec ls -la {} \;
 
       # Transfer files to the server
