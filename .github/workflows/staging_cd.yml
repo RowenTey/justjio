@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - dev
-      - main
   workflow_dispatch:
 
 jobs:
@@ -19,7 +18,7 @@ jobs:
         with:
           # only checkout the docker compose file
           sparse-checkout: |
-            infra/docker-compose-staging.yml
+            infra/docker/docker-compose-staging.yml
           sparse-checkout-cone-mode: false
 
       # Create the .env file to use with docker-compose
@@ -53,14 +52,13 @@ jobs:
           private_key: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
           port: ${{ secrets.SSH_PORT }}
           from: |
-            ./infra/docker-compose-staging.yml
+            ./infra/docker/docker-compose-staging.yml
             ./.env
-          to: ~/Documents/Codebase/justjio/
+          to: ${{ vars.STAGING_DIR }}/
           service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
           service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
 
-      # Rename docker-compose file on server and deploy
-      - name: Rename and deploy on staging server
+      - name: Deploy on staging server
         uses: and-fm/cloudflared-ssh-action@v3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -71,7 +69,8 @@ jobs:
           service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
           service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
           commands: |
-            cd ~/Documents/Codebase/justjio
+            cd ${{ vars.STAGING_DIR }}
+            ~/Documents/Codebase/justjio
             docker compose down -v
             mv docker-compose-staging.yml docker-compose.yml
             docker compose pull

@@ -1,0 +1,86 @@
+name: Deploy to Production Environment
+
+on:
+  # push:
+  #   branches:
+  #     - main
+  workflow_dispatch:
+
+jobs:
+  deploy_to_prod:
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://justjio.rowentey.xyz/
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # only checkout k8s files
+          sparse-checkout: |
+            infra/k8s
+          sparse-checkout-cone-mode: false
+
+      - name: Prepare k8s secret
+        run: |
+          export POSTGRES_PASSWORD=$(echo -n "${{ secrets.POSTGRES_PASSWORD }}" | base64 -w 0)
+          export JWT_SECRET=$(echo -n "${{ secrets.JWT_SECRET }}" | base64 -w 0)
+          export ADMIN_EMAIL=$(echo -n "${{ secrets.ADMIN_EMAIL }}" | base64 -w 0)
+          export KAFKA_HOST=$(echo -n "${{ vars.KAFKA_HOST }}" | base64 -w 0)
+          export KAFKA_PORT=$(echo -n "${{ vars.KAFKA_PORT }}" | base64 -w 0)
+          export POSTGRES_HOST=$(echo -n "${{ vars.POSTGRES_HOST }}" | base64 -w 0)
+          export POSTGRES_DB=$(echo -n "${{ vars.POSTGRES_DB }}" | base64 -w 0)
+          export POSTGRES_PORT=$(echo -n "${{ vars.POSTGRES_PORT }}" | base64 -w 0)
+          export GOOGLE_CLIENT_ID=$(echo -n "${{ secrets.GOOGLE_CLIENT_ID }}" | base64 -w 0)
+          export GOOGLE_CLIENT_SECRET=$(echo -n "${{ secrets.GOOGLE_CLIENT_SECRET }}" | base64 -w 0)
+          export VAPID_EMAIL=$(echo -n "${{ secrets.ADMIN_EMAIL }}" | base64 -w 0)
+          export VAPID_PUBLIC_KEY=$(echo -n "${{ secrets.VAPID_PUBLIC_KEY }}" | base64 -w 0)
+          export VAPID_PRIVATE_KEY=$(echo -n "${{ secrets.VAPID_PRIVATE_KEY }}" | base64 -w 0)
+          export SMTP2GO_API_KEY=$(echo -n "${{ secrets.SMTP2GO_API_KEY }}" | base64 -w 0)
+          export CF_ACCESS_CLIENT_ID=$(echo -n "${{ secrets.CF_ACCESS_CLIENT_ID }}" | base64 -w 0)
+          export CF_ACCESS_CLIENT_SECRET=$(echo -n "${{ secrets.CF_ACCESS_CLIENT_SECRET }}" | base64 -w 0)
+
+          find infra/k8s/ -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
+            if [[ -f "$dir/secret.template.yaml" ]]; then
+              echo "Processing $dir/secret-template.yaml"
+              
+              # Encode secrets (if needed)
+              export DB_PASSWORD_B64=$(echo -n "$DB_PASSWORD" | base64 -w 0)
+              export API_KEY_B64=$(echo -n "$API_KEY" | base64 -w 0)
+
+              # Substitute env vars and generate secrets.yaml
+              envsubst < "$dir/secret-template.yaml" > "$dir/secrets.yaml"
+              echo "Generated $dir/secrets.yaml"
+            fi
+          done
+
+          // TODO: Remove this after testing
+          find infra/k8s/ -name "secrets.yaml" -exec ls -la {} \;
+
+      # Transfer files to the server
+      - name: Transfer files to staging server
+        uses: RowenTey/cloudflared-scp-action@v1.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          private_key: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
+          port: ${{ secrets.SSH_PORT }}
+          from: |
+            ./infra/k8s
+          to: ${{ vars.PROD_DIR }}/
+          service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
+          service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
+
+      - name: Deploy on prod server
+        uses: and-fm/cloudflared-ssh-action@v3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          private_key_value: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
+          private_key_filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }}
+          port: ${{ secrets.SSH_PORT }}
+          service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
+          service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
+          commands: |
+            cd ${{ vars.PROD_DIR }}
+            kubectl apply -f ./k8s
