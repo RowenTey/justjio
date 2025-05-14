@@ -23,14 +23,10 @@ jobs:
 
       - name: Prepare k8s secret
         run: |
-          export POSTGRES_PASSWORD=$(echo -n "${{ secrets.POSTGRES_PASSWORD }}" | base64 -w 0)
+          export DSN=$(echo -n "postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@${{ vars.POSTGRES_HOST }}:${{ vars.POSTGRES_PORT }}/${{ vars.POSTGRES_DB }}?sslmode=disable" | base64 -w 0)
           export JWT_SECRET=$(echo -n "${{ secrets.JWT_SECRET }}" | base64 -w 0)
           export ADMIN_EMAIL=$(echo -n "${{ secrets.ADMIN_EMAIL }}" | base64 -w 0)
-          export KAFKA_HOST=$(echo -n "${{ vars.KAFKA_HOST }}" | base64 -w 0)
-          export KAFKA_PORT=$(echo -n "${{ vars.KAFKA_PORT }}" | base64 -w 0)
-          export POSTGRES_HOST=$(echo -n "${{ vars.POSTGRES_HOST }}" | base64 -w 0)
-          export POSTGRES_DB=$(echo -n "${{ vars.POSTGRES_DB }}" | base64 -w 0)
-          export POSTGRES_PORT=$(echo -n "${{ vars.POSTGRES_PORT }}" | base64 -w 0)
+          export KAFKA_URL=$(echo -n "${{ vars.KAFKA_HOST }}:${{ vars.KAFKA_PORT }}" | base64 -w 0)
           export GOOGLE_CLIENT_ID=$(echo -n "${{ secrets.GOOGLE_CLIENT_ID }}" | base64 -w 0)
           export GOOGLE_CLIENT_SECRET=$(echo -n "${{ secrets.GOOGLE_CLIENT_SECRET }}" | base64 -w 0)
           export VAPID_EMAIL=$(echo -n "${{ secrets.ADMIN_EMAIL }}" | base64 -w 0)
@@ -48,6 +44,9 @@ jobs:
               # Substitute env vars and generate secrets.yaml
               envsubst < "$dir/secrets.template.yaml" > "$dir/secrets.yaml"
               echo "Generated $dir/secrets.yaml"
+              
+              # Remove the template file
+              rm "$dir/secrets.template.yaml"
             fi
           done
 
