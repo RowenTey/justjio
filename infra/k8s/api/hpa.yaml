@@ -1,6 +1,7 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
+  namespace: justjio
   name: justjio-api-hpa
 spec:
   scaleTargetRef:

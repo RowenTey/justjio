@@ -1,6 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  namespace: justjio
   name: justjio-api-config
 data:
   PORT: 8080

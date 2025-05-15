@@ -1,6 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: justjio
   name: justjio-api-deployment
 spec:
   replicas: 1
