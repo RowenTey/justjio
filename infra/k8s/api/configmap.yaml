@@ -4,7 +4,7 @@ metadata:
   namespace: justjio
   name: justjio-api-config
 data:
-  PORT: 8080
+  PORT: "8080"
   GOOGLE_REDIRECT_URL: https://justjio.rowentey.xyz
   KAFKA_TOPIC_PREFIX: justjio
   ALLOWED_ORIGINS: https://justjio.rowentey.xyz
