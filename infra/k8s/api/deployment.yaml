@@ -19,6 +19,13 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
+          dnsPolicy: "None"
+          dnsConfig:
+            nameservers:
+              - "192.168.100.2" # Internal DNS server
+              - "1.1.1.1" # Fallback DNS
+            searches:
+              - "lan"
           resources:
             requests:
               cpu: "100m" # 0.1 CPU core
