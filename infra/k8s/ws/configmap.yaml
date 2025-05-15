@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: justjio
+  name: justjio-ws-config
+data:
+  PORT: "8081"
+  KAFKA_TOPIC_PREFIX: justjio
+  ALLOWED_ORIGINS: https://justjio.rowentey.xyz

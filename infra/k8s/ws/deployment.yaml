@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: justjio
+  name: justjio-ws-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: justjio-ws
+  template:
+    metadata:
+      labels:
+        app: justjio-ws
+    spec:
+      containers:
+        - name: justjio-ws-container
+          image: ghcr.io/rowentey/justjio/ws:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m" # 0.1 CPU core
+              memory: "256Mi" # 256 Megabytes
+            limits:
+              cpu: "500m" # 0.5 CPU core
+              memory: "512Mi" # 512 Megabytes
+          envFrom:
+            - configMapRef:
+                name: justjio-ws-config
+            - secretRef:
+                name: justjio-ws-secret
+      dnsPolicy: "None"
+      dnsConfig:
+        nameservers:
+          - "192.168.100.2" # Internal DNS server
+          - "1.1.1.1" # Fallback DNS
+        searches:
+          - "lan"
