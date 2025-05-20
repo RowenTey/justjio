@@ -238,7 +238,7 @@ func ResetPassword(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Password reset successfully", nil)
 }
 
-func GoogleLogin(c *fiber.Ctx) error {
+func GoogleLogin(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	var request request.GoogleAuthRequest
 	if err := c.BodyParser(&request); err != nil {
 		return utils.HandleInvalidInputError(c, err)
@@ -287,6 +287,14 @@ func GoogleLogin(c *fiber.Ctx) error {
 	if err != nil {
 		return utils.HandleInternalServerError(c, err)
 	}
+
+	// create user channel when login
+	go func() {
+		channel := fmt.Sprintf("user-%d", user.ID)
+		if err := kafkaSvc.CreateTopic(channel); err != nil {
+			authLogger.Error("Error creating topic", err)
+		}
+	}()
 
 	response := response.AuthResponse{
 		Email:      user.Email,
