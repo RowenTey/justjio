@@ -10,6 +10,7 @@ x-common-config: &common-config
   restart: unless-stopped
   networks:
     - justjio_network
+    - cloudflare_network
     
 x-common-healthcheck: &common-healthcheck
   interval: 10s
@@ -73,5 +74,5 @@ services:
 networks:
   justjio_network:
     name: justjio_network
-  caddy_network:
+  cloudflare_network:
     external: true
