@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -67,7 +68,7 @@ func (ks *KafkaService) BroadcastMessage(userIds *[]string, message model_kafka.
 	}
 
 	var wg sync.WaitGroup
-	errors := make(chan error)
+	errorChan := make(chan error)
 
 	for _, userId := range *userIds {
 		wg.Add(1)
@@ -81,7 +82,7 @@ func (ks *KafkaService) BroadcastMessage(userIds *[]string, message model_kafka.
 			channel = fmt.Sprintf("%s-%s", config.Config("KAFKA_TOPIC_PREFIX"), channel)
 
 			if err := ks.PublishMessage(channel, string(messageJSON)); err != nil {
-				errors <- err
+				errorChan <- err
 			}
 		}(userId)
 	}
@@ -89,16 +90,21 @@ func (ks *KafkaService) BroadcastMessage(userIds *[]string, message model_kafka.
 	// Close the errors channel after all goroutines finish
 	go func() {
 		wg.Wait()
-		close(errors)
+		close(errorChan)
 	}()
 
 	// Check if any errors occurred in the goroutines
 	// BLOCKING until all goroutines finish
-	for err := range errors {
+	var allErrors error = nil
+	for err := range errorChan {
 		if err != nil {
 			ks.logger.Errorf("Error publishing message: %v", err)
-			return err
+			allErrors = errors.Join(allErrors, err)
 		}
+	}
+
+	if allErrors != nil {
+		return allErrors
 	}
 
 	return nil
