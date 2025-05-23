@@ -75,7 +75,9 @@ func (suite *AuthHandlerTestSuite) SetupSuite() {
 	suite.app.Post("/verify", VerifyOTP)
 	suite.app.Post("/otp", SendOTPEmail)
 	suite.app.Patch("/reset", ResetPassword)
-	suite.app.Post("/google", GoogleLogin)
+	suite.app.Post("/google", func(c *fiber.Ctx) error {
+		return GoogleLogin(c, suite.kafkaService)
+	})
 }
 
 func (suite *AuthHandlerTestSuite) TearDownSuite() {
