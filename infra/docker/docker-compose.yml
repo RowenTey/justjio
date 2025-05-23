@@ -1,4 +1,4 @@
-name: justjio-backend
+name: justjio
 
 x-common-healthcheck: &common-healthcheck
   interval: 10s

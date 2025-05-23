@@ -1,4 +1,4 @@
-name: justjio-backend
+name: justjio
 
 x-common-env: &common-env
   JWT_SECRET: ${JWT_SECRET}
@@ -10,12 +10,7 @@ x-common-config: &common-config
   restart: unless-stopped
   networks:
     - justjio_network
-    - caddy_network
-  dns:
-    # gateway ip 
-    - 172.22.0.1
-    - 1.1.1.1
-
+    
 x-common-healthcheck: &common-healthcheck
   interval: 10s
   timeout: 5s
