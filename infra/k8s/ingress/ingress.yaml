@@ -3,10 +3,7 @@ kind: Ingress
 metadata:
   namespace: justjio
   name: justjio-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/websocket-services: "justjio-ws-service"
 spec:
-  ingressClassName: nginx
   rules:
     - host: justjio-api.rowentey.xyz
       http:
