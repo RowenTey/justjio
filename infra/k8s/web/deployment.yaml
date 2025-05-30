@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: justjio
+  name: justjio-web-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: justjio-web
+  template:
+    metadata:
+      labels:
+        app: justjio-web
+    spec:
+      containers:
+        - name: justjio-web-container
+          image: ghcr.io/rowentey/justjio/web:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: justjio-web-config
+            - secretRef:
+                name: justjio-web-secret

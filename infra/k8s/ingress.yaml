@@ -1,9 +1,12 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  namespace: justjio
   name: justjio-ingress
+  namespace: justjio
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
+  ingressClassName: traefik
   rules:
     - host: justjio-api.rowentey.xyz
       http:

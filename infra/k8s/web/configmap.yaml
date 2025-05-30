@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: justjio
+  name: justjio-web-config
+data:
+  APP_ENV_PREFIX: VITE
+  VITE_API_URL: https://justjio-api.rowentey.xyz/v1
+  VITE_WS_URL: wss://justjio-ws.rowentey.xyz
+  VITE_ENV: production

@@ -54,7 +54,7 @@ jobs:
           find infra/k8s/ -name "secrets.yaml" -exec ls -la {} \;
 
       # Transfer files to the server
-      - name: Transfer files to staging server
+      - name: Transfer files to pruduction server
         uses: RowenTey/cloudflared-scp-action@v1.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -67,16 +67,16 @@ jobs:
           service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
           service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
 
-      # - name: Deploy on prod server
-      #   uses: and-fm/cloudflared-ssh-action@v3
-      #   with:
-      #     host: ${{ secrets.SSH_HOST }}
-      #     username: ${{ secrets.SSH_USERNAME }}
-      #     private_key_value: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
-      #     private_key_filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }}
-      #     port: ${{ secrets.SSH_PORT }}
-      #     service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
-      #     service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
-      #     commands: |
-      #       cd ${{ vars.PROD_DIR }}
-      #       kubectl apply -f ./k8s
+      - name: Deploy on production server
+        uses: and-fm/cloudflared-ssh-action@v3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          private_key_value: ${{ secrets.SSH_PRIVATE_KEY_VALUE }}
+          private_key_filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }}
+          port: ${{ secrets.SSH_PORT }}
+          service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
+          service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
+          commands: |
+            cd ${{ vars.PROD_DIR }}
+            kubectl apply -f k8s/ --recursive
