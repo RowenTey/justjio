@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/database"
-	model_kafka "github.com/RowenTey/JustJio/server/api/model/kafka"
+	modelKafka "github.com/RowenTey/JustJio/server/api/model/kafka"
 	"github.com/RowenTey/JustJio/server/api/model/request"
 	"github.com/RowenTey/JustJio/server/api/model/response"
 	"github.com/RowenTey/JustJio/server/api/services"
@@ -79,14 +79,14 @@ func CreateMessage(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
-	messageLogger.Info("User found:", user.Username)
+	messageLogger.Info("User found: ", user.Username)
 
 	err = services.NewMessageService(database.DB).SaveMessage(room, user, request.Content)
 	if err != nil {
 		return utils.HandleInternalServerError(c, err)
 	}
 
-	broadcastPayload := model_kafka.KafkaMessage{
+	broadcastPayload := modelKafka.KafkaMessage{
 		MsgType: "CREATE_MESSAGE",
 		Data: struct {
 			RoomID     string `json:"roomId"`

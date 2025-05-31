@@ -65,16 +65,18 @@ func main() {
 		}
 	}
 
+	consumerName := "chat-service"
+	if env == "dev" || env == "staging" {
+		log.SetLevel(log.DebugLevel)
+		consumerName = fmt.Sprintf("chat-service-%s", env)
+	}
+	consumerName = fmt.Sprintf("%s-%s", utils.Config("KAFKA_TOPIC_PREFIX"), consumerName)
+	log.Infof("Consumer name: %s", consumerName)
+
 	log.Info("Starting WS server...")
 
 	app := fiber.New()
 	connMap := utils.NewConnMap()
-
-	consumerName := "chat-service"
-	if env == "dev" || env == "staging" {
-		consumerName = fmt.Sprintf("chat-service-%s", env)
-	}
-	consumerName = fmt.Sprintf("%s-%s", utils.Config("KAFKA_TOPIC_PREFIX"), consumerName)
 
 	// healthcheck endpoint
 	app.Get("/ping", func(c *fiber.Ctx) error {
