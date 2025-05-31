@@ -78,3 +78,6 @@ jobs:
             cd ${{ vars.PROD_DIR }}
             export KUBECONFIG=~/.kube/config
             kubectl apply -f k8s/ --recursive
+            kubectl rollout restart deployment/justjio-api-deployment
+            kubectl rollout restart deployment/justjio-ws-deployment
+            kubectl rollout restart deployment/justjio-web-deployment
