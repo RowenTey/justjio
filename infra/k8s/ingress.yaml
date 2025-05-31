@@ -8,6 +8,16 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
+    - host: justjio.rowentey.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: justjio-web-service
+                port:
+                  number: 80
     - host: justjio-api.rowentey.xyz
       http:
         paths:
