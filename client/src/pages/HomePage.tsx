@@ -14,6 +14,7 @@ import { IRoom } from "../types/room";
 import Spinner from "../components/Spinner";
 import { useTransactionCtx } from "../context/transaction";
 import { useSubscription } from "../context/subscriptions";
+import { clearRedirectPath } from "../utils/redirect";
 
 const HomePage = () => {
   const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
@@ -29,6 +30,7 @@ const HomePage = () => {
     setLogoutLoading(true);
     await unsubscribe();
     await logout();
+    clearRedirectPath();
     setLogoutLoading(false);
     navigate("/login", { state: { from: "/" } });
   };

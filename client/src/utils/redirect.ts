@@ -5,3 +5,7 @@ export const getRedirectPath = () => {
 export const setRedirectPath = (path: string) => {
   localStorage.setItem("redirectPath", path);
 };
+
+export const clearRedirectPath = () => {
+  localStorage.removeItem("redirectPath");
+};
