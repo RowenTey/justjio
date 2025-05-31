@@ -54,7 +54,7 @@ jobs:
           from: |
             ./infra/docker/docker-compose-staging.yml
             ./.env
-          to: ${{ vars.STAGING_DIR }}/
+          to: ${{ vars.TARGET_DIR }}/
           service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
           service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
 
@@ -69,7 +69,7 @@ jobs:
           service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
           service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
           commands: |
-            cd ${{ vars.STAGING_DIR }}
+            cd ${{ vars.TARGET_DIR }}
             docker compose down -v
             mv docker-compose-staging.yml docker-compose.yml
             docker compose pull

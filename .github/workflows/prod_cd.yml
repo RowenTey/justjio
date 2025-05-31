@@ -1,16 +1,15 @@
 name: Deploy to Production Environment
 
 on:
-  # push:
-  #   branches:
-  #     - main
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
   deploy_to_prod:
     runs-on: ubuntu-latest
     environment:
-      name: staging
+      name: production
       url: https://justjio.rowentey.xyz/
     steps:
       - name: Checkout code
@@ -60,7 +59,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           from: |
             ./infra/k8s
-          to: ${{ vars.PROD_DIR }}/
+          to: ${{ vars.TARGET_DIR }}/
           service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
           service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
 
@@ -75,7 +74,7 @@ jobs:
           service_token_id: ${{ secrets.SERVICE_TOKEN_ID }}
           service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
           commands: |
-            cd ${{ vars.PROD_DIR }}
+            cd ${{ vars.TARGET_DIR }}
             export KUBECONFIG=~/.kube/config
             kubectl apply -f k8s/ --recursive
             kubectl rollout restart deployment/justjio-api-deployment -n justjio
