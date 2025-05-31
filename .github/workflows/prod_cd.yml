@@ -50,9 +50,6 @@ jobs:
             fi
           done
 
-          # TODO: Remove this after testing
-          find infra/k8s/ -name "secrets.yaml" -exec ls -la {} \;
-
       # Transfer files to the server
       - name: Transfer files to pruduction server
         uses: RowenTey/cloudflared-scp-action@v1.1.7
@@ -79,4 +76,5 @@ jobs:
           service_token_secret: ${{ secrets.SERVICE_TOKEN_SECRET }}
           commands: |
             cd ${{ vars.PROD_DIR }}
-            k3s kubectl apply -f k8s/ --recursive
+            export KUBECONFIG=~/.kube/config
+            kubectl apply -f k8s/ --recursive
