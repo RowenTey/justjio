@@ -108,7 +108,7 @@ func (ms *MessageService) DeleteMessage(msgId, roomId string) error {
 }
 
 func (ms *MessageService) DeleteRoomMessages(roomId string) error {
-	return ms.DeleteRoomMessages(roomId)
+	return ms.messageRepo.DeleteByRoom(roomId)
 }
 
 func (ms *MessageService) CountNumMessagesPages(roomId string) (int, error) {

@@ -17,8 +17,6 @@ import (
 
 type RoomHandler struct {
 	roomService *services.RoomService
-	userService *services.UserService
-	billService *services.BillService
 	logger      *log.Entry
 }
 
