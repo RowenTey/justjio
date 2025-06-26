@@ -1,31 +1,20 @@
 package handlers
 
-import (
-	"context"
+// type AuthHandlerTestSuite struct {
+// 	suite.Suite
+// 	app          *fiber.App
+// 	db           *gorm.DB
+// 	ctx          context.Context
+// 	dependencies *tests.TestDependencies
+// 	kafkaService *services.KafkaService
 
-	"github.com/RowenTey/JustJio/server/api/services"
-	"github.com/RowenTey/JustJio/server/api/tests"
-	"github.com/gofiber/fiber/v2"
-	"github.com/stretchr/testify/suite"
-	"golang.org/x/oauth2"
-	"gorm.io/gorm"
-)
-
-type AuthHandlerTestSuite struct {
-	suite.Suite
-	app          *fiber.App
-	db           *gorm.DB
-	ctx          context.Context
-	dependencies *tests.TestDependencies
-	kafkaService *services.KafkaService
-
-	originalNewAuthService func(
-		hashFunc func(string) (string, error),
-		jwtSecret string,
-		sendEmail func(string, string, string, string) error,
-		googleConfig *oauth2.Config,
-	) *services.AuthService
-}
+// 	originalNewAuthService func(
+// 		hashFunc func(string) (string, error),
+// 		jwtSecret string,
+// 		sendEmail func(string, string, string, string) error,
+// 		googleConfig *oauth2.Config,
+// 	) *services.AuthService
+// }
 
 // func (suite *AuthHandlerTestSuite) SetupSuite() {
 // 	suite.ctx = context.Background()

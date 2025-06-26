@@ -1,30 +1,20 @@
 package handlers
 
-import (
-	"context"
+// type RoomHandlerTestSuite struct {
+// 	suite.Suite
+// 	app          *fiber.App
+// 	db           *gorm.DB
+// 	ctx          context.Context
+// 	dependencies *tests.TestDependencies
 
-	"github.com/RowenTey/JustJio/server/api/model"
-	"github.com/RowenTey/JustJio/server/api/tests"
-	"github.com/gofiber/fiber/v2"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
-)
-
-type RoomHandlerTestSuite struct {
-	suite.Suite
-	app          *fiber.App
-	db           *gorm.DB
-	ctx          context.Context
-	dependencies *tests.TestDependencies
-
-	testHostID    uint
-	testHostToken string
-	testUserID    uint
-	testUserToken string
-	testRoomID    string
-	testRoom      *model.Room
-	testInviteID  uint
-}
+// 	testHostID    uint
+// 	testHostToken string
+// 	testUserID    uint
+// 	testUserToken string
+// 	testRoomID    string
+// 	testRoom      *model.Room
+// 	testInviteID  uint
+// }
 
 // func (suite *RoomHandlerTestSuite) SetupSuite() {
 // 	suite.ctx = context.Background()

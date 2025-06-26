@@ -1,31 +1,22 @@
 package handlers
 
-import (
-	"context"
-
-	"github.com/RowenTey/JustJio/server/api/tests"
-	"github.com/gofiber/fiber/v2"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
-)
-
 // Shared test secret for JWT generation
-const mockJWTSecret = "test-secret"
+// const mockJWTSecret = "test-secret"
 
-type BillHandlerTestSuite struct {
-	suite.Suite
-	app          *fiber.App
-	db           *gorm.DB
-	ctx          context.Context
-	dependencies *tests.TestDependencies
+// type BillHandlerTestSuite struct {
+// 	suite.Suite
+// 	app          *fiber.App
+// 	db           *gorm.DB
+// 	ctx          context.Context
+// 	dependencies *tests.TestDependencies
 
-	// Store IDs and tokens for reuse in tests
-	testUser1ID    uint
-	testUser2ID    uint
-	testRoomID     string
-	testUser1Token string
-	testUser2Token string
-}
+// 	// Store IDs and tokens for reuse in tests
+// 	testUser1ID    uint
+// 	testUser2ID    uint
+// 	testRoomID     string
+// 	testUser1Token string
+// 	testUser2Token string
+// }
 
 // // Helper function to generate JWT token for testing
 // func generateTestToken(userID uint, username, email string) (string, error) {

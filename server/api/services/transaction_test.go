@@ -1,18 +1,12 @@
 package services
 
-import (
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
-)
+// type TransactionServiceTestSuite struct {
+// 	suite.Suite
+// 	DB   *gorm.DB
+// 	mock sqlmock.Sqlmock
 
-type TransactionServiceTestSuite struct {
-	suite.Suite
-	DB   *gorm.DB
-	mock sqlmock.Sqlmock
-
-	transactionService *TransactionService
-}
+// 	transactionService *TransactionService
+// }
 
 // func TestTransactionServiceTestSuite(t *testing.T) {
 // 	suite.Run(t, new(TransactionServiceTestSuite))

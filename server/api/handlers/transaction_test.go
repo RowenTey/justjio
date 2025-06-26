@@ -1,30 +1,20 @@
 package handlers
 
-import (
-	"context"
+// type TransactionHandlerTestSuite struct {
+// 	suite.Suite
+// 	app          *fiber.App
+// 	db           *gorm.DB
+// 	ctx          context.Context
+// 	dependencies *tests.TestDependencies
 
-	"github.com/RowenTey/JustJio/server/api/model"
-	"github.com/RowenTey/JustJio/server/api/tests"
-	"github.com/gofiber/fiber/v2"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
-)
-
-type TransactionHandlerTestSuite struct {
-	suite.Suite
-	app          *fiber.App
-	db           *gorm.DB
-	ctx          context.Context
-	dependencies *tests.TestDependencies
-
-	testPayerID         uint
-	testPayeeID         uint
-	testConsolidationID uint
-	testPayerToken      string
-	testPayeeToken      string
-	testTransaction     *model.Transaction
-	// testNotifChan       chan NotificationData
-}
+// 	testPayerID         uint
+// 	testPayeeID         uint
+// 	testConsolidationID uint
+// 	testPayerToken      string
+// 	testPayeeToken      string
+// 	testTransaction     *model.Transaction
+// 	// testNotifChan       chan NotificationData
+// }
 
 // func (suite *TransactionHandlerTestSuite) SetupSuite() {
 // 	suite.ctx = context.Background()
