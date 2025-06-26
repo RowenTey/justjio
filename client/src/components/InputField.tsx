@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { CalendarDaysIcon, ClockIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import { UseFormRegister, FieldErrors } from "react-hook-form";
 
@@ -52,12 +51,6 @@ const InputField: React.FC<InputFieldProps> = ({
           className="peer bg-white placeholder-gray-500 text-black px-2 py-1 rounded-lg shadow-lg w-full focus:outline-none focus:border-secondary focus:border-2"
           {...register(name, validation)}
         />
-        {type === "date" && (
-          <CalendarDaysIcon className="absolute right-3 pointer-events-none h-6 w-6 text-secondary peer-focus:top-[0.35rem] top-1" />
-        )}
-        {type === "time" && (
-          <ClockIcon className="absolute right-3 pointer-events-none h-6 w-6 text-secondary peer-focus:top-[0.35rem] top-1" />
-        )}
       </div>
       {errors[name] && (
         <span className="ml-2 text-error text-wrap">

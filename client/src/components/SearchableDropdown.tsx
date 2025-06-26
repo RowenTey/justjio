@@ -94,7 +94,7 @@ const SearchableDropdown: React.FC<SearchableDropdownProps> = ({
       >
         <button
           type="button"
-          className={`w-[87.5%] px-3 py-1 text-left text-gray-500 whitespace-nowrap overflow-x-auto`}
+          className="w-[87.5%] px-3 py-1 text-left text-gray-500 whitespace-nowrap overflow-x-auto"
         >
           {selectedOptions.length > 0
             ? selectedOptions.map((opt) => opt.label).join(", ")

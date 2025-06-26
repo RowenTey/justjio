@@ -6,13 +6,17 @@ export interface IRoom {
   name: string;
   time: string;
   venue: string;
+  venueUrl: string;
   date: string;
+  imageUrl: string;
   hostId: number;
   host: BaseUserInfo;
+  description?: string;
   attendeesCount: number;
   url: string;
   createdAt: string;
   updatedAt: string;
+  isPrivate: boolean;
   isClosed: boolean;
 }
 
@@ -21,6 +25,12 @@ export interface IRoomInvite {
   roomId: string;
   message: string;
   room: IRoom;
+}
+
+export interface IVenue {
+  name: string;
+  address: string;
+  googleMapsPlaceId: string;
 }
 
 export interface RoomState {
@@ -32,6 +42,7 @@ export interface RoomContextType {
   fetchRooms: () => Promise<BaseContextResponse>;
   createRoom: (
     roomData: Partial<IRoom>,
+    placeId: string,
     attendeesId: string[],
     message?: string,
   ) => Promise<BaseContextResponse>;

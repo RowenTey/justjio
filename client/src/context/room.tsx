@@ -43,6 +43,7 @@ const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
 
   const createRoom = async (
     roomData: Partial<IRoom>,
+    placeId: string,
     attendeesId: string[],
     message?: string,
   ): Promise<BaseContextResponse> => {
@@ -50,6 +51,7 @@ const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
       const { data: response } = await createRoomApi(
         api,
         roomData,
+        placeId,
         attendeesId,
         message,
       );

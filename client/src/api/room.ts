@@ -1,5 +1,5 @@
 import { AxiosInstance, AxiosResponse } from "axios";
-import { IRoom, IRoomInvite } from "../types/room";
+import { IRoom, IRoomInvite, IVenue } from "../types/room";
 import { ApiResponse } from ".";
 import { IUser } from "../types/user";
 
@@ -43,6 +43,10 @@ interface FetchRoomResponse extends ApiResponse {
 
 interface FetchRoomAttendeesResponse extends ApiResponse {
   data: IUser[];
+}
+
+interface QueryVenueResponse extends ApiResponse {
+  data: IVenue[];
 }
 
 export const fetchRecentRoomsApi = (
@@ -115,6 +119,7 @@ export const fetchNumRoomsApi = (
 export const createRoomApi = (
   api: AxiosInstance,
   roomData: Partial<IRoom>,
+  placeId: string,
   inviteesId: string[],
   message: string = "Join my room!",
   mock: boolean = false,
@@ -122,6 +127,7 @@ export const createRoomApi = (
   if (!mock) {
     return api.post<CreateRoomResponse>("/rooms", {
       room: roomData,
+      placeId,
       invitees: inviteesId,
       message,
     });
@@ -490,6 +496,40 @@ export const inviteUsersToRoomApi = (
         headers: {},
         config: {},
       } as AxiosResponse<ApiResponse>);
+    }, 1500);
+  });
+};
+
+export const queryVenueApi = (
+  api: AxiosInstance,
+  query: string,
+  mock: boolean = false,
+): Promise<AxiosResponse<QueryVenueResponse>> => {
+  if (!mock) {
+    return api.get<QueryVenueResponse>(
+      `/rooms/venues/search?query=${encodeURIComponent(query)}`,
+    );
+  }
+
+  return new Promise<AxiosResponse<QueryVenueResponse>>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        data: {
+          data: [
+            {
+              name: "Test Venue",
+              address: "123 Test Street, Singapore",
+              googleMapsPlaceId: "ChIJN1t_tDeuEmsRUKwX8c4g2k0",
+            },
+          ],
+          message: "Queried venue successfully",
+          status: "success",
+        },
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      } as AxiosResponse<QueryVenueResponse>);
     }, 1500);
   });
 };
