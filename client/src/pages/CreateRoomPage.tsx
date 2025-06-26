@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SubmitHandler, useForm } from "react-hook-form";
 import InputField from "../components/InputField";
 import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
