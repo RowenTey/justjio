@@ -1,7 +1,9 @@
 package database
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
+
+	"github.com/sirupsen/logrus"
 
 	config "github.com/RowenTey/JustJio/server/api/config"
 	model "github.com/RowenTey/JustJio/server/api/model"
@@ -10,35 +12,36 @@ import (
 	"gorm.io/gorm"
 )
 
-// DB is a global variable that holds the connection to the database
-var DB *gorm.DB
+func ConnectDB(conf *config.Config, logger *logrus.Logger) *gorm.DB {
+	dbLogger := logger.WithFields(logrus.Fields{"service": "Database"})
 
-func ConnectDB() {
-	// define error here to prevent overshadowing the global DB
-	var err error
-
-	logger := log.WithFields(log.Fields{"service": "Database"})
-
-	dsn := config.Config("DSN")
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+	dsn := fmt.Sprintf(
+		"postgresql://%s:%s@%s:%s/%s",
+		conf.DB.Username,
+		conf.DB.Password,
+		conf.DB.Host,
+		conf.DB.Port,
+		conf.DB.Database,
+	)
+	dbConn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		TranslateError: true,
-		// SkipDefaultTransaction: true,
 	})
 	if err != nil {
-		logger.Error("Failed to connect to database")
-		logger.Fatal(err)
+		dbLogger.Error("Failed to connect to database!")
+		dbLogger.Fatal(err)
 	}
-	logger.Info("Connection opened to database")
+	dbLogger.Info("Connection opened to database")
 
-	err = Migrate(DB)
-	if err != nil {
-		logger.Error("Migration failed: ", err.Error())
+	if err := Migrate(dbConn); err != nil {
+		dbLogger.Error("Migration failed: ", err.Error())
 	}
-	logger.Info("Database migrated")
+	dbLogger.Info("Database migrated")
+
+	return dbConn
 }
 
 func Migrate(db *gorm.DB) error {
-	if err := db.AutoMigrate(
+	return db.AutoMigrate(
 		&model.User{},
 		&model.FriendRequest{},
 		&model.Room{},
@@ -49,10 +52,7 @@ func Migrate(db *gorm.DB) error {
 		&model.Message{},
 		&model.Notification{},
 		&model.Subscription{},
-	); err != nil {
-		return err
-	}
-	return nil
+	)
 }
 
 func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {

@@ -3,73 +3,94 @@ package services
 import (
 	"errors"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/model"
-	"gorm.io/gorm"
+	pushNotificationModel "github.com/RowenTey/JustJio/server/api/model/push_notifications"
+	"github.com/RowenTey/JustJio/server/api/repository"
+	"github.com/RowenTey/JustJio/server/api/utils"
+)
+
+var (
+	ErrEmptyContent = errors.New("content cannot be empty")
 )
 
 type NotificationService struct {
-	DB     *gorm.DB
-	Logger *log.Entry
+	notificationRepo  repository.NotificationRepository
+	subscriptionRepo  repository.SubscriptionRepository
+	notificationsChan chan<- pushNotificationModel.NotificationData
+	logger            *logrus.Entry
 }
 
 // NOTE: used var instead of func to enable mocking in tests
-var NewNotificationService = func(db *gorm.DB) *NotificationService {
+var NewNotificationService = func(
+	notificationRepo repository.NotificationRepository,
+	subscriptionRepo repository.SubscriptionRepository,
+	notificationsChan chan<- pushNotificationModel.NotificationData,
+	logger *logrus.Logger,
+) *NotificationService {
 	return &NotificationService{
-		DB:     db,
-		Logger: log.WithFields(log.Fields{"service": "NotificationService"}),
+		notificationRepo:  notificationRepo,
+		subscriptionRepo:  subscriptionRepo,
+		notificationsChan: notificationsChan,
+		logger:            utils.AddServiceField(logger, "NotificationService"),
 	}
 }
 
 // CreateNotification creates a new notification for a user
-func (s *NotificationService) CreateNotification(userId uint, title, content string) (*model.Notification, error) {
+func (s *NotificationService) CreateNotification(userId, title, content string) (*model.Notification, error) {
 	if content == "" {
-		return nil, errors.New("content cannot be empty")
+		return nil, ErrEmptyContent
+	}
+
+	userIdUint, err := utils.StringToUint(userId)
+	if err != nil {
+		return nil, err
 	}
 
 	notification := &model.Notification{
-		UserID:  userId,
+		UserID:  userIdUint,
 		Title:   title,
 		Content: content,
 		IsRead:  false,
 	}
-
-	if err := s.DB.Create(notification).Error; err != nil {
-		return nil, err
-	}
-
-	return notification, nil
+	return s.notificationRepo.Create(notification)
 }
 
 // MarkNotificationAsRead updates a notification's read status
 func (s *NotificationService) MarkNotificationAsRead(notificationId, userId uint) error {
-	var notification model.Notification
-	// ErrRecordNotFound is only returned for methods First/Take/Last
-	err := s.DB.Model(&model.Notification{}).Where("id = ? AND user_id = ?", notificationId, userId).First(&notification).Error
-	if err != nil {
-		return err
-	}
-
-	return s.DB.Model(&model.Notification{}).
-		Where("id = ? AND user_id = ?", notificationId, userId).
-		Update("is_read", true).Error
+	return s.notificationRepo.MarkAsRead(notificationId, userId)
 }
 
 // GetNotification retrieves a notification by ID
 func (s *NotificationService) GetNotification(notificationId, userId uint) (*model.Notification, error) {
-	var notification model.Notification
-	if err := s.DB.Model(&model.Notification{}).Where("id = ? AND user_id = ?", notificationId, userId).First(&notification).Error; err != nil {
-		return nil, err
-	}
-	return &notification, nil
+	return s.notificationRepo.FindByIDAndUser(notificationId, userId)
 }
 
 // GetNotifications retrieves all notifications for a user
 func (s *NotificationService) GetNotifications(userId uint) (*[]model.Notification, error) {
-	var notifications []model.Notification
-	if err := s.DB.Where("user_id = ?", userId).Order("created_at DESC").Find(&notifications).Error; err != nil {
-		return nil, err
+	return s.notificationRepo.FindByUser(userId)
+}
+
+func (s *NotificationService) SendNotification(userId, title, message string) error {
+	if _, err := s.CreateNotification(userId, title, message); err != nil {
+		s.logger.Error("Error creating notification: ", err)
+		return err
 	}
-	return &notifications, nil
+
+	subscriptions, err := s.subscriptionRepo.FindByUserID(userId)
+	if err != nil {
+		s.logger.Error("Error getting subscriptions: ", err)
+		return err
+	}
+
+	for _, sub := range *subscriptions {
+		s.notificationsChan <- pushNotificationModel.NotificationData{
+			Subscription: NewWebPushSubscriptionObj(&sub),
+			Title:        title,
+			Message:      message,
+		}
+	}
+
+	return nil
 }

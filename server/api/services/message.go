@@ -4,12 +4,14 @@ import (
 	"math"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/RowenTey/JustJio/server/api/database"
-	"github.com/RowenTey/JustJio/server/api/model"
-
+	kafkaModel "github.com/RowenTey/JustJio/server/api/model/kafka"
 	"gorm.io/gorm"
+
+	"github.com/RowenTey/JustJio/server/api/model"
+	"github.com/RowenTey/JustJio/server/api/repository"
+	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -17,99 +19,116 @@ const (
 )
 
 type MessageService struct {
-	DB     *gorm.DB
-	Logger *log.Entry
+	db           *gorm.DB
+	messageRepo  repository.MessageRepository
+	roomRepo     repository.RoomRepository
+	userRepo     repository.UserRepository
+	kafkaService *KafkaService
+	logger       *logrus.Entry
 }
 
 // NOTE: used var instead of func to enable mocking in tests
-var NewMessageService = func(db *gorm.DB) *MessageService {
+var NewMessageService = func(
+	db *gorm.DB,
+	messageRepo repository.MessageRepository,
+	roomRepo repository.RoomRepository,
+	userRepo repository.UserRepository,
+	kafkaService *KafkaService,
+	logger *logrus.Logger) *MessageService {
 	return &MessageService{
-		DB:     db,
-		Logger: log.WithFields(log.Fields{"service": "MessageService"}),
+		db:           db,
+		messageRepo:  messageRepo,
+		roomRepo:     roomRepo,
+		userRepo:     userRepo,
+		kafkaService: kafkaService,
+		logger:       utils.AddServiceField(logger, "MessageService"),
 	}
 }
 
-func (ms *MessageService) SaveMessage(room *model.Room, sender *model.User, content string) error {
-	db := ms.DB.Table("messages")
+func (ms *MessageService) SaveMessage(
+	roomId string, senderId string, roomUserIds *[]string, content string) error {
+	return database.RunInTransaction(ms.db, func(tx *gorm.DB) error {
+		roomRepoTx := ms.roomRepo.WithTx(tx)
+		userRepoTx := ms.userRepo.WithTx(tx)
+		messageRepoTx := ms.messageRepo.WithTx(tx)
 
-	msg := model.Message{
-		RoomID:   room.ID,
-		SenderID: sender.ID,
-		Content:  content,
-		SentAt:   time.Now(),
-	}
+		room, err := roomRepoTx.GetByID(roomId)
+		if err != nil {
+			return err
+		}
 
-	// Omit to avoid creating new room
-	if err := db.Omit("Room", "Sender").Create(&msg).Error; err != nil {
-		return err
-	}
+		sender, err := userRepoTx.FindByID(senderId)
+		if err != nil {
+			return err
+		}
 
-	ms.Logger.Infof("Saved message to room %s", msg.RoomID)
-	return nil
+		msg := model.Message{
+			RoomID:   room.ID,
+			SenderID: sender.ID,
+			Content:  content,
+		}
+		if err := messageRepoTx.Create(&msg); err != nil {
+			return err
+		}
+
+		// TODO: Outbox pattern?
+		broadcastPayload := kafkaModel.KafkaMessage{
+			MsgType: "CREATE_MESSAGE",
+			Data: struct {
+				RoomID     string `json:"roomId"`
+				SenderID   string `json:"senderId"`
+				SenderName string `json:"senderName"`
+				Content    string `json:"content"`
+				SentAt     string `json:"sentAt"`
+			}{
+				RoomID:     roomId,
+				SenderID:   senderId,
+				SenderName: sender.Username,
+				Content:    content,
+				SentAt:     time.Now().Format(time.RFC3339),
+			},
+		}
+		if err := ms.kafkaService.BroadcastMessage(roomUserIds, broadcastPayload); err != nil {
+			ms.logger.Error("Failed to broadcast message:", err)
+			return err
+		}
+		ms.logger.Debug("Broadcasted message to Kafka!")
+
+		ms.logger.Infof("Saved message to room %s", msg.RoomID)
+		return nil
+	})
 }
 
 func (ms *MessageService) GetMessageById(msgId, roomId string) (*model.Message, error) {
-	db := ms.DB.Table("messages")
-	var message model.Message
-
-	if err := db.Where("id = ? AND room_id = ?", msgId, roomId).First(&message).Error; err != nil {
-		return &model.Message{}, err
-	}
-
-	return &message, nil
+	return ms.messageRepo.FindByID(msgId, roomId)
 }
 
 func (ms *MessageService) DeleteMessage(msgId, roomId string) error {
-	db := ms.DB.Table("messages")
-
-	if err := db.Where("id = ? AND room_id = ?", msgId, roomId).Delete(&model.Message{}).Error; err != nil {
-		return err
-	}
-
-	return nil
+	return ms.messageRepo.Delete(msgId, roomId)
 }
 
 func (ms *MessageService) DeleteRoomMessages(roomId string) error {
-	db := ms.DB.Table("messages")
-
-	if err := db.Where("room_id = ?", roomId).Delete(&model.Message{}).Error; err != nil {
-		return err
-	}
-
-	return nil
+	return ms.DeleteRoomMessages(roomId)
 }
 
 func (ms *MessageService) CountNumMessagesPages(roomId string) (int, error) {
-	db := ms.DB.Table("messages")
-
-	var count int64
-	err := db.Where("room_id = ?", roomId).Count(&count).Error
+	count, err := ms.messageRepo.CountByRoom(roomId)
 	if err != nil {
 		return 0, err
 	}
-
 	return int(math.Ceil(float64(count) / float64(MESSAGE_PAGE_SIZE))), nil
 }
 
-func (ms *MessageService) GetMessagesByRoomId(roomId string, page int, asc bool) (*[]model.Message, error) {
-	db := ms.DB.Table("messages")
-	var message []model.Message
-
-	// sorted by
-	order := "sent_at ASC"
-	if !asc {
-		order = "sent_at DESC"
+func (ms *MessageService) GetMessagesByRoomId(roomId string, page int, asc bool) (*[]model.Message, int, error) {
+	messages, err := ms.messageRepo.FindByRoom(roomId, page, MESSAGE_PAGE_SIZE, asc)
+	if err != nil {
+		return nil, 0, err
 	}
 
-	if err := db.
-		Where("room_id = ?", roomId).
-		Order(order).
-		Scopes(database.Paginate(page, MESSAGE_PAGE_SIZE)).
-		Preload("Room").
-		Preload("Sender").
-		Find(&message).Error; err != nil {
-		return nil, err
+	pageCount, err := ms.CountNumMessagesPages(roomId)
+	if err != nil {
+		return nil, 0, err
 	}
 
-	return &message, nil
+	return messages, pageCount, nil
 }

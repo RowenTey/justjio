@@ -3,8 +3,6 @@ package main
 import (
 	"os"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/RowenTey/JustJio/server/api/config"
 	"github.com/RowenTey/JustJio/server/api/database"
 	"github.com/RowenTey/JustJio/server/api/middleware"
@@ -14,7 +12,6 @@ import (
 	"github.com/RowenTey/JustJio/server/api/worker"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -23,39 +20,48 @@ func main() {
 		env = os.Args[1]
 	}
 
-	// initialize logger
-	utils.InitLogger(env)
+	logger := utils.InitLogger(env)
+
+	conf, err := config.LoadConfig()
+	if err != nil {
+		logger.Fatal("Failed to load configuration!")
+	}
 
 	// only load .env file if in dev environment
-	if env == "dev" {
-		log.Debug("Loading .env file...")
-		if err := godotenv.Load(".env"); err != nil {
-			log.Fatal("Error loading .env file")
-		}
-	}
+	// if env == "dev" {
+	// 	logger.Debug("Loading .env file...")
+	// 	if err := godotenv.Load(".env"); err != nil {
+	// 		logger.Fatal("Error loading .env file")
+	// 	}
+	// }
 
-	log.Info("Starting API server...")
+	logger.Info("Starting API server...")
 
-	notificationsChan := worker.RunPushNotification()
+	notificationsChan := worker.RunPushNotifications(conf, logger)
+	db := database.ConnectDB(conf, logger)
 
-	app := fiber.New()
-
-	database.ConnectDB()
-	if env == "dev" || env == "staging" {
-		if err := services.SeedDB(database.DB); err != nil {
-			log.Fatal("Error seeding database:", err)
-		}
-	}
-
-	kafkaService, err := services.NewKafkaService(config.Config("KAFKA_URL"), env)
+	kafkaService, err := services.NewKafkaService(
+		conf,
+		logger,
+		env,
+	)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	defer kafkaService.Close()
 
-	middleware.Fiber(app, env, config.Config("ALLOWED_ORIGINS"))
-	router.Initalize(app, kafkaService, notificationsChan)
+	app := fiber.New()
+	middleware.Fiber(app, conf, env)
+	router.Initalize(
+		app,
+		env,
+		conf,
+		logger,
+		db,
+		kafkaService,
+		notificationsChan,
+	)
 
-	log.Info("Server running on port ", config.Config("PORT"))
-	log.Fatal(app.Listen(":" + config.Config("PORT")))
+	logger.Info("Server running on port ", conf.Port)
+	logger.Fatal(app.Listen(":" + conf.Port))
 }

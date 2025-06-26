@@ -5,78 +5,62 @@ import (
 	"strconv"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/RowenTey/JustJio/server/api/model"
-
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/RowenTey/JustJio/server/api/database"
+	"github.com/RowenTey/JustJio/server/api/model"
+	"github.com/RowenTey/JustJio/server/api/repository"
+	"github.com/RowenTey/JustJio/server/api/utils"
+)
+
+var (
+	ErrUserFieldNotSupported         = errors.New("user field not supported for update")
+	ErrNoSelfFriendRequest           = errors.New("cannot send friend request to yourself")
+	ErrAlreadyFriends                = errors.New("already friends")
+	ErrFriendRequestExists           = errors.New("friend request already sent")
+	ErrFriendRequestAlreadyProcessed = errors.New("friend request already processed")
+	ErrInvalidFriendRequestStatus    = errors.New("invalid status")
 )
 
 type UserService struct {
-	DB     *gorm.DB
-	Logger *log.Entry
+	db       *gorm.DB
+	userRepo repository.UserRepository
+	logger   *logrus.Entry
 }
 
 // NOTE: used var instead of func to enable mocking in tests
-var NewUserService = func(db *gorm.DB) *UserService {
+var NewUserService = func(db *gorm.DB, userRepo repository.UserRepository, logger *logrus.Logger) *UserService {
 	return &UserService{
-		DB:     db,
-		Logger: log.WithFields(log.Fields{"service": "UserService"}),
+		db:       db,
+		userRepo: userRepo,
+		logger:   utils.AddServiceField(logger, "UserService"),
 	}
 }
 
 func (s *UserService) GetUserByID(userId string) (*model.User, error) {
-	db := s.DB
-	var user model.User
-	if err := db.First(&user, userId).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
+	return s.userRepo.FindByID(userId)
 }
 
 func (s *UserService) GetUserByUsername(username string) (*model.User, error) {
-	db := s.DB.Table("users")
-	var user model.User
-	if err := db.Where("username = ?", username).First(&user).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
+	return s.userRepo.FindByUsername(username)
 }
 
 func (s *UserService) GetUserByEmail(email string) (*model.User, error) {
-	db := s.DB.Table("users")
-	var user model.User
-	if err := db.Where("email = ?", email).First(&user).Error; err != nil {
-		return nil, err
-	}
-	return &user, nil
+	return s.userRepo.FindByEmail(email)
 }
 
-func (s *UserService) GetUsersByID(userIds []uint) (*[]model.User, error) {
-	db := s.DB.Table("users")
-	var users []model.User
-	if err := db.Where("id IN ?", userIds).Find(&users).Error; err != nil {
-		return nil, err
-	}
-	if len(users) != len(userIds) {
-		return nil, gorm.ErrRecordNotFound
-	}
-	return &users, nil
+func (s *UserService) GetUsersByID(userIds *[]uint) (*[]model.User, error) {
+	return s.userRepo.FindByIDs(userIds)
 }
 
 func (s *UserService) UpdateUserField(userid string, field string, value interface{}) error {
-	db := s.DB
-	var user model.User
-
-	if err := db.First(&user, userid).Error; err != nil {
+	user, err := s.userRepo.FindByID(userid)
+	if err != nil {
 		return err
 	}
 
 	switch field {
-	// case "name":
-	// 	user.Name = value.(string)
-	// case "phoneNum":
-	// 	user.PhoneNum = value.(string)
 	case "username":
 		user.Username = value.(string)
 	case "isEmailValid":
@@ -86,291 +70,152 @@ func (s *UserService) UpdateUserField(userid string, field string, value interfa
 	case "lastSeen":
 		user.LastSeen = value.(time.Time)
 	default:
-		return errors.New("User field (" + field + ") not supported for update")
+		return ErrUserFieldNotSupported
 	}
 
-	if err := db.Save(&user).Error; err != nil {
-		return err
-	}
-
-	return nil
+	return s.userRepo.Update(user)
 }
 
 func (s *UserService) CreateOrUpdateUser(user *model.User, isCreate bool) (*model.User, error) {
-	db := s.DB.Table("users")
-
 	if isCreate {
-		user.RegisteredAt = time.Now()
+		return s.userRepo.Create(user)
 	}
-	user.UpdatedAt = time.Now()
 
-	if err := db.Save(user).Error; err != nil {
-		return nil, err
-	}
-	return user, nil
+	err := s.userRepo.Update(user)
+	return user, err
 }
 
 func (s *UserService) DeleteUser(userId string) error {
-	db := s.DB.Table("users")
-	var user model.User
-
-	userIDUint, err := strconv.ParseUint(userId, 10, 64)
-	if err != nil {
-		return err
-	}
-	user.ID = uint(userIDUint)
-
-	if err := db.Delete(&user).Error; err != nil {
-		return err
-	}
-
-	return nil
+	return s.userRepo.Delete(userId)
 }
 
-func (s *UserService) ValidateUsers(userIds []string) (*[]model.User, error) {
-	if len(userIds) == 0 {
-		return &[]model.User{}, nil
-	}
-
-	db := s.DB.Table("users")
-	var users []model.User
-
-	if err := db.Find(&users, userIds).Error; err != nil {
-		return nil, err
-	}
-
-	return &users, nil
+func (s *UserService) ValidateUsers(userIds *[]uint) (*[]model.User, error) {
+	return s.userRepo.FindByIDs(userIds)
 }
 
 func (s *UserService) MarkOnline(userId string) error {
-	if err := s.UpdateUserField(userId, "isOnline", true); err != nil {
-		return err
-	}
-	return nil
+	return s.UpdateUserField(userId, "isOnline", true)
 }
 
 func (s *UserService) MarkOffline(userId string) error {
-	updates := map[string]interface{}{
-		"isOnline": false,
-		"lastSeen": time.Now(),
+	user, err := s.userRepo.FindByID(userId)
+	if err != nil {
+		return err
 	}
 
-	err := s.DB.Model(&model.User{}).
-		Where("id = ?", userId).Updates(updates).Error
-	return err
+	user.IsOnline = false
+	user.LastSeen = time.Now()
+	return s.userRepo.Update(user)
 }
 
 func (s *UserService) SearchUsers(currentUserID, query string) (*[]model.User, error) {
-	db := s.DB
-	var users []model.User
-
-	// Use LEFT JOIN to exclude friends
-	if err := db.
-		Table("users").
-		Joins("LEFT JOIN user_friends ON users.id = user_friends.friend_id AND user_friends.user_id = ?", currentUserID).
-		Where("users.username LIKE ?", "%"+query+"%").
-		Where("user_friends.friend_id IS NULL").
-		Where("users.id != ?", currentUserID).
-		Limit(10).
-		Find(&users).Error; err != nil {
-		return nil, err
-	}
-
-	return &users, nil
+	return s.userRepo.SearchUsers(currentUserID, query, 10)
 }
 
 func (s *UserService) SendFriendRequest(senderID, receiverID uint) error {
-	db := s.DB
-
 	if senderID == receiverID {
-		return errors.New("cannot send friend request to yourself")
+		return ErrNoSelfFriendRequest
 	}
 
 	// Check if they are already friends
-	var sender model.User
-	if err := db.Preload("Friends").First(&sender, senderID).Error; err != nil {
-		return errors.New("sender not found")
-	}
-	for _, friend := range sender.Friends {
-		if friend.ID == receiverID {
-			return errors.New("already friends")
-		}
+	if isFriend, err := s.userRepo.CheckFriendship(senderID, receiverID); err != nil {
+		return err
+	} else if isFriend {
+		return ErrAlreadyFriends
 	}
 
-	// Check if a friend request already exists (either sent by userA or userB)
-	var existing model.FriendRequest
-	if err := db.Where("((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) AND status = ?", senderID, receiverID, receiverID, senderID, "pending").First(&existing).Error; err == nil {
-		return errors.New("friend request already sent")
+	// Check if a friend request already exists
+	if exists, err := s.userRepo.CheckFriendRequestExists(senderID, receiverID); err != nil {
+		return err
+	} else if exists {
+		return ErrFriendRequestExists
 	}
 
-	// Create new friend request
 	request := model.FriendRequest{
 		SenderID:   senderID,
 		ReceiverID: receiverID,
 		Status:     "pending",
 	}
-	return db.Create(&request).Error
+	return s.userRepo.CreateFriendRequest(&request)
 }
 
+// TODO: Test if addFriend will throw error for non-existing users
 func (s *UserService) AcceptFriendRequest(requestID uint) error {
-	db := s.DB
-	var request model.FriendRequest
+	return database.RunInTransaction(s.db, func(tx *gorm.DB) error {
+		userRepoTx := s.userRepo.WithTx(tx)
 
-	if err := db.First(&request, requestID).Error; err != nil {
-		return err
-	}
+		request, err := userRepoTx.FindFriendRequest(requestID)
+		if err != nil {
+			return err
+		}
 
-	if request.Status != "pending" {
-		return errors.New("friend request already processed")
-	}
+		if request.Status != "pending" {
+			return ErrFriendRequestAlreadyProcessed
+		}
 
-	request.Status = "accepted"
-	request.RespondedAt = time.Now()
-	if err := db.Save(&request).Error; err != nil {
-		return err
-	}
+		request.Status = "accepted"
+		request.RespondedAt = time.Now()
+		if err := userRepoTx.UpdateFriendRequest(request); err != nil {
+			return err
+		}
 
-	// Add each user to the other's friend list
-	var sender, receiver model.User
-	if err := db.First(&sender, request.SenderID).Error; err != nil {
-		return err
-	}
-	if err := db.First(&receiver, request.ReceiverID).Error; err != nil {
-		return err
-	}
-
-	if err := db.Model(&sender).Association("Friends").Append(&receiver); err != nil {
-		return err
-	}
-	if err := db.Model(&receiver).Association("Friends").Append(&sender); err != nil {
-		return err
-	}
-
-	return nil
+		// Add each user to the other's friend list
+		return userRepoTx.AddFriend(request.SenderID, request.ReceiverID)
+	})
 }
 
 func (s *UserService) RejectFriendRequest(requestID uint) error {
-	db := s.DB
-	var request model.FriendRequest
-
-	if err := db.First(&request, requestID).Error; err != nil {
+	request, err := s.userRepo.FindFriendRequest(requestID)
+	if err != nil {
 		return err
 	}
 
 	if request.Status != "pending" {
-		return errors.New("friend request already processed")
+		return ErrFriendRequestAlreadyProcessed
 	}
 
 	request.Status = "rejected"
 	request.RespondedAt = time.Now()
-	return db.Save(&request).Error
+	return s.userRepo.UpdateFriendRequest(request)
 }
 
 func (s *UserService) RemoveFriend(userID, friendID uint) error {
-	db := s.DB
-	var user, friend model.User
-
-	if err := db.First(&user, userID).Error; err != nil {
-		return err
-	}
-
-	if err := db.First(&friend, friendID).Error; err != nil {
-		return err
-	}
-
-	if err := db.Model(&user).Association("Friends").Delete(&friend); err != nil {
-		return err
-	}
-
-	if err := db.Model(&friend).Association("Friends").Delete(&user); err != nil {
-		return err
-	}
-
-	return nil
+	return s.userRepo.RemoveFriend(userID, friendID)
 }
 
-func (s *UserService) GetFriends(userID string) ([]model.User, error) {
-	db := s.DB
-
-	var user model.User
-	var friends []model.User
-
-	if err := db.First(&user, userID).Error; err != nil {
+func (s *UserService) GetFriends(userID string) (*[]model.User, error) {
+	userIDUint, err := strconv.ParseUint(userID, 10, 32)
+	if err != nil {
 		return nil, err
 	}
-
-	if err := db.Model(&user).Association("Friends").Find(&friends); err != nil {
-		return nil, err
-	}
-
-	return friends, nil
+	return s.userRepo.GetFriends(uint(userIDUint))
 }
 
 func (s *UserService) GetFriendRequestsByStatus(userID uint, status string) (*[]model.FriendRequest, error) {
-	db := s.DB
-	var requests []model.FriendRequest
-
 	// Validate status
 	validStatuses := map[string]bool{"pending": true, "accepted": true, "rejected": true}
 	if !validStatuses[status] {
-		return nil, errors.New("invalid status")
+		return nil, ErrInvalidFriendRequestStatus
 	}
-
-	// Fetch friend requests where the user is the receiver
-	if err := db.Where("receiver_id = ? AND status = ?", userID, status).
-		Preload("Sender").
-		Preload("Receiver").
-		Find(&requests).Error; err != nil {
-		return nil, err
-	}
-
-	return &requests, nil
+	return s.userRepo.FindFriendRequestsByReceiver(userID, status)
 }
 
 func (s *UserService) CountPendingFriendRequests(userID uint) (int64, error) {
-	db := s.DB
-	var count int64
-
-	// Count pending friend requests where the user is the receiver
-	if err := db.Model(&model.FriendRequest{}).
-		Where("receiver_id = ? AND status = ?", userID, "pending").
-		Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return s.userRepo.CountFriendRequestsByReceiver(userID, "pending")
 }
 
 func (s *UserService) GetNumFriends(userID string) (int64, error) {
-	db := s.DB
-	var user model.User
-
-	if err := db.First(&user, userID).Error; err != nil {
+	userIDUint, err := strconv.ParseUint(userID, 10, 32)
+	if err != nil {
 		return 0, err
 	}
-
-	return db.Model(&user).Association("Friends").Count(), nil
+	return s.userRepo.CountFriends(uint(userIDUint))
 }
 
 func (s *UserService) IsFriend(userID uint, friendID uint) bool {
-	db := s.DB
-
-	var user, friend model.User
-	if err := db.First(&user, userID).Error; err != nil {
+	isFriend, err := s.userRepo.CheckFriendship(userID, friendID)
+	if err != nil {
 		return false
 	}
-
-	if err := db.First(&friend, friendID).Error; err != nil {
-		return false
-	}
-
-	if err := db.
-		Model(&user).
-		Where("id = ?", friendID).
-		Association("Friends").
-		Find(&friend); err != nil {
-		return false
-	}
-
-	return true
+	return isFriend
 }

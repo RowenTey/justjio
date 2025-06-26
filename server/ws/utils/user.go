@@ -1,10 +1,9 @@
-package services
+package utils
 
 import (
 	"errors"
 	"fmt"
 
-	"github.com/RowenTey/JustJio/server/ws/utils"
 	"github.com/gofiber/websocket/v2"
 	"github.com/golang-jwt/jwt"
 )
@@ -21,7 +20,7 @@ func GetCurrentUser(c *websocket.Conn) (*User, error) {
 
 	// Decode the JWT token
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		return []byte(utils.Config("JWT_SECRET")), nil
+		return []byte(Config("JWT_SECRET")), nil
 	})
 	if err != nil {
 		return nil, err
