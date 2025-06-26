@@ -6,13 +6,19 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func InitLogger(env string) {
-	log.SetFormatter(&log.TextFormatter{})
-	log.SetOutput(os.Stdout)
+func InitLogger(env string) *log.Logger {
+	logger := log.New()
+	logger.SetFormatter(&log.TextFormatter{})
+	logger.SetOutput(os.Stdout)
 
 	if env == "dev" || env == "staging" {
-		log.SetLevel(log.DebugLevel)
+		logger.SetLevel(log.DebugLevel)
 	} else {
-		log.SetLevel(log.InfoLevel)
+		logger.SetLevel(log.InfoLevel)
 	}
+	return logger
+}
+
+func AddServiceField(logger *log.Logger, serviceName string) *log.Entry {
+	return logger.WithField("service", serviceName)
 }

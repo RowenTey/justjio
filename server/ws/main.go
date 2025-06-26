@@ -85,7 +85,7 @@ func main() {
 
 	// websocket endpoint with middleware to handle websocket upgrade
 	app.Get("/", webSocketUpgrade, isAllowedOrigins, websocket.New(func(c *websocket.Conn) {
-		user, err := services.GetCurrentUser(c)
+		user, err := utils.GetCurrentUser(c)
 		if err != nil {
 			log.WithField("service", "AUTH").Error(err)
 

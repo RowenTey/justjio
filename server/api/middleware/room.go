@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"github.com/RowenTey/JustJio/server/api/database"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
 
@@ -9,13 +8,13 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-func IsUserInRoom(c *fiber.Ctx) error {
+func IsUserInRoom(c *fiber.Ctx, roomService *services.RoomService) error {
 	// Check if user is in room
 	token := c.Locals("user").(*jwt.Token)
 	userId := utils.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	userIds, err := (services.NewRoomService(database.DB)).GetRoomAttendeesIds(roomId)
+	userIds, err := roomService.GetRoomAttendeesIds(roomId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}

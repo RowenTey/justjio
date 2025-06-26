@@ -11,7 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-func Fiber(a *fiber.App, env, allowedOrigins string) {
+func Fiber(a *fiber.App, conf *config.Config, env string) {
 	serviceName := "justjio-api"
 	if env == "dev" || env == "staging" {
 		serviceName += "-" + env
@@ -24,7 +24,7 @@ func Fiber(a *fiber.App, env, allowedOrigins string) {
 	a.Use(
 		// CORS setting
 		cors.New(cors.Config{
-			AllowOrigins: allowedOrigins,
+			AllowOrigins: conf.AllowedOrigins,
 			AllowHeaders: "Origin, Content-Type, Accept, Authorization, CF-Access-Client-Id, CF-Access-Client-Secret",
 			AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		}),
@@ -63,6 +63,6 @@ func Fiber(a *fiber.App, env, allowedOrigins string) {
 		},
 
 		// JWT middleware
-		Authenticated(config.Config("JWT_SECRET")),
+		Authenticated(conf.JwtSecret),
 	)
 }

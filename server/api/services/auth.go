@@ -2,14 +2,16 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/RowenTey/JustJio/server/api/config"
 	"github.com/RowenTey/JustJio/server/api/model"
+	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/golang-jwt/jwt"
 
@@ -18,41 +20,156 @@ import (
 	"google.golang.org/api/option"
 )
 
+var (
+	ErrPasswordDoesNotMatch = errors.New("password does not match the user's password")
+	ErrInvalidPurpose       = errors.New("invalid purpose for OTP generation")
+	ErrEmailAlreadyVerified = errors.New("email already verified")
+	ErrOTPNotFound          = errors.New("OTP not found")
+	ErrInvalidOTP           = errors.New("invalid OTP")
+)
+
+const (
+	TOKEN_EXPIRY_DURATION = time.Hour * 72 // 3 days
+)
+
 type AuthService struct {
-	HashFunc      func(password string) (string, error)
-	JwtSecret     string
-	SendSMTPEmail func(from, to, subject, textBody string) error
-	OAuthConfig   *oauth2.Config
-	Logger        *log.Entry
+	userService   *UserService
+	kafkaService  *KafkaService
+	hashFunc      func(password string) (string, error)
+	sendSMTPEmail func(from, to, subject, textBody string) error
+	jwtSecret     string
+	adminEmail    string
+	oAuthConfig   *oauth2.Config
+	logger        *logrus.Entry
 }
 
 // NOTE: used var instead of func to enable mocking in tests
 var NewAuthService = func(
+	userService *UserService,
+	kafkaService *KafkaService,
 	hashFunc func(password string) (string, error),
-	jwtSecret string,
 	sendSMTPEmail func(from, to, subject, textBody string) error,
+	jwtSecret string,
+	adminEmail string,
 	oauthConfig *oauth2.Config,
+	logger *logrus.Logger,
 ) *AuthService {
 	return &AuthService{
-		HashFunc:      hashFunc,
-		JwtSecret:     jwtSecret,
-		SendSMTPEmail: sendSMTPEmail,
-		OAuthConfig:   oauthConfig,
-		Logger:        log.WithFields(log.Fields{"service": "AuthService"}),
+		userService:   userService,
+		kafkaService:  kafkaService,
+		hashFunc:      hashFunc,
+		jwtSecret:     jwtSecret,
+		adminEmail:    adminEmail,
+		sendSMTPEmail: sendSMTPEmail,
+		oAuthConfig:   oauthConfig,
+		logger:        logger.WithFields(logrus.Fields{"service": "AuthService"}),
 	}
 }
 
-const TOKEN_EXPIRY_DURATION = time.Hour * 72 // 3 days
-
-func (s *AuthService) SignUp(newUser *model.User) (*model.User, error) {
+func (s *AuthService) SignUp(newUser *model.User, otpMap *sync.Map) (*model.User, error) {
 	var err error
 
-	newUser.Password, err = s.HashFunc(newUser.Password)
+	newUser.Password, err = s.hashFunc(newUser.Password)
 	if err != nil {
 		return nil, err
 	}
 
-	return newUser, nil
+	createdUser, err := s.userService.CreateOrUpdateUser(newUser, true)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Make OTP have TTL
+	// Send OTP email
+	go func() {
+		otp := s.GenerateOTP()
+		otpMap.Store(createdUser.Email, otp)
+		s.logger.Info("Generated OTP for user: ", createdUser.Username)
+
+		if err := s.
+			SendOTPEmail(otp, createdUser.Username, createdUser.Email, "verify-email"); err != nil {
+			s.logger.Error("Error sending OTP email:", err)
+			otpMap.Delete(createdUser.Email)
+		}
+		s.logger.Info("Sent OTP email to user: ", createdUser.Username)
+	}()
+
+	return createdUser, nil
+}
+
+func (s *AuthService) Login(username, password string) (string, *model.User, error) {
+	user, err := s.userService.GetUserByUsername(username)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if !utils.CheckPasswordHash(password, user.Password) {
+		return "", nil, ErrPasswordDoesNotMatch
+	}
+
+	token, err := s.CreateToken(user)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// TODO: Create on sign up instead of login?m
+	// create user channel when login
+	go func() {
+		channel := fmt.Sprintf("user-%d", user.ID)
+		if err := s.kafkaService.CreateTopic(channel); err != nil {
+			s.logger.Error("Error creating topic", err)
+		}
+	}()
+
+	return token, user, nil
+}
+
+func (s *AuthService) GoogleLogin(code string) (string, *model.User, error) {
+	googleUser, err := s.GetGoogleUser(code)
+	if err != nil {
+		return "", nil, err
+	}
+
+	user, err := s.userService.GetUserByEmail(googleUser.Email)
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return "", nil, err
+	}
+
+	// Create new user if not found
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		// Random password for OAuth user
+		hashedPassword, err := utils.HashPassword(utils.GenerateRandomString(32))
+		if err != nil {
+			return "", nil, err
+		}
+
+		newUser := &model.User{
+			Username:     utils.FormatUsername(googleUser.Name),
+			Email:        googleUser.Email,
+			PictureUrl:   googleUser.Picture,
+			Password:     hashedPassword,
+			IsEmailValid: true,
+		}
+		user, err = s.userService.CreateOrUpdateUser(newUser, true)
+		if err != nil {
+			return "", nil, err
+		}
+	}
+
+	token, err := s.CreateToken(user)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// create user channel when login
+	go func() {
+		channel := fmt.Sprintf("user-%d", user.ID)
+		if err := s.kafkaService.CreateTopic(channel); err != nil {
+			s.logger.Error("Error creating topic", err)
+		}
+	}()
+
+	return token, user, nil
 }
 
 func (s *AuthService) CreateToken(user *model.User) (string, error) {
@@ -65,15 +182,40 @@ func (s *AuthService) CreateToken(user *model.User) (string, error) {
 	claims["picture_url"] = user.PictureUrl
 	claims["exp"] = time.Now().Add(TOKEN_EXPIRY_DURATION).Unix()
 
-	t, err := token.SignedString([]byte(s.JwtSecret))
+	t, err := token.SignedString([]byte(s.jwtSecret))
 	if err != nil {
 		return "", err
 	}
 	return t, nil
 }
 
+func (s *AuthService) GenerateAndSendOTPEmail(email, purpose string, otpMap *sync.Map) error {
+	if purpose != "verify-email" && purpose != "reset-password" {
+		return ErrInvalidPurpose
+	}
+
+	user, err := s.userService.GetUserByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	if purpose == "verify-email" && user.IsEmailValid {
+		return ErrEmailAlreadyVerified
+	}
+
+	// TODO: Should have some retry mechanism if email sending fails
+	otp := s.GenerateOTP()
+	otpMap.Store(user.Email, otp)
+	if err := s.SendOTPEmail(otp, user.Username, user.Email, purpose); err != nil {
+		s.logger.Error("Error sending OTP email:", err)
+		otpMap.Delete(user.Email)
+	}
+
+	return nil
+}
+
 func (s *AuthService) SendOTPEmail(otp, username, email, purpose string) error {
-	from := config.Config("ADMIN_EMAIL")
+	from := s.adminEmail
 
 	title := ""
 	message := []byte("")
@@ -89,17 +231,58 @@ func (s *AuthService) SendOTPEmail(otp, username, email, purpose string) error {
 			"Your OTP is: " + otp)
 	}
 
-	err := s.SendSMTPEmail(from, email, title, string(message))
+	err := s.sendSMTPEmail(from, email, title, string(message))
 	if err != nil {
 		return err
 	}
 
-	s.Logger.Info("OTP send to " + email + " successfully!")
+	s.logger.Info("OTP send to " + email + " successfully!")
 	return nil
 }
 
-func (s *AuthService) VerifyOTP(storedOtp, email string, otp string) bool {
-	return storedOtp == otp
+func (s *AuthService) VerifyOTP(email, otp string, otpMap *sync.Map) error {
+	user, err := s.userService.GetUserByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	user.IsEmailValid = true
+	if _, err := s.userService.CreateOrUpdateUser(user, false); err != nil {
+		return err
+	}
+
+	otpValue, exists := otpMap.Load(email)
+	if !exists {
+		return ErrOTPNotFound
+	}
+
+	if otpValue != otp {
+		return ErrInvalidOTP
+	}
+
+	// Delete OTP after verification
+	otpMap.Delete(email)
+	return nil
+}
+
+func (s *AuthService) ResetPassword(email, newPassword string) error {
+	user, err := s.userService.GetUserByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	hashedPassword, err := s.hashFunc(newPassword)
+	if err != nil {
+		return err
+	}
+
+	user.Password = hashedPassword
+	if _, err := s.userService.CreateOrUpdateUser(user, false); err != nil {
+		return err
+	}
+
+	s.logger.Info("Password reset successfully for email ", email)
+	return nil
 }
 
 func (s *AuthService) GenerateOTP() string {
@@ -116,13 +299,13 @@ func (s *AuthService) GenerateOTP() string {
 func (s *AuthService) GetGoogleUser(code string) (*googleOAuth2.Userinfo, error) {
 	ctx := context.Background()
 	// Exchange code for token
-	token, err := s.OAuthConfig.Exchange(ctx, code)
+	token, err := s.oAuthConfig.Exchange(ctx, code)
 	if err != nil {
 		return nil, err
 	}
 
 	service, err := googleOAuth2.NewService(
-		ctx, option.WithTokenSource(s.OAuthConfig.TokenSource(ctx, token)))
+		ctx, option.WithTokenSource(s.oAuthConfig.TokenSource(ctx, token)))
 	if err != nil {
 		return nil, err
 	}

@@ -6,19 +6,28 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/RowenTey/JustJio/server/api/database"
 	"github.com/RowenTey/JustJio/server/api/model"
-	model_push_notifications "github.com/RowenTey/JustJio/server/api/model/push_notifications"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
 	"github.com/gofiber/fiber/v2"
 )
 
-type NotificationData = model_push_notifications.NotificationData
+type SubscriptionHandler struct {
+	subscriptionService *services.SubscriptionService
+	logger              *log.Entry
+}
 
-var subscriptionLogger = log.WithField("service", "SubscriptionHandler")
+func NewSubscriptionHandler(
+	subscriptionService *services.SubscriptionService,
+	logger *log.Logger,
+) *SubscriptionHandler {
+	return &SubscriptionHandler{
+		subscriptionService: subscriptionService,
+		logger:              utils.AddServiceField(logger, "SubscriptionHandler"),
+	}
+}
 
-func CreateSubscription(c *fiber.Ctx, notificationsChan chan<- NotificationData) error {
+func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 	var subscription model.Subscription
 	if err := c.BodyParser(&subscription); err != nil {
 		return utils.HandleInvalidInputError(c, err)
@@ -28,31 +37,23 @@ func CreateSubscription(c *fiber.Ctx, notificationsChan chan<- NotificationData)
 		return utils.HandleInvalidInputError(c, errors.New("missing required fields"))
 	}
 
-	subscriptionService := services.NewSubscriptionService(database.DB)
-	createdSubscription, err := subscriptionService.CreateSubscription(&subscription)
+	createdSubscription, err := h.subscriptionService.CreateSubscription(&subscription)
 	if err != nil {
 		return utils.HandleInternalServerError(c, err)
 	}
 
-	notificationsChan <- NotificationData{
-		Subscription: subscriptionService.NewWebPushSubscriptionObj(createdSubscription),
-		Title:        "Welcome",
-		Message:      "Subscribed to JustJio! You will now receive notifications for app events.",
-	}
-
-	subscriptionLogger.Info("Subscription created successfully: ", createdSubscription.ID)
+	h.logger.Info("Subscription created successfully: ", createdSubscription.ID)
 	return utils.HandleSuccess(c, "Subscription created successfully", createdSubscription)
 }
 
-func GetSubscriptionByEndpoint(c *fiber.Ctx) error {
+func (h *SubscriptionHandler) GetSubscriptionByEndpoint(c *fiber.Ctx) error {
 	endpoint := c.Params("endpoint")
 	decodedEndpoint, err := url.QueryUnescape(endpoint)
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	subscriptionService := services.NewSubscriptionService(database.DB)
-	subscription, err := subscriptionService.GetSubscriptionsByEndpoint(decodedEndpoint)
+	subscription, err := h.subscriptionService.GetSubscriptionsByEndpoint(decodedEndpoint)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Subscription not found")
 	}
@@ -60,10 +61,10 @@ func GetSubscriptionByEndpoint(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Subscription retrieved successfully", subscription)
 }
 
-func DeleteSubscription(c *fiber.Ctx) error {
+func (h *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
 	subId := c.Params("subId")
-	subscriptionService := services.NewSubscriptionService(database.DB)
-	if err := subscriptionService.DeleteSubscription(subId); err != nil {
+
+	if err := h.subscriptionService.DeleteSubscription(subId); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Subscription not found")
 	}
 

@@ -1,11 +1,11 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/RowenTey/JustJio/server/api/database"
 	"github.com/RowenTey/JustJio/server/api/model/request"
 	"github.com/RowenTey/JustJio/server/api/model/response"
 	"github.com/RowenTey/JustJio/server/api/services"
@@ -14,47 +14,53 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-var userLogger = log.WithFields(log.Fields{"service": "UserHandler"})
+type UserHandler struct {
+	userService *services.UserService
+	logger      *log.Entry
+}
 
-func GetUser(c *fiber.Ctx) error {
+func NewUserHandler(userService *services.UserService, logger *log.Logger) *UserHandler {
+	return &UserHandler{
+		userService: userService,
+		logger:      utils.AddServiceField(logger, "UserHandler"),
+	}
+}
+
+func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	id := c.Params("userId")
-	user, err := services.NewUserService(database.DB).GetUserByID(id)
+
+	user, err := h.userService.GetUserByID(id)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
+
 	return utils.HandleSuccess(c, "User found successfully", user)
 }
 
-func UpdateUser(c *fiber.Ctx) error {
+func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	var request request.UpdateUserRequest
 	if err := c.BodyParser(&request); err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
 	id := c.Params("userId")
-	userService := services.NewUserService(database.DB)
-	err := userService.UpdateUserField(id, request.Field, request.Value)
-	if err != nil {
+	if err := h.userService.UpdateUserField(id, request.Field, request.Value); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
 
-	userLogger.Infof("User %s updated field %s to %s", id, request.Field, request.Value)
+	h.logger.Infof("User %s updated field %s to %s", id, request.Field, request.Value)
 	return utils.HandleSuccess(c, "User successfully updated", request)
 }
 
-func DeleteUser(c *fiber.Ctx) error {
+func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
 	id := c.Params("userId")
-
-	userService := services.NewUserService(database.DB)
-
-	err := userService.DeleteUser(id)
-	if err != nil {
+	if err := h.userService.DeleteUser(id); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
 	return utils.HandleSuccess(c, "User successfully deleted", nil)
 }
 
-func SendFriendRequest(c *fiber.Ctx) error {
+func (h *UserHandler) SendFriendRequest(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
@@ -65,11 +71,10 @@ func SendFriendRequest(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.NewUserService(database.DB)
-	if err := userService.SendFriendRequest(uint(userID), request.FriendID); err != nil {
-		if err.Error() == "cannot send friend request to yourself" ||
-			err.Error() == "already friends" ||
-			err.Error() == "friend request already sent" {
+	if err := h.userService.SendFriendRequest(uint(userID), request.FriendID); err != nil {
+		if errors.Is(err, services.ErrNoSelfFriendRequest) ||
+			errors.Is(err, services.ErrAlreadyFriends) ||
+			errors.Is(err, services.ErrFriendRequestExists) {
 			return utils.HandleError(
 				c, fiber.StatusConflict, err.Error(), err)
 		}
@@ -79,7 +84,7 @@ func SendFriendRequest(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Friend request sent", nil)
 }
 
-func RemoveFriend(c *fiber.Ctx) error {
+func (h *UserHandler) RemoveFriend(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
@@ -90,20 +95,17 @@ func RemoveFriend(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.NewUserService(database.DB)
-	if err := userService.RemoveFriend(uint(userID), uint(friendID)); err != nil {
+	if err := h.userService.RemoveFriend(uint(userID), uint(friendID)); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
 
 	return utils.HandleSuccess(c, "Friend successfully removed", nil)
 }
 
-func GetFriends(c *fiber.Ctx) error {
+func (h *UserHandler) GetFriends(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 
-	userService := services.NewUserService(database.DB)
-
-	friends, err := userService.GetFriends(userID)
+	friends, err := h.userService.GetFriends(userID)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
@@ -111,7 +113,7 @@ func GetFriends(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Friends retrieved successfully", friends)
 }
 
-func IsFriend(c *fiber.Ctx) error {
+func (h *UserHandler) IsFriend(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
@@ -122,9 +124,7 @@ func IsFriend(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.NewUserService(database.DB)
-
-	isFriend := userService.IsFriend(uint(userID), request.FriendID)
+	isFriend := h.userService.IsFriend(uint(userID), request.FriendID)
 
 	response := response.IsFriendResponse{
 		IsFriend: isFriend,
@@ -132,12 +132,10 @@ func IsFriend(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Friend check completed", response)
 }
 
-func GetNumFriends(c *fiber.Ctx) error {
+func (h *UserHandler) GetNumFriends(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 
-	userService := services.NewUserService(database.DB)
-
-	numFriends, err := userService.GetNumFriends(userID)
+	numFriends, err := h.userService.GetNumFriends(userID)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
@@ -148,13 +146,11 @@ func GetNumFriends(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Number of friends retrieved successfully", response)
 }
 
-func SearchFriends(c *fiber.Ctx) error {
+func (h *UserHandler) SearchFriends(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 	query := c.Query("query")
 
-	userService := services.NewUserService(database.DB)
-
-	friends, err := userService.SearchUsers(userID, query)
+	friends, err := h.userService.SearchUsers(userID, query)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
@@ -162,18 +158,16 @@ func SearchFriends(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Friends retrieved successfully", friends)
 }
 
-func GetFriendRequestsByStatus(c *fiber.Ctx) error {
+func (h *UserHandler) GetFriendRequestsByStatus(c *fiber.Ctx) error {
+	status := c.Query("status")
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	status := c.Query("status")
-	userService := services.NewUserService(database.DB)
-
-	requests, err := userService.GetFriendRequestsByStatus(uint(userID), status)
+	requests, err := h.userService.GetFriendRequestsByStatus(uint(userID), status)
 	if err != nil {
-		if err.Error() == "invalid status" {
+		if errors.Is(err, services.ErrInvalidFriendRequestStatus) {
 			return utils.HandleInvalidInputError(c, err)
 		}
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
@@ -182,15 +176,13 @@ func GetFriendRequestsByStatus(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Friend requests retrieved successfully", requests)
 }
 
-func CountPendingFriendRequests(c *fiber.Ctx) error {
+func (h *UserHandler) CountPendingFriendRequests(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.NewUserService(database.DB)
-
-	count, err := userService.CountPendingFriendRequests(uint(userID))
+	count, err := h.userService.CountPendingFriendRequests(uint(userID))
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
@@ -201,18 +193,18 @@ func CountPendingFriendRequests(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Pending friend requests counted successfully", response)
 }
 
-func RespondToFriendRequest(c *fiber.Ctx) error {
+func (h *UserHandler) RespondToFriendRequest(c *fiber.Ctx) error {
 	var request request.RespondToFriendRequestRequest
 	if err := c.BodyParser(&request); err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	userService := services.NewUserService(database.DB)
+	requestIdUint := uint(request.RequestID)
 
 	switch request.Action {
 	case "accept":
-		if err := userService.AcceptFriendRequest(uint(request.RequestID)); err != nil {
-			if err.Error() == "friend request already processed" {
+		if err := h.userService.AcceptFriendRequest(requestIdUint); err != nil {
+			if errors.Is(err, services.ErrFriendRequestAlreadyProcessed) {
 				return utils.HandleError(
 					c, fiber.StatusConflict, err.Error(), err)
 			}
@@ -220,8 +212,8 @@ func RespondToFriendRequest(c *fiber.Ctx) error {
 		}
 		return utils.HandleSuccess(c, "Friend request accepted successfully", nil)
 	case "reject":
-		if err := userService.RejectFriendRequest(uint(request.RequestID)); err != nil {
-			if err.Error() == "friend request already processed" {
+		if err := h.userService.RejectFriendRequest(requestIdUint); err != nil {
+			if errors.Is(err, services.ErrFriendRequestAlreadyProcessed) {
 				return utils.HandleError(
 					c, fiber.StatusConflict, err.Error(), err)
 			}

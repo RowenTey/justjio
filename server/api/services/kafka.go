@@ -7,23 +7,27 @@ import (
 	"fmt"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/config"
-	model_kafka "github.com/RowenTey/JustJio/server/api/model/kafka"
+	modelKafka "github.com/RowenTey/JustJio/server/api/model/kafka"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type KafkaService struct {
-	Producer *kafka.Producer
-	Admin    *kafka.AdminClient
-	Env      string
-	logger   *log.Entry
+	producer    *kafka.Producer
+	admin       *kafka.AdminClient
+	env         string
+	topicPrefix string
+	logger      *logrus.Entry
 }
 
-func NewKafkaService(bootstrapServers, env string) (*KafkaService, error) {
-	p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": bootstrapServers})
+func NewKafkaService(conf *config.Config, logger *logrus.Logger, env string) (*KafkaService, error) {
+	bootstrapServers := fmt.Sprintf("%s:%s", conf.Kafka.Host, conf.Kafka.Port)
+	p, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers": bootstrapServers,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -34,26 +38,23 @@ func NewKafkaService(bootstrapServers, env string) (*KafkaService, error) {
 	}
 
 	return &KafkaService{
-		Producer: p,
-		Admin:    a,
-		Env:      env,
-		logger:   log.WithFields(log.Fields{"service": "KafkaService"}),
+		producer:    p,
+		admin:       a,
+		env:         env,
+		topicPrefix: conf.Kafka.TopicPrefix,
+		logger:      logger.WithFields(logrus.Fields{"service": "KafkaService"}),
 	}, nil
 }
 
 func (ks *KafkaService) CreateTopic(topic string) error {
-	if ks.Env == "dev" || ks.Env == "staging" {
-		topic = fmt.Sprintf("%s-%s", ks.Env, topic)
-	}
-	topic = fmt.Sprintf("%s-%s", config.Config("KAFKA_TOPIC_PREFIX"), topic)
-
+	topic = ks.getFormattedTopic(topic)
 	topicSpec := kafka.TopicSpecification{
 		Topic:             topic,
 		NumPartitions:     1,
 		ReplicationFactor: 1,
 	}
 
-	_, err := ks.Admin.CreateTopics(context.Background(), []kafka.TopicSpecification{topicSpec})
+	_, err := ks.admin.CreateTopics(context.Background(), []kafka.TopicSpecification{topicSpec})
 	if err != nil {
 		return err
 	}
@@ -61,7 +62,7 @@ func (ks *KafkaService) CreateTopic(topic string) error {
 	return nil
 }
 
-func (ks *KafkaService) BroadcastMessage(userIds *[]string, message model_kafka.KafkaMessage) error {
+func (ks *KafkaService) BroadcastMessage(userIds *[]string, message modelKafka.KafkaMessage) error {
 	messageJSON, err := json.Marshal(message)
 	if err != nil {
 		return err
@@ -76,10 +77,7 @@ func (ks *KafkaService) BroadcastMessage(userIds *[]string, message model_kafka.
 			defer wg.Done()
 
 			channel := fmt.Sprintf("user-%s", userId)
-			if ks.Env == "dev" || ks.Env == "staging" {
-				channel = fmt.Sprintf("%s-%s", ks.Env, channel)
-			}
-			channel = fmt.Sprintf("%s-%s", config.Config("KAFKA_TOPIC_PREFIX"), channel)
+			channel = ks.getFormattedTopic(channel)
 
 			if err := ks.PublishMessage(channel, string(messageJSON)); err != nil {
 				errorChan <- err
@@ -103,17 +101,13 @@ func (ks *KafkaService) BroadcastMessage(userIds *[]string, message model_kafka.
 		}
 	}
 
-	if allErrors != nil {
-		return allErrors
-	}
-
-	return nil
+	return allErrors
 }
 
 func (ks *KafkaService) PublishMessage(topic string, message string) error {
 	deliveryChan := make(chan kafka.Event)
 
-	err := ks.Producer.Produce(&kafka.Message{
+	err := ks.producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          []byte(message),
 	}, deliveryChan)
@@ -134,8 +128,16 @@ func (ks *KafkaService) PublishMessage(topic string, message string) error {
 
 func (ks *KafkaService) Close() {
 	// Flush and close the producer and the events channel
-	unflushed := ks.Producer.Flush(10000)
+	unflushed := ks.producer.Flush(10000)
 	ks.logger.Warnf("Unflushed messages: %d\n", unflushed)
 
-	ks.Producer.Close()
+	ks.producer.Close()
+}
+
+func (ks *KafkaService) getFormattedTopic(topic string) string {
+	if ks.env == "dev" || ks.env == "staging" {
+		topic = fmt.Sprintf("%s-%s", ks.env, topic)
+	}
+	topic = fmt.Sprintf("%s-%s", ks.topicPrefix, topic)
+	return topic
 }

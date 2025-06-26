@@ -1,15 +1,21 @@
 package services
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
 	"strconv"
-	"time"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/database"
 	"github.com/RowenTey/JustJio/server/api/model"
-
+	modelLocation "github.com/RowenTey/JustJio/server/api/model/location"
+	"github.com/RowenTey/JustJio/server/api/repository"
+	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -17,331 +23,495 @@ const (
 	ROOM_PAGE_SIZE = 6
 )
 
+var (
+	ErrRoomHasUnconsolidatedBills = errors.New("cannot perform action with unconsolidated bills")
+	ErrLeaveRoomAsHost            = errors.New("cannot leave room as host")
+	ErrInvalidHost                = errors.New("user is not the host of the room")
+	ErrInvalidRoomStatus          = errors.New("invalid room status")
+	ErrAlreadyInRoom              = errors.New("user is already in room")
+	ErrAlreadyInvited             = errors.New("user already has pending invite")
+)
+
 type RoomService struct {
-	DB     *gorm.DB
-	Logger *log.Entry
+	db               *gorm.DB
+	roomRepo         repository.RoomRepository
+	userRepo         repository.UserRepository
+	billRepo         repository.BillRepository
+	httpClient       utils.HTTPClient
+	googleMapsApiKey string
+	logger           *logrus.Entry
 }
 
 // NOTE: used var instead of func to enable mocking in tests
-var NewRoomService = func(db *gorm.DB) *RoomService {
+var NewRoomService = func(
+	db *gorm.DB,
+	roomRepo repository.RoomRepository,
+	userRepo repository.UserRepository,
+	billRepo repository.BillRepository,
+	httpClient utils.HTTPClient,
+	googleMapsApiKey string,
+	logger *logrus.Logger,
+) *RoomService {
 	return &RoomService{
-		DB:     db,
-		Logger: log.WithFields(log.Fields{"service": "RoomService"}),
+		db:               db,
+		roomRepo:         roomRepo,
+		userRepo:         userRepo,
+		billRepo:         billRepo,
+		googleMapsApiKey: googleMapsApiKey,
+		httpClient:       httpClient,
+		logger:           utils.AddServiceField(logger, "RoomService"),
 	}
 }
 
-func (rs *RoomService) CreateRoom(room *model.Room, host *model.User) (*model.Room, error) {
-	db := rs.DB.Table("rooms")
+func (rs *RoomService) CreateRoomWithInvites(
+	room *model.Room, inviteMessage, userId, placeId string, inviteesIds *[]uint) (*model.Room, *[]model.RoomInvite, error) {
+	var invites []model.RoomInvite
 
-	room.HostID = host.ID
-	room.Users = append(room.Users, *host)
-	room.CreatedAt = time.Now()
-	room.UpdatedAt = time.Now()
-	if err := db.Create(&room).Error; err != nil {
-		return nil, err
+	if err := database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
+		userRepoTx := rs.userRepo.WithTx(tx)
+		roomRepoTx := rs.roomRepo.WithTx(tx)
+
+		host, err := userRepoTx.FindByID(userId)
+		if err != nil {
+			return err
+		}
+
+		invitees, err := userRepoTx.FindByIDs(inviteesIds)
+		if err != nil {
+			return err
+		}
+
+		// Fetch the Google Maps URI
+		googleMapsUri, err := rs.fetchGoogleMapsUri(placeId)
+		if err != nil {
+			return err
+		}
+
+		room.VenueUrl = googleMapsUri
+		room.HostID = host.ID
+		room.Users = append(room.Users, *host)
+		if err := roomRepoTx.Create(room); err != nil {
+			return err
+		}
+
+		for _, user := range *invitees {
+			invite := model.RoomInvite{
+				RoomID:    room.ID,
+				UserID:    user.ID,
+				InviterID: host.ID,
+				Message:   inviteMessage,
+				Status:    "pending",
+			}
+			invites = append(invites, invite)
+		}
+		if err := roomRepoTx.CreateInvites(&invites); err != nil {
+			return err
+		}
+
+		return err
+	}); err != nil {
+		return nil, nil, err
 	}
 
-	rs.Logger.Info("Created room with ID: ", room.ID)
-	return room, nil
+	rs.logger.Info("Created room with ID: ", room.ID)
+	rs.logger.Infof("Invited users: %v", invites)
+
+	return room, &invites, nil
+}
+
+func (rs *RoomService) fetchGoogleMapsUri(placeId string) (string, error) {
+	reqUrl := fmt.Sprintf("https://places.googleapis.com/v1/places/%s", placeId)
+	req, err := http.NewRequest("GET", reqUrl, nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("X-Goog-Api-Key", rs.googleMapsApiKey)
+	req.Header.Set("X-Goog-FieldMask", "googleMapsUri")
+
+	resp, err := rs.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var placeResponse map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&placeResponse); err != nil {
+		return "", fmt.Errorf("failed to decode response: %v", err)
+	}
+
+	googleMapsUri, ok := placeResponse["googleMapsUri"].(string)
+	if !ok {
+		return "", errors.New("googleMapsUri not found in response")
+	}
+
+	return googleMapsUri, nil
 }
 
 func (rs *RoomService) GetRooms(userId string, page int) (*[]model.Room, error) {
-	db := rs.DB
-	var rooms []model.Room
-
-	if err := db.
-		Model(&model.Room{}).
-		Joins("JOIN room_users ON rooms.id = room_users.room_id").
-		Where("room_users.user_id = ?", userId).
-		Where("rooms.is_closed = ?", false).
-		Order("rooms.updated_at DESC").
-		Scopes(database.Paginate(page, ROOM_PAGE_SIZE)).
-		Find(&rooms).Error; err != nil {
-		return nil, err
-	}
-
-	return &rooms, nil
+	return rs.roomRepo.GetUserRooms(userId, page, ROOM_PAGE_SIZE)
 }
 
 func (rs *RoomService) GetNumRooms(userId string) (int64, error) {
-	db := rs.DB
-	var count int64
-
-	if err := db.
-		Model(&model.Room{}).
-		Joins("JOIN room_users ON rooms.id = room_users.room_id").
-		Where("room_users.user_id = ?", userId).
-		Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return rs.roomRepo.CountUserRooms(userId)
 }
 
 func (rs *RoomService) GetRoomById(roomId string) (*model.Room, error) {
-	db := rs.DB.Table("rooms")
-	var room model.Room
-
-	if err := db.First(&room, "id = ?", roomId).Error; err != nil {
-		return nil, err
-	}
-	return &room, nil
+	return rs.roomRepo.GetByID(roomId)
 }
 
 func (rs *RoomService) GetRoomInvites(userId string) (*[]model.RoomInvite, error) {
-	db := rs.DB.Table("room_invites")
-	var invites []model.RoomInvite
-
-	if err := db.
-		Preload("Room.Host").
-		Preload("User").
-		Preload("Inviter").
-		Where("user_id = ? AND status = ?", userId, "pending").
-		Find(&invites).Error; err != nil {
-		return nil, err
-	}
-	return &invites, nil
+	return rs.roomRepo.GetPendingInvites(userId)
 }
 
 func (rs *RoomService) GetNumRoomInvites(userId string) (int64, error) {
-	db := rs.DB.Table("room_invites")
-	var count int64
-
-	if err := db.
-		Where("user_id = ? AND status = ?", userId, "pending").
-		Count(&count).Error; err != nil {
-		return 0, err
-	}
-	return count, nil
+	return rs.roomRepo.CountPendingInvites(userId)
 }
 
 func (rs *RoomService) GetRoomAttendees(roomId string) (*[]model.User, error) {
-	db := rs.DB.Table("rooms")
-	var room model.Room
-
-	if err := db.Preload("Users").First(&room, "id = ?", roomId).Error; err != nil {
-		return nil, err
-	}
-	return &room.Users, nil
+	return rs.roomRepo.GetRoomAttendees(roomId)
 }
 
 func (rs *RoomService) GetRoomAttendeesIds(roomId string) (*[]string, error) {
-	db := rs.DB.Table("rooms")
-	var room model.Room
-
-	if err := db.Preload("Users").First(&room, "id = ?", roomId).Error; err != nil {
-		return nil, err
-	}
-
-	var userIds []string
-	for _, user := range room.Users {
-		userIds = append(userIds, strconv.FormatUint(uint64(user.ID), 10))
-	}
-
-	return &userIds, nil
+	return rs.roomRepo.GetRoomAttendeeIDs(roomId)
 }
 
 func (rs *RoomService) CloseRoom(roomId string, userId string) error {
-	db := rs.DB
-	var room model.Room
+	return database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
+		roomRepoTx := rs.roomRepo.WithTx(tx)
+		billRepoTx := rs.billRepo.WithTx(tx)
 
-	userIdUint, err := strconv.ParseUint(userId, 10, 64)
-	if err != nil {
-		return err
-	}
+		if exists, err := billRepoTx.HasUnconsolidatedBills(roomId); err != nil {
+			return err
+		} else if exists {
+			return ErrRoomHasUnconsolidatedBills
+		}
 
-	if err := db.First(&room, "id = ?", roomId).Error; err != nil {
-		return err
-	}
+		room, err := roomRepoTx.GetByID(roomId)
+		if err != nil {
+			return err
+		}
 
-	if room.HostID != uint(userIdUint) {
-		return errors.New("user is not the host of the room")
-	}
+		if utils.UIntToString(room.HostID) != userId {
+			return ErrInvalidHost
+		}
 
-	room.IsClosed = true
-	room.UpdatedAt = time.Now()
-	if err := db.Save(&room).Error; err != nil {
-		return err
-	}
+		room.IsClosed = true
+		if err := roomRepoTx.UpdateRoom(room); err != nil {
+			return err
+		}
 
-	// Remove all pending invites
-	if err := db.
-		Where("room_id = ? AND status = ?", roomId, "pending").
-		Delete(&model.RoomInvite{}).Error; err != nil {
-		return err
-	}
-
-	return nil
+		// TODO: Should we delete the room invites?
+		return roomRepoTx.DeletePendingInvites(roomId)
+	})
 }
 
 func (rs *RoomService) UpdateRoomInviteStatus(roomId string, userId string, status string) error {
 	if status != "accepted" && status != "rejected" {
-		return errors.New("invalid status")
+		return ErrInvalidRoomStatus
 	}
 
-	db := rs.DB
+	return database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
+		roomRepoTx := rs.roomRepo.WithTx(tx)
+		userRepoTx := rs.userRepo.WithTx(tx)
 
-	if err := db.
-		Model(&model.RoomInvite{}).
-		Where("room_id = ? AND user_id = ?", roomId, userId).
-		Update("status", status).Error; err != nil {
-		return err
-	}
+		// Update the invite status
+		if err := roomRepoTx.UpdateInviteStatus(roomId, userId, status); err != nil {
+			return err
+		}
 
-	if status == "rejected" {
-		return nil
-	}
+		// If the invite is rejected, we don't need to update the room
+		if status == "rejected" {
+			return nil
+		}
 
-	var user model.User
-	var room model.Room
-	if err := db.First(&room, "id = ?", roomId).Error; err != nil {
-		return err
-	}
-	if err := db.First(&user, userId).Error; err != nil {
-		return err
-	}
+		room, err := roomRepoTx.GetByID(roomId)
+		if err != nil {
+			return err
+		}
 
-	// Update room info
-	room.AttendeesCount++
-	room.Users = append(room.Users, user)
-	room.UpdatedAt = time.Now()
+		user, err := userRepoTx.FindByID(userId)
+		if err != nil {
+			return err
+		}
 
-	if err := db.Save(&room).Error; err != nil {
-		return err
-	}
-
-	return nil
+		// Update room info
+		room.AttendeesCount++
+		room.Users = append(room.Users, *user)
+		return roomRepoTx.UpdateRoom(room)
+	})
 }
 
-func (rs *RoomService) JoinRoom(roomId, userId string) error {
-	db := rs.DB
-	var room model.Room
-	var user model.User
-
-	if err := db.First(&room, "id = ?", roomId).Error; err != nil {
-		return err
-	}
-	if err := db.First(&user, userId).Error; err != nil {
-		return err
-	}
-
+func (rs *RoomService) JoinRoom(roomId, userId string) (*model.Room, *[]model.User, error) {
 	// Check if user is already in room
-	var count int64
-	if err := db.
-		Model(&model.Room{}).
-		Joins("JOIN room_users ON rooms.id = room_users.room_id").
-		Where("rooms.id = ? AND room_users.user_id = ?", roomId, userId).
-		Count(&count).Error; err != nil {
-		return err
+	if inRoom, err := rs.roomRepo.IsUserInRoom(roomId, userId); err != nil {
+		return nil, nil, err
+	} else if inRoom {
+		return nil, nil, ErrAlreadyInRoom
 	}
-	if count > 0 {
-		return errors.New("user is already in room")
+
+	room, err := rs.roomRepo.GetByID(roomId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	user, err := rs.userRepo.FindByID(userId)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	// Update room info
 	room.AttendeesCount++
-	room.Users = append(room.Users, user)
-	room.UpdatedAt = time.Now()
-
-	if err := db.Save(&room).Error; err != nil {
-		return err
+	room.Users = append(room.Users, *user)
+	err = rs.roomRepo.UpdateRoom(room)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return nil
+	attendees, err := rs.GetRoomAttendees(roomId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return room, attendees, nil
 }
 
-func (rs *RoomService) InviteUserToRoom(
+func (rs *RoomService) RespondToRoomInvite(
 	roomId string,
+	userId string,
+	accept bool,
+) (*model.Room, *[]model.User, error) {
+	status := "accepted"
+	if !accept {
+		status = "rejected"
+	}
+
+	err := rs.UpdateRoomInviteStatus(roomId, userId, status)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// No room or attendees to return if invite is rejected
+	if !accept {
+		return nil, nil, nil
+	}
+
+	room, err := rs.roomRepo.GetByID(roomId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	attendees, err := rs.GetRoomAttendees(roomId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return room, attendees, nil
+}
+
+func (rs *RoomService) ValidateInvites(
+	room *model.Room,
 	inviter *model.User,
 	users *[]model.User,
-	message string,
-) (*[]model.RoomInvite, error) {
-	if len(*users) == 0 {
-		return &[]model.RoomInvite{}, nil
-	}
+) error {
+	rs.logger.Infof("Inviting users (%v) to room %s", users, room.ID)
 
-	rs.Logger.Infof("Inviting users (%v) to room %s", users, roomId)
-	var room model.Room
-	var roomInvites []model.RoomInvite
-
-	if err := rs.DB.Table("rooms").First(&room, "id = ?", roomId).Error; err != nil {
-		return nil, err
-	}
-
-	if room.HostID != inviter.ID {
-		return nil, errors.New("user is not the host of the room")
-	}
-
+	// TODO: Can optimize this
 	// Check if users are already in room or have pending invites
 	for _, user := range *users {
-		var count int64
-
 		// Check if user is already in room
-		err := rs.DB.
-			Model(&model.Room{}).
-			Joins("JOIN room_users ON rooms.id = room_users.room_id").
-			Where("rooms.id = ? AND room_users.user_id = ?", roomId, user.ID).
-			Count(&count).Error
-		if err != nil || count > 0 {
-			return nil, errors.New("user is already in room")
+		if inRoom, err := rs.roomRepo.IsUserInRoom(
+			room.ID,
+			strconv.FormatUint(uint64(user.ID), 10),
+		); err != nil {
+			return err
+		} else if inRoom {
+			return ErrAlreadyInRoom
 		}
 
-		// Check if user has pending invite
-		if err := rs.DB.Table("room_invites").
-			Where("room_id = ? AND user_id = ? AND status = ?", roomId, user.ID, "pending").
-			Count(&count).Error; err != nil {
-			return nil, err
-		}
-		if count > 0 {
-			return nil, errors.New("user already has pending invite")
+		// Check if user has already pending invite
+		if hasInvite, err := rs.roomRepo.HasPendingInvites(
+			room.ID,
+			strconv.FormatUint(uint64(user.ID), 10),
+		); err != nil {
+			return err
+		} else if hasInvite {
+			return ErrAlreadyInvited
 		}
 	}
 
-	for _, user := range *users {
-		roomInvite := model.RoomInvite{
-			RoomID:    room.ID,
-			UserID:    user.ID,
-			InviterID: inviter.ID,
-			Message:   message,
-			CreatedAt: time.Now(),
-			Status:    "pending",
+	return nil
+}
+
+// TODO: test the closure
+func (rs *RoomService) InviteUsersToRoom(
+	roomId string, inviterId string, inviteesIds *[]uint, message string) (*[]model.RoomInvite, error) {
+	var roomInvites []model.RoomInvite
+
+	err := database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
+		roomRepoTx := rs.roomRepo.WithTx(tx)
+		userRepoTx := rs.userRepo.WithTx(tx)
+
+		room, err := roomRepoTx.GetByID(roomId)
+		if err != nil {
+			return err
 		}
 
-		roomInvites = append(roomInvites, roomInvite)
-	}
+		if utils.UIntToString(room.HostID) != inviterId {
+			return ErrInvalidHost
+		}
 
-	if err := rs.DB.Table("room_invites").Omit("Room", "Inviter", "User").Create(roomInvites).Error; err != nil {
-		return nil, err
-	}
+		inviter, err := userRepoTx.FindByID(inviterId)
+		if err != nil {
+			return err
+		}
 
-	return &roomInvites, nil
+		invitees, err := userRepoTx.FindByIDs(inviteesIds)
+		if err != nil {
+			return err
+		}
+
+		if err := rs.ValidateInvites(room, inviter, invitees); err != nil {
+			return err
+		}
+
+		for _, invitee := range *invitees {
+			roomInvite := model.RoomInvite{
+				RoomID:    room.ID,
+				UserID:    invitee.ID,
+				InviterID: inviter.ID,
+				Message:   message,
+				Status:    "pending",
+			}
+			roomInvites = append(roomInvites, roomInvite)
+		}
+		return rs.roomRepo.CreateInvites(&roomInvites)
+	})
+
+	return &roomInvites, err
+}
+
+func (rs *RoomService) LeaveRoom(roomId string, userId string) error {
+	return database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
+		roomRepoTx := rs.roomRepo.WithTx(tx)
+		billRepoTx := rs.billRepo.WithTx(tx)
+
+		if exists, err := billRepoTx.HasUnconsolidatedBills(roomId); err != nil {
+			return err
+		} else if exists {
+			return ErrRoomHasUnconsolidatedBills
+		}
+
+		room, err := roomRepoTx.GetByID(roomId)
+		if err != nil {
+			return err
+		}
+
+		if utils.UIntToString(room.HostID) == userId {
+			return ErrLeaveRoomAsHost
+		}
+
+		// TODO: Should we delete the room invites?
+		return roomRepoTx.RemoveUserFromRoom(roomId, userId)
+	})
 }
 
 func (rs *RoomService) RemoveUserFromRoom(roomId string, userId string) error {
-	db := rs.DB
-	if err := db.
-		Exec("DELETE FROM room_users WHERE room_id = ? AND user_id = ?", roomId, userId).Error; err != nil {
-		return err
-	}
-	return nil
+	return rs.roomRepo.RemoveUserFromRoom(roomId, userId)
 }
 
 func (rs *RoomService) GetUninvitedFriendsForRoom(roomId string, userId string) (*[]model.User, error) {
-	db := rs.DB
-	var friends []model.User
+	return rs.userRepo.GetUninvitedFriends(roomId, userId)
+}
 
-	// Get friends who are not in the room and don't have pending invites
-	if err := db.
-		Distinct("users.*").
-		Table("users").
-		Joins("JOIN user_friends ON (user_friends.friend_id = ? AND user_friends.user_id = users.id)", userId).
-		// Exclude users already in room
-		Where("users.id NOT IN (SELECT user_id FROM room_users WHERE room_id = ?)", roomId).
-		// Exclude users with pending invites
-		Where("users.id NOT IN (SELECT user_id FROM room_invites WHERE room_id = ? AND status = 'pending')", roomId).
-		Find(&friends).Error; err != nil {
-		return nil, err
+func (rs *RoomService) QueryVenue(query string) (*[]modelLocation.Venue, error) {
+	if query == "" {
+		return nil, errors.New("location query cannot be empty")
 	}
 
-	return &friends, nil
+	requestBody := map[string]interface{}{
+		"input":               query,
+		"includedRegionCodes": []string{"sg", "my"},
+	}
+
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %v", err)
+	}
+
+	// Returns up to 5 predictions
+	req, err := http.NewRequestWithContext(
+		context.Background(),
+		"POST",
+		"https://places.googleapis.com/v1/places:autocomplete",
+		bytes.NewBuffer(jsonBody),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	// Set custom headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Goog-Api-Key", rs.googleMapsApiKey)
+	req.Header.Set("X-Goog-FieldMask", "suggestions.placePrediction.text.text,suggestions.placePrediction.placeId,suggestions.placePrediction.structuredFormat.mainText.text")
+
+	resp, err := rs.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var response map[string]any
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %v", err)
+	}
+	suggestions, _ := response["suggestions"].([]interface{})
+
+	// Extract the predictions
+	var predictions []modelLocation.Venue
+	for _, suggestion := range suggestions {
+		suggestionMap, ok := suggestion.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		// Check for place prediction
+		placePrediction, exists := suggestionMap["placePrediction"].(map[string]interface{})
+		if !exists {
+			continue
+		}
+
+		var venue modelLocation.Venue
+		if text, exists := placePrediction["text"].(map[string]interface{}); exists {
+			if address, ok := text["text"].(string); ok {
+				venue.Address = address
+			}
+		}
+
+		if placeId, ok := placePrediction["placeId"].(string); ok {
+			venue.GoogleMapsPlaceID = placeId
+		}
+
+		if structuredFormat, exists := placePrediction["structuredFormat"].(map[string]interface{}); exists {
+			if mainText, exists := structuredFormat["mainText"].(map[string]interface{}); exists {
+				if name, ok := mainText["text"].(string); ok {
+					venue.Name = name
+				}
+			}
+		}
+
+		predictions = append(predictions, venue)
+	}
+
+	return &predictions, nil
 }

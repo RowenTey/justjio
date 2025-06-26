@@ -2,20 +2,24 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/RowenTey/JustJio/server/api/model"
+	"github.com/RowenTey/JustJio/server/api/repository"
+	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/sirupsen/logrus"
+)
 
-	"gorm.io/gorm"
+var (
+	ErrTransactionAlreadySettled = errors.New("transaction already settled")
+	ErrInvalidPayer              = errors.New("invalid payer")
 )
 
 type TransactionService struct {
-	DB     *gorm.DB
-	Logger *log.Entry
+	transactionRepo repository.TransactionRepository
+	billRepo        repository.BillRepository
+	logger          *logrus.Entry
 }
 
 type edge struct {
@@ -24,33 +28,28 @@ type edge struct {
 }
 
 // NOTE: used var instead of func to enable mocking in tests
-var NewTransactionService = func(db *gorm.DB) *TransactionService {
+var NewTransactionService = func(
+	transactionRepo repository.TransactionRepository,
+	billRepo repository.BillRepository,
+	logger *logrus.Logger,
+) *TransactionService {
 	return &TransactionService{
-		DB:     db,
-		Logger: log.WithFields(log.Fields{"service": "TransactionService"}),
+		transactionRepo: transactionRepo,
+		billRepo:        billRepo,
+		logger:          utils.AddServiceField(logger, "TransactionService"),
 	}
 }
 
-func (ts *TransactionService) GenerateTransactions(consolidatedBill *model.Consolidation) error {
-	billsDb := ts.DB.Table("bills")
-	var bills []model.Bill
-
-	if err := billsDb.
-		Where("consolidation_id = ?", (*consolidatedBill).ID).
-		Preload("Payers").
-		Find(&bills).Error; err != nil {
-		return err
-	}
-
+func (ts *TransactionService) GenerateTransactions(bills *[]model.Bill, consolidatedBill *model.Consolidation) (*[]model.Transaction, error) {
 	var wg sync.WaitGroup
 	txChan := make(chan *model.Transaction)
 
-	for _, bill := range bills {
+	for _, bill := range *bills {
 		wg.Add(1)
 		go func(bill *model.Bill) {
 			defer wg.Done()
-			ts.Logger.Infof("Processing bill: %s with amount %f\n", bill.Name, bill.Amount)
-			ts.Logger.Info("Payers: ", len(bill.Payers))
+			ts.logger.Infof("Processing bill: %s with amount %f\n", bill.Name, bill.Amount)
+			ts.logger.Info("Payers: ", len(bill.Payers))
 
 			num_payers := float32(len(bill.Payers))
 			if bill.IncludeOwner {
@@ -85,58 +84,41 @@ func (ts *TransactionService) GenerateTransactions(consolidatedBill *model.Conso
 	}
 
 	for _, transaction := range transactions {
-		ts.Logger.Debugf("Before %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
+		ts.logger.Debugf("Before %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
 	}
 
 	consolidatedTransactions := ts.consolidateTransactions(&transactions, consolidatedBill)
 	for _, transaction := range *consolidatedTransactions {
-		ts.Logger.Debugf("After %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
-	}
-	if err := ts.DB.Omit("Consolidation").Create(&consolidatedTransactions).Error; err != nil {
-		return err
+		ts.logger.Debugf("After %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
 	}
 
-	return nil
+	return consolidatedTransactions, nil
 }
 
 func (ts *TransactionService) GetTransactionsByUser(isPaid bool, userId string) (*[]model.Transaction, error) {
-	db := ts.DB.Table("transactions")
-	var transactions []model.Transaction
-
-	// TODO: Implement pagination
-	if err := db.
-		Where("is_paid = ? AND (payee_id = ? OR payer_id = ?)", isPaid, userId, userId).
-		Preload("Payee").
-		Preload("Payer").
-		Find(&transactions).Error; err != nil {
-		return nil, err
-	}
-
-	return &transactions, nil
+	return ts.transactionRepo.FindByUser(isPaid, userId)
 }
 
 func (ts *TransactionService) SettleTransaction(transactionId string, userId string) (*model.Transaction, error) {
-	db := ts.DB.Table("transactions")
-	var transaction model.Transaction
-
-	if err := db.First(&transaction, transactionId).Error; err != nil {
+	transaction, err := ts.transactionRepo.FindByID(transactionId)
+	if err != nil {
 		return nil, err
 	}
 
 	if transaction.IsPaid {
-		return nil, errors.New("transaction already settled")
+		return nil, ErrTransactionAlreadySettled
 	}
 
-	if fmt.Sprint(transaction.PayerID) != userId {
-		return nil, errors.New("invalid payer")
+	if utils.UIntToString(transaction.PayerID) != userId {
+		return nil, ErrInvalidPayer
 	}
 
 	transaction.IsPaid = true
-	if err := ts.DB.Save(&transaction).Error; err != nil {
+	if err := ts.transactionRepo.Update(transaction); err != nil {
 		return nil, err
 	}
 
-	return &transaction, nil
+	return transaction, nil
 }
 
 func (ts *TransactionService) consolidateTransactions(transactions *[]model.Transaction, consolidatedBill *model.Consolidation) *[]model.Transaction {
@@ -192,11 +174,11 @@ func (ts *TransactionService) resetVisited(visited map[uint]bool) {
 func (ts *TransactionService) removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) (float32, uint) {
 	neighbors := graph[startNode]
 	for i, neighbor := range neighbors {
-		ts.Logger.Debug("Current node ", startNode, " with neighbor: ", neighbor.userId)
+		ts.logger.Debug("Current node ", startNode, " with neighbor: ", neighbor.userId)
 
 		// cycle detected
 		if isVisited := visited[neighbor.userId]; isVisited {
-			ts.Logger.Debug("Cycle detected: ", startNode, " -> ", neighbor.userId)
+			ts.logger.Debug("Cycle detected: ", startNode, " -> ", neighbor.userId)
 
 			// remove the edge
 			neighbors = append(neighbors[:i], neighbors[i+1:]...)
