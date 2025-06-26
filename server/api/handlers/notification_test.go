@@ -1,25 +1,16 @@
 package handlers
 
-import (
-	"context"
+// type NotificationHandlerTestSuite struct {
+// 	suite.Suite
+// 	app          *fiber.App
+// 	db           *gorm.DB
+// 	ctx          context.Context
+// 	dependencies *tests.TestDependencies
 
-	"github.com/RowenTey/JustJio/server/api/tests"
-	"github.com/gofiber/fiber/v2"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
-)
-
-type NotificationHandlerTestSuite struct {
-	suite.Suite
-	app          *fiber.App
-	db           *gorm.DB
-	ctx          context.Context
-	dependencies *tests.TestDependencies
-
-	testUserID    uint
-	testUserToken string
-	// testNotifChan chan NotificationData
-}
+// 	testUserID    uint
+// 	testUserToken string
+// 	// testNotifChan chan NotificationData
+// }
 
 // func (suite *NotificationHandlerTestSuite) SetupSuite() {
 // 	suite.ctx = context.Background()

@@ -1,21 +1,15 @@
 package services
 
-import (
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
-)
+// type NotificationServiceTestSuite struct {
+// 	suite.Suite
+// 	DB   *gorm.DB
+// 	mock sqlmock.Sqlmock
 
-type NotificationServiceTestSuite struct {
-	suite.Suite
-	DB   *gorm.DB
-	mock sqlmock.Sqlmock
+// 	notificationService *NotificationService
 
-	notificationService *NotificationService
-
-	userId uint
-	title  string
-}
+// 	userId uint
+// 	title  string
+// }
 
 // func TestNotificationServiceTestSuite(t *testing.T) {
 // 	suite.Run(t, new(NotificationServiceTestSuite))

@@ -1,31 +1,20 @@
 package handlers
 
-import (
-	"context"
+// type MessageHandlerTestSuite struct {
+// 	suite.Suite
+// 	app          *fiber.App
+// 	db           *gorm.DB
+// 	ctx          context.Context
+// 	dependencies *tests.TestDependencies
+// 	kafkaService *services.KafkaService
 
-	"github.com/RowenTey/JustJio/server/api/model"
-	"github.com/RowenTey/JustJio/server/api/services"
-	"github.com/RowenTey/JustJio/server/api/tests"
-	"github.com/gofiber/fiber/v2"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
-)
-
-type MessageHandlerTestSuite struct {
-	suite.Suite
-	app          *fiber.App
-	db           *gorm.DB
-	ctx          context.Context
-	dependencies *tests.TestDependencies
-	kafkaService *services.KafkaService
-
-	testUser1ID    uint
-	testUser2ID    uint
-	testRoomID     string
-	testRoom       *model.Room
-	testUser1Token string
-	testUser2Token string
-}
+// 	testUser1ID    uint
+// 	testUser2ID    uint
+// 	testRoomID     string
+// 	testRoom       *model.Room
+// 	testUser1Token string
+// 	testUser2Token string
+// }
 
 // func (suite *MessageHandlerTestSuite) SetupSuite() {
 // 	suite.ctx = context.Background()

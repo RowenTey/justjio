@@ -1,27 +1,18 @@
 package handlers
 
-import (
-	"context"
+// type UserHandlerTestSuite struct {
+// 	suite.Suite
+// 	app          *fiber.App
+// 	db           *gorm.DB
+// 	ctx          context.Context
+// 	dependencies *tests.TestDependencies
 
-	"github.com/RowenTey/JustJio/server/api/tests"
-	"github.com/gofiber/fiber/v2"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/gorm"
-)
-
-type UserHandlerTestSuite struct {
-	suite.Suite
-	app          *fiber.App
-	db           *gorm.DB
-	ctx          context.Context
-	dependencies *tests.TestDependencies
-
-	testUserID      uint
-	testUserToken   string
-	testFriendID    uint
-	testFriendToken string
-	testRequestID   uint
-}
+// 	testUserID      uint
+// 	testUserToken   string
+// 	testFriendID    uint
+// 	testFriendToken string
+// 	testRequestID   uint
+// }
 
 // func (suite *UserHandlerTestSuite) SetupSuite() {
 // 	suite.ctx = context.Background()
