@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SubmitHandler, useForm } from "react-hook-form";
 import InputField from "../components/InputField";
 import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
@@ -9,14 +9,29 @@ import Spinner from "../components/Spinner";
 import SearchableDropdown from "../components/SearchableDropdown";
 import { useUserCtx } from "../context/user";
 import { useToast } from "../context/toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { IVenue } from "../types/room";
+import QueryVenueDropdown from "../components/room/QueryVenueDropdown";
+import ToggleSwitch from "../components/ToggleSwitch";
+
+enum Image {
+  BIRTHDAY = "/imgs/birthday.png",
+  GATHERING = "/imgs/gathering.png",
+  PARTY = "/imgs/party.png",
+  SPORTS = "/imgs/sports.png",
+  TRAVEL = "/imgs/travel.png",
+  PETS = "/imgs/pets.png",
+}
 
 type CreateRoomFormData = {
   name: string;
   date: string;
   venue: string;
   time: string;
+  image: Image;
   invitees: string;
+  isPrivate: boolean;
+  description?: string;
   message?: string;
 };
 
@@ -27,17 +42,39 @@ const CreateRoomPage = () => {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<CreateRoomFormData>();
+    watch,
+  } = useForm<CreateRoomFormData>({
+    defaultValues: {
+      name: "",
+      date: "",
+      venue: "",
+      time: "",
+      image: Image.BIRTHDAY,
+      invitees: "",
+      isPrivate: false,
+      description: "",
+      message: "",
+    },
+  });
   const { user, friends, fetchFriends } = useUserCtx();
   const { createRoom } = useRoomCtx();
   const { showToast } = useToast();
+  const [selectedVenue, setSelectedVenue] = useState<IVenue | undefined>(
+    undefined,
+  );
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchFriends(user.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const onSubmit: SubmitHandler<CreateRoomFormData> = async (data) => {
+    if (!selectedVenue) {
+      showToast("Please select a venue.", true);
+      return;
+    }
+
     startLoading();
 
     console.log("[CreateRoomPage] Date before: ", data.date);
@@ -50,9 +87,13 @@ const CreateRoomPage = () => {
       date: data.date,
       venue: data.venue,
       time: data.time,
+      imageUrl: data.image,
+      isPrivate: data.isPrivate,
+      description: data.description,
     };
     const res = await createRoom(
       roomData,
+      selectedVenue.googleMapsPlaceId,
       data.invitees.split(","),
       data.message,
     );
@@ -79,6 +120,9 @@ const CreateRoomPage = () => {
     navigate("/", { state: { from: "/rooms/create" } });
   };
 
+  // Get current selected image from form
+  const selectedImage = watch("image");
+
   return (
     <div className="h-full flex flex-col items-center bg-gray-200">
       <RoomTopBar title="Create Room" />
@@ -86,10 +130,45 @@ const CreateRoomPage = () => {
       <form
         onSubmit={handleSubmit(onSubmit)}
         id="create-room-form"
-        className={`flex flex-col justify-center items-center p-2 gap-2 w-[85%] h-[92%] overflow-y-auto ${
+        className={`flex flex-col items-center p-2 pr-3 gap-2 w-[85%] h-[92%] overflow-y-auto ${
           Object.keys(errors).length > 0 && "sm:pt-[15%]"
         }`}
       >
+        <div className="flex flex-col justify-center w-full">
+          <div className="flex justify-between items-center pb-1">
+            <label className="font-semibold text-secondary">Room Image</label>
+            <ToggleSwitch
+              isOn={watch("isPrivate") || false}
+              onToggle={() => setValue("isPrivate", !watch("isPrivate"))}
+              option1="Private"
+              option2="Public"
+            />
+          </div>
+          <div className="flex gap-2 w-full overflow-x-auto px-1 pt-1 pb-3">
+            {Object.values(Image).map((image) => (
+              <button
+                key={image}
+                type="button"
+                onClick={() => setValue("image", image)}
+                className={`flex-shrink-0 w-[160px] h-[110px] overflow-hidden rounded-xl ${
+                  selectedImage === image ? "ring-2 ring-secondary" : ""
+                }`}
+              >
+                <img
+                  src={image}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+          {errors.image && (
+            <span className="ml-2 text-error text-wrap">
+              {errors.image?.message?.toString()}
+            </span>
+          )}
+        </div>
+
         <InputField
           name="name"
           type="text"
@@ -100,14 +179,14 @@ const CreateRoomPage = () => {
           validation={{ required: "Room Name is required" }}
         />
 
-        <InputField
-          name="venue"
-          type="text"
-          label="Venue"
-          placeholder="Enter venue"
+        <QueryVenueDropdown
+          value={watch("venue") || ""}
+          onChange={(value) => {
+            setSelectedVenue(value);
+            setValue("venue", value.name);
+          }}
           errors={errors}
           register={register}
-          validation={{ required: "Venue is required" }}
         />
 
         <InputField
@@ -159,6 +238,15 @@ const CreateRoomPage = () => {
           }))}
           validation={{}}
         />
+
+        <div className="flex flex-col gap-1 w-full">
+          <label className="font-semibold text-secondary">Description</label>
+          <textarea
+            className="w-full h-24 bg-white placeholder-gray-500 text-black px-2 py-1 rounded-lg shadow-lg focus:outline-none focus:border-secondary focus:border-2"
+            placeholder="Enter room description (optional)"
+            {...register("description")}
+          ></textarea>
+        </div>
 
         <InputField
           name="message"
