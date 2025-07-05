@@ -278,6 +278,7 @@ func setupRoomRoutes(
 ) {
 	rooms := v1.Group("/rooms")
 	rooms.Get("/", handlers.RoomHandler.GetRooms)
+	rooms.Get("/public", handlers.RoomHandler.GetUnjoinedPublicRooms)
 	rooms.Get("/count", handlers.RoomHandler.GetNumRooms)
 	rooms.Get("/invites", handlers.RoomHandler.GetRoomInvitations)
 	rooms.Get("/invites/count", handlers.RoomHandler.GetNumRoomInvitations)

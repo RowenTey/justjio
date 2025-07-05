@@ -65,6 +65,18 @@ func (h *RoomHandler) GetNumRooms(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Retrieved number of rooms successfully", response)
 }
 
+func (h *RoomHandler) GetUnjoinedPublicRooms(c *fiber.Ctx) error {
+	token := c.Locals("user").(*jwt.Token)
+	userId := utils.GetUserInfoFromToken(token, "user_id")
+
+	rooms, err := h.roomService.GetUnjoinedPublicRooms(userId)
+	if err != nil {
+		return utils.HandleNotFoundOrInternalError(c, err, "No public rooms found")
+	}
+
+	return utils.HandleSuccess(c, "Retrieved public rooms successfully", rooms)
+}
+
 func (h *RoomHandler) GetRoomInvitations(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := utils.GetUserInfoFromToken(token, "user_id")
@@ -139,7 +151,7 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 	}
 
 	room, invites, err := h.roomService.CreateRoomWithInvites(
-		&request.Room, request.Message, userId, request.PlaceId, &inviteesIdsUint)
+		&request.Room, userId, request.PlaceId, &inviteesIdsUint)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Failed to create room and invites")
 	}
@@ -152,6 +164,7 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Created room successfully", response)
 }
 
+// TODO：Fix error 500 bug here
 func (h *RoomHandler) CloseRoom(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 	token := c.Locals("user").(*jwt.Token)
@@ -161,6 +174,9 @@ func (h *RoomHandler) CloseRoom(c *fiber.Ctx) error {
 		if errors.Is(err, services.ErrInvalidHost) {
 			return utils.HandleError(
 				c, fiber.StatusUnauthorized, "Only hosts are allowed to close rooms", err)
+		} else if errors.Is(err, services.ErrRoomHasUnconsolidatedBills) {
+			return utils.HandleError(
+				c, fiber.StatusConflict, "Cannot close room with unconsolidated bills", err)
 		}
 		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
@@ -233,7 +249,7 @@ func (h *RoomHandler) InviteUser(c *fiber.Ctx) error {
 	}
 
 	roomInvites, err := h.roomService.InviteUsersToRoom(
-		roomId, userId, &inviteesIds, request.Message)
+		roomId, userId, &inviteesIds)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidHost) {
 			return utils.HandleError(c, fiber.StatusUnauthorized, "Only hosts are allowed to invite users", err)

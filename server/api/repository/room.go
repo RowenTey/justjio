@@ -13,6 +13,7 @@ type RoomRepository interface {
 	GetByID(roomID string) (*model.Room, error)
 	GetUserRooms(userID string, page int, pageSize int) (*[]model.Room, error)
 	CountUserRooms(userID string) (int64, error)
+	GetUnjoinedRoomsByIsPrivate(userID string, isPrivate bool) (*[]model.Room, error)
 	GetRoomAttendees(roomID string) (*[]model.User, error)
 	GetRoomAttendeeIDs(roomID string) (*[]string, error)
 	CloseRoom(roomID string) error
@@ -79,31 +80,34 @@ func (r *roomRepository) CountUserRooms(userID string) (int64, error) {
 	return count, err
 }
 
+func (r *roomRepository) GetUnjoinedRoomsByIsPrivate(userID string, isPrivate bool) (*[]model.Room, error) {
+	var rooms []model.Room
+	err := r.db.
+		Table("rooms").
+		Preload("Host").
+		Where("is_private = ?", isPrivate).
+		Where("id NOT IN (SELECT room_id FROM room_users WHERE user_id = ?)", userID).
+		Where("id NOT IN (SELECT room_id FROM room_invites WHERE user_id = ?)", userID).
+		Order("updated_at DESC").
+		Find(&rooms).Error
+	return &rooms, err
+}
+
 func (r *roomRepository) GetRoomAttendees(roomID string) (*[]model.User, error) {
 	var room model.Room
 	err := r.db.Table("rooms").Preload("Users").First(&room, "id = ?", roomID).Error
-	if err != nil {
-		return nil, err
-	}
-	return &room.Users, nil
+	return &room.Users, err
 }
 
 func (r *roomRepository) GetRoomAttendeeIDs(roomID string) (*[]string, error) {
-	// TODO: test this function
 	var userIds []string
-	// var users []model.User
-
 	err := r.db.
 		Table("users").
 		Joins("JOIN room_users ON room_users.user_id = users.id").
 		Where("room_users.room_id = ?", roomID).
 		Select("users.id").
 		Find(&userIds).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return &userIds, nil
+	return &userIds, err
 }
 
 func (r *roomRepository) CloseRoom(roomID string) error {

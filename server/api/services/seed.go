@@ -120,7 +120,6 @@ func SeedDB(
 
 		createdRoom, _, err := roomService.CreateRoomWithInvites(
 			&r,
-			"Join my party!",
 			utils.UIntToString(host.ID),
 			placeIds[i],
 			&invitees,

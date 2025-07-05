@@ -43,7 +43,6 @@ type RoomInvite struct {
 	RoomID    string    `gorm:"not null; type:uuid" json:"roomId"`
 	UserID    uint      `gorm:"not null" json:"userId"`
 	InviterID uint      `gorm:"not null" json:"inviterId"`
-	Message   string    `gorm:"not null" json:"message"`
 	Status    string    `gorm:"not null; default:'pending'" json:"status"` // Invite status (pending, accepted, rejected)
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"createdAt"`
 

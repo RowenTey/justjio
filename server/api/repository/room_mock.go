@@ -35,6 +35,11 @@ func (r *MockRoomRepository) CountUserRooms(userID string) (int64, error) {
 	return args.Get(0).(int64), args.Error(1)
 }
 
+func (r *MockRoomRepository) GetUnjoinedRoomsByIsPrivate(userID string, isPrivate bool) (*[]model.Room, error) {
+	args := r.Called(userID, isPrivate)
+	return args.Get(0).(*[]model.Room), args.Error(1)
+}
+
 func (r *MockRoomRepository) GetRoomAttendees(roomID string) (*[]model.User, error) {
 	args := r.Called(roomID)
 	return args.Get(0).(*[]model.User), args.Error(1)

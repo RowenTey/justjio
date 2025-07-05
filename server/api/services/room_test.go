@@ -71,7 +71,6 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_Success() {
 	host := &model.User{ID: 1, Username: "host"}
 	invitees := []uint{2, 3}
 	room := &model.Room{Name: "Test Room"}
-	inviteMessage := "Join my room!"
 	placeId := "ChIJN1t_tDeuEmsRUsoyG83frY4"
 
 	// Expect transaction begin
@@ -113,7 +112,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_Success() {
 
 	// Execute
 	resultRoom, resultInvites, err := s.roomService.CreateRoomWithInvites(
-		room, inviteMessage, "1", placeId, &invitees,
+		room, "1", placeId, &invitees,
 	)
 
 	// Assertions
@@ -132,7 +131,6 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_HostNotFound() {
 	// Setup test data
 	invitees := []uint{2, 3}
 	room := &model.Room{Name: "Test Room"}
-	inviteMessage := "Join my room!"
 
 	// Expect transaction begin
 	s.sqlMock.ExpectBegin()
@@ -148,7 +146,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_HostNotFound() {
 
 	// Execute
 	_, _, err := s.roomService.CreateRoomWithInvites(
-		room, inviteMessage, "1", "randomPlaceId", &invitees,
+		room, "1", "randomPlaceId", &invitees,
 	)
 
 	// Assertions
@@ -177,6 +175,30 @@ func (s *RoomServiceTestSuite) TestGetRooms_Success() {
 	// Assertions
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), &expectedRooms, rooms)
+	assert.Equal(s.T(), 2, len(*rooms))
+
+	// Verify mock calls
+	s.mockRoomRepo.AssertExpectations(s.T())
+}
+
+func (s *RoomServiceTestSuite) TestGetUnjoinedPublicRooms_Success() {
+	// Setup test data
+	userId := "1"
+	expectedRooms := []model.Room{
+		{ID: "1", Name: "Room 1", IsPrivate: false},
+		{ID: "2", Name: "Room 2", IsPrivate: false},
+	}
+
+	// Mock expectations
+	s.mockRoomRepo.On("GetRoomsByIsPrivate", userId, false).Return(&expectedRooms, nil)
+
+	// Execute
+	rooms, err := s.roomService.GetUnjoinedPublicRooms(userId)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), &expectedRooms, rooms)
+	assert.Equal(s.T(), 2, len(*rooms))
 
 	// Verify mock calls
 	s.mockRoomRepo.AssertExpectations(s.T())
@@ -461,7 +483,6 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_Success() {
 	roomId := "1"
 	inviterId := "1"
 	inviteesIds := []uint{2, 3}
-	message := "Join my room!"
 	room := &model.Room{ID: "1", HostID: 1}
 	inviter := &model.User{ID: 1}
 	invitees := []model.User{{ID: 2}, {ID: 3}}
@@ -486,7 +507,7 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	invites, err := s.roomService.InviteUsersToRoom(roomId, inviterId, &inviteesIds, message)
+	invites, err := s.roomService.InviteUsersToRoom(roomId, inviterId, &inviteesIds)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -517,7 +538,7 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_NotHost() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	invites, err := s.roomService.InviteUsersToRoom(roomId, inviterId, &invitees, "msg")
+	invites, err := s.roomService.InviteUsersToRoom(roomId, inviterId, &invitees)
 
 	// Assertions
 	assert.Equal(s.T(), ErrInvalidHost, err)

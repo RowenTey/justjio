@@ -32,7 +32,7 @@ const TopBarWithBackArrow: React.FC<TopBarWithBackArrowProps> = ({
           shouldCenterTitle ? "absolute left-3" : ""
         }`}
       >
-        <ArrowLeftIcon className="w-6 h-6 text-black" />
+        <ArrowLeftIcon className="w-6 h-6 text-secondary" />
       </button>
 
       <h1

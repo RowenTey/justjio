@@ -64,7 +64,7 @@ var NewRoomService = func(
 }
 
 func (rs *RoomService) CreateRoomWithInvites(
-	room *model.Room, inviteMessage, userId, placeId string, inviteesIds *[]uint) (*model.Room, *[]model.RoomInvite, error) {
+	room *model.Room, userId, placeId string, inviteesIds *[]uint) (*model.Room, *[]model.RoomInvite, error) {
 	var invites []model.RoomInvite
 
 	if err := database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
@@ -99,7 +99,6 @@ func (rs *RoomService) CreateRoomWithInvites(
 				RoomID:    room.ID,
 				UserID:    user.ID,
 				InviterID: host.ID,
-				Message:   inviteMessage,
 				Status:    "pending",
 			}
 			invites = append(invites, invite)
@@ -119,46 +118,16 @@ func (rs *RoomService) CreateRoomWithInvites(
 	return room, &invites, nil
 }
 
-func (rs *RoomService) fetchGoogleMapsUri(placeId string) (string, error) {
-	reqUrl := fmt.Sprintf("https://places.googleapis.com/v1/places/%s", placeId)
-	req, err := http.NewRequest("GET", reqUrl, nil)
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Set("X-Goog-Api-Key", rs.googleMapsApiKey)
-	req.Header.Set("X-Goog-FieldMask", "googleMapsUri")
-
-	resp, err := rs.httpClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var placeResponse map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&placeResponse); err != nil {
-		return "", fmt.Errorf("failed to decode response: %v", err)
-	}
-
-	googleMapsUri, ok := placeResponse["googleMapsUri"].(string)
-	if !ok {
-		return "", errors.New("googleMapsUri not found in response")
-	}
-
-	return googleMapsUri, nil
-}
-
 func (rs *RoomService) GetRooms(userId string, page int) (*[]model.Room, error) {
 	return rs.roomRepo.GetUserRooms(userId, page, ROOM_PAGE_SIZE)
 }
 
 func (rs *RoomService) GetNumRooms(userId string) (int64, error) {
 	return rs.roomRepo.CountUserRooms(userId)
+}
+
+func (rs *RoomService) GetUnjoinedPublicRooms(userId string) (*[]model.Room, error) {
+	return rs.roomRepo.GetUnjoinedRoomsByIsPrivate(userId, false)
 }
 
 func (rs *RoomService) GetRoomById(roomId string) (*model.Room, error) {
@@ -255,6 +224,8 @@ func (rs *RoomService) JoinRoom(roomId, userId string) (*model.Room, *[]model.Us
 		return nil, nil, ErrAlreadyInRoom
 	}
 
+	// TODO: check if user is invited if room is private
+
 	room, err := rs.roomRepo.GetByID(roomId)
 	if err != nil {
 		return nil, nil, err
@@ -348,9 +319,8 @@ func (rs *RoomService) ValidateInvites(
 	return nil
 }
 
-// TODO: test the closure
 func (rs *RoomService) InviteUsersToRoom(
-	roomId string, inviterId string, inviteesIds *[]uint, message string) (*[]model.RoomInvite, error) {
+	roomId string, inviterId string, inviteesIds *[]uint) (*[]model.RoomInvite, error) {
 	var roomInvites []model.RoomInvite
 
 	err := database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
@@ -385,7 +355,6 @@ func (rs *RoomService) InviteUsersToRoom(
 				RoomID:    room.ID,
 				UserID:    invitee.ID,
 				InviterID: inviter.ID,
-				Message:   message,
 				Status:    "pending",
 			}
 			roomInvites = append(roomInvites, roomInvite)
@@ -514,4 +483,38 @@ func (rs *RoomService) QueryVenue(query string) (*[]modelLocation.Venue, error) 
 	}
 
 	return &predictions, nil
+}
+
+func (rs *RoomService) fetchGoogleMapsUri(placeId string) (string, error) {
+	reqUrl := fmt.Sprintf("https://places.googleapis.com/v1/places/%s", placeId)
+	req, err := http.NewRequest("GET", reqUrl, nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("X-Goog-Api-Key", rs.googleMapsApiKey)
+	req.Header.Set("X-Goog-FieldMask", "googleMapsUri")
+
+	resp, err := rs.httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var placeResponse map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&placeResponse); err != nil {
+		return "", fmt.Errorf("failed to decode response: %v", err)
+	}
+
+	googleMapsUri, ok := placeResponse["googleMapsUri"].(string)
+	if !ok {
+		return "", errors.New("googleMapsUri not found in response")
+	}
+
+	return googleMapsUri, nil
 }

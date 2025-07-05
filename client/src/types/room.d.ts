@@ -23,7 +23,6 @@ export interface IRoom {
 export interface IRoomInvite {
   id: number;
   roomId: string;
-  message: string;
   room: IRoom;
 }
 

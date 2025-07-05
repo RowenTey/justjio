@@ -36,7 +36,7 @@ func HandleNotFoundOrInternalError(c *fiber.Ctx, err error, notFoundMsg string) 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return HandleError(c, fiber.StatusNotFound, notFoundMsg, nil)
 	}
-	return HandleInternalServerError(c, nil)
+	return HandleInternalServerError(c, err)
 }
 
 func HandleSuccess(c *fiber.Ctx, message string, data any) error {

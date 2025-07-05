@@ -10,7 +10,6 @@ type CreateRoomRequest struct {
 	Room       model.Room     `json:"room"`
 	PlaceId    string         `json:"placeId"`
 	InviteesId datatypes.JSON `json:"invitees" swaggertype:"array,string"`
-	Message    string         `json:"message"`
 }
 
 type RespondToRoomInviteRequest struct {

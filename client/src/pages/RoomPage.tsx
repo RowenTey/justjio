@@ -38,6 +38,8 @@ const initialRoom: IRoom = {
   date: "",
   time: "",
   venue: "",
+  venueUrl: "",
+  imageUrl: "",
   attendeesCount: 1,
   hostId: 0,
   host: {
@@ -49,6 +51,7 @@ const initialRoom: IRoom = {
   createdAt: "",
   updatedAt: "",
   isClosed: false,
+  isPrivate: false,
   url: "",
 };
 

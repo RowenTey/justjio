@@ -3,7 +3,7 @@ import { IRoom, IRoomInvite, IVenue } from "../types/room";
 import { ApiResponse } from ".";
 import { IUser } from "../types/user";
 
-interface FetchRecentRoomsResponse extends ApiResponse {
+interface FetchRoomsResponse extends ApiResponse {
   data: IRoom[];
 }
 
@@ -52,12 +52,12 @@ interface QueryVenueResponse extends ApiResponse {
 export const fetchRecentRoomsApi = (
   api: AxiosInstance,
   mock: boolean = false,
-): Promise<AxiosResponse<FetchRecentRoomsResponse>> => {
+): Promise<AxiosResponse<FetchRoomsResponse>> => {
   if (!mock) {
-    return api.get<FetchRecentRoomsResponse>("/rooms");
+    return api.get<FetchRoomsResponse>("/rooms");
   }
 
-  return new Promise<AxiosResponse<FetchRecentRoomsResponse>>((resolve) => {
+  return new Promise<AxiosResponse<FetchRoomsResponse>>((resolve) => {
     setTimeout(() => {
       resolve({
         data: {
@@ -84,7 +84,47 @@ export const fetchRecentRoomsApi = (
         statusText: "OK",
         headers: {},
         config: {},
-      } as AxiosResponse<FetchRecentRoomsResponse>);
+      } as AxiosResponse<FetchRoomsResponse>);
+    }, 1500);
+  });
+};
+
+export const fetchExploreMoreRoomsApi = (
+  api: AxiosInstance,
+  mock: boolean = false,
+): Promise<AxiosResponse<FetchRoomsResponse>> => {
+  if (!mock) {
+    return api.get<FetchRoomsResponse>("/rooms/public");
+  }
+
+  return new Promise<AxiosResponse<FetchRoomsResponse>>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        data: {
+          data: [
+            {
+              id: "1",
+              name: "Test Room",
+              time: "5:00pm",
+              venue: "ntu hall 9",
+              date: "2022-09-04T00:00:00Z",
+              hostId: 6,
+              host: {},
+              createdAt: "2021-09-25T02:00:00Z",
+              updatedAt: "2021-09-25T02:00:00Z",
+              attendeesCount: 1,
+              url: "",
+              isClosed: false,
+            },
+          ],
+          message: "Fetched recent rooms successfully",
+          status: "success",
+        },
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      } as AxiosResponse<FetchRoomsResponse>);
     }, 1500);
   });
 };
@@ -121,7 +161,6 @@ export const createRoomApi = (
   roomData: Partial<IRoom>,
   placeId: string,
   inviteesId: string[],
-  message: string = "Join my room!",
   mock: boolean = false,
 ): Promise<AxiosResponse<CreateRoomResponse>> => {
   if (!mock) {
@@ -129,7 +168,6 @@ export const createRoomApi = (
       room: roomData,
       placeId,
       invitees: inviteesId,
-      message,
     });
   }
 
@@ -317,7 +355,6 @@ export const fetchRoomInvitesApi = (
                 url: "",
                 isClosed: false,
               },
-              message: "Test message",
             },
           ],
           message: "Fetched room invites successfully",
