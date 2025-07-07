@@ -15,7 +15,14 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
-type KafkaService struct {
+type KafkaService interface {
+	CreateTopic(topic string) error
+	BroadcastMessage(userIds *[]string, message modelKafka.KafkaMessage) error
+	PublishMessage(topic string, message string) error
+	Close()
+}
+
+type kafkaService struct {
 	producer    *kafka.Producer
 	admin       *kafka.AdminClient
 	env         string
@@ -23,7 +30,7 @@ type KafkaService struct {
 	logger      *logrus.Entry
 }
 
-func NewKafkaService(conf *config.Config, logger *logrus.Logger, env string) (*KafkaService, error) {
+func NewKafkaService(conf *config.Config, logger *logrus.Logger, env string) (KafkaService, error) {
 	bootstrapServers := fmt.Sprintf("%s:%s", conf.Kafka.Host, conf.Kafka.Port)
 	p, err := kafka.NewProducer(&kafka.ConfigMap{
 		"bootstrap.servers": bootstrapServers,
@@ -37,7 +44,7 @@ func NewKafkaService(conf *config.Config, logger *logrus.Logger, env string) (*K
 		return nil, err
 	}
 
-	return &KafkaService{
+	return &kafkaService{
 		producer:    p,
 		admin:       a,
 		env:         env,
@@ -46,7 +53,7 @@ func NewKafkaService(conf *config.Config, logger *logrus.Logger, env string) (*K
 	}, nil
 }
 
-func (ks *KafkaService) CreateTopic(topic string) error {
+func (ks *kafkaService) CreateTopic(topic string) error {
 	topic = ks.getFormattedTopic(topic)
 	topicSpec := kafka.TopicSpecification{
 		Topic:             topic,
@@ -62,7 +69,7 @@ func (ks *KafkaService) CreateTopic(topic string) error {
 	return nil
 }
 
-func (ks *KafkaService) BroadcastMessage(userIds *[]string, message modelKafka.KafkaMessage) error {
+func (ks *kafkaService) BroadcastMessage(userIds *[]string, message modelKafka.KafkaMessage) error {
 	messageJSON, err := json.Marshal(message)
 	if err != nil {
 		return err
@@ -104,7 +111,7 @@ func (ks *KafkaService) BroadcastMessage(userIds *[]string, message modelKafka.K
 	return allErrors
 }
 
-func (ks *KafkaService) PublishMessage(topic string, message string) error {
+func (ks *kafkaService) PublishMessage(topic string, message string) error {
 	deliveryChan := make(chan kafka.Event)
 
 	err := ks.producer.Produce(&kafka.Message{
@@ -126,7 +133,7 @@ func (ks *KafkaService) PublishMessage(topic string, message string) error {
 	return nil
 }
 
-func (ks *KafkaService) Close() {
+func (ks *kafkaService) Close() {
 	// Flush and close the producer and the events channel
 	unflushed := ks.producer.Flush(10000)
 	ks.logger.Warnf("Unflushed messages: %d\n", unflushed)
@@ -134,7 +141,7 @@ func (ks *KafkaService) Close() {
 	ks.producer.Close()
 }
 
-func (ks *KafkaService) getFormattedTopic(topic string) string {
+func (ks *kafkaService) getFormattedTopic(topic string) string {
 	if ks.env == "dev" || ks.env == "staging" {
 		topic = fmt.Sprintf("%s-%s", ks.env, topic)
 	}

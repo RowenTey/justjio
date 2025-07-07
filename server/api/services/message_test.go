@@ -1,112 +1,264 @@
 package services
 
-// type MessageServiceTestSuite struct {
-// 	suite.Suite
-// 	DB   *gorm.DB
-// 	mock sqlmock.Sqlmock
+import (
+	"errors"
+	"testing"
 
-// 	messageService *MessageService
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
 
-// 	roomId string
-// }
+	"github.com/RowenTey/JustJio/server/api/model"
+	"github.com/RowenTey/JustJio/server/api/repository"
+	"github.com/RowenTey/JustJio/server/api/tests"
+)
 
-// func TestMessageServiceTestSuite(t *testing.T) {
-// 	suite.Run(t, new(MessageServiceTestSuite))
-// }
+type MessageServiceTestSuite struct {
+	suite.Suite
+	messageService *MessageService
 
-// func (s *MessageServiceTestSuite) SetupTest() {
-// 	var err error
-// 	s.DB, s.mock, err = tests.SetupTestDB()
-// 	assert.NoError(s.T(), err)
+	// DB mocks
+	db      *gorm.DB
+	sqlMock sqlmock.Sqlmock
 
-// 	s.messageService = NewMessageService(s.DB)
+	// Mock repositories
+	mockMessageRepo *repository.MockMessageRepository
+	mockRoomRepo    *repository.MockRoomRepository
+	mockUserRepo    *repository.MockUserRepository
+	mockKafkaSvc    *MockKafkaService
+}
 
-// 	s.roomId = "room-123"
-// }
+func TestMessageServiceSuite(t *testing.T) {
+	suite.Run(t, new(MessageServiceTestSuite))
+}
 
-// func (s *MessageServiceTestSuite) AfterTest(_, _ string) {
-// 	assert.NoError(s.T(), s.mock.ExpectationsWereMet())
-// }
+func (s *MessageServiceTestSuite) SetupTest() {
+	var err error
+	s.db, s.sqlMock, err = tests.SetupTestDB()
+	require.NoError(s.T(), err)
 
-// func (s *MessageServiceTestSuite) TestSaveMessage_Success() {
-// 	// arrange
-// 	room := tests.CreateTestRoom(s.roomId, "Test Room", 1)
-// 	sender := tests.CreateTestUser(1, "testuser", "user@test.com")
-// 	content := "Hello, world!"
+	// Initialize mock dependencies
+	s.mockMessageRepo = new(repository.MockMessageRepository)
+	s.mockRoomRepo = new(repository.MockRoomRepository)
+	s.mockUserRepo = new(repository.MockUserRepository)
+	s.mockKafkaSvc = new(MockKafkaService)
 
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectQuery(`INSERT INTO "messages"`).
-// 		WithArgs(
-// 			room.ID,
-// 			sender.ID,
-// 			content,
-// 			sqlmock.AnyArg(), // SentAt
-// 		).
-// 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1)) // ID = 1
-// 	s.mock.ExpectCommit()
+	// Create messageService with mock dependencies
+	s.messageService = NewMessageService(
+		s.db,
+		s.mockMessageRepo,
+		s.mockRoomRepo,
+		s.mockUserRepo,
+		s.mockKafkaSvc,
+		logrus.New(),
+	)
+}
 
-// 	// act
-// 	err := s.messageService.SaveMessage(room, sender, content)
+func (s *MessageServiceTestSuite) TestSaveMessage_Success() {
+	// Setup test data
+	roomID := "room1"
+	senderID := "user1"
+	content := "Hello world"
+	roomUserIDs := []string{"user1", "user2"}
 
-// 	// assert
-// 	assert.NoError(s.T(), err)
-// }
+	room := &model.Room{ID: roomID}
+	sender := &model.User{ID: 1, Username: "testuser"}
 
-// func (s *MessageServiceTestSuite) TestGetMessageById_Success() {
-// 	// arrange
-// 	messageID := "1"
-// 	now := time.Now()
+	// Expect transaction begin
+	s.sqlMock.ExpectBegin()
 
-// 	rows := sqlmock.NewRows([]string{
-// 		"id", "room_id", "sender_id", "content", "sent_at",
-// 	}).AddRow(
-// 		messageID, s.roomId, 1, "Hello, world!", now,
-// 	)
+	// Setup repository mocks with transaction support
+	s.mockRoomRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockRoomRepo)
+	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
+	s.mockMessageRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockMessageRepo)
 
-// 	s.mock.ExpectQuery(`SELECT \* FROM "messages" WHERE id = \$1 AND room_id = \$2 ORDER BY "messages"."id" LIMIT \$3`).
-// 		WithArgs(messageID, s.roomId, 1).
-// 		WillReturnRows(rows)
+	// Mock expectations
+	s.mockRoomRepo.On("GetByID", roomID).Return(room, nil)
+	s.mockUserRepo.On("FindByID", senderID).Return(sender, nil)
+	s.mockMessageRepo.On("Create", mock.AnythingOfType("*model.Message")).Return(nil)
+	s.mockKafkaSvc.On("BroadcastMessage", &roomUserIDs, mock.AnythingOfType("model_kafka.KafkaMessage")).Return(nil)
 
-// 	// act
-// 	message, err := s.messageService.GetMessageById(messageID, s.roomId)
+	// Expect transaction commit
+	s.sqlMock.ExpectCommit()
 
-// 	// assert
-// 	assert.NoError(s.T(), err)
-// 	assert.Equal(s.T(), uint(1), message.ID)
-// 	assert.Equal(s.T(), s.roomId, message.RoomID)
-// 	assert.Equal(s.T(), uint(1), message.SenderID)
-// 	assert.Equal(s.T(), "Hello, world!", message.Content)
-// 	assert.Equal(s.T(), now.Unix(), message.SentAt.Unix())
-// }
+	// Execute
+	err := s.messageService.SaveMessage(roomID, senderID, &roomUserIDs, content)
 
-// func (s *MessageServiceTestSuite) TestDeleteMessage_Success() {
-// 	// arrange
-// 	messageID := "1"
+	// Assertions
+	assert.NoError(s.T(), err)
 
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectExec(`DELETE FROM "messages" WHERE id = \$1 AND room_id = \$2`).
-// 		WithArgs(messageID, s.roomId).
-// 		WillReturnResult(sqlmock.NewResult(1, 1))
-// 	s.mock.ExpectCommit()
+	// Verify mock calls
+	s.mockRoomRepo.AssertExpectations(s.T())
+	s.mockUserRepo.AssertExpectations(s.T())
+	s.mockMessageRepo.AssertExpectations(s.T())
+	s.mockKafkaSvc.AssertExpectations(s.T())
+}
 
-// 	// act
-// 	err := s.messageService.DeleteMessage(messageID, s.roomId)
+func (s *MessageServiceTestSuite) TestSaveMessage_RoomNotFound() {
+	roomID := "invalid-room"
+	senderID := "user1"
+	content := "Hello world"
+	roomUserIDs := []string{"user1", "user2"}
 
-// 	// assert
-// 	assert.NoError(s.T(), err)
-// }
+	// Expect transaction begin
+	s.sqlMock.ExpectBegin()
 
-// func (s *MessageServiceTestSuite) TestDeleteRoomMessages_Success() {
-// 	// arrange
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectExec(`DELETE FROM "messages" WHERE room_id = \$1`).
-// 		WithArgs(s.roomId).
-// 		WillReturnResult(sqlmock.NewResult(0, 5)) // 5 messages deleted
-// 	s.mock.ExpectCommit()
+	// Setup repository mocks with transaction support
+	s.mockRoomRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockRoomRepo)
+	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
+	s.mockMessageRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockMessageRepo)
 
-// 	// act
-// 	err := s.messageService.DeleteRoomMessages(s.roomId)
+	// Mock expectations
+	s.mockRoomRepo.On("GetByID", roomID).Return((*model.Room)(nil), gorm.ErrRecordNotFound)
 
-// 	// assert
-// 	assert.NoError(s.T(), err)
-// }
+	// Expect transaction rollback
+	s.sqlMock.ExpectRollback()
+
+	// Execute
+	err := s.messageService.SaveMessage(roomID, senderID, &roomUserIDs, content)
+
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.True(s.T(), errors.Is(err, gorm.ErrRecordNotFound))
+
+	// Verify mock calls
+	s.mockRoomRepo.AssertExpectations(s.T())
+	s.mockUserRepo.AssertNotCalled(s.T(), "FindByID")
+	s.mockMessageRepo.AssertNotCalled(s.T(), "Create")
+}
+
+func (s *MessageServiceTestSuite) TestSaveMessage_KafkaBroadcastFailure() {
+	roomID := "room1"
+	senderID := "user1"
+	content := "Hello world"
+	roomUserIDs := []string{"user1", "user2"}
+
+	room := &model.Room{ID: roomID}
+	sender := &model.User{ID: 1, Username: "testuser"}
+	kafkaErr := errors.New("kafka error")
+
+	// Expect transaction begin
+	s.sqlMock.ExpectBegin()
+
+	// Setup repository mocks with transaction support
+	s.mockRoomRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockRoomRepo)
+	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
+	s.mockMessageRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockMessageRepo)
+
+	// Mock expectations
+	s.mockRoomRepo.On("GetByID", roomID).Return(room, nil)
+	s.mockUserRepo.On("FindByID", senderID).Return(sender, nil)
+	s.mockMessageRepo.On("Create", mock.AnythingOfType("*model.Message")).Return(nil)
+	s.mockKafkaSvc.On("BroadcastMessage", &roomUserIDs, mock.AnythingOfType("model_kafka.KafkaMessage")).Return(kafkaErr)
+
+	// Expect transaction rollback
+	s.sqlMock.ExpectRollback()
+
+	// Execute
+	err := s.messageService.SaveMessage(roomID, senderID, &roomUserIDs, content)
+
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.Equal(s.T(), kafkaErr, err)
+
+	// Verify mock calls
+	s.mockRoomRepo.AssertExpectations(s.T())
+	s.mockUserRepo.AssertExpectations(s.T())
+	s.mockMessageRepo.AssertExpectations(s.T())
+	s.mockKafkaSvc.AssertExpectations(s.T())
+}
+
+func (s *MessageServiceTestSuite) TestGetMessageById_Success() {
+	msgID := "1"
+	roomID := "room1"
+	expectedMsg := &model.Message{
+		ID:       1,
+		RoomID:   roomID,
+		SenderID: 1,
+		Content:  "test message",
+	}
+
+	s.mockMessageRepo.On("FindByID", msgID, roomID).Return(expectedMsg, nil)
+
+	result, err := s.messageService.GetMessageById(msgID, roomID)
+
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), expectedMsg, result)
+	s.mockMessageRepo.AssertExpectations(s.T())
+}
+
+func (s *MessageServiceTestSuite) TestDeleteMessage_Success() {
+	msgID := "1"
+	roomID := "room1"
+
+	s.mockMessageRepo.On("Delete", msgID, roomID).Return(nil)
+
+	err := s.messageService.DeleteMessage(msgID, roomID)
+
+	assert.NoError(s.T(), err)
+	s.mockMessageRepo.AssertExpectations(s.T())
+}
+
+func (s *MessageServiceTestSuite) TestDeleteRoomMessages_Success() {
+	roomID := "room1"
+
+	s.mockMessageRepo.On("DeleteByRoom", roomID).Return(nil)
+
+	err := s.messageService.DeleteRoomMessages(roomID)
+
+	assert.NoError(s.T(), err)
+	s.mockMessageRepo.AssertExpectations(s.T())
+}
+
+func (s *MessageServiceTestSuite) TestCountNumMessagesPages_Success() {
+	roomID := "room1"
+	totalMessages := int64(25)
+	expectedPages := 3 // 25 messages / 10 per page = 2.5 → ceil to 3
+
+	s.mockMessageRepo.On("CountByRoom", roomID).Return(totalMessages, nil)
+
+	result, err := s.messageService.CountNumMessagesPages(roomID)
+
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), expectedPages, result)
+	s.mockMessageRepo.AssertExpectations(s.T())
+}
+
+func (s *MessageServiceTestSuite) TestGetMessagesByRoomId_Success() {
+	roomID := "room1"
+	page := 1
+	expectedMessages := []model.Message{
+		{ID: 1, Content: "message 1"},
+		{ID: 2, Content: "message 2"},
+	}
+	totalPages := 2
+
+	s.mockMessageRepo.On("FindByRoom", roomID, page, MESSAGE_PAGE_SIZE, false).Return(&expectedMessages, nil)
+	s.mockMessageRepo.On("CountByRoom", roomID).Return(int64(15), nil)
+
+	messages, pages, err := s.messageService.GetMessagesByRoomId(roomID, page, false)
+
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), &expectedMessages, messages)
+	assert.Equal(s.T(), totalPages, pages)
+	s.mockMessageRepo.AssertExpectations(s.T())
+}
+
+func (s *MessageServiceTestSuite) TestGetMessagesByRoomId_EmptyRoom() {
+	roomID := "empty-room"
+	page := 1
+
+	s.mockMessageRepo.On("FindByRoom", roomID, page, MESSAGE_PAGE_SIZE, true).Return(&[]model.Message{}, nil)
+	s.mockMessageRepo.On("CountByRoom", roomID).Return(int64(0), nil)
+
+	messages, pages, err := s.messageService.GetMessagesByRoomId(roomID, page, true)
+
+	assert.NoError(s.T(), err)
+	assert.Empty(s.T(), *messages)
+	assert.Equal(s.T(), 0, pages)
+	s.mockMessageRepo.AssertExpectations(s.T())
+}

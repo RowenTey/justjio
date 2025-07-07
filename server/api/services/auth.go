@@ -34,7 +34,7 @@ const (
 
 type AuthService struct {
 	userService   *UserService
-	kafkaService  *KafkaService
+	kafkaService  KafkaService
 	hashFunc      func(password string) (string, error)
 	sendSMTPEmail func(from, to, subject, textBody string) error
 	jwtSecret     string
@@ -46,7 +46,7 @@ type AuthService struct {
 // NOTE: used var instead of func to enable mocking in tests
 var NewAuthService = func(
 	userService *UserService,
-	kafkaService *KafkaService,
+	kafkaService KafkaService,
 	hashFunc func(password string) (string, error),
 	sendSMTPEmail func(from, to, subject, textBody string) error,
 	jwtSecret string,

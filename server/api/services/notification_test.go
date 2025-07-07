@@ -1,98 +1,253 @@
 package services
 
-// type NotificationServiceTestSuite struct {
-// 	suite.Suite
-// 	DB   *gorm.DB
-// 	mock sqlmock.Sqlmock
+import (
+	"errors"
+	"testing"
 
-// 	notificationService *NotificationService
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
-// 	userId uint
-// 	title  string
-// }
+	"github.com/RowenTey/JustJio/server/api/model"
+	pushNotificationModel "github.com/RowenTey/JustJio/server/api/model/push_notifications"
+	"github.com/RowenTey/JustJio/server/api/repository"
+)
 
-// func TestNotificationServiceTestSuite(t *testing.T) {
-// 	suite.Run(t, new(NotificationServiceTestSuite))
-// }
+type NotificationServiceTestSuite struct {
+	suite.Suite
+	notificationService *NotificationService
 
-// func (s *NotificationServiceTestSuite) SetupTest() {
-// 	var err error
-// 	s.DB, s.mock, err = tests.SetupTestDB()
-// 	assert.NoError(s.T(), err)
+	// Mock repositories
+	mockNotificationRepo *repository.MockNotificationRepository
+	mockSubscriptionRepo *repository.MockSubscriptionRepository
 
-// 	s.notificationService = NewNotificationService(s.DB)
+	// Mock channel
+	mockNotificationsChan chan pushNotificationModel.NotificationData
+}
 
-// 	s.userId = uint(1)
-// 	s.title = "Test Title"
-// }
+func TestNotificationServiceSuite(t *testing.T) {
+	suite.Run(t, new(NotificationServiceTestSuite))
+}
 
-// func (s *NotificationServiceTestSuite) AfterTest(_, _ string) {
-// 	assert.NoError(s.T(), s.mock.ExpectationsWereMet())
-// }
+func (s *NotificationServiceTestSuite) SetupTest() {
+	// Initialize mock repositories
+	s.mockNotificationRepo = new(repository.MockNotificationRepository)
+	s.mockSubscriptionRepo = new(repository.MockSubscriptionRepository)
 
-// func (s *NotificationServiceTestSuite) TestCreateNotification_Success() {
-// 	// arrange
-// 	content := "Test Content"
-// 	now := time.Now()
+	// Create buffered channel for testing
+	s.mockNotificationsChan = make(chan pushNotificationModel.NotificationData, 10)
 
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectQuery(`INSERT INTO "notifications"`).
-// 		WithArgs(
-// 			s.userId,
-// 			s.title,
-// 			content,
-// 			sqlmock.AnyArg(), // createdAt
-// 			false,            // isRead
-// 			sqlmock.AnyArg(), // updatedAt
-// 		).
-// 		WillReturnRows(sqlmock.NewRows([]string{"id", "user_id", "title", "content", "created_at", "is_read", "updated_at"}).
-// 			AddRow(1, s.userId, s.title, content, now, false, now))
-// 	s.mock.ExpectCommit()
+	// Create notificationService with mock dependencies
+	s.notificationService = NewNotificationService(
+		s.mockNotificationRepo,
+		s.mockSubscriptionRepo,
+		s.mockNotificationsChan,
+		logrus.New(),
+	)
+}
 
-// 	// act
-// 	result, err := s.notificationService.CreateNotification(s.userId, s.title, content)
+func (s *NotificationServiceTestSuite) TearDownTest() {
+	close(s.mockNotificationsChan)
+}
 
-// 	// assert
-// 	tests.AssertNoErrAndNotNil(s.T(), err, result)
-// 	assert.Equal(s.T(), s.userId, result.UserID)
-// 	assert.Equal(s.T(), s.title, result.Title)
-// 	assert.Equal(s.T(), content, result.Content)
-// 	assert.Equal(s.T(), false, result.IsRead)
-// }
+func (s *NotificationServiceTestSuite) TestCreateNotification_Success() {
+	// Setup test data
+	userId := "1"
+	title := "Test Title"
+	content := "Test Content"
+	userIdUint := uint(1)
 
-// func (s *NotificationServiceTestSuite) TestCreateNotification_EmptyContent() {
-// 	// arrange
-// 	content := "" // Empty content
+	expectedNotification := &model.Notification{
+		UserID:  userIdUint,
+		Title:   title,
+		Content: content,
+		IsRead:  false,
+	}
 
-// 	// act
-// 	result, err := s.notificationService.CreateNotification(s.userId, s.title, content)
+	// Mock expectations
+	s.mockNotificationRepo.On("Create", expectedNotification).Return(expectedNotification, nil)
 
-// 	// assert
-// 	tests.AssertErrAndNil(s.T(), err, result)
-// 	assert.Equal(s.T(), "content cannot be empty", err.Error())
-// }
+	// Execute
+	result, err := s.notificationService.CreateNotification(userId, title, content)
 
-// func (s *NotificationServiceTestSuite) TestCreateNotification_DatabaseError() {
-// 	// arrange
-// 	content := "Test Content"
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), expectedNotification, result)
+	s.mockNotificationRepo.AssertExpectations(s.T())
+}
 
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectQuery(`INSERT INTO "notifications"`).
-// 		WithArgs(
-// 			s.userId,
-// 			s.title,
-// 			content,
-// 			sqlmock.AnyArg(), // createdAt
-// 			false,            // isRead
-// 			sqlmock.AnyArg(), // updatedAt
-// 		).
-// 		WillReturnError(errors.New("database error"))
-// 	s.mock.ExpectRollback()
+func (s *NotificationServiceTestSuite) TestCreateNotification_EmptyContent() {
+	// Setup test data
+	userId := "1"
+	title := "Test Title"
+	content := ""
 
-// 	// act
-// 	result, err := s.notificationService.CreateNotification(s.userId, s.title, content)
+	// Execute
+	result, err := s.notificationService.CreateNotification(userId, title, content)
 
-// 	// assert
-// 	tests.AssertErrAndNil(s.T(), err, result)
-// 	assert.Contains(s.T(), err.Error(), "database error")
-// }
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.Equal(s.T(), ErrEmptyContent, err)
+	assert.Nil(s.T(), result)
+	s.mockNotificationRepo.AssertNotCalled(s.T(), "Create")
+}
+
+func (s *NotificationServiceTestSuite) TestCreateNotification_InvalidUserID() {
+	// Setup test data
+	userId := "invalid"
+	title := "Test Title"
+	content := "Test Content"
+
+	// Execute
+	result, err := s.notificationService.CreateNotification(userId, title, content)
+
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.Nil(s.T(), result)
+	s.mockNotificationRepo.AssertNotCalled(s.T(), "Create")
+}
+
+func (s *NotificationServiceTestSuite) TestMarkNotificationAsRead_Success() {
+	// Setup test data
+	notificationId := uint(1)
+	userId := uint(1)
+
+	// Mock expectations
+	s.mockNotificationRepo.On("MarkAsRead", notificationId, userId).Return(nil)
+
+	// Execute
+	err := s.notificationService.MarkNotificationAsRead(notificationId, userId)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+	s.mockNotificationRepo.AssertExpectations(s.T())
+}
+
+func (s *NotificationServiceTestSuite) TestGetNotification_Success() {
+	// Setup test data
+	notificationId := uint(1)
+	userId := uint(1)
+	expectedNotification := &model.Notification{
+		ID:      notificationId,
+		UserID:  userId,
+		Title:   "Test",
+		Content: "Test Content",
+		IsRead:  false,
+	}
+
+	// Mock expectations
+	s.mockNotificationRepo.On("FindByIDAndUser", notificationId, userId).Return(expectedNotification, nil)
+
+	// Execute
+	result, err := s.notificationService.GetNotification(notificationId, userId)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), expectedNotification, result)
+	s.mockNotificationRepo.AssertExpectations(s.T())
+}
+
+func (s *NotificationServiceTestSuite) TestGetNotifications_Success() {
+	// Setup test data
+	userId := uint(1)
+	expectedNotifications := []model.Notification{
+		{
+			ID:      1,
+			UserID:  userId,
+			Title:   "Test 1",
+			Content: "Content 1",
+			IsRead:  false,
+		},
+		{
+			ID:      2,
+			UserID:  userId,
+			Title:   "Test 2",
+			Content: "Content 2",
+			IsRead:  true,
+		},
+	}
+
+	// Mock expectations
+	s.mockNotificationRepo.On("FindByUser", userId).Return(&expectedNotifications, nil)
+
+	// Execute
+	result, err := s.notificationService.GetNotifications(userId)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), &expectedNotifications, result)
+	s.mockNotificationRepo.AssertExpectations(s.T())
+}
+
+func (s *NotificationServiceTestSuite) TestSendNotification_Success() {
+	// Setup test data
+	userId := "1"
+	title := "Test Title"
+	message := "Test Message"
+	userIdUint := uint(1)
+
+	subscriptions := []model.Subscription{
+		{ID: "1", UserID: userIdUint, Endpoint: "endpoint1", P256dh: "key1", Auth: "auth1"},
+		{ID: "2", UserID: userIdUint, Endpoint: "endpoint2", P256dh: "key2", Auth: "auth2"},
+	}
+
+	// Mock expectations
+	s.mockNotificationRepo.On("Create", mock.AnythingOfType("*model.Notification")).Return(&model.Notification{}, nil)
+	s.mockSubscriptionRepo.On("FindByUserID", userId).Return(&subscriptions, nil)
+
+	// Execute
+	err := s.notificationService.SendNotification(userId, title, message)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+
+	// Verify notifications were sent to channel
+	require.Equal(s.T(), 2, len(s.mockNotificationsChan))
+	for range subscriptions {
+		<-s.mockNotificationsChan // Drain the channel
+	}
+
+	s.mockNotificationRepo.AssertExpectations(s.T())
+	s.mockSubscriptionRepo.AssertExpectations(s.T())
+}
+
+func (s *NotificationServiceTestSuite) TestSendNotification_CreateFails() {
+	// Setup test data
+	userId := "1"
+	title := "Test Title"
+	message := "Test Message"
+
+	// Mock expectations
+	s.mockNotificationRepo.On("Create", mock.AnythingOfType("*model.Notification")).Return((*model.Notification)(nil), errors.New("create error"))
+
+	// Execute
+	err := s.notificationService.SendNotification(userId, title, message)
+
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.Equal(s.T(), 0, len(s.mockNotificationsChan)) // No messages should be sent
+	s.mockNotificationRepo.AssertExpectations(s.T())
+	s.mockSubscriptionRepo.AssertNotCalled(s.T(), "FindByUserID")
+}
+
+func (s *NotificationServiceTestSuite) TestSendNotification_NoSubscriptions() {
+	// Setup test data
+	userId := "1"
+	title := "Test Title"
+	message := "Test Message"
+
+	// Mock expectations
+	s.mockNotificationRepo.On("Create", mock.AnythingOfType("*model.Notification")).Return(&model.Notification{}, nil)
+	s.mockSubscriptionRepo.On("FindByUserID", userId).Return(&[]model.Subscription{}, nil)
+
+	// Execute
+	err := s.notificationService.SendNotification(userId, title, message)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), 0, len(s.mockNotificationsChan)) // No messages should be sent
+	s.mockNotificationRepo.AssertExpectations(s.T())
+	s.mockSubscriptionRepo.AssertExpectations(s.T())
+}

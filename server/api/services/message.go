@@ -23,7 +23,7 @@ type MessageService struct {
 	messageRepo  repository.MessageRepository
 	roomRepo     repository.RoomRepository
 	userRepo     repository.UserRepository
-	kafkaService *KafkaService
+	kafkaService KafkaService
 	logger       *logrus.Entry
 }
 
@@ -33,7 +33,7 @@ var NewMessageService = func(
 	messageRepo repository.MessageRepository,
 	roomRepo repository.RoomRepository,
 	userRepo repository.UserRepository,
-	kafkaService *KafkaService,
+	kafkaService KafkaService,
 	logger *logrus.Logger) *MessageService {
 	return &MessageService{
 		db:           db,

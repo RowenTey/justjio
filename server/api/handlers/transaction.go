@@ -13,13 +13,13 @@ import (
 )
 
 type TransactionHandler struct {
-	transactionService  *services.TransactionService
+	transactionService  services.TransactionService
 	notificationService *services.NotificationService
 	logger              *log.Entry
 }
 
 func NewTransactionHandler(
-	transactionService *services.TransactionService,
+	transactionService services.TransactionService,
 	notificationService *services.NotificationService,
 	logger *log.Logger,
 ) *TransactionHandler {
