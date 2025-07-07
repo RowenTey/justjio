@@ -208,6 +208,19 @@ func (s *UserServiceTestSuite) TestSendFriendRequest_RequestExists() {
 	s.mockUserRepo.AssertExpectations(s.T())
 }
 
+func (s *UserServiceTestSuite) TestSearchUsers_Success() {
+	currentUserID := "1"
+	query := "test"
+	expected := []model.User{{ID: 2, Username: "testuser"}}
+
+	s.mockUserRepo.On("SearchUsers", currentUserID, query, 10).Return(&expected, nil)
+
+	result, err := s.userService.SearchUsers(currentUserID, query)
+
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), &expected, result)
+}
+
 func (s *UserServiceTestSuite) TestGetFriendRequestsByStatus_ValidStatus() {
 	// Setup test data
 	userID := uint(1)

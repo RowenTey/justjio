@@ -90,11 +90,41 @@ func SeedDB(
 
 	// create rooms
 	rooms := []model.Room{
-		{Name: "ks birthday", Date: time.Date(2022, time.September, 4, 0, 0, 0, 0, time.UTC), Time: "5:00pm", Venue: "ntu hall 9"},
-		{Name: "harish birthday", Date: time.Date(2022, time.October, 8, 0, 0, 0, 0, time.UTC), Time: "6:00pm", Venue: "clementi mall"},
-		{Name: "amabel birthday", Date: time.Date(2022, time.November, 12, 0, 0, 0, 0, time.UTC), Time: "9:00am", Venue: "marina bay sand"},
-		{Name: "everyone birthday", Date: time.Date(2022, time.January, 7, 0, 0, 0, 0, time.UTC), Time: "10:00am", Venue: "pulau ubin"},
-		{Name: "mom birthday", Date: time.Date(2022, time.February, 28, 0, 0, 0, 0, time.UTC), Time: "11:00am", Venue: "lot one"},
+		{
+			Name:     "ks birthday",
+			Date:     time.Date(2022, time.September, 4, 0, 0, 0, 0, time.UTC),
+			Time:     "5:00pm",
+			Venue:    "ntu hall 9",
+			ImageUrl: "/imgs/birthday.png",
+		},
+		{
+			Name:     "harish birthday",
+			Date:     time.Date(2022, time.October, 8, 0, 0, 0, 0, time.UTC),
+			Time:     "6:00pm",
+			Venue:    "clementi mall",
+			ImageUrl: "/imgs/birthday.png",
+		},
+		{
+			Name:     "amabel birthday",
+			Date:     time.Date(2022, time.November, 12, 0, 0, 0, 0, time.UTC),
+			Time:     "9:00am",
+			Venue:    "marina bay sand",
+			ImageUrl: "/imgs/birthday.png",
+		},
+		{
+			Name:     "everyone birthday",
+			Date:     time.Date(2022, time.January, 7, 0, 0, 0, 0, time.UTC),
+			Time:     "10:00am",
+			Venue:    "pulau ubin",
+			ImageUrl: "/imgs/birthday.png",
+		},
+		{
+			Name:     "mom birthday",
+			Date:     time.Date(2022, time.February, 28, 0, 0, 0, 0, time.UTC),
+			Time:     "11:00am",
+			Venue:    "lot one",
+			ImageUrl: "/imgs/birthday.png",
+		},
 	}
 
 	placeIds := []string{

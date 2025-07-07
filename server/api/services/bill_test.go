@@ -1,465 +1,329 @@
 package services
 
-// type BillServiceTestSuite struct {
-// 	suite.Suite
-// 	DB   *gorm.DB
-// 	mock sqlmock.Sqlmock
-
-// 	billService *BillService
-
-// 	roomId            string
-// 	billCols          []string
-// 	consolidationCols []string
-// }
-
-// func TestBillServiceTestSuite(t *testing.T) {
-// 	suite.Run(t, new(BillServiceTestSuite))
-// }
-
-// func (s *BillServiceTestSuite) SetupTest() {
-// 	var err error
-// 	s.DB, s.mock, err = tests.SetupTestDB()
-// 	assert.NoError(s.T(), err)
-
-// 	s.billService = NewBillService(s.DB)
-
-// 	s.roomId = "room-123"
-// 	s.billCols = []string{"id", "name", "amount", "date", "include_owner", "room_id", "owner_id", "consolidation_id"}
-// 	s.consolidationCols = []string{"id", "consolidation_id"}
-// }
-
-// func (s *BillServiceTestSuite) AfterTest(_, _ string) {
-// 	assert.NoError(s.T(), s.mock.ExpectationsWereMet())
-// }
-
-// func (s *BillServiceTestSuite) TestCreateBill_Success() {
-// 	// arrange
-// 	room := tests.CreateTestRoom(s.roomId, "Test Room", 1)
-// 	owner := tests.CreateTestUser(1, "owner1", "owner@example.com")
-// 	payer1 := tests.CreateTestUser(2, "payer1", "payer1@example.com")
-// 	payer2 := tests.CreateTestUser(3, "payer2", "payer2@example.com")
-// 	payers := []model.User{*payer1, *payer2}
-// 	name, amount, includeOwner := prepareBillDetails()
-
-// 	// Expect the bill creation
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectQuery(`INSERT INTO "bills"`).
-// 		WithArgs(
-// 			name,
-// 			amount,
-// 			sqlmock.AnyArg(), // Date
-// 			includeOwner,
-// 			room.ID,
-// 			owner.ID,
-// 		).
-// 		WillReturnRows(sqlmock.NewRows(s.consolidationCols).AddRow(1, 1))
-
-// 	args := append(userArgs(payer1), userArgs(payer2)...)
-// 	s.mock.ExpectQuery(`INSERT INTO "users"`).
-// 		WithArgs(args...).
-// 		WillReturnRows(sqlmock.NewRows([]string{"id"}).
-// 			AddRow(payer1.ID).
-// 			AddRow(payer2.ID))
-
-// 	// Expect many-to-many relationship with payers
-// 	s.mock.ExpectExec(`INSERT INTO "payers"`).
-// 		WithArgs(
-// 			1, // Bill ID
-// 			room.ID,
-// 			owner.ID,
-// 			payers[0].ID,
-// 			1, // Bill ID
-// 			room.ID,
-// 			owner.ID,
-// 			payers[1].ID,
-// 		).
-// 		WillReturnResult(sqlmock.NewResult(0, 2)) // 2 rows affected
-// 	s.mock.ExpectCommit()
-
-// 	// act
-// 	bill, err := s.billService.CreateBill(room, owner, name, amount, includeOwner, &payers)
-
-// 	// assert
-// 	tests.AssertNoErrAndNotNil(s.T(), err, bill)
-// 	assert.Equal(s.T(), name, bill.Name)
-// 	assert.Equal(s.T(), amount, bill.Amount)
-// 	assert.Equal(s.T(), includeOwner, bill.IncludeOwner)
-// 	assert.Equal(s.T(), room.ID, bill.RoomID)
-// 	assert.Equal(s.T(), owner.ID, bill.OwnerID)
-// 	assert.Equal(s.T(), 2, len(bill.Payers))
-// }
-
-// func (s *BillServiceTestSuite) TestCreateBill_EmptyPayers() {
-// 	// arrange
-// 	room := tests.CreateTestRoom(s.roomId, "Test Room", 1)
-// 	owner := tests.CreateTestUser(1, "owner1", "owner@example.com")
-// 	payers := []model.User{}
-// 	name, amount, includeOwner := prepareBillDetails()
-
-// 	// act
-// 	bill, err := s.billService.CreateBill(room, owner, name, amount, includeOwner, &payers)
-
-// 	// assert
-// 	tests.AssertErrAndNil(s.T(), err, bill)
-// 	assert.Contains(s.T(), err.Error(), "payers of a bill can't be empty")
-// }
-
-// func (s *BillServiceTestSuite) TestCreateBill_DatabaseError() {
-// 	// arrange
-// 	room := tests.CreateTestRoom(s.roomId, "Test Room", 1)
-// 	owner := tests.CreateTestUser(1, "owner1", "owner@example.com")
-// 	payer1 := tests.CreateTestUser(2, "payer1", "payer1@example.com")
-// 	payers := []model.User{*payer1}
-// 	name, amount, includeOwner := prepareBillDetails()
-
-// 	// Expect the bill creation with database error
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectQuery(`INSERT INTO "bills"`).
-// 		WithArgs(
-// 			name,
-// 			amount,
-// 			sqlmock.AnyArg(), // Date
-// 			includeOwner,
-// 			room.ID,
-// 			owner.ID,
-// 		).
-// 		WillReturnError(errors.New("database error"))
-// 	s.mock.ExpectRollback()
-
-// 	// act
-// 	bill, err := s.billService.CreateBill(room, owner, name, amount, includeOwner, &payers)
-
-// 	// assert
-// 	tests.AssertErrAndNil(s.T(), err, bill)
-// 	assert.Contains(s.T(), err.Error(), "database error")
-// }
-
-// func (s *BillServiceTestSuite) TestGetBillById_Success() {
-// 	// arrange
-// 	billId := uint(1)
-// 	bill := createTestBill(billId, "Dinner", 100.0, s.roomId, 1)
-
-// 	rows := sqlmock.NewRows(s.billCols).AddRow(
-// 		bill.ID,
-// 		bill.Name,
-// 		bill.Amount,
-// 		bill.Date,
-// 		bill.IncludeOwner,
-// 		bill.RoomID,
-// 		bill.OwnerID,
-// 		bill.ConsolidationID,
-// 	)
-
-// 	s.mock.ExpectQuery(`SELECT \* FROM "bills" WHERE id = \$1 ORDER BY "bills"."id" LIMIT \$2`).
-// 		WithArgs(billId, 1).
-// 		WillReturnRows(rows)
-
-// 	// act
-// 	result, err := s.billService.GetBillById(billId)
-
-// 	// assert
-// 	tests.AssertNoErrAndNotNil(s.T(), err, result)
-// 	assert.Equal(s.T(), billId, result.ID)
-// 	assert.Equal(s.T(), "Dinner", result.Name)
-// 	assert.Equal(s.T(), float32(100.0), result.Amount)
-// }
-
-// func (s *BillServiceTestSuite) TestGetBillById_NotFound() {
-// 	// arrange
-// 	billId := uint(999)
-
-// 	s.mock.ExpectQuery(`SELECT \* FROM "bills" WHERE id = \$1 ORDER BY "bills"."id" LIMIT \$2`).
-// 		WithArgs(billId, 1).
-// 		WillReturnError(gorm.ErrRecordNotFound)
-
-// 	// act
-// 	result, err := s.billService.GetBillById(billId)
-
-// 	// assert
-// 	assert.Error(s.T(), err)
-// 	assert.Equal(s.T(), uint(0), result.ID) // Empty bill returned
-// 	assert.Equal(s.T(), gorm.ErrRecordNotFound, err)
-// }
-
-// func (s *BillServiceTestSuite) TestGetBillsForRoom_Success() {
-// 	// arrange
-// 	bills := []model.Bill{
-// 		createTestBill(1, "Dinner", 100.0, s.roomId, 1),
-// 		createTestBill(2, "Movie", 50.0, s.roomId, 2),
-// 	}
-
-// 	rows := sqlmock.NewRows(s.billCols)
-// 	for _, bill := range bills {
-// 		rows.AddRow(
-// 			bill.ID,
-// 			bill.Name,
-// 			bill.Amount,
-// 			bill.Date,
-// 			bill.IncludeOwner,
-// 			bill.RoomID,
-// 			bill.OwnerID,
-// 			bill.ConsolidationID,
-// 		)
-// 	}
-
-// 	s.mock.ExpectQuery(`SELECT \* FROM "bills" WHERE room_id = \$1`).
-// 		WithArgs(s.roomId).
-// 		WillReturnRows(rows)
-
-// 	// Expect preloading Owner
-// 	ownerRows := sqlmock.NewRows([]string{"id", "username"}).
-// 		AddRow(1, "owner1").
-// 		AddRow(2, "owner2")
-// 	s.mock.ExpectQuery(`SELECT \* FROM "users" WHERE "users"."id" IN \(\$1,\$2\)`).
-// 		WithArgs(1, 2).
-// 		WillReturnRows(ownerRows)
-
-// 	// Expect preloading Payers for first bill
-// 	payersJoinRows := sqlmock.NewRows([]string{"bill_id", "user_id", "bill_room_id", "bill_owner_id"}).
-// 		AddRow(1, 3, s.roomId, 1).
-// 		AddRow(1, 4, s.roomId, 1).
-// 		AddRow(2, 5, s.roomId, 2).
-// 		AddRow(2, 6, s.roomId, 2)
-// 	s.mock.ExpectQuery(`SELECT \* FROM "payers" WHERE \("payers"."bill_id","payers"."bill_room_id","payers"."bill_owner_id"\) IN \(\(\$1,\$2,\$3\),\(\$4,\$5,\$6\)\)`).
-// 		WithArgs(1, s.roomId, 1, 2, s.roomId, 2).
-// 		WillReturnRows(payersJoinRows)
-
-// 	payerRows := sqlmock.NewRows([]string{"id", "username"}).
-// 		AddRow(3, "payer1").
-// 		AddRow(4, "payer2").
-// 		AddRow(5, "payer3").
-// 		AddRow(6, "payer4")
-// 	s.mock.ExpectQuery(`SELECT \* FROM "users" WHERE "users"."id" IN \(\$1,\$2\,\$3,\$4\)`).
-// 		WithArgs(3, 4, 5, 6).
-// 		WillReturnRows(payerRows)
-
-// 	// act
-// 	result, err := s.billService.GetBillsForRoom(s.roomId)
-
-// 	// assert
-// 	tests.AssertNoErrAndNotNil(s.T(), err, result)
-// 	assert.Equal(s.T(), 2, len(*result))
-// 	assert.Equal(s.T(), uint(1), (*result)[0].ID)
-// 	assert.Equal(s.T(), uint(2), (*result)[1].ID)
-// }
-
-// func (s *BillServiceTestSuite) TestGetBillsForRoom_EmptyResult() {
-// 	// arrange
-// 	rows := sqlmock.NewRows(s.billCols)
-
-// 	s.mock.ExpectQuery(`SELECT \* FROM "bills" WHERE room_id = \$1`).
-// 		WithArgs(s.roomId).
-// 		WillReturnRows(rows)
-
-// 	// act
-// 	result, err := s.billService.GetBillsForRoom(s.roomId)
-
-// 	// assert
-// 	tests.AssertNoErrAndNotNil(s.T(), err, result)
-// 	assert.Equal(s.T(), 0, len(*result))
-// }
-
-// func (s *BillServiceTestSuite) TestGetBillsForRoom_DatabaseError() {
-// 	// arrange
-// 	s.mock.ExpectQuery(`SELECT \* FROM "bills" WHERE room_id = \$1`).
-// 		WithArgs(s.roomId).
-// 		WillReturnError(errors.New("database error"))
-
-// 	// act
-// 	result, err := s.billService.GetBillsForRoom(s.roomId)
-
-// 	// assert
-// 	tests.AssertErrAndNil(s.T(), err, result)
-// 	assert.Contains(s.T(), err.Error(), "database error")
-// }
-
-// func (s *BillServiceTestSuite) TestDeleteRoomBills_Success() {
-// 	// arrange
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectExec(`DELETE FROM "bills" WHERE room_id = \$1`).
-// 		WithArgs(s.roomId).
-// 		WillReturnResult(sqlmock.NewResult(0, 2)) // 2 rows affected
-// 	s.mock.ExpectCommit()
-
-// 	// act
-// 	err := s.billService.DeleteRoomBills(s.roomId)
-
-// 	// assert
-// 	assert.NoError(s.T(), err)
-// }
-
-// func (s *BillServiceTestSuite) TestDeleteRoomBills_DatabaseError() {
-// 	// arrange
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectExec(`DELETE FROM "bills" WHERE room_id = \$1`).
-// 		WithArgs(s.roomId).
-// 		WillReturnError(errors.New("database error"))
-// 	s.mock.ExpectRollback()
-
-// 	// act
-// 	err := s.billService.DeleteRoomBills(s.roomId)
-
-// 	// assert
-// 	assert.Error(s.T(), err)
-// 	assert.Contains(s.T(), err.Error(), "database error")
-// }
-
-// func (s *BillServiceTestSuite) TestIsRoomBillConsolidated_True() {
-// 	// arrange
-// 	consolidationId := uint(1)
-// 	rows := sqlmock.NewRows(s.consolidationCols).AddRow(
-// 		1, consolidationId,
-// 	)
-
-// 	s.mock.ExpectQuery(`SELECT \* FROM "bills" WHERE room_id = \$1 ORDER BY "bills"."id" LIMIT \$2`).
-// 		WithArgs(s.roomId, 1).
-// 		WillReturnRows(rows)
-
-// 	// act
-// 	result, err := s.billService.IsRoomBillConsolidated(s.roomId)
-
-// 	// assert
-// 	assert.NoError(s.T(), err)
-// 	assert.True(s.T(), result)
-// }
-
-// func (s *BillServiceTestSuite) TestIsRoomBillConsolidated_False() {
-// 	// arrange
-// 	consolidationId := uint(0)
-// 	rows := sqlmock.NewRows(s.consolidationCols).AddRow(
-// 		1, consolidationId,
-// 	)
-
-// 	s.mock.ExpectQuery(`SELECT \* FROM "bills" WHERE room_id = \$1 ORDER BY "bills"."id" LIMIT \$2`).
-// 		WithArgs(s.roomId, 1).
-// 		WillReturnRows(rows)
-
-// 	// act
-// 	result, err := s.billService.IsRoomBillConsolidated(s.roomId)
-
-// 	// assert
-// 	assert.NoError(s.T(), err)
-// 	assert.False(s.T(), result)
-// }
-
-// func (s *BillServiceTestSuite) TestIsRoomBillConsolidated_DatabaseError() {
-// 	// arrange
-// 	s.mock.ExpectQuery(`SELECT \* FROM "bills" WHERE room_id = \$1 ORDER BY "bills"."id" LIMIT \$2`).
-// 		WithArgs(s.roomId, 1).
-// 		WillReturnError(errors.New("database error"))
-
-// 	// act
-// 	result, err := s.billService.IsRoomBillConsolidated(s.roomId)
-
-// 	// assert
-// 	assert.Error(s.T(), err)
-// 	assert.False(s.T(), result)
-// 	assert.Contains(s.T(), err.Error(), "database error")
-// }
-
-// func (s *BillServiceTestSuite) TestConsolidateBills_Success() {
-// 	// arrange
-// 	consolidationId := uint(1)
-
-// 	// Expect creating the consolidation within the transaction
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectQuery(`INSERT INTO "consolidations"`).
-// 		WithArgs(
-// 			sqlmock.AnyArg(), // CreatedAt
-// 		).
-// 		WillReturnRows(sqlmock.NewRows([]string{"id"}).
-// 			AddRow(consolidationId))
-
-// 	// Expect updating the bills within the transaction
-// 	s.mock.ExpectExec(`UPDATE "bills" SET "consolidation_id"=\$1 WHERE room_id = \$2`).
-// 		WithArgs(consolidationId, s.roomId).
-// 		WillReturnResult(sqlmock.NewResult(0, 2)) // 2 rows affected
-// 	s.mock.ExpectCommit()
-
-// 	// act
-// 	tx := s.DB.Begin() // Start a mock transaction for the test
-// 	result, err := s.billService.ConsolidateBills(tx, s.roomId)
-// 	tx.Commit() // Commit the mock transaction
-
-// 	// assert
-// 	tests.AssertNoErrAndNotNil(s.T(), err, result)
-// 	assert.Equal(s.T(), consolidationId, result.ID)
-// }
-
-// func (s *BillServiceTestSuite) TestConsolidateBills_CreateError() {
-// 	// arrange
-// 	// Expect creating the consolidation with error within the transaction
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectQuery(`INSERT INTO "consolidations"`).
-// 		WithArgs(
-// 			sqlmock.AnyArg(), // CreatedAt
-// 		).
-// 		WillReturnError(errors.New("database error"))
-// 	s.mock.ExpectRollback() // Expect rollback on error
-
-// 	// act
-// 	tx := s.DB.Begin() // Start a mock transaction for the test
-// 	result, err := s.billService.ConsolidateBills(tx, s.roomId)
-// 	tx.Rollback() // Rollback the mock transaction
-
-// 	// assert
-// 	tests.AssertErrAndNil(s.T(), err, result)
-// 	assert.Contains(s.T(), err.Error(), "database error")
-// }
-
-// func (s *BillServiceTestSuite) TestConsolidateBills_UpdateError() {
-// 	// arrange
-// 	consolidationId := uint(1)
-
-// 	// Expect creating the consolidation within the transaction
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectQuery(`INSERT INTO "consolidations"`).
-// 		WithArgs(
-// 			sqlmock.AnyArg(), // CreatedAt
-// 		).
-// 		WillReturnRows(sqlmock.NewRows([]string{"id"}).
-// 			AddRow(consolidationId))
-
-// 	// Expect updating the bills with error within the transaction
-// 	s.mock.ExpectExec(`UPDATE "bills" SET "consolidation_id"=\$1 WHERE room_id = \$2`).
-// 		WithArgs(consolidationId, s.roomId).
-// 		WillReturnError(errors.New("database error"))
-// 	s.mock.ExpectRollback() // Expect rollback on error
-
-// 	// act
-// 	tx := s.DB.Begin() // Start a mock transaction for the test
-// 	result, err := s.billService.ConsolidateBills(tx, s.roomId)
-// 	tx.Rollback() // Rollback the mock transaction
-
-// 	// assert
-// 	tests.AssertErrAndNil(s.T(), err, result)
-// 	assert.Contains(s.T(), err.Error(), "database error")
-// }
-
-// func createTestBill(id uint, name string, amount float32, roomId string, ownerId uint) model.Bill {
-// 	now := time.Now()
-// 	return model.Bill{
-// 		ID:           id,
-// 		Name:         name,
-// 		Amount:       amount,
-// 		Date:         now,
-// 		IncludeOwner: true,
-// 		RoomID:       roomId,
-// 		OwnerID:      ownerId,
-// 	}
-// }
-
-// func userArgs(u *model.User) []driver.Value {
-// 	return []driver.Value{
-// 		u.Username, u.Email, u.Password, u.PictureUrl,
-// 		u.IsEmailValid, u.IsOnline, u.LastSeen,
-// 		u.RegisteredAt, u.UpdatedAt, u.ID,
-// 	}
-// }
-
-// func prepareBillDetails() (string, float32, bool) {
-// 	name := "Dinner"
-// 	amount := float32(100.0)
-// 	includeOwner := true
-// 	return name, amount, includeOwner
-// }
+import (
+	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
+
+	"github.com/RowenTey/JustJio/server/api/model"
+	"github.com/RowenTey/JustJio/server/api/repository"
+	"github.com/RowenTey/JustJio/server/api/tests"
+)
+
+type BillServiceTestSuite struct {
+	suite.Suite
+	billService *BillService
+
+	// DB mocks
+	db      *gorm.DB
+	sqlMock sqlmock.Sqlmock
+
+	// Mock repositories
+	mockBillRepo        *repository.MockBillRepository
+	mockUserRepo        *repository.MockUserRepository
+	mockRoomRepo        *repository.MockRoomRepository
+	mockTransactionRepo *repository.MockTransactionRepository
+	mockTransactionSvc  *MockTransactionService
+}
+
+func TestBillServiceSuite(t *testing.T) {
+	suite.Run(t, new(BillServiceTestSuite))
+}
+
+func (s *BillServiceTestSuite) SetupTest() {
+	var err error
+	s.db, s.sqlMock, err = tests.SetupTestDB()
+	require.NoError(s.T(), err)
+
+	// Initialize mock repositories
+	s.mockBillRepo = new(repository.MockBillRepository)
+	s.mockUserRepo = new(repository.MockUserRepository)
+	s.mockRoomRepo = new(repository.MockRoomRepository)
+	s.mockTransactionRepo = new(repository.MockTransactionRepository)
+	s.mockTransactionSvc = new(MockTransactionService)
+
+	// Create billService with mock dependencies
+	s.billService = NewBillService(
+		s.db,
+		s.mockBillRepo,
+		s.mockUserRepo,
+		s.mockRoomRepo,
+		s.mockTransactionRepo,
+		s.mockTransactionSvc,
+		logrus.New(),
+	)
+}
+
+func (s *BillServiceTestSuite) TestCreateBill_Success() {
+	// Setup test data
+	roomId := "room1"
+	ownerId := "user1"
+	payersId := []uint{2, 3}
+	name := "Dinner"
+	amount := float32(100.50)
+	includeOwner := true
+
+	room := &model.Room{ID: roomId}
+	owner := &model.User{ID: 1, Username: "owner"}
+	payers := []model.User{
+		{ID: 2, Username: "payer1"},
+		{ID: 3, Username: "payer2"},
+	}
+
+	// Mock expectations
+	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(true, nil)
+	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+	s.mockUserRepo.On("FindByID", ownerId).Return(owner, nil)
+	s.mockUserRepo.On("FindByIDs", &payersId).Return(&payers, nil)
+	s.mockBillRepo.On("Create", mock.AnythingOfType("*model.Bill")).Run(func(args mock.Arguments) {
+		bill := args.Get(0).(*model.Bill)
+		bill.ID = 1 // Set ID for the created bill
+	}).Return(nil)
+
+	// Execute
+	bill, err := s.billService.CreateBill(roomId, ownerId, &payersId, name, amount, includeOwner)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), bill)
+	assert.Equal(s.T(), name, bill.Name)
+	assert.Equal(s.T(), amount, bill.Amount)
+	assert.Equal(s.T(), room.ID, bill.RoomID)
+	assert.Equal(s.T(), owner.ID, bill.OwnerID)
+	assert.Len(s.T(), bill.Payers, 2)
+
+	// Verify mock calls
+	s.mockBillRepo.AssertExpectations(s.T())
+	s.mockUserRepo.AssertExpectations(s.T())
+	s.mockRoomRepo.AssertExpectations(s.T())
+}
+
+func (s *BillServiceTestSuite) TestCreateBill_AlreadyConsolidated() {
+	roomId := "room1"
+	ownerId := "user1"
+	payersId := []uint{2, 3}
+
+	// Mock expectations
+	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(false, nil)
+
+	// Execute
+	bill, err := s.billService.CreateBill(roomId, ownerId, &payersId, "Dinner", 100.50, true)
+
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.Equal(s.T(), ErrAlreadyConsolidated, err)
+	assert.Nil(s.T(), bill)
+
+	// Verify mock calls
+	s.mockBillRepo.AssertExpectations(s.T())
+	s.mockRoomRepo.AssertNotCalled(s.T(), "GetByID")
+}
+
+func (s *BillServiceTestSuite) TestCreateBill_EmptyPayers() {
+	roomId := "room1"
+	ownerId := "user1"
+	emptyPayers := []uint{}
+
+	// Mock expectations
+	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(true, nil)
+
+	// Execute
+	bill, err := s.billService.CreateBill(roomId, ownerId, &emptyPayers, "Dinner", 100.50, true)
+
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.Equal(s.T(), ErrEmptyPayers, err)
+	assert.Nil(s.T(), bill)
+
+	// Verify mock calls
+	s.mockBillRepo.AssertExpectations(s.T())
+	s.mockRoomRepo.AssertNotCalled(s.T(), "GetByID")
+}
+
+func (s *BillServiceTestSuite) TestGetBillById_Success() {
+	billId := uint(1)
+	expectedBill := &model.Bill{
+		ID:     billId,
+		Name:   "Test Bill",
+		Amount: 50.0,
+	}
+
+	// Mock expectations
+	s.mockBillRepo.On("FindByID", billId).Return(expectedBill, nil)
+
+	// Execute
+	bill, err := s.billService.GetBillById(billId)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), expectedBill, bill)
+	s.mockBillRepo.AssertExpectations(s.T())
+}
+
+func (s *BillServiceTestSuite) TestGetBillsForRoom_Success() {
+	roomId := "room1"
+	expectedBills := []model.Bill{
+		{ID: 1, Name: "Bill 1", RoomID: "1"},
+		{ID: 2, Name: "Bill 2", RoomID: "1"},
+	}
+
+	// Mock expectations
+	s.mockBillRepo.On("FindByRoom", roomId).Return(&expectedBills, nil)
+
+	// Execute
+	bills, err := s.billService.GetBillsForRoom(roomId)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), &expectedBills, bills)
+	s.mockBillRepo.AssertExpectations(s.T())
+}
+
+func (s *BillServiceTestSuite) TestDeleteRoomBills_Success() {
+	roomId := "room1"
+
+	// Mock expectations
+	s.mockBillRepo.On("DeleteByRoom", roomId).Return(nil)
+
+	// Execute
+	err := s.billService.DeleteRoomBills(roomId)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+	s.mockBillRepo.AssertExpectations(s.T())
+}
+
+func (s *BillServiceTestSuite) TestConsolidateBills_Success() {
+	// Setup test data
+	roomId := "room1"
+	userId := "1"
+	hostId := uint(1)
+
+	room := &model.Room{ID: roomId, HostID: hostId}
+	consolidation := &model.Consolidation{ID: 1}
+	bills := []model.Bill{
+		{ID: 1, Name: "Bill 1", Amount: 50.0, Owner: model.User{ID: 1}, Payers: []model.User{{ID: 2}}},
+		{ID: 2, Name: "Bill 2", Amount: 30.0, Owner: model.User{ID: 2}, Payers: []model.User{{ID: 1}}},
+	}
+	transaction := &[]model.Transaction{{ID: 1, ConsolidationID: 1, Amount: 20.0, PayerID: 2, PayeeID: 1}}
+
+	// Expect transaction begin
+	s.sqlMock.ExpectBegin()
+
+	// Setup repository mocks with transaction support
+	s.mockRoomRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockRoomRepo)
+	s.mockBillRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockBillRepo)
+	s.mockTransactionRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockTransactionRepo)
+
+	// Mock expectations
+	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(true, nil)
+	s.mockBillRepo.On("ConsolidateBills", roomId).Return(consolidation, nil)
+	s.mockBillRepo.On("FindByConsolidation", consolidation.ID).Return(&bills, nil)
+	s.mockTransactionSvc.On("GenerateTransactions", &bills, consolidation).Return(transaction, nil)
+	s.mockTransactionRepo.On("Create", transaction).Return(nil)
+
+	// Expect transaction commit
+	s.sqlMock.ExpectCommit()
+
+	// Execute
+	err := s.billService.ConsolidateBills(roomId, userId)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+
+	// Verify mock calls
+	s.mockRoomRepo.AssertExpectations(s.T())
+	s.mockBillRepo.AssertExpectations(s.T())
+	s.mockTransactionRepo.AssertExpectations(s.T())
+	s.mockTransactionSvc.AssertExpectations(s.T())
+}
+
+func (s *BillServiceTestSuite) TestConsolidateBills_NotHost() {
+	roomId := "room1"
+	userId := "2" // Not the host
+	hostId := uint(1)
+
+	room := &model.Room{ID: roomId, HostID: hostId}
+
+	// Expect transaction begin
+	s.sqlMock.ExpectBegin()
+
+	// Setup repository mocks with transaction support
+	s.mockRoomRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockRoomRepo)
+	s.mockBillRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockBillRepo)
+	s.mockTransactionRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockTransactionRepo)
+
+	// Mock expectations
+	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+
+	// Expect transaction rollback
+	s.sqlMock.ExpectRollback()
+
+	// Execute
+	err := s.billService.ConsolidateBills(roomId, userId)
+
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.Equal(s.T(), ErrOnlyHostCanConsolidate, err)
+
+	// Verify mock calls
+	s.mockRoomRepo.AssertExpectations(s.T())
+	s.mockBillRepo.AssertNotCalled(s.T(), "ConsolidateBills")
+}
+
+func (s *BillServiceTestSuite) TestConsolidateBills_AlreadyConsolidated() {
+	roomId := "room1"
+	userId := "1"
+	hostId := uint(1)
+
+	room := &model.Room{ID: roomId, HostID: hostId}
+
+	// Expect transaction begin
+	s.sqlMock.ExpectBegin()
+
+	// Setup repository mocks with transaction support
+	s.mockRoomRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockRoomRepo)
+	s.mockBillRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockBillRepo)
+	s.mockTransactionRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockTransactionRepo)
+
+	// Mock expectations
+	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(false, nil)
+
+	// Expect transaction rollback
+	s.sqlMock.ExpectRollback()
+
+	// Execute
+	err := s.billService.ConsolidateBills(roomId, userId)
+
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.Equal(s.T(), ErrAlreadyConsolidated, err)
+
+	// Verify mock calls
+	s.mockRoomRepo.AssertExpectations(s.T())
+	s.mockBillRepo.AssertExpectations(s.T())
+	s.mockTransactionRepo.AssertNotCalled(s.T(), "Create")
+}
+
+func (s *BillServiceTestSuite) TestHasUnconsolidatedBills_Success() {
+	roomId := "room1"
+
+	// Mock expectations
+	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(true, nil)
+
+	// Execute
+	exists, err := s.billService.HasUnconsolidatedBills(roomId)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.True(s.T(), exists)
+	s.mockBillRepo.AssertExpectations(s.T())
+}

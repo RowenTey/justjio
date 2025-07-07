@@ -33,7 +33,7 @@ type Services struct {
 	RoomService         *services.RoomService
 	MessageService      *services.MessageService
 	BillService         *services.BillService
-	TransactionService  *services.TransactionService
+	TransactionService  services.TransactionService
 	SubscriptionService *services.SubscriptionService
 	NotificationService *services.NotificationService
 }
@@ -55,7 +55,7 @@ func Initalize(
 	conf *config.Config,
 	logger *logrus.Logger,
 	dbConn *gorm.DB,
-	kafkaService *services.KafkaService,
+	kafkaService services.KafkaService,
 	notificationsChan chan<- pushNotificationModel.NotificationData,
 ) {
 	// initialize repositories
@@ -140,7 +140,7 @@ func initServices(
 	dbConn *gorm.DB,
 	conf *config.Config,
 	repositories *Repositories,
-	kafkaService *services.KafkaService,
+	kafkaService services.KafkaService,
 	notificationsChan chan<- pushNotificationModel.NotificationData,
 	logger *logrus.Logger,
 ) *Services {

@@ -16,7 +16,13 @@ var (
 	ErrInvalidPayer              = errors.New("invalid payer")
 )
 
-type TransactionService struct {
+type TransactionService interface {
+	GenerateTransactions(bills *[]model.Bill, consolidatedBill *model.Consolidation) (*[]model.Transaction, error)
+	GetTransactionsByUser(isPaid bool, userId string) (*[]model.Transaction, error)
+	SettleTransaction(transactionId string, userId string) (*model.Transaction, error)
+}
+
+type transactionService struct {
 	transactionRepo repository.TransactionRepository
 	billRepo        repository.BillRepository
 	logger          *logrus.Entry
@@ -32,15 +38,15 @@ var NewTransactionService = func(
 	transactionRepo repository.TransactionRepository,
 	billRepo repository.BillRepository,
 	logger *logrus.Logger,
-) *TransactionService {
-	return &TransactionService{
+) TransactionService {
+	return &transactionService{
 		transactionRepo: transactionRepo,
 		billRepo:        billRepo,
 		logger:          utils.AddServiceField(logger, "TransactionService"),
 	}
 }
 
-func (ts *TransactionService) GenerateTransactions(bills *[]model.Bill, consolidatedBill *model.Consolidation) (*[]model.Transaction, error) {
+func (ts *transactionService) GenerateTransactions(bills *[]model.Bill, consolidatedBill *model.Consolidation) (*[]model.Transaction, error) {
 	var wg sync.WaitGroup
 	txChan := make(chan *model.Transaction)
 
@@ -95,11 +101,11 @@ func (ts *TransactionService) GenerateTransactions(bills *[]model.Bill, consolid
 	return consolidatedTransactions, nil
 }
 
-func (ts *TransactionService) GetTransactionsByUser(isPaid bool, userId string) (*[]model.Transaction, error) {
+func (ts *transactionService) GetTransactionsByUser(isPaid bool, userId string) (*[]model.Transaction, error) {
 	return ts.transactionRepo.FindByUser(isPaid, userId)
 }
 
-func (ts *TransactionService) SettleTransaction(transactionId string, userId string) (*model.Transaction, error) {
+func (ts *transactionService) SettleTransaction(transactionId string, userId string) (*model.Transaction, error) {
 	transaction, err := ts.transactionRepo.FindByID(transactionId)
 	if err != nil {
 		return nil, err
@@ -121,7 +127,7 @@ func (ts *TransactionService) SettleTransaction(transactionId string, userId str
 	return transaction, nil
 }
 
-func (ts *TransactionService) consolidateTransactions(transactions *[]model.Transaction, consolidatedBill *model.Consolidation) *[]model.Transaction {
+func (ts *transactionService) consolidateTransactions(transactions *[]model.Transaction, consolidatedBill *model.Consolidation) *[]model.Transaction {
 	graph := make(map[uint][]edge)
 	visited := make(map[uint]bool)
 
@@ -165,13 +171,13 @@ func (ts *TransactionService) consolidateTransactions(transactions *[]model.Tran
 	return &newTransactions
 }
 
-func (ts *TransactionService) resetVisited(visited map[uint]bool) {
+func (ts *transactionService) resetVisited(visited map[uint]bool) {
 	for key := range visited {
 		visited[key] = false
 	}
 }
 
-func (ts *TransactionService) removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) (float32, uint) {
+func (ts *transactionService) removeCycle(startNode uint, graph map[uint][]edge, visited map[uint]bool) (float32, uint) {
 	neighbors := graph[startNode]
 	for i, neighbor := range neighbors {
 		ts.logger.Debug("Current node ", startNode, " with neighbor: ", neighbor.userId)

@@ -24,7 +24,7 @@ type BillService struct {
 	userRepo           repository.UserRepository
 	roomRepo           repository.RoomRepository
 	transactionRepo    repository.TransactionRepository
-	transactionService *TransactionService
+	transactionService TransactionService
 	logger             *logrus.Entry
 }
 
@@ -35,7 +35,7 @@ var NewBillService = func(
 	userRepo repository.UserRepository,
 	roomRepo repository.RoomRepository,
 	transactionRepo repository.TransactionRepository,
-	transactionService *TransactionService,
+	transactionService TransactionService,
 	logger *logrus.Logger,
 ) *BillService {
 	return &BillService{
