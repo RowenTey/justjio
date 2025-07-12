@@ -243,13 +243,23 @@ func (h *RoomHandler) InviteUser(c *fiber.Ctx) error {
 	userId := utils.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	var inviteesIds []uint
+	var inviteesIds []string
 	if err := json.Unmarshal([]byte(request.InviteesId), &inviteesIds); err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
+	// convert to uint slice
+	var inviteesIdsUint []uint
+	for _, id := range inviteesIds {
+		var uid uint
+		if err := json.Unmarshal([]byte(id), &uid); err != nil {
+			return utils.HandleInvalidInputError(c, err)
+		}
+		inviteesIdsUint = append(inviteesIdsUint, uid)
+	}
+
 	roomInvites, err := h.roomService.InviteUsersToRoom(
-		roomId, userId, &inviteesIds)
+		roomId, userId, &inviteesIdsUint)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidHost) {
 			return utils.HandleError(c, fiber.StatusUnauthorized, "Only hosts are allowed to invite users", err)

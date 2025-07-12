@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -21,6 +22,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -100,13 +102,13 @@ func (suite *RoomHandlerTestSuite) SetupSuite() {
 	roomRoutes.Get("/invites/count", roomHandler.GetNumRoomInvitations)
 	roomRoutes.Get("/:roomId", roomHandler.GetRoom)
 	roomRoutes.Get("/:roomId/attendees", roomHandler.GetRoomAttendees)
-	roomRoutes.Get("/:roomId/uninvited-friends", roomHandler.GetUninvitedFriendsForRoom)
+	roomRoutes.Get("/:roomId/uninvited", roomHandler.GetUninvitedFriendsForRoom)
 	roomRoutes.Post("/", roomHandler.CreateRoom)
-	roomRoutes.Post("/:roomId/invite", roomHandler.InviteUser)
+	roomRoutes.Post("/:roomId", roomHandler.InviteUser)
+	roomRoutes.Patch("/:roomId", roomHandler.RespondToRoomInvite)
 	roomRoutes.Patch("/:roomId/close", roomHandler.CloseRoom)
 	roomRoutes.Patch("/:roomId/join", roomHandler.JoinRoom)
-	roomRoutes.Patch("/:roomId/respond", roomHandler.RespondToRoomInvite)
-	roomRoutes.Delete("/:roomId/leave", roomHandler.LeaveRoom)
+	roomRoutes.Patch("/:roomId/leave", roomHandler.LeaveRoom)
 }
 
 func (suite *RoomHandlerTestSuite) TearDownSuite() {
@@ -310,11 +312,32 @@ func (suite *RoomHandlerTestSuite) TestCreateRoom_Success() {
 	invitees := []string{fmt.Sprintf("%d", suite.testUserID)}
 	inviteesJSON, _ := json.Marshal(invitees)
 
+	placeId := "ChIJN1t_tDeuEmsRUsoyG83frY4"
+	expectedUri := "https://maps.google.com/?cid=123456789"
+
+	// Create a mock response
+	mockResponse := &http.Response{
+		StatusCode: http.StatusOK,
+		Body: io.NopCloser(bytes.NewBufferString(
+			`{"googleMapsUri": "` + expectedUri + `"}`,
+		)),
+		Header: make(http.Header),
+	}
+	mockResponse.Header.Set("Content-Type", "application/json")
+
+	suite.mockHttpClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+		return req.Method == "GET" &&
+			req.URL.String() == fmt.Sprintf("https://places.googleapis.com/v1/places/%s", placeId) &&
+			req.Header.Get("X-Goog-Api-Key") == "test-api-key" &&
+			req.Header.Get("X-Goog-FieldMask") == "googleMapsUri"
+	})).Return(mockResponse, nil)
+
 	createReq := request.CreateRoomRequest{
 		Room: model.Room{
 			Name: "New Test Room",
 		},
 		InviteesId: datatypes.JSON(inviteesJSON),
+		PlaceId:    placeId,
 	}
 	reqBody, _ := json.Marshal(createReq)
 
@@ -353,12 +376,11 @@ func (suite *RoomHandlerTestSuite) TestInviteUser_Success() {
 
 	inviteReq := request.InviteUserRequest{
 		InviteesId: datatypes.JSON(inviteesJSON),
-		Message:    "Please join my room!",
 	}
 	reqBody, _ := json.Marshal(inviteReq)
 
 	req := httptest.NewRequest(http.MethodPost,
-		"/rooms/"+suite.testRoomID+"/invite", bytes.NewBuffer(reqBody))
+		"/rooms/"+suite.testRoomID, bytes.NewBuffer(reqBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+suite.testHostToken)
 
@@ -397,7 +419,7 @@ func (suite *RoomHandlerTestSuite) TestRespondToRoomInvite_Accept() {
 	reqBody, _ := json.Marshal(respondReq)
 
 	req := httptest.NewRequest(http.MethodPatch,
-		"/rooms/"+suite.testRoomID+"/respond", bytes.NewBuffer(reqBody))
+		"/rooms/"+suite.testRoomID, bytes.NewBuffer(reqBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
@@ -419,7 +441,7 @@ func (suite *RoomHandlerTestSuite) TestRespondToRoomInvite_Reject() {
 	reqBody, _ := json.Marshal(respondReq)
 
 	req := httptest.NewRequest(http.MethodPatch,
-		"/rooms/"+suite.testRoomID+"/respond", bytes.NewBuffer(reqBody))
+		"/rooms/"+suite.testRoomID, bytes.NewBuffer(reqBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
@@ -439,7 +461,7 @@ func (suite *RoomHandlerTestSuite) TestLeaveRoom_Success() {
 	_, _, err := suite.roomService.JoinRoom(suite.testRoomID, fmt.Sprintf("%d", suite.testUserID))
 	assert.NoError(suite.T(), err)
 
-	req := httptest.NewRequest(http.MethodDelete,
+	req := httptest.NewRequest(http.MethodPatch,
 		"/rooms/"+suite.testRoomID+"/leave", nil)
 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
