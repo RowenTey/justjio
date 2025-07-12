@@ -18,5 +18,4 @@ type RespondToRoomInviteRequest struct {
 
 type InviteUserRequest struct {
 	InviteesId datatypes.JSON `json:"invitees" swaggertype:"array,string"`
-	Message    string         `json:"message"`
 }

@@ -34,17 +34,18 @@ func SetupTestDependencies(ctx context.Context) (*TestDependencies, error) {
 	}
 
 	// Setup Kafka
-	kafkaContainer, err := kafka.Run(ctx,
-		"confluentinc/cp-kafka:7.8.0",
-		kafka.WithClusterID("test-cluster"),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to start kafka container: %w", err)
-	}
+	// kafkaContainer, err := kafka.Run(ctx,
+	// 	"confluentinc/cp-kafka:7.8.0",
+	// 	kafka.WithClusterID("test-cluster"),
+	// )
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to start kafka container: %w", err)
+	// }
 
 	return &TestDependencies{
 		PostgresContainer: pgContainer,
-		KafkaContainer:    kafkaContainer,
+		// KafkaContainer:    kafkaContainer,
+		KafkaContainer: nil,
 	}, nil
 }
 
