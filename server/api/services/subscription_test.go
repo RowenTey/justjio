@@ -1,305 +1,225 @@
 package services
 
-// type SubscriptionServiceTestSuite struct {
-// 	suite.Suite
-// 	DB   *gorm.DB
-// 	mock sqlmock.Sqlmock
+import (
+	"errors"
+	"testing"
 
-// 	subscriptionService *SubscriptionService
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
-// 	endpoint string
-// 	p256dh   string
-// 	auth     string
-// 	subCols  []string
-// }
+	"github.com/RowenTey/JustJio/server/api/model"
+	pushNotificationModel "github.com/RowenTey/JustJio/server/api/model/push_notifications"
+	"github.com/RowenTey/JustJio/server/api/repository"
+)
 
-// func TestSubscriptionServiceTestSuite(t *testing.T) {
-// 	suite.Run(t, new(SubscriptionServiceTestSuite))
-// }
+type SubscriptionServiceTestSuite struct {
+	suite.Suite
+	subscriptionService *SubscriptionService
 
-// func (s *SubscriptionServiceTestSuite) SetupTest() {
-// 	var err error
-// 	s.DB, s.mock, err = tests.SetupTestDB()
-// 	assert.NoError(s.T(), err)
+	// Mock repositories
+	mockSubscriptionRepo *repository.MockSubscriptionRepository
 
-// 	s.subscriptionService = NewSubscriptionService(s.DB)
+	// Mock channel
+	mockNotificationsChan chan pushNotificationModel.NotificationData
+}
 
-// 	s.endpoint = "https://fcm.googleapis.com/fcm/send/token1"
-// 	s.p256dh = "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtfZOYo0X1"
-// 	s.auth = "Q2QVd5bPkMEwMKKKv5gV11"
-// 	s.subCols = []string{
-// 		"id", "user_id", "endpoint", "p256dh", "auth",
-// 	}
-// }
+func TestSubscriptionServiceSuite(t *testing.T) {
+	suite.Run(t, new(SubscriptionServiceTestSuite))
+}
 
-// func (s *SubscriptionServiceTestSuite) AfterTest(_, _ string) {
-// 	assert.NoError(s.T(), s.mock.ExpectationsWereMet())
-// }
+func (s *SubscriptionServiceTestSuite) SetupTest() {
+	// Initialize mock repository
+	s.mockSubscriptionRepo = new(repository.MockSubscriptionRepository)
 
-// func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Success() {
-// 	// arrange
-// 	subscription := tests.CreateTestSubscription(1, "1", s.endpoint, s.p256dh, s.auth)
+	// Create buffered channel for testing
+	s.mockNotificationsChan = make(chan pushNotificationModel.NotificationData, 1)
 
-// 	s.mock.ExpectBegin()
-// 	// Use ExpectExec instead of ExpectQuery for INSERT operations that use ExecQuery
-// 	s.mock.ExpectExec(`INSERT INTO "subscriptions"`).
-// 		// Use sqlmock.AnyArg() for the ID since it's generated
-// 		WithArgs(
-// 			sqlmock.AnyArg(), // ID is auto-generated
-// 			subscription.UserID,
-// 			subscription.Endpoint,
-// 			subscription.Auth,
-// 			subscription.P256dh,
-// 		).
-// 		WillReturnResult(sqlmock.NewResult(1, 1)) // For Exec, use WillReturnResult
-// 	s.mock.ExpectCommit()
+	// Create subscriptionService with mock dependencies
+	s.subscriptionService = NewSubscriptionService(
+		s.mockSubscriptionRepo,
+		s.mockNotificationsChan,
+		logrus.New(),
+	)
+}
 
-// 	// act
-// 	result, err := s.subscriptionService.CreateSubscription(subscription)
+func (s *SubscriptionServiceTestSuite) TearDownTest() {
+	close(s.mockNotificationsChan)
+}
 
-// 	// assert
-// 	assert.NoError(s.T(), err)
-// 	assert.NotNil(s.T(), result)
-// 	assert.Equal(s.T(), subscription.UserID, result.UserID)
-// 	assert.Equal(s.T(), subscription.Endpoint, result.Endpoint)
-// 	assert.Equal(s.T(), subscription.P256dh, result.P256dh)
-// 	assert.Equal(s.T(), subscription.Auth, result.Auth)
-// }
+func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Success() {
+	// Setup test data
+	subscription := &model.Subscription{
+		UserID:   1,
+		Endpoint: "https://example.com",
+		P256dh:   "p256dh_key",
+		Auth:     "auth_key",
+	}
 
-// func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Error() {
-// 	// arrange
-// 	subscription := tests.CreateTestSubscription(1, "1", s.endpoint, s.p256dh, s.auth)
+	// Mock expectations
+	s.mockSubscriptionRepo.On("Create", subscription).Run(func(args mock.Arguments) {
+		sub := args.Get(0).(*model.Subscription)
+		sub.ID = "1"
+	}).Return(subscription, nil)
 
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectExec(`INSERT INTO "subscriptions"`).
-// 		WithArgs(
-// 			sqlmock.AnyArg(), // ID is auto-generated
-// 			subscription.UserID,
-// 			subscription.Endpoint,
-// 			subscription.Auth,
-// 			subscription.P256dh,
-// 		).
-// 		WillReturnError(errors.New("database error"))
-// 	s.mock.ExpectRollback()
+	// Execute
+	result, err := s.subscriptionService.CreateSubscription(subscription)
 
-// 	// act
-// 	result, err := s.subscriptionService.CreateSubscription(subscription)
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), "1", result.ID)
+	assert.Equal(s.T(), subscription.UserID, result.UserID)
+	assert.Equal(s.T(), subscription.Endpoint, result.Endpoint)
+	assert.Equal(s.T(), subscription.P256dh, result.P256dh)
+	assert.Equal(s.T(), subscription.Auth, result.Auth)
 
-// 	// assert
-// 	assert.Error(s.T(), err)
-// 	assert.Nil(s.T(), result)
-// 	assert.Contains(s.T(), err.Error(), "database error")
-// }
+	// Verify notification was sent
+	require.Equal(s.T(), 1, len(s.mockNotificationsChan))
+	notification := <-s.mockNotificationsChan
+	assert.Equal(s.T(), "Welcome", notification.Title)
+	assert.Equal(s.T(), subscription.Endpoint, notification.Subscription.Endpoint)
 
-// func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_Success() {
-// 	// arrange
-// 	userID := uint(1)
+	// Verify mock calls
+	s.mockSubscriptionRepo.AssertExpectations(s.T())
+}
 
-// 	expectedSubscriptions := []model.Subscription{
-// 		*tests.CreateTestSubscription(userID, "1", s.endpoint, s.p256dh, s.auth),
-// 		*tests.CreateTestSubscription(userID, "2",
-// 			"https://fcm.googleapis.com/fcm/send/token2",
-// 			"BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtfZOYo0X2",
-// 			"Q2QVd5bPkMEwMKKKv5gV22",
-// 		),
-// 	}
+func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Failure() {
+	// Setup test data
+	subscription := &model.Subscription{
+		UserID:   1,
+		Endpoint: "https://example.com",
+	}
+	expectedErr := errors.New("database error")
 
-// 	rows := sqlmock.NewRows(s.subCols)
-// 	for _, sub := range expectedSubscriptions {
-// 		rows.AddRow(
-// 			sub.ID,
-// 			sub.UserID,
-// 			sub.Endpoint,
-// 			sub.P256dh,
-// 			sub.Auth,
-// 		)
-// 	}
+	// Mock expectations
+	s.mockSubscriptionRepo.On("Create", subscription).Return((*model.Subscription)(nil), expectedErr)
 
-// 	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE user_id = \$1`).
-// 		WithArgs(userID).
-// 		WillReturnRows(rows)
+	// Execute
+	result, err := s.subscriptionService.CreateSubscription(subscription)
 
-// 	// act
-// 	subscriptions, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.Equal(s.T(), expectedErr, err)
+	assert.Nil(s.T(), result)
 
-// 	// assert
-// 	assert.NoError(s.T(), err)
-// 	assert.NotNil(s.T(), subscriptions)
-// 	assert.Equal(s.T(), 2, len(*subscriptions))
-// 	for i, sub := range expectedSubscriptions {
-// 		assertSubscriptionEqual(s.T(), &sub, &(*subscriptions)[i])
-// 	}
-// }
+	// Verify no notification was sent
+	assert.Equal(s.T(), 0, len(s.mockNotificationsChan))
 
-// func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_EmptyResult() {
-// 	// arrange
-// 	userID := uint(1)
+	// Verify mock calls
+	s.mockSubscriptionRepo.AssertExpectations(s.T())
+}
 
-// 	rows := sqlmock.NewRows(s.subCols)
+func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_Success() {
+	// Setup test data
+	userID := "1"
+	expectedSubscriptions := []model.Subscription{
+		{
+			ID:       "1",
+			UserID:   1,
+			Endpoint: "https://example.com/1",
+		},
+		{
+			ID:       "2",
+			UserID:   1,
+			Endpoint: "https://example.com/2",
+		},
+	}
 
-// 	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE user_id = \$1`).
-// 		WithArgs(userID).
-// 		WillReturnRows(rows)
+	// Mock expectations
+	s.mockSubscriptionRepo.On("FindByUserID", userID).Return(&expectedSubscriptions, nil)
 
-// 	// act
-// 	subscriptions, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
+	// Execute
+	result, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
 
-// 	// assert
-// 	tests.AssertNoErrAndNotNil(s.T(), err, subscriptions)
-// 	assert.Equal(s.T(), 0, len(*subscriptions))
-// }
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), &expectedSubscriptions, result)
+	s.mockSubscriptionRepo.AssertExpectations(s.T())
+}
 
-// func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_DatabaseError() {
-// 	// arrange
-// 	userID := uint(1)
+func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_NotFound() {
+	// Setup test data
+	userID := "999"
 
-// 	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE user_id = \$1`).
-// 		WithArgs(userID).
-// 		WillReturnError(errors.New("database error"))
+	// Mock expectations
+	s.mockSubscriptionRepo.On("FindByUserID", userID).Return(&[]model.Subscription{}, nil)
 
-// 	// act
-// 	subscriptions, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
+	// Execute
+	result, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
 
-// 	// assert
-// 	tests.AssertErrAndNil(s.T(), err, subscriptions)
-// 	assert.Contains(s.T(), err.Error(), "database error")
-// }
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.Empty(s.T(), *result)
+	s.mockSubscriptionRepo.AssertExpectations(s.T())
+}
 
-// func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_Success() {
-// 	// arrange
-// 	expectedSubscription := tests.CreateTestSubscription(1, "1", s.endpoint, s.p256dh, s.auth)
+func (s *SubscriptionServiceTestSuite) TestGetSubscriptionByEndpoint_Success() {
+	// Setup test data
+	endpoint := "https://example.com"
+	expectedSubscription := &model.Subscription{
+		ID:       "1",
+		UserID:   1,
+		Endpoint: endpoint,
+	}
 
-// 	rows := sqlmock.NewRows(s.subCols).AddRow(
-// 		expectedSubscription.ID,
-// 		expectedSubscription.UserID,
-// 		expectedSubscription.Endpoint,
-// 		expectedSubscription.P256dh,
-// 		expectedSubscription.Auth,
-// 	)
+	// Mock expectations
+	s.mockSubscriptionRepo.On("FindByEndpoint", endpoint).Return(expectedSubscription, nil)
 
-// 	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE endpoint = \$1 ORDER BY "subscriptions"."id" LIMIT \$2`).
-// 		WithArgs(s.endpoint, 1).
-// 		WillReturnRows(rows)
+	// Execute
+	result, err := s.subscriptionService.GetSubscriptionsByEndpoint(endpoint)
 
-// 	// act
-// 	subscription, err := s.subscriptionService.GetSubscriptionsByEndpoint(s.endpoint)
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.Equal(s.T(), expectedSubscription, result)
+	s.mockSubscriptionRepo.AssertExpectations(s.T())
+}
 
-// 	// assert
-// 	tests.AssertNoErrAndNotNil(s.T(), err, subscription)
-// 	assertSubscriptionEqual(s.T(), expectedSubscription, subscription)
-// }
+func (s *SubscriptionServiceTestSuite) TestGetSubscriptionByEndpoint_NotFound() {
+	// Setup test data
+	endpoint := "https://nonexistent.com"
 
-// func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_NotFound() {
-// 	// arrange
-// 	endpoint := "https://fcm.googleapis.com/fcm/send/nonexistent-token"
+	// Mock expectations
+	s.mockSubscriptionRepo.On("FindByEndpoint", endpoint).Return((*model.Subscription)(nil), nil)
 
-// 	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE endpoint = \$1 ORDER BY "subscriptions"."id" LIMIT \$2`).
-// 		WithArgs(endpoint, 1).
-// 		WillReturnError(gorm.ErrRecordNotFound)
+	// Execute
+	result, err := s.subscriptionService.GetSubscriptionsByEndpoint(endpoint)
 
-// 	// act
-// 	subscription, err := s.subscriptionService.GetSubscriptionsByEndpoint(endpoint)
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.Nil(s.T(), result)
+	s.mockSubscriptionRepo.AssertExpectations(s.T())
+}
 
-// 	// assert
-// 	tests.AssertErrAndNil(s.T(), err, subscription)
-// }
+func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_Success() {
+	// Setup test data
+	subID := "1"
 
-// func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByEndpoint_DatabaseError() {
-// 	// arrange
-// 	endpoint := "https://fcm.googleapis.com/fcm/send/example-token"
+	// Mock expectations
+	s.mockSubscriptionRepo.On("Delete", subID).Return(nil)
 
-// 	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE endpoint = \$1 ORDER BY "subscriptions"."id" LIMIT \$2`).
-// 		WithArgs(endpoint, 1).
-// 		WillReturnError(errors.New("database error"))
+	// Execute
+	err := s.subscriptionService.DeleteSubscription(subID)
 
-// 	// act
-// 	subscription, err := s.subscriptionService.GetSubscriptionsByEndpoint(endpoint)
+	// Assertions
+	assert.NoError(s.T(), err)
+	s.mockSubscriptionRepo.AssertExpectations(s.T())
+}
 
-// 	// assert
-// 	tests.AssertErrAndNil(s.T(), err, subscription)
-// 	assert.Contains(s.T(), err.Error(), "database error")
-// }
+func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_Failure() {
+	// Setup test data
+	subID := "999"
+	expectedErr := errors.New("delete failed")
 
-// func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_Success() {
-// 	// arrange
-// 	expectedSubscription := tests.CreateTestSubscription(1, "1", s.endpoint, s.p256dh, s.auth)
+	// Mock expectations
+	s.mockSubscriptionRepo.On("Delete", subID).Return(expectedErr)
 
-// 	rows := sqlmock.NewRows(s.subCols).AddRow(
-// 		expectedSubscription.ID,
-// 		expectedSubscription.UserID,
-// 		expectedSubscription.Endpoint,
-// 		expectedSubscription.P256dh,
-// 		expectedSubscription.Auth,
-// 	)
+	// Execute
+	err := s.subscriptionService.DeleteSubscription(subID)
 
-// 	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE id = \$1 ORDER BY "subscriptions"."id" LIMIT \$2`).
-// 		WithArgs(expectedSubscription.ID, 1).
-// 		WillReturnRows(rows)
-
-// 	s.mock.ExpectBegin()
-// 	s.mock.ExpectExec(`DELETE FROM "subscriptions" WHERE id = \$1`).
-// 		WithArgs(expectedSubscription.ID).
-// 		WillReturnResult(sqlmock.NewResult(1, 1))
-// 	s.mock.ExpectCommit()
-
-// 	// act
-// 	err := s.subscriptionService.DeleteSubscription(expectedSubscription.ID)
-
-// 	// assert
-// 	assert.NoError(s.T(), err)
-// }
-
-// func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_NotFound() {
-// 	// arrange
-// 	subID := "999"
-
-// 	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE id = \$1 ORDER BY "subscriptions"."id" LIMIT \$2`).
-// 		WithArgs(subID, 1).
-// 		WillReturnError(gorm.ErrRecordNotFound)
-
-// 	// act
-// 	err := s.subscriptionService.DeleteSubscription(subID)
-
-// 	// assert
-// 	assert.Error(s.T(), err)
-// 	assert.Contains(s.T(), err.Error(), "record not found")
-// }
-
-// func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_DatabaseError() {
-// 	// arrange
-// 	subID := "1"
-
-// 	s.mock.ExpectQuery(`SELECT \* FROM "subscriptions" WHERE id = \$1 ORDER BY "subscriptions"."id" LIMIT \$2`).
-// 		WithArgs(subID, 1).
-// 		WillReturnError(errors.New("database error"))
-
-// 	// act
-// 	err := s.subscriptionService.DeleteSubscription(subID)
-
-// 	// assert
-// 	assert.Error(s.T(), err)
-// 	assert.Contains(s.T(), err.Error(), "database error")
-// }
-
-// func (s *SubscriptionServiceTestSuite) TestNewWebPushSubscriptionObj() {
-// 	// arrange
-// 	subscription := tests.CreateTestSubscription(1, "1", s.endpoint, s.p256dh, s.auth)
-
-// 	// act
-// 	webpushObj := s.subscriptionService.NewWebPushSubscriptionObj(subscription)
-
-// 	// assert
-// 	assert.NotNil(s.T(), webpushObj)
-// 	assert.Equal(s.T(), subscription.Endpoint, webpushObj.Endpoint)
-// 	assert.Equal(s.T(), subscription.P256dh, webpushObj.Keys.P256dh)
-// 	assert.Equal(s.T(), subscription.Auth, webpushObj.Keys.Auth)
-// 	assert.IsType(s.T(), &webpush.Subscription{}, webpushObj)
-// }
-
-// func assertSubscriptionEqual(t assert.TestingT, expected, actual *model.Subscription) {
-// 	assert.Equal(t, expected.ID, actual.ID)
-// 	assert.Equal(t, expected.UserID, actual.UserID)
-// 	assert.Equal(t, expected.Endpoint, actual.Endpoint)
-// 	assert.Equal(t, expected.P256dh, actual.P256dh)
-// 	assert.Equal(t, expected.Auth, actual.Auth)
-// }
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.Equal(s.T(), expectedErr, err)
+	s.mockSubscriptionRepo.AssertExpectations(s.T())
+}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/RowenTey/JustJio/server/api/model"
+	"github.com/golang-jwt/jwt"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -68,6 +69,22 @@ func SetupTestDB() (*gorm.DB, sqlmock.Sqlmock, error) {
 	}
 
 	return gormDB, mock, nil
+}
+
+// Helper function to generate JWT token for testing
+func GenerateTestToken(userID uint, username, email, jwtSecret string) (string, error) {
+	claims := jwt.MapClaims{
+		"user_id":  userID,
+		"username": username,
+		"email":    email,
+		"exp":      time.Now().Add(time.Hour * 72).Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	t, err := token.SignedString([]byte(jwtSecret))
+	if err != nil {
+		return "", err
+	}
+	return t, nil
 }
 
 func AssertErrAndNil(t assert.TestingT, err error, obj any) {

@@ -196,6 +196,7 @@ func (ts *transactionService) removeCycle(startNode uint, graph map[uint][]edge,
 
 		visited[neighbor.userId] = true
 		amtToDeduct, stopAt := ts.removeCycle(neighbor.userId, graph, visited)
+		ts.logger.Debug("Returned from neighbor ", neighbor.userId, " with amount to deduct: ", amtToDeduct, " and stop at: ", stopAt)
 		visited[neighbor.userId] = false
 
 		// no cycle -> nothing to deduct

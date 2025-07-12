@@ -68,7 +68,7 @@ func (r *billRepository) HasUnconsolidatedBills(roomID string) (bool, error) {
 	}
 	// record not found -> no bills in room
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return true, nil
+		return false, nil
 	}
 	return false, err
 }
