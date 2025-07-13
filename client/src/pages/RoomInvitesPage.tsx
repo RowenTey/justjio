@@ -14,7 +14,7 @@ import { useRoomCtx } from "../context/room";
 import { formatDate } from "../utils/date";
 import {
   ClockIcon,
-  EnvelopeIcon,
+  EnvelopeOpenIcon,
   MapPinIcon,
   SignalSlashIcon,
   UserCircleIcon,
@@ -143,7 +143,10 @@ const RoomInvites: React.FC<{
     >
       {invites.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-full">
-          <EnvelopeIcon strokeWidth={0.5} className="w-24 h-24 text-gray-500" />
+          <EnvelopeOpenIcon
+            strokeWidth={0.5}
+            className="w-24 h-24 text-gray-500"
+          />
           <p className="text-lg font-semibold text-gray-500">
             You do not have any room invites now
           </p>

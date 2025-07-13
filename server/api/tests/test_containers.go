@@ -19,6 +19,24 @@ type TestDependencies struct {
 }
 
 func SetupTestDependencies(ctx context.Context, logger *logrus.Logger) (*TestDependencies, error) {
+	testDep := &TestDependencies{}
+
+	// Setup PostgreSQL
+	testDep, err := SetupPgDependency(ctx, testDep, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup PostgreSQL dependency: %w", err)
+	}
+
+	// Setup Kafka
+	testDep, err = SetupKafkaDependency(ctx, testDep, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup Kafka dependency: %w", err)
+	}
+
+	return testDep, nil
+}
+
+func SetupPgDependency(ctx context.Context, testDep *TestDependencies, logger *logrus.Logger) (*TestDependencies, error) {
 	// Setup PostgreSQL
 	pgContainer, err := postgres.Run(ctx,
 		"postgres:15",
@@ -35,25 +53,27 @@ func SetupTestDependencies(ctx context.Context, logger *logrus.Logger) (*TestDep
 	}
 	logger.Info("PostgreSQL container started successfully")
 
+	testDep.PostgresContainer = pgContainer
+	return testDep, nil
+}
+
+func SetupKafkaDependency(ctx context.Context, testDep *TestDependencies, logger *logrus.Logger) (*TestDependencies, error) {
 	// Setup Kafka
 	kafkaContainer, err := kafka.Run(ctx,
 		"confluentinc/cp-kafka:7.8.0",
 		kafka.WithClusterID("test-cluster"),
 		testcontainers.WithWaitStrategy(
-			wait.ForLog("Kafka server started").
+			wait.ForLog("Kafka Server started").
 				WithOccurrence(1).
-				WithStartupTimeout(15*time.Second)),
+				WithStartupTimeout(5*time.Second)),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start kafka container: %w", err)
 	}
 	logger.Info("Kafka container started successfully")
 
-	return &TestDependencies{
-		PostgresContainer: pgContainer,
-		KafkaContainer:    kafkaContainer,
-		// KafkaContainer: nil,
-	}, nil
+	testDep.KafkaContainer = kafkaContainer
+	return testDep, nil
 }
 
 func (td *TestDependencies) Teardown(ctx context.Context) {

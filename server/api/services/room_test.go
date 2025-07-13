@@ -190,7 +190,7 @@ func (s *RoomServiceTestSuite) TestGetUnjoinedPublicRooms_Success() {
 	}
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetRoomsByIsPrivate", userId, false).Return(&expectedRooms, nil)
+	s.mockRoomRepo.On("GetUnjoinedRoomsByIsPrivate", userId, false).Return(&expectedRooms, nil)
 
 	// Execute
 	rooms, err := s.roomService.GetUnjoinedPublicRooms(userId)

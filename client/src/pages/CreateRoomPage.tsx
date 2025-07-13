@@ -155,8 +155,8 @@ const CreateRoomPage = () => {
               >
                 <img
                   src={image}
-                  alt=""
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
               </button>
             ))}

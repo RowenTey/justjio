@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"slices"
+
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
 
@@ -14,17 +16,19 @@ func IsUserInRoom(c *fiber.Ctx, roomService *services.RoomService) error {
 	userId := utils.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	userIds, err := roomService.GetRoomAttendeesIds(roomId)
-	if err != nil {
+	if _, err := roomService.GetRoomById(roomId); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
+	userIds, err := roomService.GetRoomAttendeesIds(roomId)
+	if err != nil {
+		return utils.HandleInternalServerError(c, err)
+	}
+
 	// Check if user is in room
-	for _, id := range *userIds {
-		if id == userId {
-			c.Locals("roomUserIds", userIds)
-			return c.Next()
-		}
+	if slices.Contains(*userIds, userId) {
+		c.Locals("roomUserIds", userIds)
+		return c.Next()
 	}
 
 	return utils.HandleError(c, fiber.StatusUnauthorized, "User is not in room", nil)

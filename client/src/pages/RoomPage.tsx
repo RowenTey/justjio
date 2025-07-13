@@ -9,6 +9,9 @@ import {
   XMarkIcon,
   QrCodeIcon,
   ArrowRightStartOnRectangleIcon,
+  CalendarIcon,
+  ClockIcon,
+  MapPinIcon,
 } from "@heroicons/react/24/outline";
 import PeopleBox from "../components/PeopleBox";
 import useLoadingAndError from "../hooks/useLoadingAndError";
@@ -20,7 +23,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { IRoom } from "../types/room";
 import { useUserCtx } from "../context/user";
 import { IUser } from "../types/user";
-import { formatDate, toDayOfWeek } from "../utils/date";
+import { formatDate } from "../utils/date";
 import { useRoomCtx } from "../context/room";
 import { channelTypes, useWs } from "../context/ws";
 import useMandatoryParam from "../hooks/useMandatoryParam";
@@ -77,7 +80,6 @@ const RoomPage = () => {
       const res = await joinRoomApi(api, roomId);
       showToast("Successfully joined room!", false);
       console.log("[RoomPage] Joined room", res.data.data);
-      stopLoading();
 
       searchParams.delete("join");
       setSearchParams(searchParams);
@@ -96,6 +98,7 @@ const RoomPage = () => {
           showToast("An error occurred, please try again later.", true);
           break;
       }
+    } finally {
       stopLoading();
     }
   };
@@ -208,7 +211,7 @@ const RoomPage = () => {
   }
 
   return (
-    <div className="h-full flex flex-col items-center gap-3 bg-gray-200">
+    <div className="h-full flex flex-col items-center gap-2 bg-gray-200">
       <RoomTopBar title={room.name} shouldCenterTitle={true} />
 
       <RoomDetails room={room} />
@@ -247,13 +250,40 @@ const RoomPage = () => {
 
 const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
   return (
-    <div className="h-[25%] w-full px-5 flex flex-col gap-2">
-      <h3 className="text-secondary font-bold">
+    <div className="h-[45%] w-full px-5 flex flex-col gap-2">
+      <h3 className="text-secondary font-semibold">
         {new Date(room.date) > new Date() ? "Upcoming" : "Passed"} Event
       </h3>
 
-      <div className="h-[90%] flex justify-between bg-white gap-6 rounded-lg px-3 py-2 leading-tight">
-        <div className="w-2/5 flex flex-col gap-2 justify-center font-bold text-black">
+      <div className="h-[50%] rounded-2xl overflow-hidden -mt-1">
+        <img
+          src={room.imageUrl}
+          alt="Room Image"
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      <div className="h-[45%] flex flex-col bg-white shadow-lg gap-1 rounded-2xl px-3 py-2 leading-tight">
+        <a
+          href={room.venueUrl}
+          target="_blank"
+          className="flex items-center gap-1 text-[#8A38F5]"
+        >
+          <MapPinIcon className="w-6 h-6" />
+          <span className="hover:underline">{room.venue}</span>
+        </a>
+        <div className="w-full flex items-center gap-3">
+          <div className="flex gap-1">
+            <CalendarIcon className="h-6 w-6 text-secondary" />
+            <p className="text-black">{formatDate(room.date)}</p>
+          </div>
+          <div className="flex gap-1">
+            <ClockIcon className="h-6 w-6 text-secondary" />
+            <p className="text-black">{room.time}</p>
+          </div>
+        </div>
+
+        {/* <div className="w-2/5 flex flex-col gap-2 justify-center font-bold text-black">
           <div className="flex flex-col">
             <p>{toDayOfWeek(room.date)}</p>
             <p>{formatDate(room.date)}</p>
@@ -268,7 +298,7 @@ const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
           <div className="w-full py-2 px-3 bg-secondary rounded-xl text-white">
             <p>Attendees: {room.attendeesCount}</p>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

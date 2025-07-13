@@ -50,7 +50,8 @@ func (suite *NotificationHandlerTestSuite) SetupSuite() {
 	suite.logger = logrus.New()
 
 	// Setup test containers
-	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.logger)
+	suite.dependencies = &tests.TestDependencies{}
+	suite.dependencies, err = tests.SetupPgDependency(suite.ctx, suite.dependencies, suite.logger)
 	assert.NoError(suite.T(), err)
 
 	// Get PostgreSQL connection string
@@ -97,7 +98,7 @@ func (suite *NotificationHandlerTestSuite) TearDownSuite() {
 	if suite.dependencies != nil {
 		suite.dependencies.Teardown(suite.ctx)
 	}
-	log.Info("Tore down test suite dependencies")
+	suite.logger.Info("Tore down test suite dependencies")
 	close(suite.testNotificationChan)
 }
 
@@ -125,7 +126,7 @@ func (suite *NotificationHandlerTestSuite) TearDownTest() {
 	// Clear database after each test
 	suite.db.Exec("TRUNCATE TABLE notifications RESTART IDENTITY CASCADE")
 	suite.db.Exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE")
-	log.Info("Tore down test data")
+	suite.logger.Info("Tore down test data")
 }
 
 func TestNotificationHandlerSuite(t *testing.T) {
