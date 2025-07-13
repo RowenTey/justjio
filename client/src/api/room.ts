@@ -511,13 +511,11 @@ export const inviteUsersToRoomApi = (
   api: AxiosInstance,
   roomId: string,
   inviteesId: string[],
-  message: string = "Join my room!",
   mock: boolean = false,
 ): Promise<AxiosResponse<ApiResponse>> => {
   if (!mock) {
     return api.post<ApiResponse>(`/rooms/${roomId}`, {
       invitees: inviteesId,
-      message,
     });
   }
 

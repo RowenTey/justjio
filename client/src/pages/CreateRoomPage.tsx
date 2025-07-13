@@ -31,7 +31,6 @@ type CreateRoomFormData = {
   invitees: string;
   isPrivate: boolean;
   description?: string;
-  message?: string;
 };
 
 const CreateRoomPage = () => {
@@ -52,7 +51,6 @@ const CreateRoomPage = () => {
       invitees: "",
       isPrivate: false,
       description: "",
-      message: "",
     },
   });
   const { user, friends, fetchFriends } = useUserCtx();
@@ -94,7 +92,6 @@ const CreateRoomPage = () => {
       roomData,
       selectedVenue.googleMapsPlaceId,
       data.invitees.split(","),
-      data.message,
     );
 
     if (!res.isSuccessResponse) {
@@ -246,16 +243,6 @@ const CreateRoomPage = () => {
             {...register("description")}
           ></textarea>
         </div>
-
-        <InputField
-          name="message"
-          type="text"
-          label="Message"
-          placeholder="Enter invite message (optional)"
-          errors={errors}
-          register={register}
-          validation={{}}
-        />
 
         <button
           className="bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full mt-4 w-2/5"

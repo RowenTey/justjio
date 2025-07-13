@@ -3,7 +3,6 @@ import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
 import ButtonCard from "../components/ButtonCard";
 import {
   ChatBubbleLeftIcon,
-  PlusIcon,
   DocumentDuplicateIcon,
   DocumentPlusIcon,
   XMarkIcon,
@@ -28,7 +27,6 @@ import { useRoomCtx } from "../context/room";
 import { channelTypes, useWs } from "../context/ws";
 import useMandatoryParam from "../hooks/useMandatoryParam";
 import InviteAttendeesModal from "../components/modals/InviteAttendeesModal";
-import QRCodeModal from "../components/modals/QRCodeModal";
 import { getRedirectPath, setRedirectPath } from "../utils/redirect";
 import ConfirmJoinModal from "../components/modals/ConfirmJoinModal";
 import { useToast } from "../context/toast";
@@ -211,17 +209,12 @@ const RoomPage = () => {
   }
 
   return (
-    <div className="h-full flex flex-col items-center gap-2 bg-gray-200">
+    <div className="h-full flex flex-col items-center gap-1 bg-gray-200">
       <RoomTopBar title={room.name} shouldCenterTitle={true} />
 
       <RoomDetails room={room} />
 
-      <RoomAttendees
-        isHost={user.id === room.hostId}
-        attendees={attendees}
-        roomId={roomId}
-        hostId={room.hostId}
-      />
+      <RoomAttendees attendees={attendees} hostId={room.hostId} />
 
       <RoomActionWidgets
         userId={user.id}
@@ -250,92 +243,60 @@ const RoomPage = () => {
 
 const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
   return (
-    <div className="h-[45%] w-full px-5 flex flex-col gap-2">
-      <h3 className="text-secondary font-semibold">
-        {new Date(room.date) > new Date() ? "Upcoming" : "Passed"} Event
+    <div className="h-[39%] w-full px-5 flex flex-col gap-2">
+      <h3 className="text-secondary font-bold">
+        {room.isPrivate ? "Private" : "Public"} Event{" "}
+        <span className="font-thin italic">
+          - {new Date(room.date) > new Date() ? "Upcoming" : "Passed"}
+        </span>
       </h3>
 
-      <div className="h-[50%] rounded-2xl overflow-hidden -mt-1">
-        <img
-          src={room.imageUrl}
-          alt="Room Image"
-          className="w-full h-full object-cover"
-        />
-      </div>
-
-      <div className="h-[45%] flex flex-col bg-white shadow-lg gap-1 rounded-2xl px-3 py-2 leading-tight">
-        <a
-          href={room.venueUrl}
-          target="_blank"
-          className="flex items-center gap-1 text-[#8A38F5]"
-        >
-          <MapPinIcon className="w-6 h-6" />
-          <span className="hover:underline">{room.venue}</span>
-        </a>
-        <div className="w-full flex items-center gap-3">
-          <div className="flex gap-1">
-            <CalendarIcon className="h-6 w-6 text-secondary" />
-            <p className="text-black">{formatDate(room.date)}</p>
-          </div>
-          <div className="flex gap-1">
-            <ClockIcon className="h-6 w-6 text-secondary" />
-            <p className="text-black">{room.time}</p>
-          </div>
+      <div className="w-full h-[90%] flex flex-col items-center rounded-2xl overflow-hidden">
+        <div className="w-full h-[60%] overflow-hidden -mt-1">
+          <img
+            src={room.imageUrl}
+            alt="Room Image"
+            className="w-full h-full object-cover"
+          />
         </div>
 
-        {/* <div className="w-2/5 flex flex-col gap-2 justify-center font-bold text-black">
-          <div className="flex flex-col">
-            <p>{toDayOfWeek(room.date)}</p>
-            <p>{formatDate(room.date)}</p>
-            <p>{room.time}</p>
+        <div className="w-full h-[40%] flex flex-col bg-white rounded-e-2xl shadow-lg gap-1 px-3 pt-2 leading-tight">
+          <div className="w-full flex items-center gap-6">
+            <div className="flex gap-2 items-center">
+              <CalendarIcon className="h-6 w-6 text-secondary" />
+              <p className="text-black">{formatDate(room.date)}</p>
+            </div>
+            <div className="flex gap-2 items-center">
+              <ClockIcon className="h-6 w-6 text-secondary" />
+              <p className="text-black">{room.time}</p>
+            </div>
           </div>
+          <a
+            href={room.venueUrl}
+            target="_blank"
+            className="w-fit flex items-center gap-2 text-[#8A38F5] hover:underline"
+          >
+            <MapPinIcon className="w-6 h-6" />
+            <span>{room.venue}</span>
+          </a>
         </div>
-
-        <div className="w-3/5 flex flex-col gap-2 font-bold justify-center">
-          <div className="w-full py-2 px-3 bg-secondary rounded-xl text-white">
-            <p>Venue: {room.venue}</p>
-          </div>
-          <div className="w-full py-2 px-3 bg-secondary rounded-xl text-white">
-            <p>Attendees: {room.attendeesCount}</p>
-          </div>
-        </div> */}
       </div>
     </div>
   );
 };
 
 type RoomAttendeesProps = {
-  roomId: string;
-  isHost: boolean;
   hostId: number;
   attendees: IUser[];
 };
 
-const RoomAttendees: React.FC<RoomAttendeesProps> = ({
-  roomId,
-  isHost,
-  hostId,
-  attendees,
-}) => {
-  const [isModalVisible, setIsModalVisible] = useState(false);
-
+const RoomAttendees: React.FC<RoomAttendeesProps> = ({ hostId, attendees }) => {
   return (
     <>
-      <div className="h-[40%] w-full px-5 flex flex-col gap-2 mt-1">
-        <div className="w-full flex justify-between items-center">
-          <h3 className="text-secondary font-bold">Attendees</h3>
-
-          {isHost && (
-            <div
-              className="flex items-center justify-center 
-								rounded-full bg-secondary p-1 w-8 h-8 
-								cursor-pointer hover:border hover:border-white"
-              onClick={() => setIsModalVisible(true)}
-            >
-              <PlusIcon className="h-7 w-7 text-white" />
-            </div>
-          )}
-        </div>
+      <div className="h-[33%] w-full px-5 flex flex-col gap-1 mt-1">
+        <h3 className="text-secondary font-bold">
+          {attendees.length} Attendee(s)
+        </h3>
         <div
           className="h-[90%] flex flex-col gap-2 p-2 
 						rounded-xl bg-primary overflow-y-auto"
@@ -350,12 +311,6 @@ const RoomAttendees: React.FC<RoomAttendeesProps> = ({
           ))}
         </div>
       </div>
-
-      <InviteAttendeesModal
-        isVisible={isModalVisible}
-        closeModal={() => setIsModalVisible(false)}
-        roomId={roomId}
-      />
     </>
   );
 };
@@ -383,7 +338,7 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
   onCloseRoom,
   onLeaveRoom,
 }) => {
-  const [isQRCodeModalVisible, setIsQRCodeModalVisible] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const showSplitBill = isHost
     ? isRoomBillConsolidated
       ? false
@@ -430,7 +385,7 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
         <ButtonCard
           title="Generate QR"
           Icon={QrCodeIcon}
-          onClick={() => setIsQRCodeModalVisible(true)}
+          onClick={() => setIsModalVisible(true)}
           isLink={false}
         />
 
@@ -451,10 +406,11 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
           />
         )}
 
-        <QRCodeModal
+        <InviteAttendeesModal
           url={window.location.href + "?join=true"}
-          isVisible={isQRCodeModalVisible}
-          closeModal={() => setIsQRCodeModalVisible(false)}
+          isVisible={isModalVisible}
+          closeModal={() => setIsModalVisible(false)}
+          roomId={roomId}
         />
       </div>
     </>
