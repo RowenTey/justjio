@@ -27,8 +27,7 @@ type MessageService struct {
 	logger       *logrus.Entry
 }
 
-// NOTE: used var instead of func to enable mocking in tests
-var NewMessageService = func(
+func NewMessageService(
 	db *gorm.DB,
 	messageRepo repository.MessageRepository,
 	roomRepo repository.RoomRepository,

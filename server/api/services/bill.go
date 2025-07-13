@@ -28,8 +28,7 @@ type BillService struct {
 	logger             *logrus.Entry
 }
 
-// NOTE: used var instead of func to enable mocking in tests
-var NewBillService = func(
+func NewBillService(
 	db *gorm.DB,
 	billRepo repository.BillRepository,
 	userRepo repository.UserRepository,
@@ -57,9 +56,9 @@ func (bs *BillService) CreateBill(
 	amount float32,
 	includeOwner bool,
 ) (*model.Bill, error) {
-	if exists, err := bs.HasUnconsolidatedBills(roomId); err != nil {
+	if status, err := bs.billRepo.HasUnconsolidatedBills(roomId); err != nil {
 		return nil, err
-	} else if !exists { // already consolidated
+	} else if status == repository.CONSOLIDATED {
 		return nil, ErrAlreadyConsolidated
 	}
 
@@ -111,9 +110,13 @@ func (bs *BillService) DeleteRoomBills(roomId string) error {
 	return bs.billRepo.DeleteByRoom(roomId)
 }
 
-// TODO: check if this is correct
+// TODO: check if actually needed (should only be used in server-side)
 func (bs *BillService) HasUnconsolidatedBills(roomId string) (bool, error) {
-	return bs.billRepo.HasUnconsolidatedBills(roomId)
+	status, err := bs.billRepo.HasUnconsolidatedBills(roomId)
+	if err != nil {
+		return false, err
+	}
+	return status == repository.UNCONSOLIDATED, nil
 }
 
 func (bs *BillService) ConsolidateBills(roomId, userId string) error {
@@ -131,9 +134,9 @@ func (bs *BillService) ConsolidateBills(roomId, userId string) error {
 			return ErrOnlyHostCanConsolidate
 		}
 
-		if exists, err := bs.HasUnconsolidatedBills(roomId); err != nil {
+		if status, err := bs.billRepo.HasUnconsolidatedBills(roomId); err != nil {
 			return err
-		} else if !exists { // already consolidated
+		} else if status == repository.CONSOLIDATED {
 			return ErrAlreadyConsolidated
 		}
 
@@ -142,6 +145,7 @@ func (bs *BillService) ConsolidateBills(roomId, userId string) error {
 		if err != nil {
 			return err
 		}
+		bs.logger.Info("Bills consolidated: ", consolidation.ID)
 
 		bills, err := billRepoTx.FindByConsolidation(consolidation.ID)
 		if err != nil {

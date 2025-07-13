@@ -50,7 +50,7 @@ func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
 		} else if errors.Is(err, services.ErrAlreadyConsolidated) {
 			return utils.HandleError(c, fiber.StatusBadRequest, err.Error(), nil)
 		}
-		return utils.HandleInternalServerError(c, err)
+		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
 	h.logger.Info("Created bill successfully: ", bill.ID)
@@ -65,7 +65,7 @@ func (h *BillHandler) GetBillsByRoom(c *fiber.Ctx) error {
 
 	bills, err := h.billService.GetBillsForRoom(roomId)
 	if err != nil {
-		return utils.HandleInternalServerError(c, err)
+		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
 	return utils.HandleSuccess(c, "Retrieved bills successfully", bills)
@@ -86,7 +86,7 @@ func (h *BillHandler) ConsolidateBills(c *fiber.Ctx) error {
 		} else if errors.Is(err, services.ErrOnlyHostCanConsolidate) {
 			return utils.HandleError(c, fiber.StatusForbidden, err.Error(), nil)
 		}
-		return utils.HandleInternalServerError(c, err)
+		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
 	return utils.HandleSuccess(c, "Bill consolidated successfully", nil)
@@ -100,7 +100,7 @@ func (h *BillHandler) IsRoomBillConsolidated(c *fiber.Ctx) error {
 
 	exists, err := h.billService.HasUnconsolidatedBills(roomId)
 	if err != nil {
-		return utils.HandleInternalServerError(c, err)
+		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
 
 	return utils.HandleSuccess(c,

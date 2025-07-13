@@ -54,9 +54,10 @@ type RoomHandlerTestSuite struct {
 func (suite *RoomHandlerTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	var err error
+	suite.logger = logrus.New()
 
 	// Setup test containers
-	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx)
+	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.logger)
 	assert.NoError(suite.T(), err)
 
 	// Get PostgreSQL connection string
@@ -73,7 +74,6 @@ func (suite *RoomHandlerTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Initialize deps
-	suite.logger = logrus.New()
 	suite.mockJWTSecret = "test-secret"
 	suite.mockHttpClient = new(utils.MockHTTPClient)
 	roomRepository := repository.NewRoomRepository(suite.db)
@@ -179,11 +179,11 @@ func (suite *RoomHandlerTestSuite) SetupTest() {
 
 func (suite *RoomHandlerTestSuite) TearDownTest() {
 	// Clear database after each test
-	suite.db.Exec("TRUNCATE TABLE room_invites CASCADE")
-	suite.db.Exec("TRUNCATE TABLE room_users CASCADE")
-	suite.db.Exec("TRUNCATE TABLE rooms CASCADE")
-	suite.db.Exec("TRUNCATE TABLE users CASCADE")
-	suite.logger.Info("Tore down test data and reset global DB")
+	suite.db.Exec("TRUNCATE TABLE room_invites RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE room_users RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE rooms RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE")
+	suite.logger.Info("Tore down test data")
 }
 
 func TestRoomHandlerSuite(t *testing.T) {

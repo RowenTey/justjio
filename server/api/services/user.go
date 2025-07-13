@@ -29,8 +29,7 @@ type UserService struct {
 	logger   *logrus.Entry
 }
 
-// NOTE: used var instead of func to enable mocking in tests
-var NewUserService = func(db *gorm.DB, userRepo repository.UserRepository, logger *logrus.Logger) *UserService {
+func NewUserService(db *gorm.DB, userRepo repository.UserRepository, logger *logrus.Logger) *UserService {
 	return &UserService{
 		db:       db,
 		userRepo: userRepo,

@@ -22,8 +22,7 @@ type NotificationService struct {
 	logger            *logrus.Entry
 }
 
-// NOTE: used var instead of func to enable mocking in tests
-var NewNotificationService = func(
+func NewNotificationService(
 	notificationRepo repository.NotificationRepository,
 	subscriptionRepo repository.SubscriptionRepository,
 	notificationsChan chan<- pushNotificationModel.NotificationData,
@@ -72,6 +71,7 @@ func (s *NotificationService) GetNotifications(userId uint) (*[]model.Notificati
 	return s.notificationRepo.FindByUser(userId)
 }
 
+// SendNotification sends a notification to a user and their subscriptions
 func (s *NotificationService) SendNotification(userId, title, message string) error {
 	if _, err := s.CreateNotification(userId, title, message); err != nil {
 		s.logger.Error("Error creating notification: ", err)

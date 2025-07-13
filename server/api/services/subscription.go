@@ -16,8 +16,7 @@ type SubscriptionService struct {
 	logger            *logrus.Entry
 }
 
-// NOTE: used var instead of func to enable mocking in tests
-var NewSubscriptionService = func(
+func NewSubscriptionService(
 	subscriptionRepo repository.SubscriptionRepository,
 	notificationsChan chan<- pushNotificationModel.NotificationData,
 	logger *logrus.Logger,

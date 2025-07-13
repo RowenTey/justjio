@@ -43,8 +43,7 @@ type AuthService struct {
 	logger        *logrus.Entry
 }
 
-// NOTE: used var instead of func to enable mocking in tests
-var NewAuthService = func(
+func NewAuthService(
 	userService *UserService,
 	kafkaService KafkaService,
 	hashFunc func(password string) (string, error),

@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/kafka"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -17,7 +18,7 @@ type TestDependencies struct {
 	KafkaContainer    *kafka.KafkaContainer
 }
 
-func SetupTestDependencies(ctx context.Context) (*TestDependencies, error) {
+func SetupTestDependencies(ctx context.Context, logger *logrus.Logger) (*TestDependencies, error) {
 	// Setup PostgreSQL
 	pgContainer, err := postgres.Run(ctx,
 		"postgres:15",
@@ -32,20 +33,26 @@ func SetupTestDependencies(ctx context.Context) (*TestDependencies, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to start postgres container: %w", err)
 	}
+	logger.Info("PostgreSQL container started successfully")
 
 	// Setup Kafka
-	// kafkaContainer, err := kafka.Run(ctx,
-	// 	"confluentinc/cp-kafka:7.8.0",
-	// 	kafka.WithClusterID("test-cluster"),
-	// )
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to start kafka container: %w", err)
-	// }
+	kafkaContainer, err := kafka.Run(ctx,
+		"confluentinc/cp-kafka:7.8.0",
+		kafka.WithClusterID("test-cluster"),
+		testcontainers.WithWaitStrategy(
+			wait.ForLog("Kafka server started").
+				WithOccurrence(1).
+				WithStartupTimeout(15*time.Second)),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to start kafka container: %w", err)
+	}
+	logger.Info("Kafka container started successfully")
 
 	return &TestDependencies{
 		PostgresContainer: pgContainer,
-		// KafkaContainer:    kafkaContainer,
-		KafkaContainer: nil,
+		KafkaContainer:    kafkaContainer,
+		// KafkaContainer: nil,
 	}, nil
 }
 

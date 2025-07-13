@@ -33,8 +33,7 @@ type edge struct {
 	amount float32
 }
 
-// NOTE: used var instead of func to enable mocking in tests
-var NewTransactionService = func(
+func NewTransactionService(
 	transactionRepo repository.TransactionRepository,
 	billRepo repository.BillRepository,
 	logger *logrus.Logger,

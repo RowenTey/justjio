@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
@@ -35,6 +36,8 @@ type BillHandlerTestSuite struct {
 
 	mockJWTSecret string
 
+	mockTransactionService *services.MockTransactionService
+
 	billService *services.BillService
 
 	testUser1ID    uint
@@ -47,9 +50,10 @@ type BillHandlerTestSuite struct {
 func (suite *BillHandlerTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	var err error
+	suite.logger = logrus.New()
 
 	// Setup test containers
-	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx)
+	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.logger)
 	assert.NoError(suite.T(), err)
 
 	// Get PostgreSQL connection string
@@ -66,20 +70,19 @@ func (suite *BillHandlerTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Initialize deps
-	suite.logger = logrus.New()
 	suite.mockJWTSecret = "test-secret"
 	billRepository := repository.NewBillRepository(suite.db)
 	roomRepository := repository.NewRoomRepository(suite.db)
 	userRepository := repository.NewUserRepository(suite.db)
 	transactionRepo := repository.NewTransactionRepository(suite.db)
-	mockTransactionService := new(services.MockTransactionService)
+	suite.mockTransactionService = new(services.MockTransactionService)
 	suite.billService = services.NewBillService(
 		suite.db,
 		billRepository,
 		userRepository,
 		roomRepository,
 		transactionRepo,
-		mockTransactionService,
+		suite.mockTransactionService,
 		suite.logger,
 	)
 	billHandler := NewBillHandler(suite.billService, suite.logger)
@@ -149,16 +152,15 @@ func (suite *BillHandlerTestSuite) SetupTest() {
 }
 
 func (suite *BillHandlerTestSuite) TearDownTest() {
-	// Clear database after each test using TRUNCATE for speed and cascade
-	// Order matters if FK constraints exist and CASCADE isn't used/working properly
-	suite.db.Exec("TRUNCATE TABLE transactions CASCADE")
-	suite.db.Exec("TRUNCATE TABLE consolidations CASCADE")
-	suite.db.Exec("TRUNCATE TABLE payers CASCADE")
-	suite.db.Exec("TRUNCATE TABLE bills CASCADE")
-	suite.db.Exec("TRUNCATE TABLE room_users CASCADE")
-	suite.db.Exec("TRUNCATE TABLE rooms CASCADE")
-	suite.db.Exec("TRUNCATE TABLE users CASCADE")
-	suite.logger.Info("Tore down test data and reset global DB")
+	// Clear database after each test
+	suite.db.Exec("TRUNCATE TABLE transactions RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE consolidations RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE payers RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE bills RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE room_users RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE rooms RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE")
+	suite.logger.Info("Tore down test data")
 }
 
 func TestBillHandlerSuite(t *testing.T) {
@@ -301,8 +303,6 @@ func (suite *BillHandlerTestSuite) TestCreateBill_PayerNotFound() {
 
 	resp, err := suite.app.Test(req, -1)
 	assert.NoError(suite.T(), err)
-	// Depending on how GetUsersByID handles partial finds, this might be NotFound or potentially InternalError
-	// Assuming it errors correctly if *any* user ID is not found.
 	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
 
 	var responseBody map[string]any
@@ -377,7 +377,7 @@ func (suite *BillHandlerTestSuite) TestCreateBill_RoomAlreadyConsolidated() {
 	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "Bills for this room have already been consolidated", responseBody["message"])
+	assert.Equal(suite.T(), "bills for this room have already been consolidated", responseBody["message"])
 }
 
 func (suite *BillHandlerTestSuite) TestGetBillsByRoom_Success() {
@@ -446,16 +446,25 @@ func (suite *BillHandlerTestSuite) TestConsolidateBills_Success() {
 	// Create a couple of bills
 	bill1 := model.Bill{
 		RoomID: suite.testRoomID, OwnerID: suite.testUser1ID, Name: "Bill 1", Amount: 100.00,
-		Payers: []model.User{{ID: suite.testUser1ID}, {ID: suite.testUser2ID}}, // Both pay
+		IncludeOwner: true,
+		Payers:       []model.User{{ID: suite.testUser2ID}}, // Both pay
 	}
 	bill2 := model.Bill{
 		RoomID: suite.testRoomID, OwnerID: suite.testUser2ID, Name: "Bill 2", Amount: 50.00,
-		Payers: []model.User{{ID: suite.testUser1ID}}, // Only User1 pays
+		IncludeOwner: true,
+		Payers:       []model.User{{ID: suite.testUser1ID}}, // Only User1 pays
 	}
 	err := suite.db.Create(&bill1).Error
 	assert.NoError(suite.T(), err)
 	err = suite.db.Create(&bill2).Error
 	assert.NoError(suite.T(), err)
+
+	suite.mockTransactionService.
+		On("GenerateTransactions", mock.Anything, mock.AnythingOfType("*model.Consolidation")).
+		Return(&[]model.Transaction{
+			{ConsolidationID: 1, Amount: 25.00, PayerID: suite.testUser2ID, PayeeID: suite.testUser1ID},
+		}, nil).
+		Once()
 
 	consolidateReq := request.ConsolidateBillsRequest{RoomID: suite.testRoomID}
 	reqBody, _ := json.Marshal(consolidateReq)
@@ -508,12 +517,12 @@ func (suite *BillHandlerTestSuite) TestConsolidateBills_NotHost() {
 
 	resp, err := suite.app.Test(req, -1)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), fiber.StatusUnauthorized, resp.StatusCode)
+	assert.Equal(suite.T(), fiber.StatusForbidden, resp.StatusCode)
 
 	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "User is not the host of the room", responseBody["message"])
+	assert.Equal(suite.T(), "only the host can consolidate bills", responseBody["message"])
 }
 
 func (suite *BillHandlerTestSuite) TestConsolidateBills_RoomNotFound() {
@@ -537,16 +546,23 @@ func (suite *BillHandlerTestSuite) TestConsolidateBills_RoomNotFound() {
 
 func (suite *BillHandlerTestSuite) TestConsolidateBills_AlreadyConsolidated() {
 	bill1 := model.Bill{
-		RoomID:  suite.testRoomID,
-		OwnerID: suite.testUser1ID,
-		Name:    "Bill for Consolidation Test",
-		Amount:  20.00,
-		Payers:  []model.User{{ID: suite.testUser1ID}, {ID: suite.testUser2ID}},
+		RoomID:       suite.testRoomID,
+		OwnerID:      suite.testUser1ID,
+		Name:         "Bill for Consolidation Test",
+		Amount:       20.00,
+		IncludeOwner: true,
+		Payers:       []model.User{{ID: suite.testUser2ID}},
 	}
 	err := suite.db.Create(&bill1).Error
 	assert.NoError(suite.T(), err, "Failed to create prerequisite bill")
 
 	// Consolidate once
+	suite.mockTransactionService.
+		On("GenerateTransactions", mock.Anything, mock.Anything).
+		Return(&[]model.Transaction{
+			{ConsolidationID: 1, Amount: 10.00, PayerID: suite.testUser2ID, PayeeID: suite.testUser1ID},
+		}, nil).
+		Once()
 	consolidateReq := request.ConsolidateBillsRequest{RoomID: suite.testRoomID}
 	reqBody, _ := json.Marshal(consolidateReq)
 	req1 := httptest.NewRequest(http.MethodPost, "/bills/consolidate", bytes.NewBuffer(reqBody))
@@ -567,7 +583,7 @@ func (suite *BillHandlerTestSuite) TestConsolidateBills_AlreadyConsolidated() {
 	var responseBody map[string]any
 	err = json.NewDecoder(resp2.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "Bills for this room have already been consolidated", responseBody["message"])
+	assert.Equal(suite.T(), "bills for this room have already been consolidated", responseBody["message"])
 }
 
 func (suite *BillHandlerTestSuite) TestConsolidateBills_InvalidInput() {
@@ -587,6 +603,17 @@ func (suite *BillHandlerTestSuite) TestConsolidateBills_InvalidInput() {
 }
 
 func (suite *BillHandlerTestSuite) TestIsRoomBillConsolidated_False() {
+	bill := model.Bill{
+		RoomID:       suite.testRoomID,
+		OwnerID:      suite.testUser1ID,
+		Name:         "Bill for Consolidation Test",
+		Amount:       20.00,
+		IncludeOwner: true,
+		Payers:       []model.User{{ID: suite.testUser2ID}},
+	}
+	err := suite.db.Create(&bill).Error
+	assert.NoError(suite.T(), err, "Failed to create prerequisite bill")
+
 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/bills/consolidated/%s", suite.testRoomID), nil)
 	req.Header.Set("Authorization", "Bearer "+suite.testUser1Token)
 
@@ -605,15 +632,22 @@ func (suite *BillHandlerTestSuite) TestIsRoomBillConsolidated_False() {
 func (suite *BillHandlerTestSuite) TestIsRoomBillConsolidated_True() {
 	// Consolidate first
 	bill := model.Bill{
-		RoomID:  suite.testRoomID,
-		OwnerID: suite.testUser1ID,
-		Name:    "Bill for Consolidation Test",
-		Amount:  20.00,
-		Payers:  []model.User{{ID: suite.testUser1ID}, {ID: suite.testUser2ID}},
+		RoomID:       suite.testRoomID,
+		OwnerID:      suite.testUser1ID,
+		Name:         "Bill for Consolidation Test",
+		Amount:       20.00,
+		IncludeOwner: true,
+		Payers:       []model.User{{ID: suite.testUser2ID}},
 	}
 	err := suite.db.Create(&bill).Error
 	assert.NoError(suite.T(), err, "Failed to create prerequisite bill")
 
+	suite.mockTransactionService.
+		On("GenerateTransactions", mock.Anything, mock.AnythingOfType("*model.Consolidation")).
+		Return(&[]model.Transaction{
+			{ConsolidationID: 1, Amount: 10.00, PayerID: suite.testUser2ID, PayeeID: suite.testUser1ID},
+		}, nil).
+		Once()
 	consolidateReq := request.ConsolidateBillsRequest{RoomID: suite.testRoomID}
 	reqBody, _ := json.Marshal(consolidateReq)
 	req1 := httptest.NewRequest(http.MethodPost, "/bills/consolidate", bytes.NewBuffer(reqBody))
@@ -640,24 +674,13 @@ func (suite *BillHandlerTestSuite) TestIsRoomBillConsolidated_True() {
 }
 
 func (suite *BillHandlerTestSuite) TestIsRoomBillConsolidated_RoomNotFound() {
-	// This test checks how the handler/service behaves if the room ID itself is invalid
-	// The service function IsRoomBillConsolidated might return false (and no error)
-	// if it just checks for a consolidation record by roomID without validating the room exists first.
-	// Or it might error. Let's assume it returns false cleanly for a non-existent room's consolidation status.
 	nonExistentRoomID := uuid.New()
 	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/bills/consolidated/%s", nonExistentRoomID), nil)
 	req.Header.Set("Authorization", "Bearer "+suite.testUser1Token)
 
 	resp, err := suite.app.Test(req, -1)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode) // Expecting OK because gorm.ErrRecordNotFound is handled
-
-	var responseBody map[string]any
-	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "Retrieved consolidation status successfully", responseBody["message"])
-	data := responseBody["data"].(map[string]any)
-	assert.Equal(suite.T(), false, data["isConsolidated"]) // Should report false for a room with no consolidation record
+	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
 }
 
 func (suite *BillHandlerTestSuite) TestIsRoomBillConsolidated_InvalidRoomIDFormat() {
@@ -668,11 +691,6 @@ func (suite *BillHandlerTestSuite) TestIsRoomBillConsolidated_InvalidRoomIDForma
 
 	resp, err := suite.app.Test(req, -1)
 	assert.NoError(suite.T(), err)
-	// GORM might fail trying to query with an invalid UUID format, leading to an internal server error
-	// OR Fiber's parameter binding/validation might catch it earlier if typed path parameters are used correctly.
-	// If the handler/service tries to parse the UUID and fails, it should return BadRequest.
-	// If it passes the invalid string to GORM, it might result in InternalServerError.
-	// Let's assume GORM fails internally. Adjust if UUID parsing happens earlier.
 	assert.Equal(suite.T(), fiber.StatusInternalServerError, resp.StatusCode) // GORM error likely results in 500
 
 	var responseBody map[string]any

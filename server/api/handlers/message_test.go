@@ -130,7 +130,7 @@ package handlers
 
 // 	// Reset the global DB variable
 // 	database.DB = nil
-// 	log.Info("Tore down test data and reset global DB")
+// 	log.Info("Tore down test data")
 // }
 
 // func TestMessageHandlerSuite(t *testing.T) {
