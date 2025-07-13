@@ -1,316 +1,364 @@
 package handlers
 
-// type NotificationHandlerTestSuite struct {
-// 	suite.Suite
-// 	app          *fiber.App
-// 	db           *gorm.DB
-// 	ctx          context.Context
-// 	dependencies *tests.TestDependencies
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
 
-// 	testUserID    uint
-// 	testUserToken string
-// 	// testNotifChan chan NotificationData
-// }
+	"github.com/RowenTey/JustJio/server/api/database"
+	"github.com/RowenTey/JustJio/server/api/middleware"
+	"github.com/RowenTey/JustJio/server/api/model"
+	pushNotificationsModel "github.com/RowenTey/JustJio/server/api/model/push_notifications"
+	"github.com/RowenTey/JustJio/server/api/model/request"
+	"github.com/RowenTey/JustJio/server/api/repository"
+	"github.com/RowenTey/JustJio/server/api/services"
+	"github.com/RowenTey/JustJio/server/api/tests"
+	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
+)
 
-// func (suite *NotificationHandlerTestSuite) SetupSuite() {
-// 	suite.ctx = context.Background()
-// 	var err error
+type NotificationHandlerTestSuite struct {
+	suite.Suite
+	app          *fiber.App
+	db           *gorm.DB
+	ctx          context.Context
+	logger       *logrus.Logger
+	dependencies *tests.TestDependencies
 
-// 	// Setup test containers
-// 	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx)
-// 	assert.NoError(suite.T(), err)
+	mockJWTSecret string
 
-// 	// Get PostgreSQL connection string
-// 	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
-// 	assert.NoError(suite.T(), err)
-// 	fmt.Println("Test DB Connection String:", pgConnStr)
+	notificationService *services.NotificationService
 
-// 	// Initialize database
-// 	suite.db, err = database.InitTestDB(pgConnStr)
-// 	assert.NoError(suite.T(), err)
+	testUserID           uint
+	testUserToken        string
+	testNotificationChan chan pushNotificationsModel.NotificationData
+}
 
-// 	// Run migrations
-// 	err = database.Migrate(suite.db)
-// 	assert.NoError(suite.T(), err)
+func (suite *NotificationHandlerTestSuite) SetupSuite() {
+	suite.ctx = context.Background()
+	var err error
+	suite.logger = logrus.New()
 
-// 	// Setup Fiber app
-// 	suite.app = fiber.New()
-// 	suite.app.Use(middleware.Authenticated(mockJWTSecret))
+	// Setup test containers
+	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.logger)
+	assert.NoError(suite.T(), err)
 
-// 	// Notification channel for testing
-// 	suite.testNotifChan = make(chan NotificationData, 100)
+	// Get PostgreSQL connection string
+	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
+	assert.NoError(suite.T(), err)
+	fmt.Println("Test DB Connection String:", pgConnStr)
 
-// 	// Register Notification routes
-// 	notifRoutes := suite.app.Group("/notifications")
-// 	notifRoutes.Get("/", GetNotifications)
-// 	notifRoutes.Post("/", func(c *fiber.Ctx) error {
-// 		return CreateNotification(c, suite.testNotifChan)
-// 	})
-// 	userNotifRoutes := suite.app.Group("/users/:userId/notifications")
-// 	userNotifRoutes.Get("/:id", GetNotification)
-// 	userNotifRoutes.Patch("/:id", MarkNotificationAsRead)
-// }
+	// Initialize database
+	suite.db, err = database.InitTestDB(pgConnStr)
+	assert.NoError(suite.T(), err)
 
-// func (suite *NotificationHandlerTestSuite) TearDownSuite() {
-// 	// Clean up containers
-// 	if suite.dependencies != nil {
-// 		suite.dependencies.Teardown(suite.ctx)
-// 	}
-// 	log.Info("Tore down test suite dependencies")
-// 	close(suite.testNotifChan)
-// }
+	// Run migrations
+	err = database.Migrate(suite.db)
+	assert.NoError(suite.T(), err)
 
-// func (suite *NotificationHandlerTestSuite) SetupTest() {
-// 	// Assign the test DB to the global variable used by handlers/services
-// 	database.DB = suite.db
-// 	assert.NotNil(suite.T(), database.DB, "Global DB should be set")
+	// Initialize deps
+	suite.mockJWTSecret = "test-secret"
+	suite.testNotificationChan = make(chan pushNotificationsModel.NotificationData, 100)
+	notificationRepo := repository.NewNotificationRepository(suite.db)
+	subscriptionRepo := repository.NewSubscriptionRepository(suite.db)
+	suite.notificationService = services.NewNotificationService(
+		notificationRepo,
+		subscriptionRepo,
+		suite.testNotificationChan,
+		suite.logger,
+	)
+	notificationHandler := NewNotificationHandler(suite.notificationService, suite.logger)
 
-// 	// Create test user
-// 	hashedPassword, _ := utils.HashPassword("password123")
-// 	user := model.User{
-// 		Username: "testuser",
-// 		Email:    "testuser@example.com",
-// 		Password: hashedPassword,
-// 	}
-// 	result := suite.db.Create(&user)
-// 	assert.NoError(suite.T(), result.Error)
-// 	suite.testUserID = user.ID
+	// Setup Fiber app
+	suite.app = fiber.New()
+	suite.app.Use(middleware.Authenticated(suite.mockJWTSecret))
 
-// 	// Generate JWT token for the user
-// 	token, err := generateTestToken(user.ID, user.Username, user.Email)
-// 	assert.NoError(suite.T(), err)
-// 	suite.testUserToken = token
+	// Register Notification routes
+	notifRoutes := suite.app.Group("/notifications")
+	notifRoutes.Get("/", notificationHandler.GetNotifications)
+	notifRoutes.Post("/", notificationHandler.CreateNotification)
+	userNotifRoutes := suite.app.Group("/users/:userId/notifications")
+	userNotifRoutes.Get("/:id", notificationHandler.GetNotification)
+	userNotifRoutes.Patch("/:id", notificationHandler.MarkNotificationAsRead)
+}
 
-// 	log.Infof("SetupTest complete: User ID=%d", suite.testUserID)
-// }
+func (suite *NotificationHandlerTestSuite) TearDownSuite() {
+	// Clean up containers
+	if suite.dependencies != nil {
+		suite.dependencies.Teardown(suite.ctx)
+	}
+	log.Info("Tore down test suite dependencies")
+	close(suite.testNotificationChan)
+}
 
-// func (suite *NotificationHandlerTestSuite) TearDownTest() {
-// 	// Clear database after each test
-// 	suite.db.Exec("TRUNCATE TABLE notifications CASCADE")
-// 	suite.db.Exec("TRUNCATE TABLE users CASCADE")
+func (suite *NotificationHandlerTestSuite) SetupTest() {
+	hashedPassword, err := utils.HashPassword("password123")
+	assert.NoError(suite.T(), err)
+	user := model.User{
+		Username: "testuser",
+		Email:    "testuser@example.com",
+		Password: hashedPassword,
+	}
+	result := suite.db.Create(&user)
+	assert.NoError(suite.T(), result.Error)
+	suite.testUserID = user.ID
 
-// 	// Reset the global DB variable
-// 	database.DB = nil
-// 	log.Info("Tore down test data and reset global DB")
-// }
+	// Generate JWT token for the user
+	token, err := tests.GenerateTestToken(user.ID, user.Username, user.Email, suite.mockJWTSecret)
+	assert.NoError(suite.T(), err)
+	suite.testUserToken = token
 
-// func TestNotificationHandlerSuite(t *testing.T) {
-// 	suite.Run(t, new(NotificationHandlerTestSuite))
-// }
+	log.Infof("SetupTest complete: User ID=%d", suite.testUserID)
+}
 
-// func (suite *NotificationHandlerTestSuite) TestCreateNotification_Success() {
-// 	createReq := request.CreateNotificationRequest{
-// 		UserId:  suite.testUserID,
-// 		Title:   "Test Notification",
-// 		Content: "This is a test notification",
-// 	}
-// 	reqBody, _ := json.Marshal(createReq)
+func (suite *NotificationHandlerTestSuite) TearDownTest() {
+	// Clear database after each test
+	suite.db.Exec("TRUNCATE TABLE notifications RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE")
+	log.Info("Tore down test data")
+}
 
-// 	req := httptest.NewRequest(http.MethodPost, "/notifications", bytes.NewBuffer(reqBody))
-// 	req.Header.Set("Content-Type", "application/json")
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+func TestNotificationHandlerSuite(t *testing.T) {
+	suite.Run(t, new(NotificationHandlerTestSuite))
+}
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+func (suite *NotificationHandlerTestSuite) TestCreateNotification_Success() {
+	// Create a test subscription
+	existingSubscription := model.Subscription{
+		UserID:   suite.testUserID,
+		Endpoint: "https://example.com/push/new",
+		P256dh:   "new_p256dh_key",
+		Auth:     "new_auth_key",
+	}
+	err := suite.db.Create(&existingSubscription).Error
+	assert.NoError(suite.T(), err)
 
-// 	var responseBody map[string]any
-// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), "Notification created successfully", responseBody["message"])
+	createReq := request.CreateNotificationRequest{
+		UserId:  suite.testUserID,
+		Title:   "Test Notification",
+		Content: "This is a test notification",
+	}
+	reqBody, _ := json.Marshal(createReq)
 
-// 	// Verify notification in database
-// 	var notification model.Notification
-// 	err = suite.db.Where("user_id = ? AND title = ?", suite.testUserID, createReq.Title).First(&notification).Error
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), createReq.Content, notification.Content)
-// 	assert.Equal(suite.T(), suite.testUserID, notification.UserID)
-// 	assert.False(suite.T(), notification.IsRead)
+	req := httptest.NewRequest(http.MethodPost, "/notifications", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// 	// Verify notification was sent to channel (though we don't have subscriptions in this test)
-// 	select {
-// 	case <-suite.testNotifChan:
-// 		// Notification was sent to channel
-// 	case <-time.After(100 * time.Millisecond):
-// 		// No notification sent (expected since we don't have subscriptions)
-// 	}
-// }
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-// func (suite *NotificationHandlerTestSuite) TestCreateNotification_InvalidInput() {
-// 	// Test empty content
-// 	createReq := request.CreateNotificationRequest{
-// 		UserId:  suite.testUserID,
-// 		Title:   "Empty Content",
-// 		Content: "",
-// 	}
-// 	reqBody, _ := json.Marshal(createReq)
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Notification created successfully", responseBody["message"])
 
-// 	req := httptest.NewRequest(http.MethodPost, "/notifications", bytes.NewBuffer(reqBody))
-// 	req.Header.Set("Content-Type", "application/json")
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	// Verify notification in database
+	var notification model.Notification
+	err = suite.db.Where("user_id = ? AND title = ?", suite.testUserID, createReq.Title).First(&notification).Error
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), createReq.Content, notification.Content)
+	assert.Equal(suite.T(), suite.testUserID, notification.UserID)
+	assert.False(suite.T(), notification.IsRead)
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
+	// Verify notification was sent to channel (though we don't have subscriptions in this test)
+	select {
+	case notification := <-suite.testNotificationChan:
+		assert.Equal(suite.T(), createReq.Title, notification.Title)
+		assert.Equal(suite.T(), createReq.Content, notification.Message)
+		assert.Equal(suite.T(), existingSubscription.Endpoint, notification.Subscription.Endpoint)
+		assert.Equal(suite.T(), existingSubscription.P256dh, notification.Subscription.Keys.P256dh)
+		assert.Equal(suite.T(), existingSubscription.Auth, notification.Subscription.Keys.Auth)
+	case <-time.After(1 * time.Millisecond):
+		suite.T().Error("Expected notification to be sent but none received")
+	}
+}
 
-// 	var responseBody map[string]any
-// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), "Review your input", responseBody["message"])
+func (suite *NotificationHandlerTestSuite) TestCreateNotification_InvalidInput() {
+	// Test empty content
+	createReq := request.CreateNotificationRequest{
+		UserId:  suite.testUserID,
+		Title:   "Empty Content",
+		Content: "",
+	}
+	reqBody, _ := json.Marshal(createReq)
 
-// 	// Test bad JSON
-// 	reqBody = []byte(`{"userId": "notanumber", "title": "Bad JSON", "content": "Test"}`)
-// 	req = httptest.NewRequest(http.MethodPost, "/notifications", bytes.NewBuffer(reqBody))
-// 	req.Header.Set("Content-Type", "application/json")
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	req := httptest.NewRequest(http.MethodPost, "/notifications", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// 	resp, err = suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
-// }
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
 
-// func (suite *NotificationHandlerTestSuite) TestGetNotification_Success() {
-// 	// Create a test notification
-// 	notification := model.Notification{
-// 		UserID:  suite.testUserID,
-// 		Title:   "Test Get",
-// 		Content: "Test notification content",
-// 	}
-// 	err := suite.db.Create(&notification).Error
-// 	assert.NoError(suite.T(), err)
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Review your input", responseBody["message"])
 
-// 	req := httptest.NewRequest(http.MethodGet,
-// 		fmt.Sprintf("/users/%d/notifications/%d", suite.testUserID, notification.ID), nil)
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	// Test bad JSON
+	reqBody = []byte(`{"userId": "notanumber", "title": "Bad JSON", "content": "Test"}`)
+	req = httptest.NewRequest(http.MethodPost, "/notifications", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+	resp, err = suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
+}
 
-// 	var responseBody map[string]any
-// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), "Retrieved notification successfully", responseBody["message"])
+func (suite *NotificationHandlerTestSuite) TestGetNotification_Success() {
+	// Create a test notification
+	notification := model.Notification{
+		UserID:  suite.testUserID,
+		Title:   "Test Get",
+		Content: "Test notification content",
+	}
+	err := suite.db.Create(&notification).Error
+	assert.NoError(suite.T(), err)
 
-// 	notificationData := responseBody["data"].(map[string]any)
-// 	assert.Equal(suite.T(), notification.Content, notificationData["content"])
-// 	assert.Equal(suite.T(), notification.Title, notificationData["title"])
-// }
+	req := httptest.NewRequest(http.MethodGet,
+		fmt.Sprintf("/users/%d/notifications/%d", suite.testUserID, notification.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// func (suite *NotificationHandlerTestSuite) TestGetNotification_NotFound() {
-// 	nonExistentID := uint(9999)
-// 	req := httptest.NewRequest(http.MethodGet,
-// 		fmt.Sprintf("/users/%d/notifications/%d", suite.testUserID, nonExistentID), nil)
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Retrieved notification successfully", responseBody["message"])
 
-// 	var responseBody map[string]any
-// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), "Notification not found", responseBody["message"])
-// }
+	notificationData := responseBody["data"].(map[string]any)
+	assert.Equal(suite.T(), notification.Content, notificationData["content"])
+	assert.Equal(suite.T(), notification.Title, notificationData["title"])
+}
 
-// func (suite *NotificationHandlerTestSuite) TestGetNotifications_Success() {
-// 	// Create test notifications
-// 	notifications := []model.Notification{
-// 		{
-// 			UserID:  suite.testUserID,
-// 			Title:   "Notification 1",
-// 			Content: "Content 1",
-// 			IsRead:  false,
-// 		},
-// 		{
-// 			UserID:  suite.testUserID,
-// 			Title:   "Notification 2",
-// 			Content: "Content 2",
-// 			IsRead:  true,
-// 		},
-// 	}
-// 	err := suite.db.Create(&notifications).Error
-// 	assert.NoError(suite.T(), err)
+func (suite *NotificationHandlerTestSuite) TestGetNotification_NotFound() {
+	nonExistentID := uint(9999)
+	req := httptest.NewRequest(http.MethodGet,
+		fmt.Sprintf("/users/%d/notifications/%d", suite.testUserID, nonExistentID), nil)
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// 	req := httptest.NewRequest(http.MethodGet, "/notifications", nil)
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Notification not found", responseBody["message"])
+}
 
-// 	var responseBody map[string]any
-// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), "Retrieved notifications successfully", responseBody["message"])
+func (suite *NotificationHandlerTestSuite) TestGetNotifications_Success() {
+	// Create test notifications
+	notifications := []model.Notification{
+		{
+			UserID:  suite.testUserID,
+			Title:   "Notification 1",
+			Content: "Content 1",
+			IsRead:  false,
+		},
+		{
+			UserID:  suite.testUserID,
+			Title:   "Notification 2",
+			Content: "Content 2",
+			IsRead:  true,
+		},
+	}
+	err := suite.db.Create(&notifications).Error
+	assert.NoError(suite.T(), err)
 
-// 	notificationData := responseBody["data"].([]any)
-// 	assert.Len(suite.T(), notificationData, 2)
-// 	// Verify notification titles
-// 	assert.Equal(suite.T(), "Notification 1", notificationData[0].(map[string]any)["title"])
-// 	assert.Equal(suite.T(), "Notification 2", notificationData[1].(map[string]any)["title"])
-// }
+	req := httptest.NewRequest(http.MethodGet, "/notifications", nil)
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// func (suite *NotificationHandlerTestSuite) TestGetNotifications_Empty() {
-// 	req := httptest.NewRequest(http.MethodGet, "/notifications", nil)
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Retrieved notifications successfully", responseBody["message"])
 
-// 	var responseBody map[string]any
-// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), "Retrieved notifications successfully", responseBody["message"])
+	notificationData := responseBody["data"].([]any)
+	assert.Len(suite.T(), notificationData, 2)
+	// Verify notification titles
+	assert.Equal(suite.T(), "Notification 1", notificationData[0].(map[string]any)["title"])
+	assert.Equal(suite.T(), "Notification 2", notificationData[1].(map[string]any)["title"])
+}
 
-// 	notificationData := responseBody["data"].([]any)
-// 	assert.Empty(suite.T(), notificationData)
-// }
+func (suite *NotificationHandlerTestSuite) TestGetNotifications_Empty() {
+	req := httptest.NewRequest(http.MethodGet, "/notifications", nil)
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// func (suite *NotificationHandlerTestSuite) TestMarkNotificationAsRead_Success() {
-// 	// Create an unread notification
-// 	notification := model.Notification{
-// 		UserID:  suite.testUserID,
-// 		Title:   "Unread Notification",
-// 		Content: "Please read me",
-// 		IsRead:  false,
-// 	}
-// 	err := suite.db.Create(&notification).Error
-// 	assert.NoError(suite.T(), err)
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-// 	req := httptest.NewRequest(http.MethodPatch,
-// 		fmt.Sprintf("/users/%d/notifications/%d", suite.testUserID, notification.ID), nil)
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Retrieved notifications successfully", responseBody["message"])
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+	notificationData := responseBody["data"].([]any)
+	assert.Empty(suite.T(), notificationData)
+}
 
-// 	var responseBody map[string]any
-// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), "Notification marked as read successfully", responseBody["message"])
+func (suite *NotificationHandlerTestSuite) TestMarkNotificationAsRead_Success() {
+	// Create an unread notification
+	notification := model.Notification{
+		UserID:  suite.testUserID,
+		Title:   "Unread Notification",
+		Content: "Please read me",
+		IsRead:  false,
+	}
+	err := suite.db.Create(&notification).Error
+	assert.NoError(suite.T(), err)
 
-// 	// Verify notification is now marked as read
-// 	var updatedNotification model.Notification
-// 	err = suite.db.First(&updatedNotification, notification.ID).Error
-// 	assert.NoError(suite.T(), err)
-// 	assert.True(suite.T(), updatedNotification.IsRead)
-// }
+	req := httptest.NewRequest(http.MethodPatch,
+		fmt.Sprintf("/users/%d/notifications/%d", suite.testUserID, notification.ID), nil)
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// func (suite *NotificationHandlerTestSuite) TestMarkNotificationAsRead_NotFound() {
-// 	nonExistentID := uint(9999)
-// 	req := httptest.NewRequest(http.MethodPatch,
-// 		fmt.Sprintf("/users/%d/notifications/%d", suite.testUserID, nonExistentID), nil)
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Notification marked as read successfully", responseBody["message"])
 
-// 	var responseBody map[string]any
-// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), "Notification not found", responseBody["message"])
-// }
+	// Verify notification is now marked as read
+	var updatedNotification model.Notification
+	err = suite.db.First(&updatedNotification, notification.ID).Error
+	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), updatedNotification.IsRead)
+}
+
+func (suite *NotificationHandlerTestSuite) TestMarkNotificationAsRead_NotFound() {
+	nonExistentID := uint(9999)
+	req := httptest.NewRequest(http.MethodPatch,
+		fmt.Sprintf("/users/%d/notifications/%d", suite.testUserID, nonExistentID), nil)
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
+
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Notification not found", responseBody["message"])
+}

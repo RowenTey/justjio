@@ -7,6 +7,14 @@ import (
 	"gorm.io/gorm"
 )
 
+type Status int
+
+const (
+	NO_BILLS Status = iota
+	UNCONSOLIDATED
+	CONSOLIDATED
+)
+
 type BillRepository interface {
 	WithTx(tx *gorm.DB) BillRepository
 
@@ -14,7 +22,7 @@ type BillRepository interface {
 	FindByID(billID uint) (*model.Bill, error)
 	FindByRoom(roomID string) (*[]model.Bill, error)
 	DeleteByRoom(roomID string) error
-	HasUnconsolidatedBills(roomID string) (bool, error)
+	HasUnconsolidatedBills(roomID string) (Status, error)
 	FindByConsolidation(consolidationID uint) (*[]model.Bill, error)
 	ConsolidateBills(roomID string) (*model.Consolidation, error)
 }
@@ -59,18 +67,28 @@ func (r *billRepository) DeleteByRoom(roomID string) error {
 	return r.db.Where("room_id = ?", roomID).Delete(&model.Bill{}).Error
 }
 
-func (r *billRepository) HasUnconsolidatedBills(roomID string) (bool, error) {
-	var bill model.Bill
-	err := r.db.Where("room_id = ?", roomID).First(&bill).Error
-	// bill found -> check if consolidation ID is set
-	if err == nil {
-		return bill.ConsolidationID == 0, nil
+func (r *billRepository) HasUnconsolidatedBills(roomID string) (Status, error) {
+	// Check if room exists
+	err := r.db.Model(&model.Room{}).Where("id = ?", roomID).First(&model.Room{}).Error
+	if err != nil {
+		return NO_BILLS, err
 	}
+
+	var bill *model.Bill
+	err = r.db.Where("room_id = ?", roomID).First(&bill).Error
+	// bill found -> check if consolidation ID is set
+	if err == nil && bill.ConsolidationID != 0 {
+		return CONSOLIDATED, nil
+	} else if err == nil && bill.ConsolidationID == 0 {
+		return UNCONSOLIDATED, nil
+	}
+
 	// record not found -> no bills in room
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, nil
+		return NO_BILLS, nil
 	}
-	return false, err
+
+	return NO_BILLS, err
 }
 
 func (r *billRepository) ConsolidateBills(roomID string) (*model.Consolidation, error) {

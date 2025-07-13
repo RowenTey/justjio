@@ -48,9 +48,10 @@ type UserHandlerTestSuite struct {
 func (suite *UserHandlerTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	var err error
+	suite.logger = logrus.New()
 
 	// Setup test containers
-	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx)
+	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.logger)
 	assert.NoError(suite.T(), err)
 
 	// Get PostgreSQL connection string
@@ -67,7 +68,6 @@ func (suite *UserHandlerTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Initialize deps
-	suite.logger = logrus.New()
 	suite.mockJWTSecret = "test-secret"
 	userRepository := repository.NewUserRepository(suite.db)
 	suite.userService = services.NewUserService(suite.db, userRepository, suite.logger)
@@ -148,10 +148,10 @@ func (suite *UserHandlerTestSuite) SetupTest() {
 
 func (suite *UserHandlerTestSuite) TearDownTest() {
 	// Clear database after each test
-	suite.db.Exec("TRUNCATE TABLE friend_requests CASCADE")
-	suite.db.Exec("TRUNCATE TABLE user_friends CASCADE")
-	suite.db.Exec("TRUNCATE TABLE users CASCADE")
-	suite.logger.Info("Tore down test data and reset global DB")
+	suite.db.Exec("TRUNCATE TABLE friend_requests RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE user_friends RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE")
+	suite.logger.Info("Tore down test data")
 }
 
 func TestUserHandlerSuite(t *testing.T) {

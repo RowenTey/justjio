@@ -42,8 +42,7 @@ type RoomService struct {
 	logger           *logrus.Entry
 }
 
-// NOTE: used var instead of func to enable mocking in tests
-var NewRoomService = func(
+func NewRoomService(
 	db *gorm.DB,
 	roomRepo repository.RoomRepository,
 	userRepo repository.UserRepository,
@@ -155,9 +154,9 @@ func (rs *RoomService) CloseRoom(roomId string, userId string) error {
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 		billRepoTx := rs.billRepo.WithTx(tx)
 
-		if exists, err := billRepoTx.HasUnconsolidatedBills(roomId); err != nil {
+		if status, err := billRepoTx.HasUnconsolidatedBills(roomId); err != nil {
 			return err
-		} else if exists {
+		} else if status == repository.UNCONSOLIDATED {
 			return ErrRoomHasUnconsolidatedBills
 		}
 
@@ -370,9 +369,10 @@ func (rs *RoomService) LeaveRoom(roomId string, userId string) error {
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 		billRepoTx := rs.billRepo.WithTx(tx)
 
-		if exists, err := billRepoTx.HasUnconsolidatedBills(roomId); err != nil {
+		// TODO: check if user is involved in any bills first
+		if status, err := billRepoTx.HasUnconsolidatedBills(roomId); err != nil {
 			return err
-		} else if exists {
+		} else if status == repository.UNCONSOLIDATED {
 			return ErrRoomHasUnconsolidatedBills
 		}
 

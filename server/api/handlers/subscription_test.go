@@ -1,231 +1,265 @@
 package handlers
 
-// type SubscriptionHandlerTestSuite struct {
-// 	suite.Suite
-// 	app          *fiber.App
-// 	db           *gorm.DB
-// 	ctx          context.Context
-// 	dependencies *tests.TestDependencies
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
+	"time"
 
-// 	testUserID       uint
-// 	testUserToken    string
-// 	testNotifChan    chan model_push_notifications.NotificationData
-// 	testEndpoint     string
-// 	testSubscription *model.Subscription
-// }
+	"github.com/RowenTey/JustJio/server/api/database"
+	"github.com/RowenTey/JustJio/server/api/middleware"
+	"github.com/RowenTey/JustJio/server/api/model"
+	pushNotificationsModel "github.com/RowenTey/JustJio/server/api/model/push_notifications"
+	"github.com/RowenTey/JustJio/server/api/repository"
+	"github.com/RowenTey/JustJio/server/api/services"
+	"github.com/RowenTey/JustJio/server/api/tests"
+	"github.com/RowenTey/JustJio/server/api/utils"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/log"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
+)
 
-// func (suite *SubscriptionHandlerTestSuite) SetupSuite() {
-// 	suite.ctx = context.Background()
-// 	var err error
+type SubscriptionHandlerTestSuite struct {
+	suite.Suite
+	app          *fiber.App
+	db           *gorm.DB
+	ctx          context.Context
+	logger       *logrus.Logger
+	dependencies *tests.TestDependencies
 
-// 	// Setup test containers
-// 	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx)
-// 	assert.NoError(suite.T(), err)
+	mockJWTSecret string
 
-// 	// Get PostgreSQL connection string
-// 	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
-// 	assert.NoError(suite.T(), err)
-// 	fmt.Println("Test DB Connection String:", pgConnStr)
+	subscriptionService *services.SubscriptionService
 
-// 	// Initialize database
-// 	suite.db, err = database.InitTestDB(pgConnStr)
-// 	assert.NoError(suite.T(), err)
+	testNotificationChan chan pushNotificationsModel.NotificationData
 
-// 	// Run migrations
-// 	err = database.Migrate(suite.db)
-// 	assert.NoError(suite.T(), err)
+	testUserID       uint
+	testUserToken    string
+	testEndpoint     string
+	testSubscription *model.Subscription
+}
 
-// 	// Setup Fiber app
-// 	suite.app = fiber.New()
-// 	suite.app.Use(middleware.Authenticated(mockJWTSecret))
+func (suite *SubscriptionHandlerTestSuite) SetupSuite() {
+	suite.ctx = context.Background()
+	var err error
+	suite.logger = logrus.New()
 
-// 	// Notification channel for testing
-// 	suite.testNotifChan = make(chan model_push_notifications.NotificationData, 100)
+	// Setup test containers
+	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.logger)
+	assert.NoError(suite.T(), err)
 
-// 	// Register Subscription routes
-// 	subscriptionRoutes := suite.app.Group("/subscriptions")
-// 	subscriptionRoutes.Post("/", func(c *fiber.Ctx) error {
-// 		return CreateSubscription(c, suite.testNotifChan)
-// 	})
-// 	subscriptionRoutes.Get("/:endpoint", GetSubscriptionByEndpoint)
-// 	subscriptionRoutes.Delete("/:subId", DeleteSubscription)
-// }
+	// Get PostgreSQL connection string
+	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
+	assert.NoError(suite.T(), err)
+	fmt.Println("Test DB Connection String:", pgConnStr)
 
-// func (suite *SubscriptionHandlerTestSuite) TearDownSuite() {
-// 	// Clean up containers
-// 	if suite.dependencies != nil {
-// 		suite.dependencies.Teardown(suite.ctx)
-// 	}
-// 	log.Info("Tore down test suite dependencies")
-// 	close(suite.testNotifChan)
-// }
+	// Initialize database
+	suite.db, err = database.InitTestDB(pgConnStr)
+	assert.NoError(suite.T(), err)
 
-// func (suite *SubscriptionHandlerTestSuite) SetupTest() {
-// 	// Assign the test DB to the global variable used by handlers/services
-// 	database.DB = suite.db
-// 	assert.NotNil(suite.T(), database.DB, "Global DB should be set")
+	// Run migrations
+	err = database.Migrate(suite.db)
+	assert.NoError(suite.T(), err)
 
-// 	// Create test user
-// 	hashedPassword, _ := utils.HashPassword("password123")
-// 	user := model.User{
-// 		Username: "testuser",
-// 		Email:    "testuser@example.com",
-// 		Password: hashedPassword,
-// 	}
-// 	result := suite.db.Create(&user)
-// 	assert.NoError(suite.T(), result.Error)
-// 	suite.testUserID = user.ID
+	// Initialize deps
+	suite.mockJWTSecret = "test-secret"
+	suite.testNotificationChan = make(chan pushNotificationsModel.NotificationData, 100)
+	subscriptionRepo := repository.NewSubscriptionRepository(suite.db)
+	suite.subscriptionService = services.NewSubscriptionService(
+		subscriptionRepo,
+		suite.testNotificationChan,
+		suite.logger,
+	)
+	subscriptionHandler := NewSubscriptionHandler(suite.subscriptionService, suite.logger)
 
-// 	// Generate JWT token for the user
-// 	token, err := generateTestToken(user.ID, user.Username, user.Email)
-// 	assert.NoError(suite.T(), err)
-// 	suite.testUserToken = token
+	// Setup Fiber app
+	suite.app = fiber.New()
+	suite.app.Use(middleware.Authenticated(suite.mockJWTSecret))
 
-// 	// Test endpoint and subscription data
-// 	suite.testEndpoint = "https://example.com/push/123"
-// 	testSubscription := model.Subscription{
-// 		UserID:   suite.testUserID,
-// 		Endpoint: suite.testEndpoint,
-// 		Auth:     "test_auth_key",
-// 		P256dh:   "test_p256dh_key",
-// 	}
+	// Register Subscription routes
+	subscriptionRoutes := suite.app.Group("/subscriptions")
+	subscriptionRoutes.Post("/", subscriptionHandler.CreateSubscription)
+	subscriptionRoutes.Get("/:endpoint", subscriptionHandler.GetSubscriptionByEndpoint)
+	subscriptionRoutes.Delete("/:subId", subscriptionHandler.DeleteSubscription)
+}
 
-// 	// Store test subscription in DB for some tests
-// 	result = suite.db.Create(&testSubscription)
-// 	assert.NoError(suite.T(), result.Error)
-// 	suite.testSubscription = &testSubscription
+func (suite *SubscriptionHandlerTestSuite) TearDownSuite() {
+	// Clean up containers
+	if suite.dependencies != nil {
+		suite.dependencies.Teardown(suite.ctx)
+	}
+	log.Info("Tore down test suite dependencies")
+	close(suite.testNotificationChan)
+}
 
-// 	log.Infof("SetupTest complete: User ID=%d, Subscription ID=%s", suite.testUserID, suite.testSubscription.ID)
-// }
+func (suite *SubscriptionHandlerTestSuite) SetupTest() {
+	hashedPassword, err := utils.HashPassword("password123")
+	assert.NoError(suite.T(), err)
+	user := model.User{
+		Username: "testuser",
+		Email:    "testuser@example.com",
+		Password: hashedPassword,
+	}
+	result := suite.db.Create(&user)
+	assert.NoError(suite.T(), result.Error)
+	suite.testUserID = user.ID
 
-// func (suite *SubscriptionHandlerTestSuite) TearDownTest() {
-// 	// Clear database after each test
-// 	suite.db.Exec("TRUNCATE TABLE subscriptions CASCADE")
-// 	suite.db.Exec("TRUNCATE TABLE users CASCADE")
+	// Generate JWT token for the user
+	token, err := tests.GenerateTestToken(user.ID, user.Username, user.Email, suite.mockJWTSecret)
+	assert.NoError(suite.T(), err)
+	suite.testUserToken = token
 
-// 	// Reset the global DB variable
-// 	database.DB = nil
-// 	log.Info("Tore down test data and reset global DB")
-// }
+	// Test endpoint and subscription data
+	suite.testEndpoint = "https://example.com/push/123"
+	testSubscription := model.Subscription{
+		UserID:   suite.testUserID,
+		Endpoint: suite.testEndpoint,
+		Auth:     "test_auth_key",
+		P256dh:   "test_p256dh_key",
+	}
 
-// func TestSubscriptionHandlerSuite(t *testing.T) {
-// 	suite.Run(t, new(SubscriptionHandlerTestSuite))
-// }
+	// Store test subscription in DB for some tests
+	result = suite.db.Create(&testSubscription)
+	assert.NoError(suite.T(), result.Error)
+	suite.testSubscription = &testSubscription
 
-// func (suite *SubscriptionHandlerTestSuite) TestCreateSubscription_Success() {
-// 	newSubscription := model.Subscription{
-// 		UserID:   suite.testUserID,
-// 		Endpoint: "https://example.com/push/new",
-// 		P256dh:   "new_p256dh_key",
-// 		Auth:     "new_auth_key",
-// 	}
-// 	reqBody, _ := json.Marshal(newSubscription)
+	log.Infof("SetupTest complete: User ID=%d, Subscription ID=%s", suite.testUserID, suite.testSubscription.ID)
+}
 
-// 	req := httptest.NewRequest(http.MethodPost, "/subscriptions", bytes.NewBuffer(reqBody))
-// 	req.Header.Set("Content-Type", "application/json")
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+func (suite *SubscriptionHandlerTestSuite) TearDownTest() {
+	// Clear database after each test
+	suite.db.Exec("TRUNCATE TABLE subscriptions RESTART IDENTITY CASCADE")
+	suite.db.Exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE")
+	log.Info("Tore down test data")
+}
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+func TestSubscriptionHandlerSuite(t *testing.T) {
+	suite.Run(t, new(SubscriptionHandlerTestSuite))
+}
 
-// 	var responseBody map[string]any
-// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), "Subscription created successfully", responseBody["message"])
+func (suite *SubscriptionHandlerTestSuite) TestCreateSubscription_Success() {
+	newSubscription := model.Subscription{
+		UserID:   suite.testUserID,
+		Endpoint: "https://example.com/push/new",
+		P256dh:   "new_p256dh_key",
+		Auth:     "new_auth_key",
+	}
+	reqBody, _ := json.Marshal(newSubscription)
 
-// 	// Verify subscription was created in database
-// 	var subscription model.Subscription
-// 	err = suite.db.Where("endpoint = ?", newSubscription.Endpoint).First(&subscription).Error
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), newSubscription.P256dh, subscription.P256dh)
+	req := httptest.NewRequest(http.MethodPost, "/subscriptions", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// 	// Verify welcome notification was sent
-// 	select {
-// 	case notification := <-suite.testNotifChan:
-// 		assert.Equal(suite.T(), "Welcome", notification.Title)
-// 		assert.Equal(suite.T(), "Subscribed to JustJio! You will now receive notifications for app events.", notification.Message)
-// 	case <-time.After(1 * time.Second):
-// 		suite.T().Error("Expected welcome notification but none received")
-// 	}
-// }
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-// func (suite *SubscriptionHandlerTestSuite) TestCreateSubscription_InvalidInput() {
-// 	// Test with missing required fields
-// 	invalidSubscription := map[string]any{
-// 		"userId": suite.testUserID,
-// 		"p256dh": "test_key",
-// 	}
-// 	reqBody, _ := json.Marshal(invalidSubscription)
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Subscription created successfully", responseBody["message"])
 
-// 	req := httptest.NewRequest(http.MethodPost, "/subscriptions", bytes.NewBuffer(reqBody))
-// 	req.Header.Set("Content-Type", "application/json")
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	// Verify subscription was created in database
+	var subscription model.Subscription
+	err = suite.db.Where("endpoint = ?", newSubscription.Endpoint).First(&subscription).Error
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), newSubscription.P256dh, subscription.P256dh)
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
+	// Verify welcome notification was sent
+	select {
+	case notification := <-suite.testNotificationChan:
+		assert.Equal(suite.T(), "Welcome", notification.Title)
+		assert.Equal(suite.T(), "Subscribed to JustJio! You will now receive notifications for app events.", notification.Message)
+	case <-time.After(1 * time.Second):
+		suite.T().Error("Expected welcome notification but none received")
+	}
+}
 
-// 	var responseBody map[string]any
-// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), "Review your input", responseBody["message"])
-// }
+func (suite *SubscriptionHandlerTestSuite) TestCreateSubscription_InvalidInput() {
+	// Test with missing required fields
+	invalidSubscription := map[string]any{
+		"userId": suite.testUserID,
+		"p256dh": "test_key",
+	}
+	reqBody, _ := json.Marshal(invalidSubscription)
 
-// func (suite *SubscriptionHandlerTestSuite) TestGetSubscriptionByEndpoint_Success() {
-// 	encodedEndpoint := url.QueryEscape(suite.testSubscription.Endpoint)
-// 	req := httptest.NewRequest(http.MethodGet, "/subscriptions/"+encodedEndpoint, nil)
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	req := httptest.NewRequest(http.MethodPost, "/subscriptions", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
 
-// 	var responseBody map[string]any
-// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), "Subscription retrieved successfully", responseBody["message"])
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Review your input", responseBody["message"])
+}
 
-// 	subscriptionData := responseBody["data"].(map[string]any)
-// 	assert.Equal(suite.T(), suite.testSubscription.Endpoint, subscriptionData["endpoint"])
-// }
+func (suite *SubscriptionHandlerTestSuite) TestGetSubscriptionByEndpoint_Success() {
+	encodedEndpoint := url.QueryEscape(suite.testSubscription.Endpoint)
+	req := httptest.NewRequest(http.MethodGet, "/subscriptions/"+encodedEndpoint, nil)
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// func (suite *SubscriptionHandlerTestSuite) TestGetSubscriptionByEndpoint_NotFound() {
-// 	nonExistentEndpoint := url.QueryEscape("https://nonexistent.endpoint")
-// 	req := httptest.NewRequest(http.MethodGet, "/subscriptions/"+nonExistentEndpoint, nil)
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
-// }
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Subscription retrieved successfully", responseBody["message"])
 
-// func (suite *SubscriptionHandlerTestSuite) TestDeleteSubscription_Success() {
-// 	req := httptest.NewRequest(http.MethodDelete, "/subscriptions/"+suite.testSubscription.ID, nil)
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	subscriptionData := responseBody["data"].(map[string]any)
+	assert.Equal(suite.T(), suite.testSubscription.Endpoint, subscriptionData["endpoint"])
+}
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+func (suite *SubscriptionHandlerTestSuite) TestGetSubscriptionByEndpoint_NotFound() {
+	nonExistentEndpoint := url.QueryEscape("https://nonexistent.endpoint")
+	req := httptest.NewRequest(http.MethodGet, "/subscriptions/"+nonExistentEndpoint, nil)
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// 	var responseBody map[string]any
-// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), "Subscription deleted successfully", responseBody["message"])
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
+}
 
-// 	// Verify subscription was deleted from database
-// 	var subscription model.Subscription
-// 	err = suite.db.Where("id = ?", suite.testSubscription.ID).First(&subscription).Error
-// 	assert.Error(suite.T(), err)
-// 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
-// }
+func (suite *SubscriptionHandlerTestSuite) TestDeleteSubscription_Success() {
+	req := httptest.NewRequest(http.MethodDelete, "/subscriptions/"+suite.testSubscription.ID, nil)
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
-// func (suite *SubscriptionHandlerTestSuite) TestDeleteSubscription_NotFound() {
-// 	nonExistentSubId := uuid.NewString()
-// 	req := httptest.NewRequest(http.MethodDelete, "/subscriptions/"+nonExistentSubId, nil)
-// 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-// 	resp, err := suite.app.Test(req, -1)
-// 	assert.NoError(suite.T(), err)
-// 	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
-// }
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Subscription deleted successfully", responseBody["message"])
+
+	// Verify subscription was deleted from database
+	var subscription model.Subscription
+	err = suite.db.Where("id = ?", suite.testSubscription.ID).First(&subscription).Error
+	assert.Error(suite.T(), err)
+	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
+}
+
+func (suite *SubscriptionHandlerTestSuite) TestDeleteSubscription_NotFound() {
+	nonExistentSubId := uuid.NewString()
+	req := httptest.NewRequest(http.MethodDelete, "/subscriptions/"+nonExistentSubId, nil)
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
+}

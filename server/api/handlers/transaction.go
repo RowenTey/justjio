@@ -51,7 +51,7 @@ func (h *TransactionHandler) SettleTransaction(c *fiber.Ctx) error {
 	transaction, err := h.transactionService.SettleTransaction(txId, userId)
 	if err != nil {
 		if errors.Is(err, services.ErrTransactionAlreadySettled) {
-			return utils.HandleError(c, fiber.StatusUnauthorized, err.Error(), nil)
+			return utils.HandleError(c, fiber.StatusConflict, err.Error(), nil)
 		} else if errors.Is(err, services.ErrInvalidPayer) {
 			return utils.HandleError(c, fiber.StatusBadRequest, err.Error(), nil)
 		}
