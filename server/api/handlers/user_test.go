@@ -51,7 +51,8 @@ func (suite *UserHandlerTestSuite) SetupSuite() {
 	suite.logger = logrus.New()
 
 	// Setup test containers
-	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.logger)
+	suite.dependencies = &tests.TestDependencies{}
+	suite.dependencies, err = tests.SetupPgDependency(suite.ctx, suite.dependencies, suite.logger)
 	assert.NoError(suite.T(), err)
 
 	// Get PostgreSQL connection string

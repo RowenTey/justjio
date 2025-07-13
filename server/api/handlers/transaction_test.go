@@ -54,7 +54,8 @@ func (suite *TransactionHandlerTestSuite) SetupSuite() {
 	suite.logger = logrus.New()
 
 	// Setup test containers
-	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.logger)
+	suite.dependencies = &tests.TestDependencies{}
+	suite.dependencies, err = tests.SetupPgDependency(suite.ctx, suite.dependencies, suite.logger)
 	assert.NoError(suite.T(), err)
 
 	// Get PostgreSQL connection string
@@ -105,7 +106,7 @@ func (suite *TransactionHandlerTestSuite) TearDownSuite() {
 	if suite.dependencies != nil {
 		suite.dependencies.Teardown(suite.ctx)
 	}
-	log.Info("Tore down test suite dependencies")
+	suite.logger.Info("Tore down test suite dependencies")
 	close(suite.testNotificationChan)
 }
 
@@ -197,7 +198,7 @@ func (suite *TransactionHandlerTestSuite) TearDownTest() {
 	suite.db.Exec("TRUNCATE TABLE rooms RESTART IDENTITY CASCADE")
 	suite.db.Exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE")
 	suite.db.Exec("TRUNCATE TABLE payers RESTART IDENTITY CASCADE")
-	log.Info("Tore down test data")
+	suite.logger.Info("Tore down test data")
 }
 
 func TestTransactionHandlerSuite(t *testing.T) {

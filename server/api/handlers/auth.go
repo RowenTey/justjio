@@ -19,7 +19,7 @@ import (
 type AuthHandler struct {
 	authService *services.AuthService
 	// Store OTP with email as key
-	clientOtpMap sync.Map
+	ClientOtpMap sync.Map
 	logger       *log.Entry
 }
 
@@ -29,7 +29,7 @@ func NewAuthHandler(
 ) *AuthHandler {
 	return &AuthHandler{
 		authService:  authService,
-		clientOtpMap: sync.Map{},
+		ClientOtpMap: sync.Map{},
 		logger:       utils.AddServiceField(logger, "AuthHandler"),
 	}
 }
@@ -41,7 +41,7 @@ func (h *AuthHandler) SignUp(c *fiber.Ctx) error {
 	}
 	h.logger.Info("Received sign up request for user: ", user.Username)
 
-	createdUser, err := h.authService.SignUp(&user, &h.clientOtpMap)
+	createdUser, err := h.authService.SignUp(&user, &h.ClientOtpMap)
 	if err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return utils.HandleError(
@@ -92,11 +92,11 @@ func (h *AuthHandler) SendOTPEmail(c *fiber.Ctx) error {
 
 	if err := h.
 		authService.
-		GenerateAndSendOTPEmail(request.Email, request.Purpose, &h.clientOtpMap); err != nil {
+		GenerateAndSendOTPEmail(request.Email, request.Purpose, &h.ClientOtpMap); err != nil {
 		if errors.Is(err, services.ErrInvalidPurpose) {
 			return utils.HandleError(c, fiber.StatusBadRequest, "Invalid purpose", err)
 		} else if errors.Is(err, services.ErrEmailAlreadyVerified) {
-			return utils.HandleError(c, fiber.StatusBadRequest, "Email already verified", err)
+			return utils.HandleError(c, fiber.StatusConflict, "Email already verified", err)
 		}
 		return utils.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
@@ -111,7 +111,7 @@ func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	err := h.authService.VerifyOTP(request.Email, request.OTP, &h.clientOtpMap)
+	err := h.authService.VerifyOTP(request.Email, request.OTP, &h.ClientOtpMap)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidOTP) {
 			return utils.HandleError(c, fiber.StatusBadRequest, "Invalid OTP", err)

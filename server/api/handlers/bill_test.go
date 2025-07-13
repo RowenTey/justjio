@@ -53,13 +53,14 @@ func (suite *BillHandlerTestSuite) SetupSuite() {
 	suite.logger = logrus.New()
 
 	// Setup test containers
-	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.logger)
+	suite.dependencies = &tests.TestDependencies{}
+	suite.dependencies, err = tests.SetupPgDependency(suite.ctx, suite.dependencies, suite.logger)
 	assert.NoError(suite.T(), err)
 
 	// Get PostgreSQL connection string
 	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
 	assert.NoError(suite.T(), err)
-	fmt.Println("Test DB Connection String:", pgConnStr) // Log for debugging
+	fmt.Println("Test DB Connection String:", pgConnStr)
 
 	// Initialize database
 	suite.db, err = database.InitTestDB(pgConnStr)
@@ -308,7 +309,7 @@ func (suite *BillHandlerTestSuite) TestCreateBill_PayerNotFound() {
 	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "Payer(s) not found", responseBody["message"])
+	assert.Equal(suite.T(), "payer(s) not found", responseBody["message"])
 }
 
 func (suite *BillHandlerTestSuite) TestCreateBill_NoPayersSpecifiedAndOwnerNotIncluded() {
