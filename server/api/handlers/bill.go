@@ -109,6 +109,6 @@ func (h *BillHandler) IsRoomBillConsolidated(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c,
 		"Retrieved consolidation status successfully",
 		fiber.Map{
-			"isConsolidated": status != repository.CONSOLIDATED,
+			"isConsolidated": status == repository.CONSOLIDATED,
 		})
 }
