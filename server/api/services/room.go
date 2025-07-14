@@ -154,7 +154,7 @@ func (rs *RoomService) CloseRoom(roomId string, userId string) error {
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 		billRepoTx := rs.billRepo.WithTx(tx)
 
-		if status, err := billRepoTx.HasUnconsolidatedBills(roomId); err != nil {
+		if status, err := billRepoTx.GetRoomBillConsolidationStatus(roomId); err != nil {
 			return err
 		} else if status == repository.UNCONSOLIDATED {
 			return ErrRoomHasUnconsolidatedBills
@@ -370,7 +370,7 @@ func (rs *RoomService) LeaveRoom(roomId string, userId string) error {
 		billRepoTx := rs.billRepo.WithTx(tx)
 
 		// TODO: check if user is involved in any bills first
-		if status, err := billRepoTx.HasUnconsolidatedBills(roomId); err != nil {
+		if status, err := billRepoTx.GetRoomBillConsolidationStatus(roomId); err != nil {
 			return err
 		} else if status == repository.UNCONSOLIDATED {
 			return ErrRoomHasUnconsolidatedBills

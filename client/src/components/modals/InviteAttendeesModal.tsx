@@ -12,7 +12,6 @@ import { useToast } from "../../context/toast";
 import { AxiosError } from "axios";
 import { QrCodeIcon } from "@heroicons/react/24/solid";
 import { LinkIcon } from "@heroicons/react/24/outline";
-import QRCodeModal from "./QRCodeModal";
 
 interface InviteAttendeesFormData {
   invitees: string;
@@ -20,12 +19,12 @@ interface InviteAttendeesFormData {
 
 interface InviteAttendeesModalProps {
   roomId: string;
-  url: string;
+  setIsQRCodeModalVisible: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const InviteAttendeesModalContent: React.FC<
   InviteAttendeesModalProps & ModalWrapperProps
-> = ({ roomId }) => {
+> = ({ roomId, closeModal, setIsQRCodeModalVisible }) => {
   const {
     register,
     handleSubmit,
@@ -33,7 +32,6 @@ const InviteAttendeesModalContent: React.FC<
     formState: { errors },
   } = useForm<InviteAttendeesFormData>();
   const [uninvitedFriends, SetUninvitedFriends] = useState<IUser[]>([]);
-  const [isQRCodeModalVisible, setIsQRCodeModalVisible] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -45,6 +43,22 @@ const InviteAttendeesModalContent: React.FC<
       SetUninvitedFriends(res.data.data);
     });
   }, [roomId]);
+
+  const copyToClipboard = () => {
+    const link = window.location.href + "?join=true";
+    navigator.clipboard
+      .writeText(link)
+      .then(() => {
+        showToast("Link copied to clipboard!", false);
+      })
+      .catch((err) => {
+        console.error("Failed to copy link to clipboard", err);
+        showToast("Failed to copy link to clipboard!", true);
+      })
+      .finally(() => {
+        closeModal();
+      });
+  };
 
   const handleInviteUsers = async (data: InviteAttendeesFormData) => {
     const invitees = data.invitees.split(",");
@@ -114,14 +128,20 @@ const InviteAttendeesModalContent: React.FC<
         <div className="w-full flex justify-center items-center gap-6 hover:cursor-pointer">
           <div
             className="w-14 flex flex-col items-center hover:cursor-pointer"
-            onClick={() => setIsQRCodeModalVisible(true)}
+            onClick={() => {
+              setIsQRCodeModalVisible(true);
+              closeModal();
+            }}
           >
             <QrCodeIcon className="h-12 w-12 p-2 text-secondary bg-white rounded-full hover:scale-105" />
             <p className="text-secondary text-center text-sm leading-4">
               Generate QR
             </p>
           </div>
-          <div className="w-14 flex flex-col items-center hover:cursor-pointer">
+          <div
+            className="w-14 flex flex-col items-center hover:cursor-pointer"
+            onClick={copyToClipboard}
+          >
             <LinkIcon className="h-12 w-12 p-2 text-secondary bg-white rounded-full hover:scale-105" />
             <p className="text-secondary text-center text-sm leading-4">
               Copy Link
@@ -129,12 +149,6 @@ const InviteAttendeesModalContent: React.FC<
           </div>
         </div>
       </div>
-
-      <QRCodeModal
-        url={window.location.href + "?join=true"}
-        isVisible={isQRCodeModalVisible}
-        closeModal={() => setIsQRCodeModalVisible(false)}
-      />
     </>
   );
 };

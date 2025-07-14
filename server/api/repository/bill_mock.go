@@ -35,7 +35,7 @@ func (m *MockBillRepository) DeleteByRoom(roomID string) error {
 	return args.Error(0)
 }
 
-func (m *MockBillRepository) HasUnconsolidatedBills(roomID string) (Status, error) {
+func (m *MockBillRepository) GetRoomBillConsolidationStatus(roomID string) (Status, error) {
 	args := m.Called(roomID)
 	return args.Get(0).(Status), args.Error(1)
 }
