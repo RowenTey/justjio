@@ -115,6 +115,10 @@ func (bs *BillService) DeleteRoomBills(roomId string) error {
 }
 
 func (bs *BillService) GetRoomBillConsolidationStatus(roomId string) (repository.Status, error) {
+	if _, err := bs.roomRepo.GetByID(roomId); err != nil {
+		return repository.NO_BILLS, err
+	}
+
 	status, err := bs.billRepo.GetRoomBillConsolidationStatus(roomId)
 	if err != nil {
 		return repository.NO_BILLS, err
