@@ -197,6 +197,7 @@ func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_Success() {
 	subID := "1"
 
 	// Mock expectations
+	s.mockSubscriptionRepo.On("FindByID", subID).Return(&model.Subscription{ID: subID}, nil)
 	s.mockSubscriptionRepo.On("Delete", subID).Return(nil)
 
 	// Execute
@@ -213,6 +214,7 @@ func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_Failure() {
 	expectedErr := errors.New("delete failed")
 
 	// Mock expectations
+	s.mockSubscriptionRepo.On("FindByID", subID).Return(&model.Subscription{ID: subID}, nil)
 	s.mockSubscriptionRepo.On("Delete", subID).Return(expectedErr)
 
 	// Execute

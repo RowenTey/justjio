@@ -9,6 +9,7 @@ type SubscriptionRepository interface {
 	WithTx(tx *gorm.DB) SubscriptionRepository
 
 	Create(subscription *model.Subscription) (*model.Subscription, error)
+	FindByID(subID string) (*model.Subscription, error)
 	FindByUserID(userID string) (*[]model.Subscription, error)
 	FindByEndpoint(endpoint string) (*model.Subscription, error)
 	Delete(subID string) error
@@ -33,6 +34,15 @@ func (r *subscriptionRepository) WithTx(tx *gorm.DB) SubscriptionRepository {
 func (r *subscriptionRepository) Create(subscription *model.Subscription) (*model.Subscription, error) {
 	err := r.db.Create(subscription).Error
 	return subscription, err
+}
+
+func (r *subscriptionRepository) FindByID(subID string) (*model.Subscription, error) {
+	var subscription model.Subscription
+	err := r.db.Where("id = ?", subID).First(&subscription).Error
+	if err != nil {
+		return nil, err
+	}
+	return &subscription, nil
 }
 
 func (r *subscriptionRepository) FindByUserID(userID string) (*[]model.Subscription, error) {

@@ -20,6 +20,11 @@ func (m *MockSubscriptionRepository) Create(subscription *model.Subscription) (*
 	return args.Get(0).(*model.Subscription), args.Error(1)
 }
 
+func (m *MockSubscriptionRepository) FindByID(subID string) (*model.Subscription, error) {
+	args := m.Called(subID)
+	return args.Get(0).(*model.Subscription), args.Error(1)
+}
+
 func (m *MockSubscriptionRepository) FindByUserID(userID string) (*[]model.Subscription, error) {
 	args := m.Called(userID)
 	return args.Get(0).(*[]model.Subscription), args.Error(1)

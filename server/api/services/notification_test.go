@@ -115,6 +115,10 @@ func (s *NotificationServiceTestSuite) TestMarkNotificationAsRead_Success() {
 	userId := uint(1)
 
 	// Mock expectations
+	s.mockNotificationRepo.On("FindByIDAndUser", notificationId, userId).Return(&model.Notification{
+		ID:     notificationId,
+		UserID: userId,
+	}, nil)
 	s.mockNotificationRepo.On("MarkAsRead", notificationId, userId).Return(nil)
 
 	// Execute

@@ -317,6 +317,7 @@ func (s *BillServiceTestSuite) TestGetRoomBillConsolidationStatus_Unconsolidated
 	roomId := "room1"
 
 	// Mock expectations
+	s.mockRoomRepo.On("GetByID", roomId).Return(&model.Room{ID: roomId}, nil)
 	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.UNCONSOLIDATED, nil)
 
 	// Execute
