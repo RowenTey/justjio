@@ -133,7 +133,7 @@ func (suite *BillRepositoryTestSuite) TestDeleteByRoom_Success() {
 
 func (suite *BillRepositoryTestSuite) TestHasUnconsolidatedBills_Success() {
 	// No bills yet
-	status, err := suite.repo.HasUnconsolidatedBills(suite.testRoom.ID)
+	status, err := suite.repo.GetRoomBillConsolidationStatus(suite.testRoom.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), NO_BILLS, status)
 
@@ -146,7 +146,7 @@ func (suite *BillRepositoryTestSuite) TestHasUnconsolidatedBills_Success() {
 	err = suite.repo.Create(&bill)
 	assert.NoError(suite.T(), err)
 
-	status, err = suite.repo.HasUnconsolidatedBills(suite.testRoom.ID)
+	status, err = suite.repo.GetRoomBillConsolidationStatus(suite.testRoom.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), UNCONSOLIDATED, status)
 }
@@ -169,7 +169,7 @@ func (suite *BillRepositoryTestSuite) TestConsolidateBills_Success() {
 	assert.Equal(suite.T(), consolidation.ID, updated.ConsolidationID)
 
 	// Confirm status
-	status, err := suite.repo.HasUnconsolidatedBills(suite.testRoom.ID)
+	status, err := suite.repo.GetRoomBillConsolidationStatus(suite.testRoom.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), CONSOLIDATED, status)
 }
