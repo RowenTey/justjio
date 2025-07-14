@@ -6,11 +6,12 @@ import {
   DocumentDuplicateIcon,
   DocumentPlusIcon,
   XMarkIcon,
-  QrCodeIcon,
   ArrowRightStartOnRectangleIcon,
   CalendarIcon,
   ClockIcon,
   MapPinIcon,
+  UserPlusIcon,
+  InformationCircleIcon,
 } from "@heroicons/react/24/outline";
 import PeopleBox from "../components/PeopleBox";
 import useLoadingAndError from "../hooks/useLoadingAndError";
@@ -32,6 +33,7 @@ import ConfirmJoinModal from "../components/modals/ConfirmJoinModal";
 import { useToast } from "../context/toast";
 import { AxiosError } from "axios";
 import { isRoomBillConsolidatedApi } from "../api/bill";
+import QRCodeModal from "../components/modals/QRCodeModal";
 
 const initialRoom: IRoom = {
   id: "0",
@@ -243,7 +245,7 @@ const RoomPage = () => {
 
 const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
   return (
-    <div className="h-[39%] w-full px-5 flex flex-col gap-2">
+    <div className="h-[41%] w-full px-5 flex flex-col gap-2">
       <h3 className="text-secondary font-bold">
         {room.isPrivate ? "Private" : "Public"} Event{" "}
         <span className="font-thin italic">
@@ -252,7 +254,7 @@ const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
       </h3>
 
       <div className="w-full h-[90%] flex flex-col items-center rounded-2xl overflow-hidden">
-        <div className="w-full h-[60%] overflow-hidden -mt-1">
+        <div className="w-full h-[55%] overflow-hidden -mt-1">
           <img
             src={room.imageUrl}
             alt="Room Image"
@@ -260,16 +262,20 @@ const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
           />
         </div>
 
-        <div className="w-full h-[40%] flex flex-col bg-white rounded-e-2xl shadow-lg gap-1 px-3 pt-2 leading-tight">
+        <div className="w-full h-[45%] flex flex-col justify-between bg-white rounded-b-2xl shadow-lg px-3 py-2 leading-tight text-gray-500">
           <div className="w-full flex items-center gap-6">
             <div className="flex gap-2 items-center">
-              <CalendarIcon className="h-6 w-6 text-secondary" />
-              <p className="text-black">{formatDate(room.date)}</p>
+              <CalendarIcon className="h-6 w-6" />
+              <p>{formatDate(room.date)}</p>
             </div>
             <div className="flex gap-2 items-center">
-              <ClockIcon className="h-6 w-6 text-secondary" />
-              <p className="text-black">{room.time}</p>
+              <ClockIcon className="h-6 w-6" />
+              <p>{room.time}</p>
             </div>
+          </div>
+          <div className="flex gap-2 items-center">
+            <InformationCircleIcon className="h-6 w-6" />
+            <p>{room.description || "N/A"}</p>
           </div>
           <a
             href={room.venueUrl}
@@ -293,7 +299,7 @@ type RoomAttendeesProps = {
 const RoomAttendees: React.FC<RoomAttendeesProps> = ({ hostId, attendees }) => {
   return (
     <>
-      <div className="h-[33%] w-full px-5 flex flex-col gap-1 mt-1">
+      <div className="h-[33%] w-full px-5 flex flex-col gap-2">
         <h3 className="text-secondary font-bold">
           {attendees.length} Attendee(s)
         </h3>
@@ -338,7 +344,8 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
   onCloseRoom,
   onLeaveRoom,
 }) => {
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
+  const [isQRCodeModalVisible, setIsQRCodeModalVisible] = useState(false);
   const showSplitBill = isHost
     ? isRoomBillConsolidated
       ? false
@@ -383,9 +390,9 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
           }}
         />
         <ButtonCard
-          title="Generate QR"
-          Icon={QrCodeIcon}
-          onClick={() => setIsModalVisible(true)}
+          title="Invite Friends"
+          Icon={UserPlusIcon}
+          onClick={() => setIsInviteModalVisible(true)}
           isLink={false}
         />
 
@@ -407,10 +414,16 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
         )}
 
         <InviteAttendeesModal
-          url={window.location.href + "?join=true"}
-          isVisible={isModalVisible}
-          closeModal={() => setIsModalVisible(false)}
+          isVisible={isInviteModalVisible}
+          setIsQRCodeModalVisible={setIsQRCodeModalVisible}
+          closeModal={() => setIsInviteModalVisible(false)}
           roomId={roomId}
+        />
+
+        <QRCodeModal
+          url={window.location.href + "?join=true"}
+          isVisible={isQRCodeModalVisible}
+          closeModal={() => setIsQRCodeModalVisible(false)}
         />
       </div>
     </>

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/RowenTey/JustJio/server/api/model/request"
+	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
 	log "github.com/sirupsen/logrus"
@@ -100,7 +101,7 @@ func (h *BillHandler) IsRoomBillConsolidated(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, errors.New("missing roomId in path param"))
 	}
 
-	exists, err := h.billService.HasUnconsolidatedBills(roomId)
+	status, err := h.billService.GetRoomBillConsolidationStatus(roomId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
@@ -108,6 +109,6 @@ func (h *BillHandler) IsRoomBillConsolidated(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c,
 		"Retrieved consolidation status successfully",
 		fiber.Map{
-			"isConsolidated": !exists,
+			"isConsolidated": status != repository.CONSOLIDATED,
 		})
 }

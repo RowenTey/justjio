@@ -4,6 +4,42 @@
 
 ![landing](./client/public/assets/JustJio.gif)
 
+## ⭐ Features
+
+- **User Authentication & Management**
+
+  - Login/Signu
+  - OTP Verification
+  - Profile Management
+
+- **Room Management**
+
+  - Create Rooms
+  - Invite Friends
+  - Room Types (Public and Private)
+  - Room Actions (Join, Leave or Close)
+
+- **Bill Splitting & Transactions**
+
+  - Create Bills
+  - Consolidate Bills
+  - Transaction Tracking
+
+- **Social Features**
+
+  - Friends System
+  - Search Users
+  - Notifications
+
+- **Messaging**
+
+  - Real-time Chat
+  - Message History
+
+- **Push Notifications**
+
+  - Web Push API
+
 ## 🛠 Getting Started
 
 > See specific instructions from respective directories

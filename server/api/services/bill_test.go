@@ -77,7 +77,7 @@ func (s *BillServiceTestSuite) TestCreateBill_Success() {
 	}
 
 	// Mock expectations
-	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(repository.NO_BILLS, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.NO_BILLS, nil)
 	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
 	s.mockUserRepo.On("FindByID", ownerId).Return(owner, nil)
 	s.mockUserRepo.On("FindByIDs", &payersId).Return(&payers, nil)
@@ -110,7 +110,7 @@ func (s *BillServiceTestSuite) TestCreateBill_AlreadyConsolidated() {
 	payersId := []uint{2, 3}
 
 	// Mock expectations
-	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(repository.CONSOLIDATED, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.CONSOLIDATED, nil)
 
 	// Execute
 	bill, err := s.billService.CreateBill(roomId, ownerId, &payersId, "Dinner", 100.50, true)
@@ -131,7 +131,7 @@ func (s *BillServiceTestSuite) TestCreateBill_EmptyPayers() {
 	emptyPayers := []uint{}
 
 	// Mock expectations
-	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(repository.NO_BILLS, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.NO_BILLS, nil)
 
 	// Execute
 	bill, err := s.billService.CreateBill(roomId, ownerId, &emptyPayers, "Dinner", 100.50, true)
@@ -223,7 +223,7 @@ func (s *BillServiceTestSuite) TestConsolidateBills_Success() {
 
 	// Mock expectations
 	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
-	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(repository.NO_BILLS, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.NO_BILLS, nil)
 	s.mockBillRepo.On("ConsolidateBills", roomId).Return(consolidation, nil)
 	s.mockBillRepo.On("FindByConsolidation", consolidation.ID).Return(&bills, nil)
 	s.mockTransactionSvc.On("GenerateTransactions", &bills, consolidation).Return(transaction, nil)
@@ -295,7 +295,7 @@ func (s *BillServiceTestSuite) TestConsolidateBills_AlreadyConsolidated() {
 
 	// Mock expectations
 	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
-	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(repository.CONSOLIDATED, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.CONSOLIDATED, nil)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -313,17 +313,17 @@ func (s *BillServiceTestSuite) TestConsolidateBills_AlreadyConsolidated() {
 	s.mockTransactionRepo.AssertNotCalled(s.T(), "Create")
 }
 
-func (s *BillServiceTestSuite) TestHasUnconsolidatedBills_Success() {
+func (s *BillServiceTestSuite) TestGetRoomBillConsolidationStatus_Unconsolidated_Success() {
 	roomId := "room1"
 
 	// Mock expectations
-	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(repository.UNCONSOLIDATED, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.UNCONSOLIDATED, nil)
 
 	// Execute
-	exists, err := s.billService.HasUnconsolidatedBills(roomId)
+	status, err := s.billService.GetRoomBillConsolidationStatus(roomId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.True(s.T(), exists)
+	assert.True(s.T(), status == repository.UNCONSOLIDATED)
 	s.mockBillRepo.AssertExpectations(s.T())
 }

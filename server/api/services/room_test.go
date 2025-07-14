@@ -217,7 +217,7 @@ func (s *RoomServiceTestSuite) TestCloseRoom_Success() {
 	s.mockBillRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockBillRepo)
 
 	// Mock expectations
-	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(repository.NO_BILLS, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.NO_BILLS, nil)
 	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
 	s.mockRoomRepo.On("UpdateRoom", mock.AnythingOfType("*model.Room")).Return(nil)
 	s.mockRoomRepo.On("DeletePendingInvites", roomId).Return(nil)
@@ -250,7 +250,7 @@ func (s *RoomServiceTestSuite) TestCloseRoom_NotHost() {
 	s.mockBillRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockBillRepo)
 
 	// Mock expectations
-	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(repository.NO_BILLS, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.NO_BILLS, nil)
 	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
 
 	// Expect transaction rollback
@@ -280,7 +280,7 @@ func (s *RoomServiceTestSuite) TestCloseRoom_UnconsolidatedBills() {
 	s.mockBillRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockBillRepo)
 	s.mockRoomRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockRoomRepo)
 
-	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(repository.UNCONSOLIDATED, nil) // Simulate unconsolidated bills
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.UNCONSOLIDATED, nil) // Simulate unconsolidated bills
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -429,7 +429,7 @@ func (s *RoomServiceTestSuite) TestLeaveRoom_Success() {
 	s.mockBillRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockBillRepo)
 
 	// Mock expectations
-	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(repository.NO_BILLS, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.NO_BILLS, nil)
 	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
 	s.mockRoomRepo.On("RemoveUserFromRoom", roomId, userId).Return(nil)
 
@@ -460,7 +460,7 @@ func (s *RoomServiceTestSuite) TestLeaveRoom_AsHost() {
 	s.mockBillRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockBillRepo)
 
 	// Mock expectations
-	s.mockBillRepo.On("HasUnconsolidatedBills", roomId).Return(repository.NO_BILLS, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.NO_BILLS, nil)
 	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
 
 	// Expect transaction rollback

@@ -22,7 +22,7 @@ type BillRepository interface {
 	FindByID(billID uint) (*model.Bill, error)
 	FindByRoom(roomID string) (*[]model.Bill, error)
 	DeleteByRoom(roomID string) error
-	HasUnconsolidatedBills(roomID string) (Status, error)
+	GetRoomBillConsolidationStatus(roomID string) (Status, error)
 	FindByConsolidation(consolidationID uint) (*[]model.Bill, error)
 	ConsolidateBills(roomID string) (*model.Consolidation, error)
 }
@@ -67,7 +67,7 @@ func (r *billRepository) DeleteByRoom(roomID string) error {
 	return r.db.Where("room_id = ?", roomID).Delete(&model.Bill{}).Error
 }
 
-func (r *billRepository) HasUnconsolidatedBills(roomID string) (Status, error) {
+func (r *billRepository) GetRoomBillConsolidationStatus(roomID string) (Status, error) {
 	// Check if room exists
 	err := r.db.Model(&model.Room{}).Where("id = ?", roomID).First(&model.Room{}).Error
 	if err != nil {

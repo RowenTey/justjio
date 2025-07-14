@@ -218,12 +218,13 @@ func (s *AuthService) SendOTPEmail(otp, username, email, purpose string) error {
 
 	title := ""
 	message := []byte("")
-	if purpose == "verify-email" {
+	switch purpose {
+	case "verify-email":
 		title = "JustJio Email Verification"
 		message = []byte("Welcome " + username + ",\r\n\r\n" +
 			"We are happy to see you signed up with JustJio.\r\n\r\n" +
 			"Your OTP is: " + otp)
-	} else if purpose == "reset-password" {
+	case "reset-password":
 		title = "JustJio Password Reset"
 		message = []byte("Hi " + username + ",\r\n\r\n" +
 			"Please use the following OTP to reset your password.\r\n\r\n" +
