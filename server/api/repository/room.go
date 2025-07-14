@@ -95,7 +95,10 @@ func (r *roomRepository) GetUnjoinedRoomsByIsPrivate(userID string, isPrivate bo
 
 func (r *roomRepository) GetRoomAttendees(roomID string) (*[]model.User, error) {
 	var room model.Room
-	err := r.db.Table("rooms").Preload("Users").First(&room, "id = ?", roomID).Error
+	err := r.db.
+		Table("rooms").
+		Preload("Users").
+		First(&room, "id = ?", roomID).Error
 	return &room.Users, err
 }
 
@@ -180,7 +183,10 @@ func (r *roomRepository) UpdateInviteStatus(roomID, userID, status string) error
 }
 
 func (r *roomRepository) CreateInvites(invites *[]model.RoomInvite) error {
-	return r.db.Table("room_invites").Omit("Room", "Inviter", "User").Create(invites).Error
+	return r.db.
+		Table("room_invites").
+		Omit("Room", "Inviter", "User").
+		Create(invites).Error
 }
 
 func (r *roomRepository) HasPendingInvites(roomID, userID string) (bool, error) {

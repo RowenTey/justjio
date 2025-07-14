@@ -48,9 +48,5 @@ func (r *subscriptionRepository) FindByEndpoint(endpoint string) (*model.Subscri
 }
 
 func (r *subscriptionRepository) Delete(subID string) error {
-	// Verify exists first
-	if err := r.db.Where("id = ?", subID).First(&model.Subscription{}).Error; err != nil {
-		return err
-	}
 	return r.db.Where("id = ?", subID).Delete(&model.Subscription{}).Error
 }

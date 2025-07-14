@@ -34,26 +34,36 @@ func (r *messageRepository) WithTx(tx *gorm.DB) MessageRepository {
 }
 
 func (r *messageRepository) Create(message *model.Message) error {
-	return r.db.Omit("Room", "Sender").Create(message).Error
+	return r.db.
+		Omit("Room", "Sender").
+		Create(message).Error
 }
 
 func (r *messageRepository) FindByID(msgID, roomID string) (*model.Message, error) {
 	var message model.Message
-	err := r.db.Where("id = ? AND room_id = ?", msgID, roomID).First(&message).Error
+	err := r.db.
+		Where("id = ? AND room_id = ?", msgID, roomID).
+		First(&message).Error
 	return &message, err
 }
 
 func (r *messageRepository) Delete(msgID, roomID string) error {
-	return r.db.Where("id = ? AND room_id = ?", msgID, roomID).Delete(&model.Message{}).Error
+	return r.db.
+		Where("id = ? AND room_id = ?", msgID, roomID).
+		Delete(&model.Message{}).Error
 }
 
 func (r *messageRepository) DeleteByRoom(roomID string) error {
-	return r.db.Where("room_id = ?", roomID).Delete(&model.Message{}).Error
+	return r.db.
+		Where("room_id = ?", roomID).
+		Delete(&model.Message{}).Error
 }
 
 func (r *messageRepository) CountByRoom(roomID string) (int64, error) {
 	var count int64
-	err := r.db.Model(&model.Message{}).Where("room_id = ?", roomID).Count(&count).Error
+	err := r.db.Model(&model.Message{}).
+		Where("room_id = ?", roomID).
+		Count(&count).Error
 	return count, err
 }
 
