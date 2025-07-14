@@ -121,7 +121,8 @@ func (r *userRepository) UpdateFriendRequest(request *model.FriendRequest) error
 // FindFriendRequestsByReceiver retrieves friend requests for a specific receiver with a given status.
 func (r *userRepository) FindFriendRequestsByReceiver(receiverID uint, status string) (*[]model.FriendRequest, error) {
 	var requests []model.FriendRequest
-	err := r.db.Where("receiver_id = ? AND status = ?", receiverID, status).
+	err := r.db.
+		Where("receiver_id = ? AND status = ?", receiverID, status).
 		Preload("Sender").
 		Preload("Receiver").
 		Find(&requests).Error
@@ -206,24 +207,17 @@ func (r *userRepository) GetFriends(userID uint) (*[]model.User, error) {
 
 // CountFriends returns the number of friends a user has.
 func (r *userRepository) CountFriends(userID uint) (int64, error) {
-	var user model.User
-	if err := r.db.First(&user, userID).Error; err != nil {
-		return 0, err
-	}
-	count := r.db.Model(&user).Association("Friends").Count()
+	count := r.db.
+		Model(&model.User{ID: userID}).
+		Association("Friends").
+		Count()
 	return int64(count), nil
 }
 
-// TODO: test this function
 // CheckFriendship checks if a user is friends with another user.
 func (r *userRepository) CheckFriendship(userID, friendID uint) (bool, error) {
-	if err := r.db.First(&model.User{}, userID).Error; err != nil {
-		return false, err
-	}
-	if err := r.db.First(&model.User{}, friendID).Error; err != nil {
-		return false, err
-	}
-	count := r.db.Model(&model.User{ID: userID}).
+	count := r.db.
+		Model(&model.User{ID: userID}).
 		Where("id = ?", friendID).
 		Association("Friends").
 		Count()
@@ -248,13 +242,15 @@ func (r *userRepository) SearchUsers(currentUserId, query string, limit int) (*[
 }
 
 // GetUninvitedFriends retrieves friends of a user who are not invited to a specific room.
-func (r *userRepository) GetUninvitedFriends(userID, roomID string) (*[]model.User, error) {
+func (r *userRepository) GetUninvitedFriends(roomID, userID string) (*[]model.User, error) {
 	var friends []model.User
 	err := r.db.
 		Distinct("users.*").
 		Table("users").
 		Joins("JOIN user_friends ON (user_friends.friend_id = ? AND user_friends.user_id = users.id)", userID).
+		// Exclude users already in room
 		Where("users.id NOT IN (SELECT user_id FROM room_users WHERE room_id = ?)", roomID).
+		// Exclude users with pending invites
 		Where("users.id NOT IN (SELECT user_id FROM room_invites WHERE room_id = ? AND status = 'pending')", roomID).
 		Find(&friends).Error
 	return &friends, err

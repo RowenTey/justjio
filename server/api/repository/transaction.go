@@ -34,9 +34,9 @@ func (r *transactionRepository) Create(transactions *[]model.Transaction) error 
 	return r.db.Omit("Consolidation").Create(&transactions).Error
 }
 
+// TODO: Implement pagination
 func (r *transactionRepository) FindByUser(isPaid bool, userID string) (*[]model.Transaction, error) {
 	var transactions []model.Transaction
-	// TODO: Implement pagination
 	err := r.db.
 		Where("is_paid = ? AND (payee_id = ? OR payer_id = ?)", isPaid, userID, userID).
 		Preload("Payee").

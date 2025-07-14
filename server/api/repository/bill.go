@@ -75,7 +75,7 @@ func (r *billRepository) GetRoomBillConsolidationStatus(roomID string) (Status, 
 	}
 
 	var bill *model.Bill
-	err = r.db.Where("room_id = ?", roomID).First(&bill).Error
+	err := r.db.Where("room_id = ?", roomID).First(&bill).Error
 	// bill found -> check if consolidation ID is set
 	if err == nil && bill.ConsolidationID != 0 {
 		return CONSOLIDATED, nil
