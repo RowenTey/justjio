@@ -68,12 +68,6 @@ func (r *billRepository) DeleteByRoom(roomID string) error {
 }
 
 func (r *billRepository) GetRoomBillConsolidationStatus(roomID string) (Status, error) {
-	// Check if room exists
-	err := r.db.Model(&model.Room{}).Where("id = ?", roomID).First(&model.Room{}).Error
-	if err != nil {
-		return NO_BILLS, err
-	}
-
 	var bill *model.Bill
 	err := r.db.Where("room_id = ?", roomID).First(&bill).Error
 	// bill found -> check if consolidation ID is set
