@@ -52,6 +52,9 @@ func (s *SubscriptionService) GetSubscriptionsByEndpoint(endpoint string) (*mode
 }
 
 func (s *SubscriptionService) DeleteSubscription(subId string) error {
+	if _, err := s.subscriptionRepo.FindByID(subId); err != nil {
+		return err
+	}
 	return s.subscriptionRepo.Delete(subId)
 }
 

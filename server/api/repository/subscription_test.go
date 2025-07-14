@@ -89,6 +89,22 @@ func (suite *SubscriptionRepositoryTestSuite) TestCreate_Success() {
 	assert.NotZero(suite.T(), created.ID)
 }
 
+func (suite *SubscriptionRepositoryTestSuite) TestFindByID_Success() {
+	sub := &model.Subscription{
+		UserID:   suite.testUser.ID,
+		Endpoint: "https://find.me/123",
+		P256dh:   "pkey",
+		Auth:     "akey",
+	}
+	created, err := suite.repo.Create(sub)
+	assert.NoError(suite.T(), err)
+
+	found, err := suite.repo.FindByID(created.ID)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), created.ID, found.ID)
+	assert.Equal(suite.T(), sub.Endpoint, found.Endpoint)
+}
+
 func (suite *SubscriptionRepositoryTestSuite) TestFindByUserID_Success() {
 	sub := &model.Subscription{
 		UserID:   suite.testUser.ID,
