@@ -1,4 +1,4 @@
-name: justjio
+name: justjio-dev
 
 x-common-healthcheck: &common-healthcheck
   interval: 10s
@@ -32,20 +32,26 @@ services:
   api-server:
     image: ghcr.io/rowentey/justjio/api:latest
     build:
-      context: ../server/api
+      context: ../../server/api
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
     environment:
-      DSN: postgresql://postgres:${POSTGRES_PASSWORD}@postgres/postgres?sslmode=disable
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: NUv5oMuh1EWV
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: postgres
       PORT: 8080
       JWT_SECRET: ${JWT_SECRET}
+      KAFKA_HOST: kafka
+      KAFKA_PORT: 29092
       KAFKA_TOPIC_PREFIX: justjio
-      KAFKA_URL: kafka:29092
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_REDIRECT_URL: https://justjio-staging.rowentey.xyz
+      GOOGLE_MAPS_API_KEY: AIzaSyCV7vIsT_MvDgx7ebA1k1WEiJfit51O9WI
+      GOOGLE_REDIRECT_URL: http://localhost:80
       VAPID_EMAIL: ${ADMIN_EMAIL}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
@@ -64,7 +70,7 @@ services:
   ws-server:
     image: ghcr.io/rowentey/justjio/ws:latest
     build:
-      context: ../server/ws
+      context: ../../server/ws
       dockerfile: Dockerfile
     ports:
       - "8081:8081"
@@ -72,7 +78,8 @@ services:
       PORT: 8081
       JWT_SECRET: ${JWT_SECRET}
       KAFKA_TOPIC_PREFIX: justjio
-      KAFKA_URL: kafka:29092
+      KAFKA_HOST: kafka
+      KAFKA_PORT: 29092
       ALLOWED_ORIGINS: http://localhost:80
     depends_on:
       kafka:

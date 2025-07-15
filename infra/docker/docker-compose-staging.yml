@@ -1,9 +1,10 @@
-name: justjio
+name: justjio-staging
 
 x-common-env: &common-env
   JWT_SECRET: ${JWT_SECRET}
+  KAFKA_HOST: ${KAFKA_HOST}
+  KAFKA_PORT: ${KAFKA_PORT}
   KAFKA_TOPIC_PREFIX: justjio
-  KAFKA_URL: ${KAFKA_HOST}:${KAFKA_PORT}
   ALLOWED_ORIGINS: https://justjio-staging.rowentey.xyz
 
 x-common-config: &common-config
@@ -43,11 +44,16 @@ services:
     image: ghcr.io/rowentey/justjio/api:latest
     <<: *common-config
     environment:
-      DSN: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
       PORT: 8080
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
       GOOGLE_REDIRECT_URL: https://justjio-staging.rowentey.xyz
       VAPID_EMAIL: ${ADMIN_EMAIL}
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
