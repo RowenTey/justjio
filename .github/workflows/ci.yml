@@ -138,20 +138,16 @@ jobs:
       - name: Install dependencies
         run: cd ./server/api && go mod download
 
-      - name: Install gocover-cobertura
-        run: go install github.com/t-yuki/gocover-cobertura@latest
-
       - name: Run unit tests with coverage
         run: |
           cd ./server/api
           go test -coverprofile=coverage.out -covermode=atomic -v ./...
-          gocover-cobertura < coverage.out > coverage.lcov
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: ./server/api/coverage.lcov
+          path: ./server/api/coverage.out
 
   run-security-scan:
     runs-on: ubuntu-latest
@@ -209,9 +205,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage-report
-          path: ./server/api/
+          path: server/api/
 
-      - uses: sonarsource/sonarqube-scan-action@master
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        with:
+          args: >
+            -Dsonar.scm.revision=${{ github.event.pull_request.head.sha }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
