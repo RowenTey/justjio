@@ -56,6 +56,7 @@ const initialRoom: IRoom = {
   isClosed: false,
   isPrivate: false,
   url: "",
+  description: "",
 };
 
 const RoomPage = () => {
@@ -351,6 +352,7 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
       ? false
       : true
     : false;
+  const showInviteFriends = room.isPrivate ? (isHost ? true : false) : true;
 
   return (
     <>
@@ -389,12 +391,14 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
             from: `/room/${roomId}`,
           }}
         />
-        <ButtonCard
-          title="Invite Friends"
-          Icon={UserPlusIcon}
-          onClick={() => setIsInviteModalVisible(true)}
-          isLink={false}
-        />
+        {showInviteFriends && (
+          <ButtonCard
+            title="Invite Friends"
+            Icon={UserPlusIcon}
+            onClick={() => setIsInviteModalVisible(true)}
+            isLink={false}
+          />
+        )}
 
         {/* TODO: Show prompt for close and leave room */}
         {isHost ? (

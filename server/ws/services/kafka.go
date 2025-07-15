@@ -16,21 +16,19 @@ type KafkaService struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
 	logger   *log.Entry
+	env      string
+	prefix   string
 }
 
-func GetUserChannel(userId, env string) string {
-	channel := fmt.Sprintf("user-%s", userId)
-	if env == "dev" || env == "staging" {
-		channel = fmt.Sprintf("%s-%s", env, channel)
-	}
-	channel = fmt.Sprintf("%s-%s", utils.Config("KAFKA_TOPIC_PREFIX"), channel)
-	return channel
+type UserKafkaClient struct {
+	Client *KafkaService
 }
 
 // Creates a new KafkaService instance
-func NewKafkaService(brokers, groupId string) (*KafkaService, error) {
+func NewKafkaService(conf *utils.Config, groupId, env string) (*KafkaService, error) {
+	bootstrapServers := fmt.Sprintf("%s:%s", conf.Kafka.Host, conf.Kafka.Port)
 	config := &kafka.ConfigMap{
-		"bootstrap.servers":       brokers,
+		"bootstrap.servers":       bootstrapServers,
 		"group.id":                groupId,
 		"auto.offset.reset":       "earliest",
 		"enable.auto.commit":      true,
@@ -51,6 +49,8 @@ func NewKafkaService(brokers, groupId string) (*KafkaService, error) {
 		ctx:      ctx,
 		cancel:   cancel,
 		logger:   log.WithField("service", "Kafka"),
+		env:      env,
+		prefix:   conf.Kafka.TopicPrefix,
 	}, nil
 }
 
@@ -101,4 +101,13 @@ func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) {
 func (s *KafkaService) Close() {
 	s.logger.Info("Closing Kafka client")
 	s.Consumer.Close()
+}
+
+func (s *KafkaService) GetUserChannel(userId string) string {
+	channel := fmt.Sprintf("user-%s", userId)
+	if s.env == "dev" || s.env == "staging" {
+		channel = fmt.Sprintf("%s-%s", s.env, channel)
+	}
+	channel = fmt.Sprintf("%s-%s", s.prefix, channel)
+	return channel
 }
