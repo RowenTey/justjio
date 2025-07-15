@@ -154,9 +154,7 @@ func initServices(
 		kafkaService,
 		utils.HashPassword,
 		utils.SendSMTPEmail,
-		conf.JwtSecret,
-		conf.AdminEmail,
-		config.SetupGoogleOAuthConfig(conf),
+		conf,
 		logger,
 	)
 	roomService := services.NewRoomService(

@@ -13,6 +13,10 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+var (
+	RoomNotFoundErrorMsg = "Room not found"
+)
+
 type BillHandler struct {
 	billService *services.BillService
 	logger      *log.Entry
@@ -53,7 +57,7 @@ func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
 		} else if errors.Is(err, services.ErrPayersNotFound) {
 			return utils.HandleError(c, fiber.StatusNotFound, err.Error(), nil)
 		}
-		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
+		return utils.HandleNotFoundOrInternalError(c, err, RoomNotFoundErrorMsg)
 	}
 
 	h.logger.Info("Created bill successfully: ", bill.ID)
@@ -68,7 +72,7 @@ func (h *BillHandler) GetBillsByRoom(c *fiber.Ctx) error {
 
 	bills, err := h.billService.GetBillsForRoom(roomId)
 	if err != nil {
-		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
+		return utils.HandleNotFoundOrInternalError(c, err, RoomNotFoundErrorMsg)
 	}
 
 	return utils.HandleSuccess(c, "Retrieved bills successfully", bills)
@@ -89,7 +93,7 @@ func (h *BillHandler) ConsolidateBills(c *fiber.Ctx) error {
 		} else if errors.Is(err, services.ErrOnlyHostCanConsolidate) {
 			return utils.HandleError(c, fiber.StatusForbidden, err.Error(), nil)
 		}
-		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
+		return utils.HandleNotFoundOrInternalError(c, err, RoomNotFoundErrorMsg)
 	}
 
 	return utils.HandleSuccess(c, "Bill consolidated successfully", nil)
@@ -103,7 +107,7 @@ func (h *BillHandler) IsRoomBillConsolidated(c *fiber.Ctx) error {
 
 	status, err := h.billService.GetRoomBillConsolidationStatus(roomId)
 	if err != nil {
-		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
+		return utils.HandleNotFoundOrInternalError(c, err, RoomNotFoundErrorMsg)
 	}
 
 	return utils.HandleSuccess(c,

@@ -21,7 +21,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 )
 
@@ -34,6 +33,7 @@ type AuthHandlerTestSuite struct {
 	dependencies *tests.TestDependencies
 
 	mockJWTSecret string
+	config        *config.Config
 
 	kafkaService services.KafkaService
 	userService  *services.UserService
@@ -88,6 +88,11 @@ func (suite *AuthHandlerTestSuite) TearDownSuite() {
 func (suite *AuthHandlerTestSuite) SetupTest() {
 	// Initialize deps
 	suite.mockJWTSecret = "test-secret"
+	suite.config = &config.Config{
+		JwtSecret:   suite.mockJWTSecret,
+		AdminEmail:  "test@test.com",
+		GoogleOauth: config.GoogleOauthConfig{},
+	}
 	userRepository := repository.NewUserRepository(suite.db)
 	suite.userService = services.NewUserService(suite.db, userRepository, suite.logger)
 	suite.authService = services.NewAuthService(
@@ -99,9 +104,7 @@ func (suite *AuthHandlerTestSuite) SetupTest() {
 		func(from, to, subject, textBody string) error {
 			return nil
 		},
-		suite.mockJWTSecret,
-		"test@test.com",
-		&oauth2.Config{},
+		suite.config,
 		suite.logger,
 	)
 	suite.authHandler = NewAuthHandler(suite.authService, suite.logger)
@@ -229,9 +232,7 @@ func (suite *AuthHandlerTestSuite) TestSignUp_InternalServerError() {
 		func(from, to, subject, textBody string) error {
 			return nil
 		},
-		suite.mockJWTSecret,
-		"test@test.com",
-		&oauth2.Config{},
+		suite.config,
 		suite.logger,
 	)
 	suite.authHandler = NewAuthHandler(suite.authService, suite.logger)

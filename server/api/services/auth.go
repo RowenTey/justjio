@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/RowenTey/JustJio/server/api/config"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/utils"
 	"github.com/sirupsen/logrus"
@@ -26,6 +27,7 @@ var (
 	ErrEmailAlreadyVerified = errors.New("email already verified")
 	ErrOTPNotFound          = errors.New("OTP not found")
 	ErrInvalidOTP           = errors.New("invalid OTP")
+	VerifyEmailPurpose      = "verify-email"
 )
 
 const (
@@ -48,19 +50,17 @@ func NewAuthService(
 	kafkaService KafkaService,
 	hashFunc func(password string) (string, error),
 	sendSMTPEmail func(from, to, subject, textBody string) error,
-	jwtSecret string,
-	adminEmail string,
-	oauthConfig *oauth2.Config,
+	conf *config.Config,
 	logger *logrus.Logger,
 ) *AuthService {
 	return &AuthService{
 		userService:   userService,
 		kafkaService:  kafkaService,
 		hashFunc:      hashFunc,
-		jwtSecret:     jwtSecret,
-		adminEmail:    adminEmail,
+		jwtSecret:     conf.JwtSecret,
+		adminEmail:    conf.AdminEmail,
 		sendSMTPEmail: sendSMTPEmail,
-		oAuthConfig:   oauthConfig,
+		oAuthConfig:   config.SetupGoogleOAuthConfig(conf),
 		logger:        logger.WithFields(logrus.Fields{"service": "AuthService"}),
 	}
 }
@@ -86,7 +86,7 @@ func (s *AuthService) SignUp(newUser *model.User, otpMap *sync.Map) (*model.User
 		s.logger.Info("Generated OTP for user: ", createdUser.Username)
 
 		if err := s.
-			SendOTPEmail(otp, createdUser.Username, createdUser.Email, "verify-email"); err != nil {
+			SendOTPEmail(otp, createdUser.Username, createdUser.Email, VerifyEmailPurpose); err != nil {
 			s.logger.Error("Error sending OTP email:", err)
 			otpMap.Delete(createdUser.Email)
 		}
@@ -189,7 +189,7 @@ func (s *AuthService) CreateToken(user *model.User) (string, error) {
 }
 
 func (s *AuthService) GenerateAndSendOTPEmail(email, purpose string, otpMap *sync.Map) error {
-	if purpose != "verify-email" && purpose != "reset-password" {
+	if purpose != VerifyEmailPurpose && purpose != "reset-password" {
 		return ErrInvalidPurpose
 	}
 
@@ -198,7 +198,7 @@ func (s *AuthService) GenerateAndSendOTPEmail(email, purpose string, otpMap *syn
 		return err
 	}
 
-	if purpose == "verify-email" && user.IsEmailValid {
+	if purpose == VerifyEmailPurpose && user.IsEmailValid {
 		return ErrEmailAlreadyVerified
 	}
 
@@ -219,7 +219,7 @@ func (s *AuthService) SendOTPEmail(otp, username, email, purpose string) error {
 	title := ""
 	message := []byte("")
 	switch purpose {
-	case "verify-email":
+	case VerifyEmailPurpose:
 		title = "JustJio Email Verification"
 		message = []byte("Welcome " + username + ",\r\n\r\n" +
 			"We are happy to see you signed up with JustJio.\r\n\r\n" +
