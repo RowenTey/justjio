@@ -251,8 +251,16 @@ const RoomInviteCard: React.FC<{
           </div>
         </div>
       </div>
-      <div className="h-[40%] flex justify-between px-2 py-1 text-xs text-[#ABA8A8]">
+      <div className="h-[40%] flex justify-between px-2 py-1 text-xs text-gray-500">
         <div className="flex flex-col gap-1 justify-center font-semibold">
+          <div className="flex items-center gap-1">
+            <ClockIcon className="w-4 h-4" />
+            <p>{invite.room.time}</p>
+          </div>
+          <div className="flex items-center gap-1">
+            <CalendarIcon className="w-4 h-4" />
+            <p>{formatDate(invite.room.date)}</p>
+          </div>
           <a
             href={invite.room.venueUrl}
             target="_blank"
@@ -261,14 +269,6 @@ const RoomInviteCard: React.FC<{
             <MapPinIcon className="w-4 h-4" />
             <span className="hover:underline">{invite.room.venue}</span>
           </a>
-          <div className="flex items-center gap-1">
-            <CalendarIcon className="w-4 h-4" />
-            <p>{formatDate(invite.room.date)}</p>
-          </div>
-          <div className="flex items-center gap-1">
-            <ClockIcon className="w-4 h-4" />
-            <p>{invite.room.time}</p>
-          </div>
         </div>
         {isExploreMore ? (
           <div className="flex items-center justify-center gap-2 mr-2 font-bold">

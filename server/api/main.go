@@ -27,14 +27,6 @@ func main() {
 		logger.Fatal("Failed to load configuration!")
 	}
 
-	// only load .env file if in dev environment
-	// if env == "dev" {
-	// 	logger.Debug("Loading .env file...")
-	// 	if err := godotenv.Load(".env"); err != nil {
-	// 		logger.Fatal("Error loading .env file")
-	// 	}
-	// }
-
 	logger.Info("Starting API server...")
 
 	notificationsChan := worker.RunPushNotifications(conf, logger)

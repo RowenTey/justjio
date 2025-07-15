@@ -12,7 +12,7 @@ type User struct {
 	ID string
 }
 
-func GetCurrentUser(c *websocket.Conn) (*User, error) {
+func GetCurrentUser(conf *Config, c *websocket.Conn) (*User, error) {
 	tokenStr := c.Query("token", "")
 	if tokenStr == "" {
 		return nil, errors.New("no token provided")
@@ -20,7 +20,7 @@ func GetCurrentUser(c *websocket.Conn) (*User, error) {
 
 	// Decode the JWT token
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-		return []byte(Config("JWT_SECRET")), nil
+		return []byte(conf.JwtSecret), nil
 	})
 	if err != nil {
 		return nil, err
