@@ -251,8 +251,8 @@ func (s *AuthService) VerifyOTP(email, otp string, otpMap *sync.Map) error {
 		return err
 	}
 
-	s.logger.Infof("OtpMap: %v", otpMap)
 	otpValue, exists := otpMap.Load(email)
+	s.logger.Infof("Verifying OTP for email: %s, OTP exists: %t", email, exists)
 	if !exists {
 		return ErrOTPNotFound
 	} else if otpValue != otp {
