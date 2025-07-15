@@ -23,7 +23,6 @@ const PeopleBox: React.FC<PeopleBoxProps> = ({
       onClick={onClick}
     >
       <img
-        // src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
         alt="Profile Image"
         src={pictureUrl}
         className="w-7 h-7 rounded-full"
