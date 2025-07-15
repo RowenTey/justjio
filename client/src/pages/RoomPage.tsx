@@ -256,7 +256,11 @@ const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
 
       <div className="w-full h-[90%] flex flex-col items-center rounded-2xl overflow-hidden">
         <div className="w-full h-[55%] overflow-hidden -mt-1">
-          <img src={room.imageUrl} className="w-full h-full object-cover" />
+          <img
+            src={room.imageUrl}
+            alt=""
+            className="w-full h-full object-cover"
+          />
         </div>
 
         <div className="w-full h-[45%] flex flex-col justify-between bg-white rounded-b-2xl shadow-lg px-3 py-2 leading-tight text-gray-500">
@@ -272,7 +276,7 @@ const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
           </div>
           <div className="flex gap-2 items-center">
             <InformationCircleIcon className="h-6 w-6" />
-            <p>{room.description ?? "N/A"}</p>
+            <p>{room.description || "N/A"}</p>
           </div>
           <a
             href={room.venueUrl}
@@ -341,15 +345,11 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
 }) => {
   const [isInviteModalVisible, setIsInviteModalVisible] = useState(false);
   const [isQRCodeModalVisible, setIsQRCodeModalVisible] = useState(false);
-  const showSplitBill = isHost
-    ? isRoomBillConsolidated
-      ? false
-      : true
-    : false;
-  const showInviteFriends = room.isPrivate ? (isHost ? true : false) : true;
+  const showSplitBill = isHost ? !isRoomBillConsolidated : false;
+  const showInviteFriends = room.isPrivate ? isHost : true;
 
   return (
-    <div className="w-full mt-3 h-[10%] flex justify-evenly items-baseline">
+    <div className="w-full mt-1 h-[10%] flex justify-evenly items-baseline">
       {showSplitBill && (
         <ButtonCard
           title="Split Bill"
