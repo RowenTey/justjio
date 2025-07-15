@@ -25,7 +25,6 @@ jobs:
       - name: Create .env file
         run: |
           cat << EOF > .env
-          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
           KAFKA_HOST=${{ vars.KAFKA_HOST }}
@@ -33,8 +32,11 @@ jobs:
           POSTGRES_HOST=${{ vars.POSTGRES_HOST }}
           POSTGRES_DB=${{ vars.POSTGRES_DB }}
           POSTGRES_PORT=${{ vars.POSTGRES_PORT }}
+          POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY }}
           VAPID_EMAIL=${{ secrets.ADMIN_EMAIL }}
           VAPID_PUBLIC_KEY=${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY=${{ secrets.VAPID_PRIVATE_KEY }}
