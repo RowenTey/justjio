@@ -256,11 +256,7 @@ const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
 
       <div className="w-full h-[90%] flex flex-col items-center rounded-2xl overflow-hidden">
         <div className="w-full h-[55%] overflow-hidden -mt-1">
-          <img
-            src={room.imageUrl}
-            alt="Room Image"
-            className="w-full h-full object-cover"
-          />
+          <img src={room.imageUrl} className="w-full h-full object-cover" />
         </div>
 
         <div className="w-full h-[45%] flex flex-col justify-between bg-white rounded-b-2xl shadow-lg px-3 py-2 leading-tight text-gray-500">
@@ -276,7 +272,7 @@ const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
           </div>
           <div className="flex gap-2 items-center">
             <InformationCircleIcon className="h-6 w-6" />
-            <p>{room.description || "N/A"}</p>
+            <p>{room.description ?? "N/A"}</p>
           </div>
           <a
             href={room.venueUrl}
@@ -299,26 +295,24 @@ type RoomAttendeesProps = {
 
 const RoomAttendees: React.FC<RoomAttendeesProps> = ({ hostId, attendees }) => {
   return (
-    <>
-      <div className="h-[33%] w-full px-5 flex flex-col gap-2">
-        <h3 className="text-secondary font-bold">
-          {attendees.length} Attendee(s)
-        </h3>
-        <div
-          className="h-[90%] flex flex-col gap-2 p-2 
+    <div className="h-[33%] w-full px-5 flex flex-col gap-2">
+      <h3 className="text-secondary font-bold">
+        {attendees.length} Attendee(s)
+      </h3>
+      <div
+        className="h-[90%] flex flex-col gap-2 p-2 
 						rounded-xl bg-primary overflow-y-auto"
-        >
-          {attendees.map((attendee) => (
-            <PeopleBox
-              key={attendee.id}
-              name={attendee.username}
-              pictureUrl={attendee.pictureUrl}
-              isHost={attendee.id === hostId}
-            />
-          ))}
-        </div>
+      >
+        {attendees.map((attendee) => (
+          <PeopleBox
+            key={attendee.id}
+            name={attendee.username}
+            pictureUrl={attendee.pictureUrl}
+            isHost={attendee.id === hostId}
+          />
+        ))}
       </div>
-    </>
+    </div>
   );
 };
 
@@ -355,82 +349,80 @@ const RoomActionWidgets: React.FC<RoomActionWidgetsProps> = ({
   const showInviteFriends = room.isPrivate ? (isHost ? true : false) : true;
 
   return (
-    <>
-      <div className="w-full mt-3 h-[10%] flex justify-evenly items-baseline">
-        {showSplitBill && (
-          <ButtonCard
-            title="Split Bill"
-            Icon={DocumentDuplicateIcon}
-            isLink={true}
-            linkProps={{
-              to: `/room/${roomId}/bill/split`,
-              from: `/room/${roomId}`,
-              state: { roomName: room.name },
-            }}
-          />
-        )}
-        {!isRoomBillConsolidated && (
-          <ButtonCard
-            title="Create Bill"
-            Icon={DocumentPlusIcon}
-            isLink={true}
-            linkProps={{
-              to: `/room/${roomId}/bill/create`,
-              from: `/room/${roomId}`,
-              state: { attendees, roomName: room.name, currentUserId: userId },
-            }}
-          />
-        )}
-
+    <div className="w-full mt-3 h-[10%] flex justify-evenly items-baseline">
+      {showSplitBill && (
         <ButtonCard
-          title="Chat"
-          Icon={ChatBubbleLeftIcon}
-          numNotifications={numNewMessages}
+          title="Split Bill"
+          Icon={DocumentDuplicateIcon}
+          isLink={true}
           linkProps={{
-            to: `/room/${roomId}/chat`,
+            to: `/room/${roomId}/bill/split`,
             from: `/room/${roomId}`,
+            state: { roomName: room.name },
           }}
         />
-        {showInviteFriends && (
-          <ButtonCard
-            title="Invite Friends"
-            Icon={UserPlusIcon}
-            onClick={() => setIsInviteModalVisible(true)}
-            isLink={false}
-          />
-        )}
-
-        {/* TODO: Show prompt for close and leave room */}
-        {isHost ? (
-          <ButtonCard
-            title="Close Room"
-            Icon={XMarkIcon}
-            onClick={onCloseRoom}
-            isLink={false}
-          />
-        ) : (
-          <ButtonCard
-            title="Leave Room"
-            Icon={ArrowRightStartOnRectangleIcon}
-            onClick={onLeaveRoom}
-            isLink={false}
-          />
-        )}
-
-        <InviteAttendeesModal
-          isVisible={isInviteModalVisible}
-          setIsQRCodeModalVisible={setIsQRCodeModalVisible}
-          closeModal={() => setIsInviteModalVisible(false)}
-          roomId={roomId}
+      )}
+      {!isRoomBillConsolidated && (
+        <ButtonCard
+          title="Create Bill"
+          Icon={DocumentPlusIcon}
+          isLink={true}
+          linkProps={{
+            to: `/room/${roomId}/bill/create`,
+            from: `/room/${roomId}`,
+            state: { attendees, roomName: room.name, currentUserId: userId },
+          }}
         />
+      )}
 
-        <QRCodeModal
-          url={window.location.href + "?join=true"}
-          isVisible={isQRCodeModalVisible}
-          closeModal={() => setIsQRCodeModalVisible(false)}
+      <ButtonCard
+        title="Chat"
+        Icon={ChatBubbleLeftIcon}
+        numNotifications={numNewMessages}
+        linkProps={{
+          to: `/room/${roomId}/chat`,
+          from: `/room/${roomId}`,
+        }}
+      />
+      {showInviteFriends && (
+        <ButtonCard
+          title="Invite Friends"
+          Icon={UserPlusIcon}
+          onClick={() => setIsInviteModalVisible(true)}
+          isLink={false}
         />
-      </div>
-    </>
+      )}
+
+      {/* TODO: Show prompt for close and leave room */}
+      {isHost ? (
+        <ButtonCard
+          title="Close Room"
+          Icon={XMarkIcon}
+          onClick={onCloseRoom}
+          isLink={false}
+        />
+      ) : (
+        <ButtonCard
+          title="Leave Room"
+          Icon={ArrowRightStartOnRectangleIcon}
+          onClick={onLeaveRoom}
+          isLink={false}
+        />
+      )}
+
+      <InviteAttendeesModal
+        isVisible={isInviteModalVisible}
+        setIsQRCodeModalVisible={setIsQRCodeModalVisible}
+        closeModal={() => setIsInviteModalVisible(false)}
+        roomId={roomId}
+      />
+
+      <QRCodeModal
+        url={window.location.href + "?join=true"}
+        isVisible={isQRCodeModalVisible}
+        closeModal={() => setIsQRCodeModalVisible(false)}
+      />
+    </div>
   );
 };
 

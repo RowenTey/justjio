@@ -90,66 +90,64 @@ const InviteAttendeesModalContent: React.FC<
   };
 
   return (
-    <>
-      <div className="w-full flex flex-col gap-3">
-        <div className="w-full flex flex-col items-center gap-2">
-          <h2 className="text-3xl font-bold text-secondary">Invite Friend</h2>
-          <form
-            onSubmit={handleSubmit(handleInviteUsers)}
-            className="w-full flex flex-col items-center justify-center gap-3"
-            id="invite-people-form"
-          >
-            <SearchableDropdown
-              name="invitees"
-              errors={errors}
-              register={register}
-              onSelect={(selected) => {
-                setValue(
-                  "invitees",
-                  selected.map((option) => option.value).join(","),
-                );
-              }}
-              options={uninvitedFriends.map((friend) => ({
-                label: friend.username,
-                value: friend.id,
-              }))}
-              validation={{ required: "Invitees are required" }}
-            />
-
-            <button
-              className="bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full mt-2 w-2/5"
-              form="invite-people-form"
-            >
-              Submit
-            </button>
-          </form>
-        </div>
-        <hr className="text-black" />
-        <div className="w-full flex justify-center items-center gap-6 hover:cursor-pointer">
-          <div
-            className="w-14 flex flex-col items-center hover:cursor-pointer"
-            onClick={() => {
-              setIsQRCodeModalVisible(true);
-              closeModal();
+    <div className="w-full flex flex-col gap-3">
+      <div className="w-full flex flex-col items-center gap-2">
+        <h2 className="text-3xl font-bold text-secondary">Invite Friend</h2>
+        <form
+          onSubmit={handleSubmit(handleInviteUsers)}
+          className="w-full flex flex-col items-center justify-center gap-3"
+          id="invite-people-form"
+        >
+          <SearchableDropdown
+            name="invitees"
+            errors={errors}
+            register={register}
+            onSelect={(selected) => {
+              setValue(
+                "invitees",
+                selected.map((option) => option.value).join(","),
+              );
             }}
+            options={uninvitedFriends.map((friend) => ({
+              label: friend.username,
+              value: friend.id,
+            }))}
+            validation={{ required: "Invitees are required" }}
+          />
+
+          <button
+            className="bg-secondary hover:bg-tertiary text-white font-bold py-2 px-4 rounded-full mt-2 w-2/5"
+            form="invite-people-form"
           >
-            <QrCodeIcon className="h-12 w-12 p-2 text-secondary bg-white rounded-full hover:scale-105" />
-            <p className="text-secondary text-center text-sm leading-4">
-              Generate QR
-            </p>
-          </div>
-          <div
-            className="w-14 flex flex-col items-center hover:cursor-pointer"
-            onClick={copyToClipboard}
-          >
-            <LinkIcon className="h-12 w-12 p-2 text-secondary bg-white rounded-full hover:scale-105" />
-            <p className="text-secondary text-center text-sm leading-4">
-              Copy Link
-            </p>
-          </div>
-        </div>
+            Submit
+          </button>
+        </form>
       </div>
-    </>
+      <hr className="text-black" />
+      <div className="w-full flex justify-center items-center gap-6 hover:cursor-pointer">
+        <button
+          className="w-14 flex flex-col items-center hover:cursor-pointer"
+          onClick={() => {
+            setIsQRCodeModalVisible(true);
+            closeModal();
+          }}
+        >
+          <QrCodeIcon className="h-12 w-12 p-2 text-secondary bg-white rounded-full hover:scale-105" />
+          <p className="text-secondary text-center text-sm leading-4">
+            Generate QR
+          </p>
+        </button>
+        <button
+          className="w-14 flex flex-col items-center hover:cursor-pointer"
+          onClick={copyToClipboard}
+        >
+          <LinkIcon className="h-12 w-12 p-2 text-secondary bg-white rounded-full hover:scale-105" />
+          <p className="text-secondary text-center text-sm leading-4">
+            Copy Link
+          </p>
+        </button>
+      </div>
+    </div>
   );
 };
 

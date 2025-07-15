@@ -37,7 +37,7 @@ func main() {
 
 	logger.Info("Starting WS server...")
 	app := fiber.New()
-	connMap := utils.NewConnMap()
+	connMap := utils.NewConnMap(logger)
 
 	// maps user ID to Kafka client
 	var userKafkaClients = make(map[string]*services.UserKafkaClient)

@@ -4,7 +4,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"github.com/gofiber/websocket/v2"
 	"github.com/google/uuid"
@@ -49,16 +49,16 @@ func forEachConnection(conns *sync.Map) func(func(*websocket.Conn)) {
 }
 
 // HOF to remove a connection from a map
-func onRemove(key, connId string, outer, inner *atomicSyncMap) func(func()) bool {
+func onRemove(logger *logrus.Entry, key, connId string, outer, inner *atomicSyncMap) func(func()) bool {
 	return func(onInnerEmptycallback func()) bool {
 		inner.Remove(connId)
-		log.WithField("service", "ConnMap").Info("Removed connection by user ", key)
+		logger.Info("Removed connection by user ", key)
 
 		if inner.Len() == 0 {
 			// unsubscribe from Kafka for this user
 			onInnerEmptycallback()
 			outer.Remove(key)
-			log.WithField("service", "ConnMap").Info("Removed user ", key, " from connMap")
+			logger.Info("Removed user ", key, " from connMap")
 			return true
 		}
 
@@ -68,14 +68,15 @@ func onRemove(key, connId string, outer, inner *atomicSyncMap) func(func()) bool
 
 // ConnMap is a map of userIds to a map of connIds to websocket.Conn
 type ConnMap struct {
-	outer atomicSyncMap
+	outer  atomicSyncMap
+	logger *logrus.Entry
 }
 
 func (cm *ConnMap) Add(
 	key string,
 	conn *websocket.Conn,
 ) (func(func(*websocket.Conn)), func(func()) bool, bool) {
-	connId := uuid.New().String() // Generate unique ID using Go's uuid package
+	connId := uuid.New().String()
 
 	// connId -> ws.Conn
 	var inner *atomicSyncMap
@@ -91,11 +92,12 @@ func (cm *ConnMap) Add(
 		isInit = true
 	}
 
-	return forEachConnection(inner.m), onRemove(key, connId, &cm.outer, inner), isInit
+	return forEachConnection(inner.m), onRemove(cm.logger, key, connId, &cm.outer, inner), isInit
 }
 
-func NewConnMap() *ConnMap {
+func NewConnMap(logger *logrus.Logger) *ConnMap {
 	return &ConnMap{
-		outer: *newAtomicSyncMap(),
+		outer:  *newAtomicSyncMap(),
+		logger: logger.WithField("service", "ConnMap"),
 	}
 }
