@@ -159,14 +159,12 @@ export const fetchNumRoomsApi = (
 export const createRoomApi = (
   api: AxiosInstance,
   roomData: Partial<IRoom>,
-  placeId: string,
   inviteesId: string[],
   mock: boolean = false,
 ): Promise<AxiosResponse<CreateRoomResponse>> => {
   if (!mock) {
     return api.post<CreateRoomResponse>("/rooms", {
       room: roomData,
-      placeId,
       invitees: inviteesId,
     });
   }
@@ -200,6 +198,42 @@ export const createRoomApi = (
         headers: {},
         config: {},
       } as AxiosResponse<CreateRoomResponse>);
+    }, 1500);
+  });
+};
+
+export const updateRoomApi = (
+  api: AxiosInstance,
+  roomId: string,
+  venue: string,
+  placeId: string,
+  date: string,
+  time: string,
+  description: string,
+  mock: boolean = false,
+): Promise<AxiosResponse<ApiResponse>> => {
+  if (!mock) {
+    return api.patch<ApiResponse>(`/rooms/${roomId}/edit`, {
+      venue,
+      placeId,
+      date,
+      time,
+      description,
+    });
+  }
+
+  return new Promise<AxiosResponse<ApiResponse>>((resolve) => {
+    setTimeout(() => {
+      resolve({
+        data: {
+          message: "Room updated successfully",
+          status: "success",
+        },
+        status: 200,
+        statusText: "OK",
+        headers: {},
+        config: {},
+      } as AxiosResponse<ApiResponse>);
     }, 1500);
   });
 };

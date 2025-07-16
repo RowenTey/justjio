@@ -133,7 +133,7 @@ export const fetchFriendRequestsApi = (
 ): Promise<AxiosResponse<FetchFriendRequestsResponse>> => {
   if (!mock) {
     return api.get<FetchFriendRequestsResponse>(
-      `/users/${userId}/friendRequests?status=${status}`,
+      `/users/${userId}/friends/requests?status=${status}`,
     );
   }
 
@@ -217,7 +217,7 @@ export const sendFriendRequestApi = (
   mock: boolean = false,
 ): Promise<AxiosResponse<ApiResponse>> => {
   if (!mock) {
-    return api.post<ApiResponse>(`/users/${userId}/friendRequests`, {
+    return api.post<ApiResponse>(`/users/${userId}/friends/requests`, {
       friendId,
     });
   }
@@ -272,7 +272,7 @@ export const respondToFriendRequestApi = (
   mock: boolean = false,
 ): Promise<AxiosResponse<ApiResponse>> => {
   if (!mock) {
-    return api.patch<ApiResponse>(`/users/${userId}/friendRequests`, {
+    return api.patch<ApiResponse>(`/users/${userId}/friends/requests`, {
       requestId: friendRequestId,
       action,
     });
@@ -301,7 +301,7 @@ export const countPendingFriendRequestsApi = (
 ): Promise<AxiosResponse<CountPendingFriendRequestsResponse>> => {
   if (!mock) {
     return api.get<CountPendingFriendRequestsResponse>(
-      `/users/${userId}/friendRequests/count`,
+      `/users/${userId}/friends/requests/count`,
     );
   }
 

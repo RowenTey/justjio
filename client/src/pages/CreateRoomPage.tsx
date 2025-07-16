@@ -9,7 +9,7 @@ import SearchableDropdown from "../components/SearchableDropdown";
 import { useUserCtx } from "../context/user";
 import { useToast } from "../context/toast";
 import { useEffect, useState } from "react";
-import { IVenue } from "../types/room";
+import { IRoom, IVenue } from "../types/room";
 import QueryVenueDropdown from "../components/room/QueryVenueDropdown";
 import ToggleSwitch from "../components/ToggleSwitch";
 
@@ -74,25 +74,18 @@ const CreateRoomPage = () => {
 
     startLoading();
 
-    console.log("[CreateRoomPage] Date before: ", data.date);
-    const parsedDate = new Date(data.date);
-    data.date = parsedDate.toISOString();
-
     console.log("[CreateRoomPage] Submitted data: ", data);
-    const roomData = {
+    const roomData: Partial<IRoom> = {
       name: data.name,
-      date: data.date,
+      date: new Date(data.date).toISOString(),
       venue: data.venue,
+      venuePlaceId: selectedVenue.googleMapsPlaceId,
       time: data.time,
       imageUrl: data.image,
       isPrivate: data.isPrivate,
       description: data.description,
     };
-    const res = await createRoom(
-      roomData,
-      selectedVenue.googleMapsPlaceId,
-      data.invitees.split(","),
-    );
+    const res = await createRoom(roomData, data.invitees.split(","));
 
     if (!res.isSuccessResponse) {
       switch (res.error?.response?.status) {
@@ -183,6 +176,7 @@ const CreateRoomPage = () => {
           }}
           errors={errors}
           register={register}
+          validation={{ required: "Venue is required" }}
         />
 
         <InputField

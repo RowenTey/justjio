@@ -11,6 +11,7 @@ interface SearchableVenueDropdownProps {
   onChange: (venue: IVenue) => void;
   errors: any;
   register: any;
+  validation?: Record<string, any>;
 }
 
 const QueryVenueDropdown = ({
@@ -18,6 +19,7 @@ const QueryVenueDropdown = ({
   onChange,
   errors,
   register,
+  validation,
 }: SearchableVenueDropdownProps) => {
   const [venues, setVenues] = useState<IVenue[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -78,10 +80,7 @@ const QueryVenueDropdown = ({
           ))}
         </datalist>
       </div>
-      <input
-        type="hidden"
-        {...register("venue", { required: "Venue is required" })}
-      />
+      <input type="hidden" {...register("venue", validation)} />
       {errors.venue && (
         <span className="ml-2 text-error text-wrap">
           {errors.venue?.message?.toString()}

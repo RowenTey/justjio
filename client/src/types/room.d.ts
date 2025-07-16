@@ -6,6 +6,7 @@ export interface IRoom {
   name: string;
   time: string;
   venue: string;
+  venuePlaceId: string;
   venueUrl: string;
   date: string;
   imageUrl: string;
@@ -41,7 +42,6 @@ export interface RoomContextType {
   fetchRooms: () => Promise<BaseContextResponse>;
   createRoom: (
     roomData: Partial<IRoom>,
-    placeId: string,
     attendeesId: string[],
     message?: string,
   ) => Promise<BaseContextResponse>;

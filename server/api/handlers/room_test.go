@@ -335,10 +335,10 @@ func (suite *RoomHandlerTestSuite) TestCreateRoom_Success() {
 
 	createReq := request.CreateRoomRequest{
 		Room: model.Room{
-			Name: "New Test Room",
+			Name:         "New Test Room",
+			VenuePlaceId: placeId,
 		},
 		InviteesId: datatypes.JSON(inviteesJSON),
-		PlaceId:    placeId,
 	}
 	reqBody, _ := json.Marshal(createReq)
 

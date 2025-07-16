@@ -83,8 +83,8 @@ const VerifyOTPPage = () => {
       await verifyOtpApi(api, email, otp);
       showToast("Email verified successfully!", false);
       setTimeout(() => {
-        if (from === "/forgotPassword")
-          navigate("/resetPassword", { state: { email, from: "/otp" } });
+        if (from === "/password/forgot")
+          navigate("/password/reset", { state: { email, from: "/otp" } });
         else navigate("/login", { state: { from: "/otp" } });
       }, 1000);
     } catch (error) {

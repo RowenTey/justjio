@@ -13,6 +13,7 @@ import (
 	"github.com/RowenTey/JustJio/server/api/database"
 	"github.com/RowenTey/JustJio/server/api/model"
 	modelLocation "github.com/RowenTey/JustJio/server/api/model/location"
+	"github.com/RowenTey/JustJio/server/api/model/request"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/utils"
 	"github.com/sirupsen/logrus"
@@ -63,7 +64,7 @@ func NewRoomService(
 }
 
 func (rs *RoomService) CreateRoomWithInvites(
-	room *model.Room, userId, placeId string, inviteesIds *[]uint) (*model.Room, *[]model.RoomInvite, error) {
+	room *model.Room, userId string, inviteesIds *[]uint) (*model.Room, *[]model.RoomInvite, error) {
 	var invites []model.RoomInvite
 
 	if err := database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
@@ -81,7 +82,7 @@ func (rs *RoomService) CreateRoomWithInvites(
 		}
 
 		// Fetch the Google Maps URI
-		googleMapsUri, err := rs.fetchGoogleMapsUri(placeId)
+		googleMapsUri, err := rs.fetchGoogleMapsUri(room.VenuePlaceId)
 		if err != nil {
 			return err
 		}
@@ -147,6 +148,36 @@ func (rs *RoomService) GetRoomAttendees(roomId string) (*[]model.User, error) {
 
 func (rs *RoomService) GetRoomAttendeesIds(roomId string) (*[]string, error) {
 	return rs.roomRepo.GetRoomAttendeeIDs(roomId)
+}
+
+func (rs *RoomService) UpdateRoom(updateReq *request.UpdateRoomRequest, roomId, userId string) (*model.Room, error) {
+	room, err := rs.roomRepo.GetByID(roomId)
+	if err != nil {
+		return nil, err
+	}
+
+	if utils.UIntToString(room.HostID) != userId {
+		return nil, ErrInvalidHost
+	}
+
+	if room.VenuePlaceId != updateReq.PlaceId {
+		room.Venue = updateReq.Venue
+		room.VenuePlaceId = updateReq.PlaceId
+		room.VenueUrl, err = rs.fetchGoogleMapsUri(updateReq.PlaceId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch Google Maps URI: %v", err)
+		}
+	}
+
+	room.Date = updateReq.Date
+	room.Time = updateReq.Time
+	room.Description = updateReq.Description
+
+	if err := rs.roomRepo.UpdateRoom(room); err != nil {
+		return nil, fmt.Errorf("failed to update room: %v", err)
+	}
+
+	return room, nil
 }
 
 func (rs *RoomService) CloseRoom(roomId string, userId string) error {
@@ -506,7 +537,7 @@ func (rs *RoomService) fetchGoogleMapsUri(placeId string) (string, error) {
 		return "", fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var placeResponse map[string]interface{}
+	var placeResponse map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&placeResponse); err != nil {
 		return "", fmt.Errorf("failed to decode response: %v", err)
 	}

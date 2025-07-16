@@ -24,7 +24,7 @@ const ForgotPasswordPage = () => {
       navigate("/otp", {
         state: {
           email: data.email,
-          from: "/forgotPassword",
+          from: "/password/forgot",
         },
       });
     } catch (error) {

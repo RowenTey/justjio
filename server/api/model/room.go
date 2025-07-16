@@ -12,6 +12,7 @@ type Room struct {
 	Name           string    `gorm:"not null" json:"name"`
 	Time           string    `gorm:"not null" json:"time"`
 	Venue          string    `gorm:"not null" json:"venue"`
+	VenuePlaceId   string    `gorm:"not null" json:"venuePlaceId"`
 	VenueUrl       string    `gorm:"not null" json:"venueUrl"`
 	Date           time.Time `gorm:"not null" json:"date"`
 	Description    string    `gorm:"not null" json:"description"`
