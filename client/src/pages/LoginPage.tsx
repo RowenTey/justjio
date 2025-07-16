@@ -126,7 +126,7 @@ const LoginPage = () => {
         </button>
 
         <p className="text-secondary text-sm text-center leading-snug">
-          <Link to="/forgotPassword" className="underline cursor-pointer">
+          <Link to="/password/forgot" className="underline cursor-pointer">
             Forgot Password?
           </Link>
           <br />

@@ -36,7 +36,7 @@ const ResetPasswordPage = () => {
         () =>
           navigate("/login", {
             state: {
-              from: "/resetPassword",
+              from: "/password/reset",
             },
           }),
         1000,

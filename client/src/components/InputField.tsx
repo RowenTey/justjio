@@ -13,8 +13,9 @@ interface InputFieldProps {
   min?: string;
   max?: string;
   pattern?: string;
+  value?: string;
   defaultValue?: string;
-  validation?: any;
+  validation?: Record<string, any>;
 }
 
 const InputField: React.FC<InputFieldProps> = ({
@@ -28,6 +29,7 @@ const InputField: React.FC<InputFieldProps> = ({
   min,
   max,
   pattern,
+  value,
   defaultValue,
   validation,
 }) => {
@@ -47,6 +49,7 @@ const InputField: React.FC<InputFieldProps> = ({
           min={min}
           max={max}
           pattern={pattern}
+          value={value}
           defaultValue={defaultValue}
           className="peer bg-white placeholder-gray-500 text-black px-2 py-1 rounded-lg shadow-lg w-full focus:outline-none focus:border-secondary focus:border-2"
           {...register(name, validation)}

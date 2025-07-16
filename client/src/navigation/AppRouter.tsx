@@ -19,6 +19,7 @@ import VerifyOTPPage from "../pages/VerifyOTPPage";
 import ForgotPasswordPage from "../pages/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/ResetPasswordPage";
 import EditProfilePage from "../pages/EditProfilePage";
+import EditRoomPage from "../pages/EditRoomPage";
 
 const AppRouter = () => {
   return (
@@ -31,20 +32,21 @@ const AppRouter = () => {
         </Route>
         <Route path="/profile/edit" element={<EditProfilePage />} />
         <Route path="/friends" element={<FriendsPage />} />
-        <Route path="/friendRequests" element={<FriendRequestsPage />} />
+        <Route path="/friends/requests" element={<FriendRequestsPage />} />
         <Route path="/rooms" element={<RoomsPage />} />
         <Route path="/rooms/create" element={<CreateRoomPage />} />
         <Route path="/rooms/invites" element={<RoomInvitesPage />} />
         <Route path="/room/:roomId" element={<RoomPage />} />
         <Route path="/room/:roomId/chat" element={<RoomChatPage />} />
+        <Route path="/room/:roomId/edit" element={<EditRoomPage />} />
         <Route path="/room/:roomId/bill/create" element={<CreateBillPage />} />
         <Route path="/room/:roomId/bill/split" element={<SplitBillPage />} />
       </Route>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/otp" element={<VerifyOTPPage />} />
-      <Route path="/forgotPassword" element={<ForgotPasswordPage />} />
-      <Route path="/resetPassword" element={<ResetPasswordPage />} />
+      <Route path="/password/forgot" element={<ForgotPasswordPage />} />
+      <Route path="/password/reset" element={<ResetPasswordPage />} />
     </Routes>
   );
 };

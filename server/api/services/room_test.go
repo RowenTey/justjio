@@ -70,8 +70,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_Success() {
 	// Setup test data
 	host := &model.User{ID: 1, Username: "host"}
 	invitees := []uint{2, 3}
-	room := &model.Room{Name: "Test Room"}
-	placeId := "ChIJN1t_tDeuEmsRUsoyG83frY4"
+	room := &model.Room{Name: "Test Room", VenuePlaceId: "ChIJN1t_tDeuEmsRUsoyG83frY4"}
 
 	// Expect transaction begin
 	s.sqlMock.ExpectBegin()
@@ -99,7 +98,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_Success() {
 
 	s.mockHTTPClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 		return req.Method == "GET" &&
-			req.URL.String() == fmt.Sprintf("https://places.googleapis.com/v1/places/%s", placeId) &&
+			req.URL.String() == fmt.Sprintf("https://places.googleapis.com/v1/places/%s", room.VenuePlaceId) &&
 			req.Header.Get("X-Goog-Api-Key") == "test-api-key" &&
 			req.Header.Get("X-Goog-FieldMask") == "googleMapsUri"
 	})).Return(mockResponse, nil)
@@ -112,7 +111,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_Success() {
 
 	// Execute
 	resultRoom, resultInvites, err := s.roomService.CreateRoomWithInvites(
-		room, "1", placeId, &invitees,
+		room, "1", &invitees,
 	)
 
 	// Assertions
@@ -130,7 +129,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_Success() {
 func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_HostNotFound() {
 	// Setup test data
 	invitees := []uint{2, 3}
-	room := &model.Room{Name: "Test Room"}
+	room := &model.Room{Name: "Test Room", VenuePlaceId: "randomPlaceId"}
 
 	// Expect transaction begin
 	s.sqlMock.ExpectBegin()
@@ -146,7 +145,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_HostNotFound() {
 
 	// Execute
 	_, _, err := s.roomService.CreateRoomWithInvites(
-		room, "1", "randomPlaceId", &invitees,
+		room, "1", &invitees,
 	)
 
 	// Assertions

@@ -36,7 +36,7 @@ const FriendsTopBar: React.FC<FriendsTopBarProps> = ({ userId, title }) => {
       <h1 className="text-xl font-bold text-secondary">{title}</h1>
 
       <Link
-        to="/friendRequests"
+        to="/friends/requests"
         state={{ from: "/friends" }}
         className={`flex items-center justify-center bg-transparent p-1`}
       >

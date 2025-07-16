@@ -43,14 +43,12 @@ const RoomProvider: React.FC<RoomProviderProps> = ({ children }) => {
 
   const createRoom = async (
     roomData: Partial<IRoom>,
-    placeId: string,
     attendeesId: string[],
   ): Promise<BaseContextResponse> => {
     try {
       const { data: response } = await createRoomApi(
         api,
         roomData,
-        placeId,
         attendeesId,
       );
       const updatedRooms = state.rooms.concat(response.data.room);

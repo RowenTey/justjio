@@ -151,7 +151,7 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 	}
 
 	room, invites, err := h.roomService.CreateRoomWithInvites(
-		&request.Room, userId, request.PlaceId, &inviteesIdsUint)
+		&request.Room, userId, &inviteesIdsUint)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Failed to create room and invites")
 	}
@@ -164,7 +164,25 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Created room successfully", response)
 }
 
-// TODO：Fix error 500 bug here
+func (h *RoomHandler) EditRoom(c *fiber.Ctx) error {
+	var request request.UpdateRoomRequest
+	if err := c.BodyParser(&request); err != nil {
+		return utils.HandleInvalidInputError(c, err)
+	}
+
+	roomId := c.Params("roomId")
+	token := c.Locals("user").(*jwt.Token)
+	userId := utils.GetUserInfoFromToken(token, "user_id")
+
+	room, err := h.roomService.UpdateRoom(&request, roomId, userId)
+	if err != nil {
+		return utils.HandleNotFoundOrInternalError(c, err, RoomNotFoundErrorMsg)
+	}
+
+	h.logger.Info("Room " + room.Name + " edited successfully.")
+	return utils.HandleSuccess(c, "Edited room successfully", room)
+}
+
 func (h *RoomHandler) CloseRoom(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 	token := c.Locals("user").(*jwt.Token)

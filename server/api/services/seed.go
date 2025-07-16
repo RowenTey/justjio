@@ -91,48 +91,45 @@ func SeedDB(
 	// create rooms
 	rooms := []model.Room{
 		{
-			Name:     "ks birthday",
-			Date:     time.Date(2022, time.September, 4, 0, 0, 0, 0, time.UTC),
-			Time:     "5:00pm",
-			Venue:    "ntu hall 9",
-			ImageUrl: "/imgs/birthday.png",
+			Name:         "ks birthday",
+			Date:         time.Now().AddDate(0, 0, 1), // tomorrow
+			Time:         "17:00",
+			Venue:        "ntu hall 9",
+			VenuePlaceId: "ChIJxz9oLqcP2jER_geaxEqstWg",
+			ImageUrl:     "/imgs/birthday.png",
 		},
 		{
-			Name:     "harish birthday",
-			Date:     time.Date(2022, time.October, 8, 0, 0, 0, 0, time.UTC),
-			Time:     "6:00pm",
-			Venue:    "clementi mall",
-			ImageUrl: "/imgs/birthday.png",
+			Name:         "harish birthday",
+			Date:         time.Now().AddDate(0, 0, 2), // day after tomorrow
+			Time:         "18:00",
+			Venue:        "clementi mall",
+			VenuePlaceId: "ChIJq8UGJo4a2jER0ypiQDLiXpg",
+			ImageUrl:     "/imgs/birthday.png",
 		},
 		{
-			Name:     "amabel birthday",
-			Date:     time.Date(2022, time.November, 12, 0, 0, 0, 0, time.UTC),
-			Time:     "9:00am",
-			Venue:    "marina bay sand",
-			ImageUrl: "/imgs/birthday.png",
+			Name:         "amabel birthday",
+			Date:         time.Now().AddDate(0, 0, 3), // 3 days later
+			Time:         "09:00",
+			Venue:        "marina bay sand",
+			VenuePlaceId: "ChIJA5LATO4Z2jER111V-v6abAI",
+			ImageUrl:     "/imgs/birthday.png",
 		},
 		{
-			Name:     "everyone birthday",
-			Date:     time.Date(2022, time.January, 7, 0, 0, 0, 0, time.UTC),
-			Time:     "10:00am",
-			Venue:    "pulau ubin",
-			ImageUrl: "/imgs/birthday.png",
+			Name:         "everyone birthday",
+			Date:         time.Now().AddDate(0, 0, 4), // 4 days later
+			Time:         "10:00",
+			Venue:        "pulau ubin",
+			VenuePlaceId: "ChIJYcYVP2I-2jERQTiBy40oT6w",
+			ImageUrl:     "/imgs/birthday.png",
 		},
 		{
-			Name:     "mom birthday",
-			Date:     time.Date(2022, time.February, 28, 0, 0, 0, 0, time.UTC),
-			Time:     "11:00am",
-			Venue:    "lot one",
-			ImageUrl: "/imgs/birthday.png",
+			Name:         "mom birthday",
+			Date:         time.Now().AddDate(0, 0, 5), // 5 days later
+			Time:         "11:00",
+			Venue:        "lot one",
+			VenuePlaceId: "ChIJs5CBlukR2jER-uyFhQ2NFbU",
+			ImageUrl:     "/imgs/birthday.png",
 		},
-	}
-
-	placeIds := []string{
-		"ChIJxz9oLqcP2jER_geaxEqstWg", // ntu hall 9
-		"ChIJq8UGJo4a2jER0ypiQDLiXpg", // clementi mall
-		"ChIJA5LATO4Z2jER111V-v6abAI", // marina bay sand
-		"ChIJYcYVP2I-2jERQTiBy40oT6w", // pulau ubin
-		"ChIJs5CBlukR2jER-uyFhQ2NFbU", // lot one
 	}
 
 	for i, r := range rooms {
@@ -151,7 +148,6 @@ func SeedDB(
 		createdRoom, _, err := roomService.CreateRoomWithInvites(
 			&r,
 			utils.UIntToString(host.ID),
-			placeIds[i],
 			&invitees,
 		)
 		if err != nil {

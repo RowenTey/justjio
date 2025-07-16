@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
+import RoomTopBar from "../components/top-bar/RoomTopBar";
 import ButtonCard from "../components/ButtonCard";
 import {
   ChatBubbleLeftIcon,
@@ -41,6 +41,7 @@ const initialRoom: IRoom = {
   date: "",
   time: "",
   venue: "",
+  venuePlaceId: "",
   venueUrl: "",
   imageUrl: "",
   attendeesCount: 1,
@@ -213,7 +214,7 @@ const RoomPage = () => {
 
   return (
     <div className="h-full flex flex-col items-center gap-1 bg-gray-200">
-      <RoomTopBar title={room.name} shouldCenterTitle={true} />
+      <RoomTopBar room={room} showEditBtn={user.id === room.hostId} />
 
       <RoomDetails room={room} />
 
@@ -274,9 +275,11 @@ const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
               <p>{room.time}</p>
             </div>
           </div>
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center ">
             <InformationCircleIcon className="h-6 w-6" />
-            <p>{room.description || "N/A"}</p>
+            <p className="w-[85%] overflow-x-scroll overflow-y-hidden">
+              {room.description || "N/A"}
+            </p>
           </div>
           <a
             href={room.venueUrl}

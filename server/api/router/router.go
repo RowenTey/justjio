@@ -258,7 +258,7 @@ func setupUserRoutes(v1 fiber.Router, handlers *Handlers) {
 	friends.Get("/search", handlers.UserHandler.SearchFriends)
 	friends.Delete("/:friendId", handlers.UserHandler.RemoveFriend)
 
-	friendRequests := users.Group("/:userId/friendRequests")
+	friendRequests := friends.Group("/:userId/requests")
 	friendRequests.Get("/", handlers.UserHandler.GetFriendRequestsByStatus)
 	friendRequests.Get("/count", handlers.UserHandler.CountPendingFriendRequests)
 	friendRequests.Post("/", handlers.UserHandler.SendFriendRequest)
@@ -287,6 +287,7 @@ func setupRoomRoutes(
 	rooms.Post("/", handlers.RoomHandler.CreateRoom)
 	rooms.Post("/:roomId", roomMiddleware, handlers.RoomHandler.InviteUser)
 	rooms.Patch("/:roomId", handlers.RoomHandler.RespondToRoomInvite)
+	rooms.Patch("/:roomId/edit", handlers.RoomHandler.EditRoom)
 	rooms.Patch("/:roomId/join", handlers.RoomHandler.JoinRoom)
 	rooms.Patch("/:roomId/close", roomMiddleware, handlers.RoomHandler.CloseRoom)
 	rooms.Patch("/:roomId/leave", roomMiddleware, handlers.RoomHandler.LeaveRoom)
