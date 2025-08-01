@@ -46,13 +46,6 @@ const EditRoomPage = () => {
   const onSubmit: SubmitHandler<EditRoomformData> = async (data) => {
     startLoading();
     try {
-      //   console.log("Submitting edit room form with data:", {
-      //     venue: selectedVenue.name,
-      //     placeId: selectedVenue.googleMapsPlaceId,
-      //     date: data.date,
-      //     time: data.time,
-      //     description: data.description,
-      //   });
       await updateRoomApi(
         api,
         state.room.id,
