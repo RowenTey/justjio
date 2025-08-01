@@ -21,7 +21,6 @@ jobs:
             infra/docker/docker-compose-staging.yml
           sparse-checkout-cone-mode: false
 
-      # Create the .env file to use with docker-compose
       - name: Create .env file
         run: |
           cat << EOF > .env
@@ -43,7 +42,6 @@ jobs:
           CF_ACCESS_CLIENT_SECRET=${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           EOF
 
-      # Transfer files to the server
       - name: Transfer files to staging server
         uses: RowenTey/cloudflared-scp-action@v1.1.7
         with:
