@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/RowenTey/JustJio/server/api/database"
 	"github.com/RowenTey/JustJio/server/api/middleware"
@@ -107,6 +108,7 @@ func (suite *RoomHandlerTestSuite) SetupSuite() {
 	roomRoutes.Post("/", roomHandler.CreateRoom)
 	roomRoutes.Post("/:roomId", roomHandler.InviteUser)
 	roomRoutes.Patch("/:roomId", roomHandler.RespondToRoomInvite)
+	roomRoutes.Patch("/:roomId/edit", roomHandler.EditRoom)
 	roomRoutes.Patch("/:roomId/close", roomHandler.CloseRoom)
 	roomRoutes.Patch("/:roomId/join", roomHandler.JoinRoom)
 	roomRoutes.Patch("/:roomId/leave", roomHandler.LeaveRoom)
@@ -477,6 +479,134 @@ func (suite *RoomHandlerTestSuite) TestLeaveRoom_Success() {
 		Count(&count).Error
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), int64(0), count)
+}
+
+func (suite *RoomHandlerTestSuite) TestEditRoom_VenueChanged_Success() {
+	updateReq := request.UpdateRoomRequest{
+		Venue:       "New Awesome Place",
+		PlaceId:     "newPlaceId123",
+		Date:        time.Now(),
+		Time:        "19:00:00",
+		Description: "Updated event description.",
+	}
+	reqBody, _ := json.Marshal(updateReq)
+
+	expectedUri := "https://maps.google.com/?cid=987654321"
+
+	// Mock the Google Places API call
+	mockResponse := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewBufferString(`{"googleMapsUri": "` + expectedUri + `"}`)),
+		Header:     make(http.Header),
+	}
+	mockResponse.Header.Set("Content-Type", "application/json")
+	suite.mockHttpClient.On("Do", mock.AnythingOfType("*http.Request")).Return(mockResponse, nil).Once()
+
+	req := httptest.NewRequest(http.MethodPatch, "/rooms/"+suite.testRoomID+"/edit", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+suite.testHostToken)
+
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "Edited room successfully", responseBody["message"])
+
+	roomData := responseBody["data"].(map[string]any)
+	assert.Equal(suite.T(), updateReq.Description, roomData["description"])
+	assert.Equal(suite.T(), updateReq.Venue, roomData["venue"])
+	assert.Equal(suite.T(), expectedUri, roomData["venueUrl"])
+
+	suite.mockHttpClient.AssertExpectations(suite.T())
+}
+
+func (suite *RoomHandlerTestSuite) TestEditRoom_VenueNotChanged_Success() {
+	updateReq := request.UpdateRoomRequest{
+		PlaceId:     suite.testRoom.VenuePlaceId, // Same PlaceId
+		Date:        time.Now(),
+		Time:        "20:00:00",
+		Description: "Only changing the date and time.",
+	}
+	reqBody, _ := json.Marshal(updateReq)
+
+	req := httptest.NewRequest(http.MethodPatch, "/rooms/"+suite.testRoomID+"/edit", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+suite.testHostToken)
+
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+
+	var responseBody map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+	assert.NoError(suite.T(), err)
+
+	roomData := responseBody["data"].(map[string]any)
+	assert.Equal(suite.T(), "Only changing the date and time.", roomData["description"])
+
+	// Ensure the HTTP client was NOT called since PlaceId didn't change
+	suite.mockHttpClient.AssertNotCalled(suite.T(), "Do")
+}
+
+func (suite *RoomHandlerTestSuite) TestEditRoom_NotHost() {
+	updateReq := request.UpdateRoomRequest{Description: "Attempt by non-host"}
+	reqBody, _ := json.Marshal(updateReq)
+
+	// Use the non-host user's token
+	req := httptest.NewRequest(http.MethodPatch, "/rooms/"+suite.testRoomID+"/edit", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
+
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func (suite *RoomHandlerTestSuite) TestEditRoom_RoomNotFound() {
+	nonExistentRoomID := uuid.NewString()
+	updateReq := request.UpdateRoomRequest{Description: "Attempt on non-existent room"}
+	reqBody, _ := json.Marshal(updateReq)
+
+	req := httptest.NewRequest(http.MethodPatch, "/rooms/"+nonExistentRoomID+"/edit", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+suite.testHostToken)
+
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
+}
+
+func (suite *RoomHandlerTestSuite) TestEditRoom_InvalidBody() {
+	req := httptest.NewRequest(http.MethodPatch, "/rooms/"+suite.testRoomID+"/edit", bytes.NewBufferString(`{"description": "bad json`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+suite.testHostToken)
+
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
+}
+
+func (suite *RoomHandlerTestSuite) TestEditRoom_GoogleAPIFailure() {
+	updateReq := request.UpdateRoomRequest{
+		PlaceId: "newPlaceIdThatWillFail",
+	}
+	reqBody, _ := json.Marshal(updateReq)
+
+	// Mock the Google Places API call to return an error
+	suite.mockHttpClient.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, fmt.Errorf("google api is down")).Once()
+
+	req := httptest.NewRequest(http.MethodPatch, "/rooms/"+suite.testRoomID+"/edit", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+suite.testHostToken)
+
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusInternalServerError, resp.StatusCode)
+
+	suite.mockHttpClient.AssertExpectations(suite.T())
 }
 
 func (suite *RoomHandlerTestSuite) TestCloseRoom_Success() {

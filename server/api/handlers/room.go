@@ -176,6 +176,9 @@ func (h *RoomHandler) EditRoom(c *fiber.Ctx) error {
 
 	room, err := h.roomService.UpdateRoom(&request, roomId, userId)
 	if err != nil {
+		if errors.Is(err, services.ErrInvalidHost) {
+			return utils.HandleError(c, fiber.StatusUnauthorized, "Only hosts can edit rooms", err)
+		}
 		return utils.HandleNotFoundOrInternalError(c, err, RoomNotFoundErrorMsg)
 	}
 
