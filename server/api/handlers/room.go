@@ -137,6 +137,7 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 
 	var inviteesIds []string
 	if err := json.Unmarshal([]byte(request.InviteesId), &inviteesIds); err != nil {
+		h.logger.Error("Failed to parse invitees IDs:", err)
 		return utils.HandleInvalidInputError(c, err)
 	}
 
