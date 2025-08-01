@@ -22,7 +22,7 @@ require (
 	github.com/testcontainers/testcontainers-go/modules/kafka v0.36.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.36.0
 	golang.org/x/crypto v0.35.0
-	golang.org/x/oauth2 v0.26.0
+	golang.org/x/oauth2 v0.27.0
 	google.golang.org/api v0.221.0
 	gorm.io/datatypes v1.0.7
 	gorm.io/driver/postgres v1.5.7
