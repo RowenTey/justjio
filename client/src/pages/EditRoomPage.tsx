@@ -10,7 +10,7 @@ import { useToast } from "../context/toast";
 import { useState } from "react";
 import { IVenue } from "../types/room";
 import QueryVenueDropdown from "../components/room/QueryVenueDropdown";
-import { updateRoomApi } from "../api/room";
+import { updateRoomApi, UpdateRoomRequest } from "../api/room";
 
 type EditRoomformData = {
   date: string;
@@ -46,15 +46,14 @@ const EditRoomPage = () => {
   const onSubmit: SubmitHandler<EditRoomformData> = async (data) => {
     startLoading();
     try {
-      await updateRoomApi(
-        api,
-        state.room.id,
-        data.venue,
-        selectedVenue.googleMapsPlaceId,
-        new Date(data.date).toISOString(),
-        data.time,
-        data.description,
-      );
+      const payload: UpdateRoomRequest = {
+        venue: data.venue,
+        placeId: selectedVenue.googleMapsPlaceId,
+        date: new Date(data.date).toISOString(),
+        time: data.time,
+        description: data.description,
+      };
+      await updateRoomApi(api, state.room.id, payload);
       showToast(`Updated room successfully!`, false);
       setTimeout(() => navigate(-1), 1000);
     } catch (error) {
@@ -130,13 +129,15 @@ const EditRoomPage = () => {
         />
 
         <div className="flex flex-col gap-1 w-full">
-          <label className="font-semibold text-secondary">Description</label>
-          <textarea
-            className="w-full h-24 bg-white placeholder-gray-500 text-black px-2 py-1 rounded-lg shadow-lg focus:outline-none focus:border-secondary focus:border-2"
-            defaultValue={state.room.description}
-            placeholder="Enter room description (optional)"
-            {...register("description")}
-          ></textarea>
+          <label className="font-semibold text-secondary">
+            Description
+            <textarea
+              className="w-full h-24 bg-white placeholder-gray-500 text-black px-2 py-1 rounded-lg shadow-lg focus:outline-none focus:border-secondary focus:border-2"
+              defaultValue={state.room.description}
+              placeholder="Enter room description (optional)"
+              {...register("description")}
+            ></textarea>
+          </label>
         </div>
 
         {errorStates[0] && (
