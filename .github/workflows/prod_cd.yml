@@ -49,8 +49,7 @@ jobs:
             fi
           done
 
-      # Transfer files to the server
-      - name: Transfer files to pruduction server
+      - name: Transfer files to production server
         uses: RowenTey/cloudflared-scp-action@v1.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
