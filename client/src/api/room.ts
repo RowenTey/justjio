@@ -49,6 +49,14 @@ interface QueryVenueResponse extends ApiResponse {
   data: IVenue[];
 }
 
+export type UpdateRoomRequest = {
+  venue: string;
+  placeId: string;
+  date: string;
+  time: string;
+  description: string;
+};
+
 export const fetchRecentRoomsApi = (
   api: AxiosInstance,
   mock: boolean = false,
@@ -205,20 +213,12 @@ export const createRoomApi = (
 export const updateRoomApi = (
   api: AxiosInstance,
   roomId: string,
-  venue: string,
-  placeId: string,
-  date: string,
-  time: string,
-  description: string,
+  data: UpdateRoomRequest,
   mock: boolean = false,
 ): Promise<AxiosResponse<ApiResponse>> => {
   if (!mock) {
     return api.patch<ApiResponse>(`/rooms/${roomId}/edit`, {
-      venue,
-      placeId,
-      date,
-      time,
-      description,
+      ...data,
     });
   }
 
