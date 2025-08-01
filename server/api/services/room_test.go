@@ -7,9 +7,11 @@ import (
 	"io"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/RowenTey/JustJio/server/api/model"
+	"github.com/RowenTey/JustJio/server/api/model/request"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/tests"
 	"github.com/RowenTey/JustJio/server/api/utils"
@@ -201,6 +203,151 @@ func (s *RoomServiceTestSuite) TestGetUnjoinedPublicRooms_Success() {
 
 	// Verify mock calls
 	s.mockRoomRepo.AssertExpectations(s.T())
+}
+
+func (s *RoomServiceTestSuite) TestUpdateRoom_VenueChanged_Success() {
+	// Setup test data
+	roomId := "1"
+	userId := "1" // Host
+	updateReq := &request.UpdateRoomRequest{
+		Venue:       "New Awesome Place",
+		PlaceId:     "newPlaceId123",
+		Date:        time.Now(),
+		Time:        "19:00",
+		Description: "Updated description",
+	}
+	room := &model.Room{
+		ID:           "1",
+		HostID:       1,
+		VenuePlaceId: "oldPlaceId456",
+	}
+	expectedUri := "http://maps.google.com/new_place"
+
+	// Mock expectations
+	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+
+	// Mock fetchGoogleMapsUri call
+	mockResponse := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewBufferString(`{"googleMapsUri": "` + expectedUri + `"}`)),
+		Header:     make(http.Header),
+	}
+	mockResponse.Header.Set("Content-Type", "application/json")
+	s.mockHTTPClient.On("Do", mock.AnythingOfType("*http.Request")).Return(mockResponse, nil)
+
+	s.mockRoomRepo.On("UpdateRoom", mock.AnythingOfType("*model.Room")).Return(nil).Run(func(args mock.Arguments) {
+		arg := args.Get(0).(*model.Room)
+		assert.Equal(s.T(), updateReq.Venue, arg.Venue)
+		assert.Equal(s.T(), updateReq.PlaceId, arg.VenuePlaceId)
+		assert.Equal(s.T(), expectedUri, arg.VenueUrl)
+		assert.Equal(s.T(), updateReq.Date, arg.Date)
+		assert.Equal(s.T(), updateReq.Time, arg.Time)
+		assert.Equal(s.T(), updateReq.Description, arg.Description)
+	})
+
+	// Execute
+	updatedRoom, err := s.roomService.UpdateRoom(updateReq, roomId, userId)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), updatedRoom)
+	assert.Equal(s.T(), expectedUri, updatedRoom.VenueUrl)
+
+	// Verify mock calls
+	s.mockRoomRepo.AssertExpectations(s.T())
+	s.mockHTTPClient.AssertExpectations(s.T())
+}
+
+func (s *RoomServiceTestSuite) TestUpdateRoom_VenueNotChanged_Success() {
+	// Setup test data
+	roomId := "1"
+	userId := "1" // Host
+	now := time.Now()
+	room := &model.Room{
+		ID:           "1",
+		HostID:       1,
+		VenuePlaceId: "samePlaceId123",
+	}
+	updateReq := &request.UpdateRoomRequest{
+		PlaceId:     "samePlaceId123", // Same as in the existing room
+		Date:        now,
+		Time:        "20:00",
+		Description: "Another updated description",
+	}
+
+	// Mock expectations
+	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+	s.mockRoomRepo.On("UpdateRoom", mock.AnythingOfType("*model.Room")).Return(nil)
+
+	// Execute
+	updatedRoom, err := s.roomService.UpdateRoom(updateReq, roomId, userId)
+
+	// Assertions
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), updatedRoom)
+	assert.Equal(s.T(), now, updatedRoom.Date)
+	assert.Equal(s.T(), "20:00", updatedRoom.Time)
+
+	// Verify mock calls
+	s.mockRoomRepo.AssertExpectations(s.T())
+	s.mockHTTPClient.AssertNotCalled(s.T(), "Do") // Ensure HTTP client is not called
+}
+
+func (s *RoomServiceTestSuite) TestUpdateRoom_NotHost() {
+	// Setup test data
+	roomId := "1"
+	userId := "2" // Not the host
+	updateReq := &request.UpdateRoomRequest{}
+	room := &model.Room{
+		ID:     "1",
+		HostID: 1, // Host is user 1
+	}
+
+	// Mock expectations
+	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+
+	// Execute
+	_, err := s.roomService.UpdateRoom(updateReq, roomId, userId)
+
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.Equal(s.T(), ErrInvalidHost, err)
+
+	// Verify mock calls
+	s.mockRoomRepo.AssertExpectations(s.T())
+	s.mockRoomRepo.AssertNotCalled(s.T(), "UpdateRoom", mock.Anything)
+}
+
+func (s *RoomServiceTestSuite) TestUpdateRoom_FetchGoogleMapsUriFails() {
+	// Setup test data
+	roomId := "1"
+	userId := "1" // Host
+	updateReq := &request.UpdateRoomRequest{
+		PlaceId: "newPlaceId123",
+	}
+	room := &model.Room{
+		ID:           "1",
+		HostID:       1,
+		VenuePlaceId: "oldPlaceId456",
+	}
+
+	// Mock expectations
+	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+
+	// Mock fetchGoogleMapsUri failure
+	s.mockHTTPClient.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("network error"))
+
+	// Execute
+	_, err := s.roomService.UpdateRoom(updateReq, roomId, userId)
+
+	// Assertions
+	assert.Error(s.T(), err)
+	assert.Contains(s.T(), err.Error(), "failed to fetch Google Maps URI")
+
+	// Verify mock calls
+	s.mockRoomRepo.AssertExpectations(s.T())
+	s.mockHTTPClient.AssertExpectations(s.T())
+	s.mockRoomRepo.AssertNotCalled(s.T(), "UpdateRoom", mock.Anything)
 }
 
 func (s *RoomServiceTestSuite) TestCloseRoom_Success() {
