@@ -174,7 +174,6 @@ const CreateRoomPage = () => {
         <QueryVenueDropdown
           value={watch("venue", "")}
           onChange={(value) => {
-            console.log("[QueryVenueDropdown] Selected venue: ", value);
             setSelectedVenue(value);
             setValue("venue", value.name);
           }}

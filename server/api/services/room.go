@@ -76,7 +76,6 @@ func (rs *RoomService) CreateRoomWithInvites(
 			return err
 		}
 
-		rs.logger.Infof("Creating room with host: %s and invitees: %v", host.Username, inviteesIds)
 		invitees, err := userRepoTx.FindByIDs(inviteesIds)
 		if err != nil {
 			return err
