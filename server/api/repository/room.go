@@ -183,6 +183,9 @@ func (r *roomRepository) UpdateInviteStatus(roomID, userID, status string) error
 }
 
 func (r *roomRepository) CreateInvites(invites *[]model.RoomInvite) error {
+	if invites == nil || len(*invites) == 0 {
+		return nil
+	}
 	return r.db.
 		Table("room_invites").
 		Omit("Room", "Inviter", "User").
