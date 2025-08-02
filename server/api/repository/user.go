@@ -83,6 +83,10 @@ func (r *userRepository) FindByEmail(email string) (*model.User, error) {
 
 // FindByIDs retrieves users by their IDs.
 func (r *userRepository) FindByIDs(ids *[]uint) (*[]model.User, error) {
+	if ids == nil || len(*ids) == 0 {
+		return &[]model.User{}, nil
+	}
+
 	var users []model.User
 	err := r.db.Find(&users, ids).Error
 	if len(users) != len(*ids) {

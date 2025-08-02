@@ -85,7 +85,10 @@ const CreateRoomPage = () => {
       isPrivate: data.isPrivate,
       description: data.description,
     };
-    const res = await createRoom(roomData, data.invitees.split(","));
+    const res = await createRoom(
+      roomData,
+      data.invitees ? data.invitees.split(",") : [],
+    );
 
     if (!res.isSuccessResponse) {
       switch (res.error?.response?.status) {
@@ -169,8 +172,9 @@ const CreateRoomPage = () => {
         />
 
         <QueryVenueDropdown
-          value={watch("venue") || ""}
+          value={watch("venue", "")}
           onChange={(value) => {
+            console.log("[QueryVenueDropdown] Selected venue: ", value);
             setSelectedVenue(value);
             setValue("venue", value.name);
           }}

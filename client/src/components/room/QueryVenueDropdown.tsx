@@ -19,7 +19,7 @@ const QueryVenueDropdown = ({
   onChange,
   errors,
   register,
-  validation,
+  validation = {},
 }: SearchableVenueDropdownProps) => {
   const [venues, setVenues] = useState<IVenue[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -59,8 +59,9 @@ const QueryVenueDropdown = ({
           value={searchTerm}
           onChange={(e) => {
             setSearchTerm(e.target.value);
-            if (e.target.value.length - searchTerm.length > 1) {
-              onChange(venues.find((v) => v.name === e.target.value)!);
+            const selectedVenue = venues.find((v) => v.name === e.target.value);
+            if (selectedVenue) {
+              onChange(selectedVenue);
             }
           }}
           className="peer bg-white placeholder-gray-500 text-black px-2 py-1 rounded-lg shadow-lg w-full focus:outline-none focus:border-secondary focus:border-2"
