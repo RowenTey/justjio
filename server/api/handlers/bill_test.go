@@ -9,7 +9,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/RowenTey/JustJio/server/api/database"
 	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/model/request"
@@ -59,16 +58,8 @@ func (suite *BillHandlerTestSuite) SetupSuite() {
 	suite.dependencies, err = tests.SetupPgDependency(suite.ctx, suite.dependencies, suite.logger)
 	assert.NoError(suite.T(), err)
 
-	// Get PostgreSQL connection string
-	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
-	assert.NoError(suite.T(), err)
-
-	// Initialize database
-	suite.db, err = database.InitTestDB(pgConnStr)
-	assert.NoError(suite.T(), err)
-
-	// Run migrations
-	err = database.Migrate(suite.db)
+	// Setup DB Conn
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "bill_test")
 	assert.NoError(suite.T(), err)
 
 	// Initialize deps
@@ -166,6 +157,7 @@ func (suite *BillHandlerTestSuite) TearDownTest() {
 }
 
 func TestBillHandlerSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(BillHandlerTestSuite))
 }
 

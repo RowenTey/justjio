@@ -2,10 +2,8 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
-	"github.com/RowenTey/JustJio/server/api/database"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/tests"
 	"github.com/sirupsen/logrus"
@@ -36,24 +34,15 @@ func (suite *BillRepositoryTestSuite) SetupSuite() {
 	suite.dependencies, err = tests.SetupPgDependency(suite.ctx, suite.dependencies, suite.logger)
 	assert.NoError(suite.T(), err)
 
-	// Get PostgreSQL connection string
-	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
-	assert.NoError(suite.T(), err)
-	fmt.Println("Test DB Connection String:", pgConnStr)
-
-	// Initialize database
-	suite.db, err = database.InitTestDB(pgConnStr)
-	assert.NoError(suite.T(), err)
-
-	// Run migrations
-	err = database.Migrate(suite.db)
+	// Setup DB Conn
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "bill_test")
 	assert.NoError(suite.T(), err)
 
 	suite.repo = NewBillRepository(suite.db)
 }
 
 func (suite *BillRepositoryTestSuite) TearDownSuite() {
-	if suite.dependencies != nil {
+	if !IsPackageTest && suite.dependencies != nil {
 		suite.dependencies.Teardown(suite.ctx)
 	}
 }
@@ -83,6 +72,7 @@ func (suite *BillRepositoryTestSuite) TearDownTest() {
 }
 
 func TestBillRepositorySuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(BillRepositoryTestSuite))
 }
 

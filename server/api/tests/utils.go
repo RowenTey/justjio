@@ -1,15 +1,21 @@
 package tests
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
+	"fmt"
 	"log"
 	"math"
 	"os"
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/RowenTey/JustJio/server/api/database"
+	"github.com/docker/go-connections/nat"
 	"github.com/golang-jwt/jwt"
+	postgresTc "github.com/testcontainers/testcontainers-go/modules/postgres"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -83,4 +89,48 @@ func GenerateTestToken(userID uint, username, email, jwtSecret string) (string, 
 		return "", err
 	}
 	return t, nil
+}
+
+func CreateAndConnectToTestDb(
+	ctx context.Context,
+	postgresContainer *postgresTc.PostgresContainer,
+	dbName string,
+) (*gorm.DB, error) {
+	pgConnStr, err := postgresContainer.ConnectionString(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get mapped port
+	mappedPort, err := postgresContainer.MappedPort(ctx, nat.Port("5432/tcp"))
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize database
+	db, err := database.InitTestDB(pgConnStr)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create test database
+	err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName)).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Connect to test database
+	db, err = database.InitTestDB(fmt.Sprintf(
+		"postgres://postgres:postgres@localhost:%s/%s?", mappedPort.Port(), dbName))
+	if err != nil {
+		return nil, err
+	}
+
+	// Run migrations
+	err = database.Migrate(db)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }

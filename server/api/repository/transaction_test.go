@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RowenTey/JustJio/server/api/database"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/tests"
 	"github.com/sirupsen/logrus"
@@ -31,27 +30,23 @@ type TransactionRepositoryTestSuite struct {
 
 func (suite *TransactionRepositoryTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
+	var err error
 	suite.logger = logrus.New()
 
-	var err error
+	// Setup test containers
 	suite.dependencies = &tests.TestDependencies{}
 	suite.dependencies, err = tests.SetupPgDependency(suite.ctx, suite.dependencies, suite.logger)
 	assert.NoError(suite.T(), err)
 
-	connStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
-	assert.NoError(suite.T(), err)
-
-	suite.db, err = database.InitTestDB(connStr)
-	assert.NoError(suite.T(), err)
-
-	err = database.Migrate(suite.db)
+	// Setup DB Conn
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "tx_test")
 	assert.NoError(suite.T(), err)
 
 	suite.repo = NewTransactionRepository(suite.db)
 }
 
 func (suite *TransactionRepositoryTestSuite) TearDownSuite() {
-	if suite.dependencies != nil {
+	if !IsPackageTest && suite.dependencies != nil {
 		suite.dependencies.Teardown(suite.ctx)
 	}
 }
@@ -93,6 +88,7 @@ func (suite *TransactionRepositoryTestSuite) TearDownTest() {
 }
 
 func TestTransactionRepositorySuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(TransactionRepositoryTestSuite))
 }
 

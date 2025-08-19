@@ -18,7 +18,11 @@ type TestDependencies struct {
 	KafkaContainer    *kafka.KafkaContainer
 }
 
-func SetupTestDependencies(ctx context.Context, testDep *TestDependencies, logger *logrus.Logger) (*TestDependencies, error) {
+func SetupTestDependencies(
+	ctx context.Context,
+	testDep *TestDependencies,
+	logger *logrus.Logger,
+) (*TestDependencies, error) {
 	// Setup PostgreSQL
 	testDep, err := SetupPgDependency(ctx, testDep, logger)
 	if err != nil {
@@ -34,12 +38,15 @@ func SetupTestDependencies(ctx context.Context, testDep *TestDependencies, logge
 	return testDep, nil
 }
 
-func SetupPgDependency(ctx context.Context, testDep *TestDependencies, logger *logrus.Logger) (*TestDependencies, error) {
+func SetupPgDependency(
+	ctx context.Context,
+	testDep *TestDependencies,
+	logger *logrus.Logger,
+) (*TestDependencies, error) {
 	// Setup PostgreSQL
 	pgContainer, err := postgres.Run(
 		ctx,
 		"postgres:15",
-		postgres.WithDatabase("testdb"),
 		postgres.WithUsername("postgres"),
 		postgres.WithPassword("postgres"),
 		testcontainers.WithWaitStrategy(
