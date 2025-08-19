@@ -66,6 +66,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.23
+          cache: true
           cache-dependency-path: |
             ${{ matrix.modules }}/go.sum
 
@@ -114,6 +115,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.23
+          cache: true
           cache-dependency-path: |
             ${{ matrix.modules }}/go.sum
 
@@ -138,6 +140,7 @@ jobs:
       - name: Run unit tests in parallel with coverage
         run: |
           cd ./server/api
+          go mod download
           go test -coverprofile=coverage.out -covermode=atomic -parallel $(nproc --all) -v ./...
 
       - name: Upload coverage report
