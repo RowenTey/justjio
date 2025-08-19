@@ -144,8 +144,7 @@ jobs:
       - name: Run unit tests with coverage
         run: |
           cd ./server/api
-          go test -coverprofile=coverage.out -covermode=atomic -v ./...
-          gocover-cobertura < coverage.out > coverage.lcov
+          go test -coverprofile=coverage.out -covermode=atomic -parallel $(nproc --all) -v ./...
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
