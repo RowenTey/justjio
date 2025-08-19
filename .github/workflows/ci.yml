@@ -141,6 +141,7 @@ jobs:
         run: |
           cd ./server/api
           go mod download
+          echo "Running tests with $(nproc --all) cores..."
           go test -coverprofile=coverage.out -covermode=atomic -parallel $(nproc --all) -v ./...
 
       - name: Upload coverage report

@@ -100,12 +100,14 @@ func CreateAndConnectToTestDb(
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("Postgres connection string:", pgConnStr)
 
 	// Get mapped port
 	mappedPort, err := postgresContainer.MappedPort(ctx, nat.Port("5432/tcp"))
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("Mapped port:", mappedPort.Port())
 
 	// Initialize database
 	db, err := database.InitTestDB(pgConnStr)
