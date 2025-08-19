@@ -138,7 +138,7 @@ jobs:
       - name: Install dependencies
         run: cd ./server/api && go mod download
 
-      - name: Run unit tests with coverage
+      - name: Run unit tests in parallel with coverage
         run: |
           cd ./server/api
           go test -coverprofile=coverage.out -covermode=atomic -parallel $(nproc --all) -v ./...
