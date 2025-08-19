@@ -141,8 +141,7 @@ jobs:
         run: |
           cd ./server/api
           go mod download
-          echo "Running tests with $(nproc --all) cores..."
-          go test -coverprofile=coverage.out -covermode=atomic -parallel $(nproc --all) -v ./...
+          go test -coverprofile=coverage.out -covermode=atomic -parallel 2 -p 1 -v ./...
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
