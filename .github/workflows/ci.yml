@@ -135,9 +135,6 @@ jobs:
           cache: true
           cache-dependency-path: ./server/api/go.sum
 
-      - name: Install dependencies
-        run: cd ./server/api && go mod download
-
       - name: Run unit tests in parallel with coverage
         run: |
           cd ./server/api
@@ -227,6 +224,5 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
       # Display output from the Quality Gate
-      # The possible outputs of the `quality-gate-status` variable are `PASSED`, `WARN` or `FAILED`
-      - name: "Example show SonarQube Quality Gate Status value"
+      - name: SonarQube Quality Gate status
         run: echo "The Quality Gate status is ${{ steps.sonarqube-quality-gate-check.outputs.quality-gate-status }}"
