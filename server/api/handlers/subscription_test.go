@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -61,7 +60,6 @@ func (suite *SubscriptionHandlerTestSuite) SetupSuite() {
 	// Get PostgreSQL connection string
 	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
 	assert.NoError(suite.T(), err)
-	fmt.Println("Test DB Connection String:", pgConnStr)
 
 	// Initialize database
 	suite.db, err = database.InitTestDB(pgConnStr)
@@ -95,7 +93,7 @@ func (suite *SubscriptionHandlerTestSuite) SetupSuite() {
 
 func (suite *SubscriptionHandlerTestSuite) TearDownSuite() {
 	// Clean up containers
-	if suite.dependencies != nil {
+	if !IsPackageTest && suite.dependencies != nil {
 		suite.dependencies.Teardown(suite.ctx)
 	}
 	suite.logger.Info("Tore down test suite dependencies")

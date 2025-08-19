@@ -56,13 +56,13 @@ func (suite *MessageHandlerTestSuite) SetupSuite() {
 	suite.logger = logrus.New()
 
 	// Setup test containers
-	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.logger)
+	suite.dependencies = &tests.TestDependencies{}
+	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.dependencies, suite.logger)
 	assert.NoError(suite.T(), err)
 
 	// Get PostgreSQL connection string
 	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
 	assert.NoError(suite.T(), err)
-	fmt.Println("Test DB Connection String:", pgConnStr)
 
 	// Initialize database
 	suite.db, err = database.InitTestDB(pgConnStr)
@@ -132,7 +132,7 @@ func (suite *MessageHandlerTestSuite) SetupSuite() {
 
 func (suite *MessageHandlerTestSuite) TearDownSuite() {
 	// Clean up containers
-	if suite.dependencies != nil {
+	if !IsPackageTest && suite.dependencies != nil {
 		suite.dependencies.Teardown(suite.ctx)
 	}
 	suite.logger.Info("Tore down test suite dependencies")

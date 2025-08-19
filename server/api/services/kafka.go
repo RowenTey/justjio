@@ -78,6 +78,7 @@ func (ks *kafkaService) BroadcastMessage(userIds *[]string, message modelKafka.K
 	var wg sync.WaitGroup
 	errorChan := make(chan error)
 
+	// TODO: Need to think more about this
 	for _, userId := range *userIds {
 		wg.Add(1)
 		go func(userId string) {

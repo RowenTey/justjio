@@ -158,6 +158,6 @@ func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
 		UID:        user.ID,
 	}
 
-	h.logger.Println("User " + response.Username + " authenticated via Google OAuth")
+	h.logger.Info("User " + response.Username + " authenticated via Google OAuth")
 	return utils.HandleLoginSuccess(c, "Authenticated via Google successfully", token, response)
 }

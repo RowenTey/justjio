@@ -61,7 +61,6 @@ func (suite *TransactionHandlerTestSuite) SetupSuite() {
 	// Get PostgreSQL connection string
 	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
 	assert.NoError(suite.T(), err)
-	fmt.Println("Test DB Connection String:", pgConnStr)
 
 	// Initialize database
 	suite.db, err = database.InitTestDB(pgConnStr)
@@ -103,11 +102,11 @@ func (suite *TransactionHandlerTestSuite) SetupSuite() {
 
 func (suite *TransactionHandlerTestSuite) TearDownSuite() {
 	// Clean up containers
-	if suite.dependencies != nil {
+	if !IsPackageTest && suite.dependencies != nil {
 		suite.dependencies.Teardown(suite.ctx)
 	}
-	suite.logger.Info("Tore down test suite dependencies")
 	close(suite.testNotificationChan)
+	suite.logger.Info("Tore down test suite dependencies")
 }
 
 func (suite *TransactionHandlerTestSuite) SetupTest() {
@@ -292,7 +291,7 @@ func (suite *TransactionHandlerTestSuite) TestSettleTransaction_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-	var responseBody map[string]interface{}
+	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Paid transactions successfully", responseBody["message"])
@@ -317,7 +316,7 @@ func (suite *TransactionHandlerTestSuite) TestSettleTransaction_AlreadySettled()
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), fiber.StatusConflict, resp.StatusCode)
 
-	var responseBody map[string]interface{}
+	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "transaction already settled", responseBody["message"])
@@ -333,7 +332,7 @@ func (suite *TransactionHandlerTestSuite) TestSettleTransaction_InvalidPayer() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
 
-	var responseBody map[string]interface{}
+	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "invalid payer", responseBody["message"])
@@ -349,7 +348,7 @@ func (suite *TransactionHandlerTestSuite) TestSettleTransaction_NotFound() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
 
-	var responseBody map[string]interface{}
+	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Transaction not found", responseBody["message"])

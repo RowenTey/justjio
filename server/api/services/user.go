@@ -53,7 +53,7 @@ func (s *UserService) GetUsersByID(userIds *[]uint) (*[]model.User, error) {
 	return s.userRepo.FindByIDs(userIds)
 }
 
-func (s *UserService) UpdateUserField(userid string, field string, value interface{}) error {
+func (s *UserService) UpdateUserField(userid string, field string, value any) error {
 	user, err := s.userRepo.FindByID(userid)
 	if err != nil {
 		return err

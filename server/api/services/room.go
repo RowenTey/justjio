@@ -434,7 +434,7 @@ func (rs *RoomService) QueryVenue(query string) (*[]modelLocation.Venue, error) 
 		return nil, errors.New("location query cannot be empty")
 	}
 
-	requestBody := map[string]interface{}{
+	requestBody := map[string]any{
 		"input":               query,
 		"includedRegionCodes": []string{"sg", "my"},
 	}
@@ -475,24 +475,24 @@ func (rs *RoomService) QueryVenue(query string) (*[]modelLocation.Venue, error) 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %v", err)
 	}
-	suggestions, _ := response["suggestions"].([]interface{})
+	suggestions, _ := response["suggestions"].([]any)
 
 	// Extract the predictions
 	var predictions []modelLocation.Venue
 	for _, suggestion := range suggestions {
-		suggestionMap, ok := suggestion.(map[string]interface{})
+		suggestionMap, ok := suggestion.(map[string]any)
 		if !ok {
 			continue
 		}
 
 		// Check for place prediction
-		placePrediction, exists := suggestionMap["placePrediction"].(map[string]interface{})
+		placePrediction, exists := suggestionMap["placePrediction"].(map[string]any)
 		if !exists {
 			continue
 		}
 
 		var venue modelLocation.Venue
-		if text, exists := placePrediction["text"].(map[string]interface{}); exists {
+		if text, exists := placePrediction["text"].(map[string]any); exists {
 			if address, ok := text["text"].(string); ok {
 				venue.Address = address
 			}
@@ -502,8 +502,8 @@ func (rs *RoomService) QueryVenue(query string) (*[]modelLocation.Venue, error) 
 			venue.GoogleMapsPlaceID = placeId
 		}
 
-		if structuredFormat, exists := placePrediction["structuredFormat"].(map[string]interface{}); exists {
-			if mainText, exists := structuredFormat["mainText"].(map[string]interface{}); exists {
+		if structuredFormat, exists := placePrediction["structuredFormat"].(map[string]any); exists {
+			if mainText, exists := structuredFormat["mainText"].(map[string]any); exists {
 				if name, ok := mainText["text"].(string); ok {
 					venue.Name = name
 				}

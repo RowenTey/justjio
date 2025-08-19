@@ -57,7 +57,6 @@ func (suite *NotificationHandlerTestSuite) SetupSuite() {
 	// Get PostgreSQL connection string
 	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
 	assert.NoError(suite.T(), err)
-	fmt.Println("Test DB Connection String:", pgConnStr)
 
 	// Initialize database
 	suite.db, err = database.InitTestDB(pgConnStr)
@@ -95,11 +94,11 @@ func (suite *NotificationHandlerTestSuite) SetupSuite() {
 
 func (suite *NotificationHandlerTestSuite) TearDownSuite() {
 	// Clean up containers
-	if suite.dependencies != nil {
+	if !IsPackageTest && suite.dependencies != nil {
 		suite.dependencies.Teardown(suite.ctx)
 	}
-	suite.logger.Info("Tore down test suite dependencies")
 	close(suite.testNotificationChan)
+	suite.logger.Info("Tore down test suite dependencies")
 }
 
 func (suite *NotificationHandlerTestSuite) SetupTest() {

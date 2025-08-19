@@ -18,9 +18,7 @@ type TestDependencies struct {
 	KafkaContainer    *kafka.KafkaContainer
 }
 
-func SetupTestDependencies(ctx context.Context, logger *logrus.Logger) (*TestDependencies, error) {
-	testDep := &TestDependencies{}
-
+func SetupTestDependencies(ctx context.Context, testDep *TestDependencies, logger *logrus.Logger) (*TestDependencies, error) {
 	// Setup PostgreSQL
 	testDep, err := SetupPgDependency(ctx, testDep, logger)
 	if err != nil {
@@ -38,7 +36,8 @@ func SetupTestDependencies(ctx context.Context, logger *logrus.Logger) (*TestDep
 
 func SetupPgDependency(ctx context.Context, testDep *TestDependencies, logger *logrus.Logger) (*TestDependencies, error) {
 	// Setup PostgreSQL
-	pgContainer, err := postgres.Run(ctx,
+	pgContainer, err := postgres.Run(
+		ctx,
 		"postgres:15",
 		postgres.WithDatabase("testdb"),
 		postgres.WithUsername("postgres"),
@@ -47,6 +46,12 @@ func SetupPgDependency(ctx context.Context, testDep *TestDependencies, logger *l
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).
 				WithStartupTimeout(5*time.Second)),
+		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Name: "test-postgres",
+			},
+			Reuse: true,
+		}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start postgres container: %w", err)
@@ -59,13 +64,20 @@ func SetupPgDependency(ctx context.Context, testDep *TestDependencies, logger *l
 
 func SetupKafkaDependency(ctx context.Context, testDep *TestDependencies, logger *logrus.Logger) (*TestDependencies, error) {
 	// Setup Kafka
-	kafkaContainer, err := kafka.Run(ctx,
+	kafkaContainer, err := kafka.Run(
+		ctx,
 		"confluentinc/cp-kafka:7.8.0",
 		kafka.WithClusterID("test-cluster"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Kafka Server started").
 				WithOccurrence(1).
 				WithStartupTimeout(5*time.Second)),
+		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Name: "test-kafka",
+			},
+			Reuse: true,
+		}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to start kafka container: %w", err)

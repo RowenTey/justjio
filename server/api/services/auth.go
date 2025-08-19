@@ -111,7 +111,7 @@ func (s *AuthService) Login(username, password string) (string, *model.User, err
 		return "", nil, err
 	}
 
-	// TODO: Create on sign up instead of login?m
+	// TODO: Create on sign up instead of login?
 	// create user channel when login
 	go func() {
 		channel := fmt.Sprintf("user-%d", user.ID)

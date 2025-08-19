@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -48,13 +47,13 @@ func (suite *AuthHandlerTestSuite) SetupSuite() {
 	suite.logger = logrus.New()
 
 	// Setup test containers
-	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.logger)
+	suite.dependencies = &tests.TestDependencies{}
+	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.dependencies, suite.logger)
 	assert.NoError(suite.T(), err)
 
 	// Get PostgreSQL connection string
 	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
 	assert.NoError(suite.T(), err)
-	fmt.Println(pgConnStr)
 
 	// Initialize database
 	suite.db, err = database.InitTestDB(pgConnStr)
@@ -82,7 +81,10 @@ func (suite *AuthHandlerTestSuite) SetupSuite() {
 
 func (suite *AuthHandlerTestSuite) TearDownSuite() {
 	// Clean up containers
-	suite.dependencies.Teardown(suite.ctx)
+	if !IsPackageTest && suite.dependencies != nil {
+		suite.dependencies.Teardown(suite.ctx)
+	}
+	suite.logger.Info("Tore down test suite dependencies")
 }
 
 func (suite *AuthHandlerTestSuite) SetupTest() {

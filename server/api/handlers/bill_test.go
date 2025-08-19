@@ -52,6 +52,8 @@ func (suite *BillHandlerTestSuite) SetupSuite() {
 	var err error
 	suite.logger = logrus.New()
 
+	suite.logger.Infof("Setting up test suite for bill with IsPackageTest %v", IsPackageTest)
+
 	// Setup test containers
 	suite.dependencies = &tests.TestDependencies{}
 	suite.dependencies, err = tests.SetupPgDependency(suite.ctx, suite.dependencies, suite.logger)
@@ -60,7 +62,6 @@ func (suite *BillHandlerTestSuite) SetupSuite() {
 	// Get PostgreSQL connection string
 	pgConnStr, err := suite.dependencies.PostgresContainer.ConnectionString(suite.ctx)
 	assert.NoError(suite.T(), err)
-	fmt.Println("Test DB Connection String:", pgConnStr)
 
 	// Initialize database
 	suite.db, err = database.InitTestDB(pgConnStr)
@@ -102,7 +103,7 @@ func (suite *BillHandlerTestSuite) SetupSuite() {
 
 func (suite *BillHandlerTestSuite) TearDownSuite() {
 	// Clean up containers
-	if suite.dependencies != nil {
+	if !IsPackageTest && suite.dependencies != nil {
 		suite.dependencies.Teardown(suite.ctx)
 	}
 	suite.logger.Info("Tore down test suite dependencies")
