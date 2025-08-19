@@ -28,6 +28,7 @@ type NotificationServiceTestSuite struct {
 }
 
 func TestNotificationServiceSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(NotificationServiceTestSuite))
 }
 

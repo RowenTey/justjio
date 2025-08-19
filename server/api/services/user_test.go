@@ -31,6 +31,7 @@ type UserServiceTestSuite struct {
 }
 
 func TestUserServiceSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(UserServiceTestSuite))
 }
 

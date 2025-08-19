@@ -31,6 +31,7 @@ type TransactionServiceTestSuite struct {
 }
 
 func TestTransactionServiceSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(TransactionServiceTestSuite))
 }
 

@@ -33,6 +33,7 @@ type BillServiceTestSuite struct {
 }
 
 func TestBillServiceSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(BillServiceTestSuite))
 }
 

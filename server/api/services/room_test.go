@@ -41,6 +41,7 @@ type RoomServiceTestSuite struct {
 }
 
 func TestRoomServiceSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(RoomServiceTestSuite))
 }
 

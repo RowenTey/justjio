@@ -27,6 +27,7 @@ type SubscriptionServiceTestSuite struct {
 }
 
 func TestSubscriptionServiceSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(SubscriptionServiceTestSuite))
 }
 

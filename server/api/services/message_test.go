@@ -33,6 +33,7 @@ type MessageServiceTestSuite struct {
 }
 
 func TestMessageServiceSuite(t *testing.T) {
+	t.Parallel()
 	suite.Run(t, new(MessageServiceTestSuite))
 }
 
