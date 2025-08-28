@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
+	pushNotificationsModel "github.com/RowenTey/JustJio/server/api/dto/push_notifications"
+	"github.com/RowenTey/JustJio/server/api/dto/request"
 	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/model"
-	pushNotificationsModel "github.com/RowenTey/JustJio/server/api/model/push_notifications"
-	"github.com/RowenTey/JustJio/server/api/model/request"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/tests"

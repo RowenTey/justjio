@@ -1,7 +1,7 @@
 package services
 
 import (
-	kafkaModel "github.com/RowenTey/JustJio/server/api/model/kafka"
+	kafkaModel "github.com/RowenTey/JustJio/server/api/dto/kafka"
 	"github.com/stretchr/testify/mock"
 )
 

@@ -6,7 +6,7 @@ import (
 
 type Message struct {
 	ID       uint      `gorm:"primaryKey" json:"id"`
-	RoomID   string    `gorm:"primaryKey; autoIncrement:false; type:uuid" json:"roomId"`
+	RoomID   string    `gorm:"type:uuid" json:"roomId"`
 	SenderID uint      `gorm:"not null" json:"senderId"`
 	Content  string    `gorm:"not null" json:"content"`
 	SentAt   time.Time `gorm:"autoCreateTime" json:"sentAt"`

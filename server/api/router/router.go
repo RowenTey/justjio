@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	"github.com/RowenTey/JustJio/server/api/config"
+	pushNotificationModel "github.com/RowenTey/JustJio/server/api/dto/push_notifications"
 	"github.com/RowenTey/JustJio/server/api/handlers"
 	"github.com/RowenTey/JustJio/server/api/middleware"
-	pushNotificationModel "github.com/RowenTey/JustJio/server/api/model/push_notifications"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"

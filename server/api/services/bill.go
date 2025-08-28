@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"errors"
 	"time"
 
@@ -127,7 +128,7 @@ func (bs *BillService) GetRoomBillConsolidationStatus(roomId string) (repository
 }
 
 func (bs *BillService) ConsolidateBills(roomId, userId string) error {
-	return database.RunInTransaction(bs.db, func(tx *gorm.DB) error {
+	return database.RunInTransaction(bs.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		roomRepoTx := bs.roomRepo.WithTx(tx)
 		billRepoTx := bs.billRepo.WithTx(tx)
 		transactionRepoTx := bs.transactionRepo.WithTx(tx)

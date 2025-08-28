@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,9 +12,9 @@ import (
 	"strconv"
 
 	"github.com/RowenTey/JustJio/server/api/database"
+	modelLocation "github.com/RowenTey/JustJio/server/api/dto/location"
+	"github.com/RowenTey/JustJio/server/api/dto/request"
 	"github.com/RowenTey/JustJio/server/api/model"
-	modelLocation "github.com/RowenTey/JustJio/server/api/model/location"
-	"github.com/RowenTey/JustJio/server/api/model/request"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/utils"
 	"github.com/sirupsen/logrus"
@@ -67,7 +68,7 @@ func (rs *RoomService) CreateRoomWithInvites(
 	room *model.Room, userId string, inviteesIds *[]uint) (*model.Room, *[]model.RoomInvite, error) {
 	var invites []model.RoomInvite
 
-	if err := database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
+	if err := database.RunInTransaction(rs.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		userRepoTx := rs.userRepo.WithTx(tx)
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 
@@ -181,7 +182,7 @@ func (rs *RoomService) UpdateRoom(updateReq *request.UpdateRoomRequest, roomId, 
 }
 
 func (rs *RoomService) CloseRoom(roomId string, userId string) error {
-	return database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
+	return database.RunInTransaction(rs.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 		billRepoTx := rs.billRepo.WithTx(tx)
 
@@ -215,7 +216,7 @@ func (rs *RoomService) UpdateRoomInviteStatus(roomId string, userId string, stat
 		return ErrInvalidRoomStatus
 	}
 
-	return database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
+	return database.RunInTransaction(rs.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 		userRepoTx := rs.userRepo.WithTx(tx)
 
@@ -353,7 +354,7 @@ func (rs *RoomService) InviteUsersToRoom(
 	roomId string, inviterId string, inviteesIds *[]uint) (*[]model.RoomInvite, error) {
 	var roomInvites []model.RoomInvite
 
-	err := database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
+	err := database.RunInTransaction(rs.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 		userRepoTx := rs.userRepo.WithTx(tx)
 
@@ -396,7 +397,7 @@ func (rs *RoomService) InviteUsersToRoom(
 }
 
 func (rs *RoomService) LeaveRoom(roomId string, userId string) error {
-	return database.RunInTransaction(rs.db, func(tx *gorm.DB) error {
+	return database.RunInTransaction(rs.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 		billRepoTx := rs.billRepo.WithTx(tx)
 

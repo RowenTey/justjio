@@ -8,7 +8,7 @@ import (
 
 type User struct {
 	ID           uint      `gorm:"primaryKey" json:"id"`
-	Username     string    `gorm:"index:username_idx, class:FULLTEXT, unique; not null" json:"username"`
+	Username     string    `gorm:"unique; not null" json:"username"`
 	Email        string    `gorm:"unique; not null" json:"email"`
 	Password     string    `gorm:"not null" json:"password"`
 	PictureUrl   string    `gorm:"default:'https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg'" json:"pictureUrl"`

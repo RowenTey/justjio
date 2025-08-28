@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"errors"
 	"strconv"
 	"time"
@@ -140,7 +141,7 @@ func (s *UserService) SendFriendRequest(senderID, receiverID uint) error {
 
 // TODO: Test if addFriend will throw error for non-existing users
 func (s *UserService) AcceptFriendRequest(requestID uint) error {
-	return database.RunInTransaction(s.db, func(tx *gorm.DB) error {
+	return database.RunInTransaction(s.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		userRepoTx := s.userRepo.WithTx(tx)
 
 		request, err := userRepoTx.FindFriendRequest(requestID)

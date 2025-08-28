@@ -10,6 +10,7 @@ import (
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
 	"github.com/RowenTey/JustJio/server/api/worker"
+	"github.com/sirupsen/logrus"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -21,6 +22,7 @@ func main() {
 	}
 
 	logger := utils.InitLogger(env)
+	logger.SetLevel(logrus.InfoLevel)
 
 	conf, err := config.LoadConfig()
 	if err != nil {
