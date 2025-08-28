@@ -7,6 +7,8 @@ x-common-healthcheck: &common-healthcheck
 
 services:
   frontend:
+    profiles:
+      - full
     image: ghcr.io/rowentey/justjio/web:latest
     build:
       context: ../client
@@ -30,6 +32,8 @@ services:
       <<: *common-healthcheck
 
   api-server:
+    profiles:
+      - full
     image: ghcr.io/rowentey/justjio/api:latest
     build:
       context: ../../server/api
@@ -68,6 +72,8 @@ services:
       <<: *common-healthcheck
 
   ws-server:
+    profiles:
+      - full
     image: ghcr.io/rowentey/justjio/ws:latest
     build:
       context: ../../server/ws
@@ -87,37 +93,38 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8081/ping || exit 1"]
       <<: *common-healthcheck
-
+      
   kafka:
     image: confluentinc/cp-kafka:latest
-    ports:
-      - "9092:9092"
     restart: unless-stopped
     environment:
-      KAFKA_BROKER_ID: 0
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Bob is internal docker network listener
-      # Fred is external listener
-      KAFKA_ADVERTISED_LISTENERS: LISTENER_BOB://kafka:29092,LISTENER_FRED://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_BOB:PLAINTEXT,LISTENER_FRED:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_BOB
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
-      # KAFKA_LISTENERS: LISTENER_BOB://kafka:29092,LISTENER_FRED://kafka:9092
-      # KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
-    depends_on:
-      - zookeeper
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+      KAFKA_KRAFT_MODE: "true" 
+      KAFKA_PROCESS_ROLES: controller,broker 
+      KAFKA_NODE_ID: 1 
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9093" 
+      KAFKA_LISTENERS: INNER://kafka:29092,PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INNER:PLAINTEXT,PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_ADVERTISED_LISTENERS: INNER://kafka:29092,PLAINTEXT://localhost:9092
+      KAFKA_LOG_DIRS: /var/lib/kafka/data 
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true" 
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1 
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0 
+      CLUSTER_ID: "Mk3OEYBSD34fcwNTJENDM2Qk" 
+    volumes:
+      - justjio-kafka-data:/var/lib/kafka/data
     ports:
-      - "2181:2181"
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      - "9092:9092"
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "kafka:29092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   postgres:
-    image: postgres:15
+    image: postgres:17
     restart: unless-stopped
     environment:
       PG_USER: postgres
@@ -137,13 +144,14 @@ services:
   #   ports:
   #     - "6379:6379"
 
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   ports:
-  #     - "5050:80"
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: admin@test.com
-  #     PGADMIN_DEFAULT_PASSWORD: admin
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@test.com
+      PGADMIN_DEFAULT_PASSWORD: admin
 
 volumes:
   justjio-postgres-data:
+  justjio-kafka-data:

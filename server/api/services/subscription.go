@@ -7,7 +7,7 @@ import (
 	"github.com/SherClockHolmes/webpush-go"
 	"github.com/sirupsen/logrus"
 
-	pushNotificationModel "github.com/RowenTey/JustJio/server/api/model/push_notifications"
+	pushNotificationModel "github.com/RowenTey/JustJio/server/api/dto/push_notifications"
 )
 
 type SubscriptionService struct {

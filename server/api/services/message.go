@@ -1,11 +1,12 @@
 package services
 
 import (
+	"database/sql"
 	"math"
 	"time"
 
 	"github.com/RowenTey/JustJio/server/api/database"
-	kafkaModel "github.com/RowenTey/JustJio/server/api/model/kafka"
+	kafkaModel "github.com/RowenTey/JustJio/server/api/dto/kafka"
 	"gorm.io/gorm"
 
 	"github.com/RowenTey/JustJio/server/api/model"
@@ -46,7 +47,7 @@ func NewMessageService(
 
 func (ms *MessageService) SaveMessage(
 	roomId string, senderId string, roomUserIds *[]string, content string) error {
-	return database.RunInTransaction(ms.db, func(tx *gorm.DB) error {
+	return database.RunInTransaction(ms.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		roomRepoTx := ms.roomRepo.WithTx(tx)
 		userRepoTx := ms.userRepo.WithTx(tx)
 		messageRepoTx := ms.messageRepo.WithTx(tx)

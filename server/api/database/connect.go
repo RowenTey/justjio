@@ -6,10 +6,13 @@ import (
 	"github.com/sirupsen/logrus"
 
 	config "github.com/RowenTey/JustJio/server/api/config"
-	model "github.com/RowenTey/JustJio/server/api/model"
 
-	"gorm.io/driver/postgres"
+	gormPostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
+
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func ConnectDB(conf *config.Config, logger *logrus.Logger) *gorm.DB {
@@ -23,7 +26,7 @@ func ConnectDB(conf *config.Config, logger *logrus.Logger) *gorm.DB {
 		conf.DB.Port,
 		conf.DB.Database,
 	)
-	dbConn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	dbConn, err := gorm.Open(gormPostgres.Open(dsn), &gorm.Config{
 		TranslateError: true,
 	})
 	if err != nil {
@@ -41,18 +44,25 @@ func ConnectDB(conf *config.Config, logger *logrus.Logger) *gorm.DB {
 }
 
 func Migrate(db *gorm.DB) error {
-	return db.AutoMigrate(
-		&model.User{},
-		&model.FriendRequest{},
-		&model.Room{},
-		&model.RoomInvite{},
-		&model.Bill{},
-		&model.Consolidation{},
-		&model.Transaction{},
-		&model.Message{},
-		&model.Notification{},
-		&model.Subscription{},
-	)
+	sqlConn, err := db.DB()
+	if err != nil {
+		return err
+	}
+
+	driver, err := postgres.WithInstance(sqlConn, &postgres.Config{})
+	if err != nil {
+		return err
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"postgres",
+		driver)
+	if err != nil {
+		return err
+	}
+
+	return m.Up()
 }
 
 func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
@@ -74,11 +84,7 @@ func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 }
 
 func InitTestDB(dsn string) (*gorm.DB, error) {
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	return gorm.Open(gormPostgres.Open(dsn), &gorm.Config{
 		TranslateError: true,
 	})
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
 }

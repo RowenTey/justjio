@@ -3,7 +3,7 @@ package handlers
 import (
 	"errors"
 
-	"github.com/RowenTey/JustJio/server/api/model/request"
+	"github.com/RowenTey/JustJio/server/api/dto/request"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"

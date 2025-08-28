@@ -6,14 +6,19 @@ import (
 	"gorm.io/gorm"
 )
 
+type Consolidation struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"createdAt"`
+}
+
 type Bill struct {
 	ID              uint      `gorm:"primaryKey" json:"id"`
 	Name            string    `gorm:"not null" json:"name"`
 	Amount          float32   `gorm:"not null" json:"amount"`
 	Date            time.Time `gorm:"not null" json:"date"`
 	IncludeOwner    bool      `gorm:"default:true" json:"includeOwner"`
-	RoomID          string    `gorm:"primaryKey; autoIncrement:false; type:uuid" json:"roomId"`
-	OwnerID         uint      `gorm:"primaryKey; autoIncrement:false;" json:"ownerId"`
+	RoomID          string    `gorm:"not null; type:uuid" json:"roomId"`
+	OwnerID         uint      `gorm:"not null" json:"ownerId"`
 	ConsolidationID uint      `gorm:"default:null" json:"consolidationId"`
 
 	// Associations
@@ -23,14 +28,9 @@ type Bill struct {
 	Payers        []User        `gorm:"many2many:payers" json:"payers"`
 }
 
-type Consolidation struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	CreatedAt time.Time `gorm:"autoCreateTime" json:"createdAt"`
-}
-
 type Transaction struct {
 	ID              uint      `gorm:"primaryKey" json:"id"`
-	ConsolidationID uint      `gorm:"primaryKey; autoIncrement:false;" json:"consolidationId"`
+	ConsolidationID uint      `gorm:"not null" json:"consolidationId"`
 	PayerID         uint      `gorm:"not null" json:"payerId"`
 	PayeeID         uint      `gorm:"not null" json:"payeeId"`
 	Amount          float32   `gorm:"not null" json:"amount"`

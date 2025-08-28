@@ -1,0 +1,25 @@
+DROP TABLE IF EXISTS users;
+
+DROP TABLE IF EXISTS friend_requests;
+
+DROP TABLE IF EXISTS user_friends;
+
+DROP TABLE IF EXISTS rooms;
+
+DROP TABLE IF EXISTS room_users;
+
+DROP TABLE IF EXISTS room_invites;
+
+DROP TABLE IF EXISTS messages;
+
+DROP TABLE IF EXISTS consolidations;
+
+DROP TABLE IF EXISTS bills;
+
+DROP TABLE IF EXISTS payers;
+
+DROP TABLE IF EXISTS transactions;
+
+DROP TABLE IF EXISTS notifications;
+
+DROP TABLE IF EXISTS subscriptions;

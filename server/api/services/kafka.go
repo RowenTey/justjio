@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/config"
-	modelKafka "github.com/RowenTey/JustJio/server/api/model/kafka"
+	modelKafka "github.com/RowenTey/JustJio/server/api/dto/kafka"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )

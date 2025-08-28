@@ -183,6 +183,7 @@ func (r *userRepository) AddFriend(userID, friendID uint) error {
 }
 
 // RemoveFriend removes a friend from a user's friend list.
+// TODO: Test this more
 func (r *userRepository) RemoveFriend(userID, friendID uint) error {
 	user := model.User{ID: userID}
 	friend := model.User{ID: friendID}

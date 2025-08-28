@@ -1,10 +1,16 @@
 package database
 
-import "gorm.io/gorm"
+import (
+	"database/sql"
+
+	"gorm.io/gorm"
+)
 
 // RunInTransaction executes the provided function within a database transaction.
-func RunInTransaction(db *gorm.DB, fn func(tx *gorm.DB) error) error {
-	tx := db.Begin()
+func RunInTransaction(db *gorm.DB, isolationLevel sql.IsolationLevel, fn func(tx *gorm.DB) error) error {
+	tx := db.Begin(&sql.TxOptions{
+		Isolation: isolationLevel,
+	})
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()

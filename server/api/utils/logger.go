@@ -16,6 +16,7 @@ func InitLogger(env string) *log.Logger {
 	} else {
 		logger.SetLevel(log.InfoLevel)
 	}
+
 	return logger
 }
 

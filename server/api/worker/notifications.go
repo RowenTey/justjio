@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/config"
-	pushNotifications "github.com/RowenTey/JustJio/server/api/model/push_notifications"
+	pushNotifications "github.com/RowenTey/JustJio/server/api/dto/push_notifications"
 	"github.com/SherClockHolmes/webpush-go"
 )
 
