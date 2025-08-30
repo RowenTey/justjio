@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"errors"
-
 	"github.com/RowenTey/JustJio/server/api/model"
 	"gorm.io/gorm"
 )
@@ -44,7 +42,8 @@ func (r *billRepository) WithTx(tx *gorm.DB) BillRepository {
 }
 
 func (r *billRepository) Create(bill *model.Bill) error {
-	return r.db.Omit("Room", "Owner").Create(bill).Error
+	// return r.db.Omit("Room", "Owner").Create(bill).Error
+	return r.db.Create(bill).Error
 }
 
 func (r *billRepository) FindByID(billID uint) (*model.Bill, error) {
@@ -68,26 +67,28 @@ func (r *billRepository) DeleteByRoom(roomID string) error {
 }
 
 func (r *billRepository) GetRoomBillConsolidationStatus(roomID string) (Status, error) {
-	var bill *model.Bill
-	err := r.db.Where("room_id = ?", roomID).First(&bill).Error
-	// bill found -> check if consolidation ID is set
-	if err == nil && bill.ConsolidationID != 0 {
+	var room *model.Room
+	err := r.db.Model(&model.Room{ID: roomID}).First(&room).Error
+	if err != nil {
+		return UNCONSOLIDATED, err
+	}
+
+	switch room.Consolidated {
+	case "CONSOLIDATED":
 		return CONSOLIDATED, nil
-	} else if err == nil && bill.ConsolidationID == 0 {
+	case "NO_BILLS":
+		return NO_BILLS, nil
+	case "UNCONSOLIDATED":
+		return UNCONSOLIDATED, nil
+	default:
 		return UNCONSOLIDATED, nil
 	}
-
-	// record not found -> no bills in room
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return NO_BILLS, nil
-	}
-
-	return NO_BILLS, err
 }
 
 func (r *billRepository) ConsolidateBills(roomID string) (*model.Consolidation, error) {
 	// Create empty struct as fields will be auto populated by DB
 	consolidation := model.Consolidation{}
+
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		if err := r.db.
 			Model(&model.Consolidation{}).

@@ -20,13 +20,13 @@ func (m *MockMessageRepository) Create(message *model.Message) error {
 	return args.Error(0)
 }
 
-func (m *MockMessageRepository) FindByID(msgID, roomID string) (*model.Message, error) {
-	args := m.Called(msgID, roomID)
+func (m *MockMessageRepository) FindByID(msgID string) (*model.Message, error) {
+	args := m.Called(msgID)
 	return args.Get(0).(*model.Message), args.Error(1)
 }
 
-func (m *MockMessageRepository) Delete(msgID, roomID string) error {
-	args := m.Called(msgID, roomID)
+func (m *MockMessageRepository) Delete(msgID string) error {
+	args := m.Called(msgID)
 	return args.Error(0)
 }
 

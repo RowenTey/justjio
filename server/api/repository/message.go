@@ -10,8 +10,8 @@ type MessageRepository interface {
 	WithTx(tx *gorm.DB) MessageRepository
 
 	Create(message *model.Message) error
-	FindByID(msgID, roomID string) (*model.Message, error)
-	Delete(msgID, roomID string) error
+	FindByID(msgID string) (*model.Message, error)
+	Delete(msgID string) error
 	DeleteByRoom(roomID string) error
 	CountByRoom(roomID string) (int64, error)
 	FindByRoom(roomId string, page int, pageSize int, asc bool) (*[]model.Message, error)
@@ -35,21 +35,21 @@ func (r *messageRepository) WithTx(tx *gorm.DB) MessageRepository {
 
 func (r *messageRepository) Create(message *model.Message) error {
 	return r.db.
-		Omit("Room", "Sender").
+		// Omit("Room", "Sender").
 		Create(message).Error
 }
 
-func (r *messageRepository) FindByID(msgID, roomID string) (*model.Message, error) {
+func (r *messageRepository) FindByID(msgID string) (*model.Message, error) {
 	var message model.Message
 	err := r.db.
-		Where("id = ? AND room_id = ?", msgID, roomID).
+		Where("id = ?", msgID).
 		First(&message).Error
 	return &message, err
 }
 
-func (r *messageRepository) Delete(msgID, roomID string) error {
+func (r *messageRepository) Delete(msgID string) error {
 	return r.db.
-		Where("id = ? AND room_id = ?", msgID, roomID).
+		Where("id = ?", msgID).
 		Delete(&model.Message{}).Error
 }
 

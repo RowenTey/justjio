@@ -28,10 +28,9 @@ func NewMessageHandler(
 }
 
 func (h *MessageHandler) GetMessage(c *fiber.Ctx) error {
-	roomId := c.Params("roomId")
 	msgId := c.Params("msgId")
 
-	message, err := h.messageService.GetMessageById(msgId, roomId)
+	message, err := h.messageService.GetMessageById(msgId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No message found")
 	}

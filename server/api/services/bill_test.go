@@ -78,7 +78,7 @@ func (s *BillServiceTestSuite) TestCreateBill_Success() {
 	}
 
 	// Mock expectations
-	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.NO_BILLS, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.CONSOLIDATED, nil)
 	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
 	s.mockUserRepo.On("FindByID", ownerId).Return(owner, nil)
 	s.mockUserRepo.On("FindByIDs", &payersId).Return(&payers, nil)
@@ -132,7 +132,7 @@ func (s *BillServiceTestSuite) TestCreateBill_EmptyPayers() {
 	emptyPayers := []uint{}
 
 	// Mock expectations
-	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.NO_BILLS, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.CONSOLIDATED, nil)
 
 	// Execute
 	bill, err := s.billService.CreateBill(roomId, ownerId, &emptyPayers, "Dinner", 100.50, true)
@@ -224,7 +224,7 @@ func (s *BillServiceTestSuite) TestConsolidateBills_Success() {
 
 	// Mock expectations
 	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
-	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.NO_BILLS, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.CONSOLIDATED, nil)
 	s.mockBillRepo.On("ConsolidateBills", roomId).Return(consolidation, nil)
 	s.mockBillRepo.On("FindByConsolidation", consolidation.ID).Return(&bills, nil)
 	s.mockTransactionSvc.On("GenerateTransactions", &bills, consolidation).Return(transaction, nil)

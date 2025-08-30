@@ -57,16 +57,16 @@ func (s *NotificationService) CreateNotification(userId, title, content string) 
 }
 
 // MarkNotificationAsRead updates a notification's read status
-func (s *NotificationService) MarkNotificationAsRead(notificationId, userId uint) error {
-	if _, err := s.notificationRepo.FindByIDAndUser(notificationId, userId); err != nil {
+func (s *NotificationService) MarkNotificationAsRead(notificationId uint) error {
+	if _, err := s.notificationRepo.FindByID(notificationId); err != nil {
 		return err
 	}
-	return s.notificationRepo.MarkAsRead(notificationId, userId)
+	return s.notificationRepo.MarkAsRead(notificationId)
 }
 
 // GetNotification retrieves a notification by ID
-func (s *NotificationService) GetNotification(notificationId, userId uint) (*model.Notification, error) {
-	return s.notificationRepo.FindByIDAndUser(notificationId, userId)
+func (s *NotificationService) GetNotification(notificationId uint) (*model.Notification, error) {
+	return s.notificationRepo.FindByID(notificationId)
 }
 
 // GetNotifications retrieves all notifications for a user

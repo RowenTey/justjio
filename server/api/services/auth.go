@@ -97,19 +97,25 @@ func (s *AuthService) SignUp(newUser *model.User, otpMap *sync.Map) (*model.User
 }
 
 func (s *AuthService) Login(username, password string) (string, *model.User, error) {
+	start := time.Now()
 	user, err := s.userService.GetUserByUsername(username)
 	if err != nil {
 		return "", nil, err
 	}
+	s.logger.Infof("Time taken to find user: %v", time.Since(start))
 
+	start = time.Now()
 	if !utils.CheckPasswordHash(password, user.Password) {
 		return "", nil, ErrPasswordDoesNotMatch
 	}
+	s.logger.Infof("Time taken to check password: %v", time.Since(start))
 
+	start = time.Now()
 	token, err := s.CreateToken(user)
 	if err != nil {
 		return "", nil, err
 	}
+	s.logger.Infof("Time taken to create token: %v", time.Since(start))
 
 	// TODO: Create on sign up instead of login?
 	// create user channel when login

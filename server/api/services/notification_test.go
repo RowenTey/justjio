@@ -116,14 +116,14 @@ func (s *NotificationServiceTestSuite) TestMarkNotificationAsRead_Success() {
 	userId := uint(1)
 
 	// Mock expectations
-	s.mockNotificationRepo.On("FindByIDAndUser", notificationId, userId).Return(&model.Notification{
+	s.mockNotificationRepo.On("FindByID", notificationId).Return(&model.Notification{
 		ID:     notificationId,
 		UserID: userId,
 	}, nil)
-	s.mockNotificationRepo.On("MarkAsRead", notificationId, userId).Return(nil)
+	s.mockNotificationRepo.On("MarkAsRead", notificationId).Return(nil)
 
 	// Execute
-	err := s.notificationService.MarkNotificationAsRead(notificationId, userId)
+	err := s.notificationService.MarkNotificationAsRead(notificationId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -143,10 +143,10 @@ func (s *NotificationServiceTestSuite) TestGetNotification_Success() {
 	}
 
 	// Mock expectations
-	s.mockNotificationRepo.On("FindByIDAndUser", notificationId, userId).Return(expectedNotification, nil)
+	s.mockNotificationRepo.On("FindByID", notificationId).Return(expectedNotification, nil)
 
 	// Execute
-	result, err := s.notificationService.GetNotification(notificationId, userId)
+	result, err := s.notificationService.GetNotification(notificationId)
 
 	// Assertions
 	assert.NoError(s.T(), err)

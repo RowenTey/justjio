@@ -364,7 +364,7 @@ func (s *RoomServiceTestSuite) TestCloseRoom_Success() {
 	s.mockBillRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockBillRepo)
 
 	// Mock expectations
-	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.NO_BILLS, nil)
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.CONSOLIDATED, nil)
 	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
 	s.mockRoomRepo.On("UpdateRoom", mock.AnythingOfType("*model.Room")).Return(nil)
 	s.mockRoomRepo.On("DeletePendingInvites", roomId).Return(nil)
@@ -427,7 +427,8 @@ func (s *RoomServiceTestSuite) TestCloseRoom_UnconsolidatedBills() {
 	s.mockBillRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockBillRepo)
 	s.mockRoomRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockRoomRepo)
 
-	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.UNCONSOLIDATED, nil) // Simulate unconsolidated bills
+	// Simulate unconsolidated bills
+	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.UNCONSOLIDATED, nil)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()

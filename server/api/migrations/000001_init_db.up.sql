@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS rooms (
     description TEXT NOT NULL,
     host_id BIGINT NOT NULL,
     attendees_count INT DEFAULT 1,
-    consolidated BOOLEAN DEFAULT FALSE,
+    consolidated VARCHAR(50) DEFAULT 'NO_BILLS', 
     is_closed BOOLEAN DEFAULT FALSE,
     is_private BOOLEAN DEFAULT FALSE,
     image_url VARCHAR(255) NOT NULL,

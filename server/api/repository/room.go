@@ -73,9 +73,8 @@ func (r *roomRepository) GetUserRooms(userID string, page int, pageSize int) (*[
 func (r *roomRepository) CountUserRooms(userID string) (int64, error) {
 	var count int64
 	err := r.db.
-		Model(&model.Room{}).
-		Joins("JOIN room_users ON rooms.id = room_users.room_id").
-		Where("room_users.user_id = ?", userID).
+		Table("room_users").
+		Where("user_id = ?", userID).
 		Count(&count).Error
 	return count, err
 }
@@ -105,18 +104,16 @@ func (r *roomRepository) GetRoomAttendees(roomID string) (*[]model.User, error) 
 func (r *roomRepository) GetRoomAttendeeIDs(roomID string) (*[]string, error) {
 	var userIds []string
 	err := r.db.
-		Table("users").
-		Joins("JOIN room_users ON room_users.user_id = users.id").
+		Table("room_users").
 		Where("room_users.room_id = ?", roomID).
-		Select("users.id").
+		Select("room_users.user_id").
 		Find(&userIds).Error
 	return &userIds, err
 }
 
 func (r *roomRepository) CloseRoom(roomID string) error {
 	return r.db.
-		Model(&model.Room{}).
-		Where("id = ?", roomID).
+		Model(&model.Room{ID: roomID}).
 		Update("is_closed", true).
 		Error
 }
@@ -142,9 +139,8 @@ func (r *roomRepository) RemoveUserFromRoom(roomID, userID string) error {
 func (r *roomRepository) IsUserInRoom(roomID, userID string) (bool, error) {
 	var count int64
 	err := r.db.
-		Model(&model.Room{}).
-		Joins("JOIN room_users ON rooms.id = room_users.room_id").
-		Where("rooms.id = ? AND room_users.user_id = ?", roomID, userID).
+		Table("room_users").
+		Where("room_users.room_id = ? AND room_users.user_id = ?", roomID, userID).
 		Count(&count).Error
 	return count > 0, err
 }
@@ -188,7 +184,7 @@ func (r *roomRepository) CreateInvites(invites *[]model.RoomInvite) error {
 	}
 	return r.db.
 		Table("room_invites").
-		Omit("Room", "Inviter", "User").
+		// Omit("Room", "Inviter", "User").
 		Create(invites).Error
 }
 

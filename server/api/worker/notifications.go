@@ -2,10 +2,7 @@ package worker
 
 import (
 	"encoding/json"
-	"os"
-	"os/signal"
 	"sync"
-	"syscall"
 
 	"github.com/sirupsen/logrus"
 
@@ -25,6 +22,7 @@ func notificationWorker(
 	logger *logrus.Entry,
 ) {
 	defer wg.Done()
+
 	logger.Info("Worker ", id, " started")
 	for notification := range notifications {
 		webPushPayload := WebPushPayload{
@@ -54,7 +52,7 @@ func notificationWorker(
 	}
 }
 
-func RunPushNotifications(conf *config.Config, logger *logrus.Logger) chan<- NotificationData {
+func runPushNotifications(conf *config.Config, logger *logrus.Logger) (chan<- NotificationData, *sync.WaitGroup) {
 	pushNotiLogger := logger.WithFields(logrus.Fields{"service": "PushNotificationService"})
 	pushNotiLogger.Info("Starting push notification workers...")
 
@@ -73,18 +71,5 @@ func RunPushNotifications(conf *config.Config, logger *logrus.Logger) chan<- Not
 		go notificationWorker(i, notifications, vapidEmail, vapidPublicKey, vapidPrivateKey, &wg, workerLogger)
 	}
 
-	// Handle SIGINT and SIGTERM signals to gracefully shutdown
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-sigChan
-		pushNotiLogger.Info("Received shutdown signal, closing notification channel...")
-		close(notifications)
-
-		wg.Wait()
-		pushNotiLogger.Info("All workers have finished processing!")
-		os.Exit(0)
-	}()
-
-	return notifications
+	return notifications, &wg
 }

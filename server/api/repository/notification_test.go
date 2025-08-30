@@ -87,13 +87,13 @@ func (suite *NotificationRepositoryTestSuite) TestFindByIDAndUser_Success() {
 	created, err := suite.repo.Create(notification)
 	assert.NoError(suite.T(), err)
 
-	found, err := suite.repo.FindByIDAndUser(created.ID, suite.testUser.ID)
+	found, err := suite.repo.FindByID(created.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), created.ID, found.ID)
 }
 
 func (suite *NotificationRepositoryTestSuite) TestFindByIDAndUser_NotFound() {
-	_, err := suite.repo.FindByIDAndUser(999, suite.testUser.ID)
+	_, err := suite.repo.FindByID(999)
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
 }
@@ -123,7 +123,7 @@ func (suite *NotificationRepositoryTestSuite) TestMarkAsRead_Success() {
 	err := suite.db.Create(&notification).Error
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.MarkAsRead(notification.ID, suite.testUser.ID)
+	err = suite.repo.MarkAsRead(notification.ID)
 	assert.NoError(suite.T(), err)
 
 	var updated model.Notification

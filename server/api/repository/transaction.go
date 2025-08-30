@@ -31,7 +31,12 @@ func (r *transactionRepository) WithTx(tx *gorm.DB) TransactionRepository {
 }
 
 func (r *transactionRepository) Create(transactions *[]model.Transaction) error {
-	return r.db.Omit("Consolidation").Create(&transactions).Error
+	if transactions == nil || len(*transactions) == 0 {
+		return nil
+	}
+
+	// return r.db.Omit("Consolidation").Create(&transactions).Error
+	return r.db.Create(&transactions).Error
 }
 
 // TODO: Implement pagination

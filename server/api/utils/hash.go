@@ -4,7 +4,9 @@ import "golang.org/x/crypto/bcrypt"
 
 // Hash password
 func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	// See https://stackoverflow.com/a/69568265
+	// Set cost to 10 for optimal tradeoff between security and performance
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	return string(bytes), err
 }
 
