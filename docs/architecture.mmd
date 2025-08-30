@@ -1,0 +1,21 @@
+flowchart TD
+    subgraph Backend
+        ApiServer[API Server]
+        WsServer[Websocket Server]
+        MessageBroker[Kafka]
+        Database[(PostgreSQL)]
+
+        ApiServer -->|Message| MessageBroker
+        MessageBroker -->|Message| WsServer
+        
+        ApiServer <-->|SQL| Database
+    end
+    
+    subgraph Frontend
+        WebApp[React Web App]
+        
+        WebApp <-->|REST| ApiServer
+        WebApp <-->|WebSocket| WsServer
+    end
+
+Users --> Frontend
