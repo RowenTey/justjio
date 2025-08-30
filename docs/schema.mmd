@@ -1,0 +1,141 @@
+erDiagram
+
+    users {
+        BIGSERIAL id PK
+        VARCHAR username
+        VARCHAR email
+        VARCHAR password
+        VARCHAR picture_url
+        BOOLEAN is_email_valid
+        BOOLEAN is_online
+        TIMESTAMP last_seen
+        TIMESTAMP registered_at
+        TIMESTAMP updated_at
+    }
+
+    friend_requests {
+        BIGSERIAL id PK
+        BIGINT sender_id FK
+        BIGINT receiver_id FK
+        VARCHAR status
+        TIMESTAMP sent_at
+        TIMESTAMP responded_at
+    }
+
+    user_friends {
+        BIGINT user_id PK, FK
+        BIGINT friend_id PK, FK
+    }
+
+    rooms {
+        UUID id PK
+        VARCHAR name
+        VARCHAR time
+        VARCHAR venue
+        VARCHAR venue_place_id
+        VARCHAR venue_url
+        TIMESTAMP date
+        TEXT description
+        BIGINT host_id FK
+        INT attendees_count
+        BOOLEAN consolidated
+        BOOLEAN is_closed
+        BOOLEAN is_private
+        VARCHAR image_url
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    room_users {
+        UUID room_id PK, FK
+        BIGINT user_id PK, FK
+    }
+
+    room_invites {
+        BIGSERIAL id PK
+        UUID room_id FK
+        BIGINT user_id FK
+        BIGINT inviter_id FK
+        VARCHAR status
+        TIMESTAMP created_at
+    }
+
+    messages {
+        BIGSERIAL id PK
+        UUID room_id FK
+        BIGINT sender_id FK
+        TEXT content
+        TIMESTAMP sent_at
+    }
+
+    consolidations {
+        BIGSERIAL id PK
+        TIMESTAMP created_at
+    }
+
+    bills {
+        BIGSERIAL id PK
+        VARCHAR name
+        REAL amount
+        TIMESTAMP date
+        BOOLEAN include_owner
+        UUID room_id FK
+        BIGINT owner_id FK
+        BIGINT consolidation_id FK
+    }
+
+    payers {
+        BIGINT bill_id PK, FK
+        BIGINT user_id PK, FK
+    }
+
+    transactions {
+        BIGSERIAL id PK
+        BIGINT consolidation_id FK
+        BIGINT payer_id FK
+        BIGINT payee_id FK
+        REAL amount
+        BOOLEAN is_paid
+        TIMESTAMP paid_on
+    }
+
+    notifications {
+        BIGSERIAL id PK
+        BIGINT user_id FK
+        TEXT title
+        TEXT content
+        BOOLEAN is_read
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+
+    subscriptions {
+        UUID id PK
+        BIGINT user_id FK
+        TEXT endpoint
+        TEXT auth
+        TEXT p256dh
+    }
+
+    %% Relationships
+    users ||--o{ friend_requests : "sender/receiver"
+    users ||--o{ user_friends : "friends"
+    users ||--o{ rooms : "hosts"
+    users ||--o{ room_users : "participants"
+    users ||--o{ room_invites : "invited"
+    users ||--o{ messages : "sends"
+    users ||--o{ bills : "owns"
+    users ||--o{ payers : "pays"
+    users ||--o{ transactions : "payer/payee"
+    users ||--o{ notifications : "receives"
+    users ||--o{ subscriptions : "subscribes"
+
+    rooms ||--o{ room_users : "has"
+    rooms ||--o{ room_invites : "invites"
+    rooms ||--o{ messages : "contains"
+    rooms ||--o{ bills : "has"
+
+    consolidations ||--o{ bills : "groups"
+    consolidations ||--o{ transactions : "generates"
+
+    bills ||--o{ payers : "has"
