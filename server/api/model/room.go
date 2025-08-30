@@ -18,7 +18,7 @@ type Room struct {
 	Description    string    `gorm:"not null" json:"description"`
 	HostID         uint      `gorm:"not null" json:"hostId"`
 	AttendeesCount int       `gorm:"default:1" json:"attendeesCount"`
-	Consolidated   bool      `gorm:"default:false" json:"consolidated"`
+	Consolidated   string    `gorm:"default:'NO_BILLS'" json:"consolidated"`
 	IsClosed       bool      `gorm:"default:false" json:"isClosed"`
 	IsPrivate      bool      `gorm:"default:false" json:"isPrivate"`
 	ImageUrl       string    `gorm:"not null" json:"imageUrl"`

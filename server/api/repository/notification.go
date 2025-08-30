@@ -9,9 +9,9 @@ type NotificationRepository interface {
 	WithTx(tx *gorm.DB) NotificationRepository
 
 	Create(notification *model.Notification) (*model.Notification, error)
-	FindByIDAndUser(notificationID, userID uint) (*model.Notification, error)
+	FindByID(notificationID uint) (*model.Notification, error)
 	FindByUser(userID uint) (*[]model.Notification, error)
-	MarkAsRead(notificationID, userID uint) error
+	MarkAsRead(notificationID uint) error
 }
 
 type notificationRepository struct {
@@ -35,10 +35,10 @@ func (r *notificationRepository) Create(notification *model.Notification) (*mode
 	return notification, err
 }
 
-func (r *notificationRepository) FindByIDAndUser(notificationID, userID uint) (*model.Notification, error) {
+func (r *notificationRepository) FindByID(notificationID uint) (*model.Notification, error) {
 	var notification model.Notification
 	err := r.db.
-		Where("id = ? AND user_id = ?", notificationID, userID).
+		Where("id = ?", notificationID).
 		First(&notification).Error
 	return &notification, err
 }
@@ -52,8 +52,8 @@ func (r *notificationRepository) FindByUser(userID uint) (*[]model.Notification,
 	return &notifications, err
 }
 
-func (r *notificationRepository) MarkAsRead(notificationID, userID uint) error {
+func (r *notificationRepository) MarkAsRead(notificationID uint) error {
 	return r.db.Model(&model.Notification{}).
-		Where("id = ? AND user_id = ?", notificationID, userID).
+		Where("id = ?", notificationID).
 		Update("is_read", true).Error
 }

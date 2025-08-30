@@ -55,15 +55,10 @@ func (h *NotificationHandler) MarkNotificationAsRead(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	userId, err := strconv.ParseUint(c.Params("userId"), 10, 32)
-	if err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
-
-	h.logger.Infof("Marking notification %d as read for user %d", notificationId, userId)
+	h.logger.Infof("Marking notification %d as read", notificationId)
 	if err := h.
 		notificationService.
-		MarkNotificationAsRead(uint(notificationId), uint(userId)); err != nil {
+		MarkNotificationAsRead(uint(notificationId)); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Notification not found")
 	}
 
@@ -77,14 +72,9 @@ func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	userId, err := strconv.ParseUint(c.Params("userId"), 10, 32)
-	if err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
-
 	notification, err := h.
 		notificationService.
-		GetNotification(uint(notificationId), uint(userId))
+		GetNotification(uint(notificationId))
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Notification not found")
 	}

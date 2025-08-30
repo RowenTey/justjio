@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/RowenTey/JustJio/server/api/model"
 	"gorm.io/gorm"
@@ -183,7 +184,6 @@ func (r *userRepository) AddFriend(userID, friendID uint) error {
 }
 
 // RemoveFriend removes a friend from a user's friend list.
-// TODO: Test this more
 func (r *userRepository) RemoveFriend(userID, friendID uint) error {
 	user := model.User{ID: userID}
 	friend := model.User{ID: friendID}
@@ -231,15 +231,13 @@ func (r *userRepository) CheckFriendship(userID, friendID uint) (bool, error) {
 
 // SearchUsers retrieves users based on a search query, excluding the current user and their friends.
 func (r *userRepository) SearchUsers(currentUserId, query string, limit int) (*[]model.User, error) {
+	tsQuery := fmt.Sprintf("%s:*", query)
 	var users []model.User
-	// Use LEFT JOIN to exclude friends
 	if err := r.db.
 		Table("users").
-		Joins("LEFT JOIN user_friends ON users.id = user_friends.friend_id AND user_friends.user_id = ?", currentUserId).
-		Where("users.username LIKE ?", "%"+query+"%").
-		Where("user_friends.friend_id IS NULL").
-		Where("users.id != ?", currentUserId).
-		Limit(10).
+		Joins("JOIN user_non_friends ON users.id = user_non_friends.non_friend_id AND user_non_friends.user_id = ?", currentUserId).
+		Where("users.search_vector @@ to_tsquery('english', ?)", tsQuery).
+		Limit(limit).
 		Find(&users).Error; err != nil {
 		return nil, err
 	}
@@ -250,13 +248,11 @@ func (r *userRepository) SearchUsers(currentUserId, query string, limit int) (*[
 func (r *userRepository) GetUninvitedFriends(roomID, userID string) (*[]model.User, error) {
 	var friends []model.User
 	err := r.db.
-		Distinct("users.*").
-		Table("users").
-		Joins("JOIN user_friends ON (user_friends.friend_id = ? AND user_friends.user_id = users.id)", userID).
-		// Exclude users already in room
-		Where("users.id NOT IN (SELECT user_id FROM room_users WHERE room_id = ?)", roomID).
-		// Exclude users with pending invites
-		Where("users.id NOT IN (SELECT user_id FROM room_invites WHERE room_id = ? AND status = 'pending')", roomID).
+		Table("users u").
+		Select("u.*").
+		Joins("JOIN user_friends uf ON uf.friend_id = u.id AND uf.user_id = ?", userID).
+		Where("NOT EXISTS (SELECT 1 FROM room_users ru WHERE ru.user_id = u.id AND ru.room_id = ?)", roomID).
+		Where("NOT EXISTS (SELECT 1 FROM room_invites ri WHERE ri.user_id = u.id AND ri.room_id = ? AND ri.status = 'pending')", roomID).
 		Find(&friends).Error
 	return &friends, err
 }

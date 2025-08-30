@@ -11,3 +11,9 @@ CREATE INDEX IF NOT EXISTS idx_room_users_user_room ON room_users(user_id, room_
 
 CREATE INDEX IF NOT EXISTS idx_room_invites_user_status ON room_invites(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_room_invites_room_status ON room_invites(room_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_messages_room ON messages(room_id);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);

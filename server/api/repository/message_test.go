@@ -88,7 +88,7 @@ func (suite *MessageRepositoryTestSuite) TestCreateAndFindByID_Success() {
 	err := suite.repo.Create(&message)
 	assert.NoError(suite.T(), err)
 
-	found, err := suite.repo.FindByID(fmt.Sprintf("%d", message.ID), suite.testRoom.ID)
+	found, err := suite.repo.FindByID(fmt.Sprintf("%d", message.ID))
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), message.Content, found.Content)
 	assert.Equal(suite.T(), message.RoomID, found.RoomID)
@@ -104,10 +104,10 @@ func (suite *MessageRepositoryTestSuite) TestDelete_Success() {
 	err := suite.repo.Create(&message)
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.Delete(fmt.Sprintf("%d", message.ID), suite.testRoom.ID)
+	err = suite.repo.Delete(fmt.Sprintf("%d", message.ID))
 	assert.NoError(suite.T(), err)
 
-	_, err = suite.repo.FindByID(fmt.Sprintf("%d", message.ID), suite.testRoom.ID)
+	_, err = suite.repo.FindByID(fmt.Sprintf("%d", message.ID))
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
 }

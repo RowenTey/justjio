@@ -20,8 +20,8 @@ func (m *MockNotificationRepository) Create(notification *model.Notification) (*
 	return args.Get(0).(*model.Notification), args.Error(1)
 }
 
-func (m *MockNotificationRepository) FindByIDAndUser(notificationID, userID uint) (*model.Notification, error) {
-	args := m.Called(notificationID, userID)
+func (m *MockNotificationRepository) FindByID(notificationID uint) (*model.Notification, error) {
+	args := m.Called(notificationID)
 	return args.Get(0).(*model.Notification), args.Error(1)
 }
 
@@ -30,7 +30,7 @@ func (m *MockNotificationRepository) FindByUser(userID uint) (*[]model.Notificat
 	return args.Get(0).(*[]model.Notification), args.Error(1)
 }
 
-func (m *MockNotificationRepository) MarkAsRead(notificationID, userID uint) error {
-	args := m.Called(notificationID, userID)
+func (m *MockNotificationRepository) MarkAsRead(notificationID uint) error {
+	args := m.Called(notificationID)
 	return args.Error(0)
 }

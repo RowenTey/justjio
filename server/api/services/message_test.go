@@ -185,7 +185,7 @@ func (s *MessageServiceTestSuite) TestGetMessageById_Success() {
 
 	s.mockMessageRepo.On("FindByID", msgID, roomID).Return(expectedMsg, nil)
 
-	result, err := s.messageService.GetMessageById(msgID, roomID)
+	result, err := s.messageService.GetMessageById(msgID)
 
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), expectedMsg, result)
@@ -198,7 +198,7 @@ func (s *MessageServiceTestSuite) TestDeleteMessage_Success() {
 
 	s.mockMessageRepo.On("Delete", msgID, roomID).Return(nil)
 
-	err := s.messageService.DeleteMessage(msgID, roomID)
+	err := s.messageService.DeleteMessage(msgID)
 
 	assert.NoError(s.T(), err)
 	s.mockMessageRepo.AssertExpectations(s.T())

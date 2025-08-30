@@ -99,12 +99,12 @@ func (ms *MessageService) SaveMessage(
 	})
 }
 
-func (ms *MessageService) GetMessageById(msgId, roomId string) (*model.Message, error) {
-	return ms.messageRepo.FindByID(msgId, roomId)
+func (ms *MessageService) GetMessageById(msgId string) (*model.Message, error) {
+	return ms.messageRepo.FindByID(msgId)
 }
 
-func (ms *MessageService) DeleteMessage(msgId, roomId string) error {
-	return ms.messageRepo.Delete(msgId, roomId)
+func (ms *MessageService) DeleteMessage(msgId string) error {
+	return ms.messageRepo.Delete(msgId)
 }
 
 func (ms *MessageService) DeleteRoomMessages(roomId string) error {
