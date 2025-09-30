@@ -108,8 +108,8 @@ func (s *UserService) MarkOffline(userId string) error {
 	return s.userRepo.Update(user)
 }
 
-func (s *UserService) SearchUsers(currentUserID, query string) (*[]model.User, error) {
-	return s.userRepo.SearchUsers(currentUserID, query, 10)
+func (s *UserService) SearchNonFriendUsers(currentUserID, query string) (*[]model.User, error) {
+	return s.userRepo.SearchNonFriendUsers(currentUserID, query, 10)
 }
 
 func (s *UserService) SendFriendRequest(senderID, receiverID uint) error {
@@ -153,9 +153,12 @@ func (s *UserService) AcceptFriendRequest(requestID uint) error {
 			return ErrFriendRequestAlreadyProcessed
 		}
 
-		request.Status = "accepted"
-		request.RespondedAt = time.Now()
-		if err := userRepoTx.UpdateFriendRequest(request); err != nil {
+		// request.Status = `"accepted"
+		// request.RespondedAt = time.Now()`
+		if err := userRepoTx.UpdateFriendRequest(request.ID, map[string]any{
+			"status":       "accepted",
+			"responded_at": time.Now(),
+		}); err != nil {
 			return err
 		}
 
@@ -174,9 +177,12 @@ func (s *UserService) RejectFriendRequest(requestID uint) error {
 		return ErrFriendRequestAlreadyProcessed
 	}
 
-	request.Status = "rejected"
-	request.RespondedAt = time.Now()
-	return s.userRepo.UpdateFriendRequest(request)
+	// request.Status = "rejected"
+	// request.RespondedAt = time.Now()
+	return s.userRepo.UpdateFriendRequest(request.ID, map[string]any{
+		"status":       "rejected",
+		"responded_at": time.Now(),
+	})
 }
 
 func (s *UserService) RemoveFriend(userID, friendID uint) error {

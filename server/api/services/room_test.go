@@ -450,7 +450,7 @@ func (s *RoomServiceTestSuite) TestUpdateRoomInviteStatus_Accept() {
 	roomId := "1"
 	userId := "2"
 	status := "accepted"
-	room := &model.Room{ID: "1", AttendeesCount: 1}
+	room := &model.Room{ID: "1", NoOfAttendees: 1}
 	user := &model.User{ID: 2}
 
 	// Expect transaction begin
@@ -473,7 +473,7 @@ func (s *RoomServiceTestSuite) TestUpdateRoomInviteStatus_Accept() {
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 2, room.AttendeesCount) // Attendee count should increment
+	assert.Equal(s.T(), 2, room.NoOfAttendees) // Attendee count should increment
 
 	// Verify mock calls
 	s.mockRoomRepo.AssertExpectations(s.T())
@@ -522,7 +522,7 @@ func (s *RoomServiceTestSuite) TestJoinRoom_Success() {
 	// Setup test data
 	roomId := "1"
 	userId := "2"
-	room := &model.Room{ID: "1", AttendeesCount: 1}
+	room := &model.Room{ID: "1", NoOfAttendees: 1}
 	user := &model.User{ID: 2}
 
 	// Mock expectations
@@ -537,7 +537,7 @@ func (s *RoomServiceTestSuite) TestJoinRoom_Success() {
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 2, resultRoom.AttendeesCount)
+	assert.Equal(s.T(), 2, resultRoom.NoOfAttendees)
 	assert.Len(s.T(), *resultAttendees, 1)
 
 	// Verify mock calls

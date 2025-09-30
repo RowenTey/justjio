@@ -34,6 +34,18 @@ func NewAuthHandler(
 	}
 }
 
+// SignUp creates a new user account
+// @Summary Sign up
+// @Description Creates a new user account with email verification
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param user body model.User true "User registration details"
+// @Success 200 {object} object{status=string,message=string,data=response.AuthResponse} "User signed up successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
+// @Failure 409 {object} utils.EmptyApiResponse "Username or email already exists"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /auth/signup [post]
 func (h *AuthHandler) SignUp(c *fiber.Ctx) error {
 	var user model.User
 	if err := c.BodyParser(&user); err != nil {
@@ -60,6 +72,19 @@ func (h *AuthHandler) SignUp(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "User signed up successfully", response)
 }
 
+// Login authenticates a user
+// @Summary Login
+// @Description Authenticates a user with username and password
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param credentials body request.LoginRequest true "Login credentials"
+// @Success 200 {object} object{status=string,message=string,data=response.AuthResponse,token=string} "Login successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
+// @Failure 401 {object} utils.EmptyApiResponse "Invalid username or password"
+// @Failure 404 {object} utils.EmptyApiResponse "User not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var input request.LoginRequest
 	if err := c.BodyParser(&input); err != nil {
@@ -84,6 +109,19 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	return utils.HandleLoginSuccess(c, "Login successfully", token, response)
 }
 
+// SendOTPEmail sends OTP to user's email
+// @Summary Send OTP email
+// @Description Sends a One-Time Password to the user's email for verification or password reset
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param otp body request.SendOTPEmailRequest true "OTP email request"
+// @Success 200 {object} utils.EmptyApiResponse "OTP sent successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input or invalid purpose"
+// @Failure 404 {object} utils.EmptyApiResponse "User not found"
+// @Failure 409 {object} utils.EmptyApiResponse "Email already verified"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /auth/send-otp [post]
 func (h *AuthHandler) SendOTPEmail(c *fiber.Ctx) error {
 	var request request.SendOTPEmailRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -102,9 +140,21 @@ func (h *AuthHandler) SendOTPEmail(c *fiber.Ctx) error {
 	}
 
 	h.logger.Info("OTP sent to " + request.Email + " successfully.")
-	return utils.HandleSuccess(c, "OTP sent successfully", nil)
+	return utils.HandleSuccess[any](c, "OTP sent successfully", nil)
 }
 
+// VerifyOTP verifies the OTP sent to user's email
+// @Summary Verify OTP
+// @Description Verifies the One-Time Password sent to the user's email
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param otp body request.VerifyOTPRequest true "OTP verification request"
+// @Success 200 {object} utils.EmptyApiResponse "OTP verified successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input or invalid OTP"
+// @Failure 404 {object} utils.EmptyApiResponse "User not found or OTP not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /auth/verify-otp [post]
 func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
 	var request request.VerifyOTPRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -122,9 +172,21 @@ func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
 	}
 
 	h.logger.Println("OTP verified successfully for email", request.Email)
-	return utils.HandleSuccess(c, "OTP verified successfully", nil)
+	return utils.HandleSuccess[any](c, "OTP verified successfully", nil)
 }
 
+// ResetPassword resets user's password
+// @Summary Reset password
+// @Description Resets the user's password after OTP verification
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param reset body request.ResetPasswordRequest true "Password reset request"
+// @Success 200 {object} utils.EmptyApiResponse "Password reset successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
+// @Failure 404 {object} utils.EmptyApiResponse "User not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /auth/reset-password [post]
 func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
 	var request request.ResetPasswordRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -137,9 +199,20 @@ func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
 
-	return utils.HandleSuccess(c, "Password reset successfully", nil)
+	return utils.HandleSuccess[any](c, "Password reset successfully", nil)
 }
 
+// GoogleLogin authenticates user via Google OAuth
+// @Summary Google OAuth login
+// @Description Authenticates a user using Google OAuth authorization code
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Param google body request.GoogleAuthRequest true "Google OAuth request"
+// @Success 200 {object} object{status=string,message=string,data=response.AuthResponse,token=string} "Authenticated via Google successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /auth/google [post]
 func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
 	var request request.GoogleAuthRequest
 	if err := c.BodyParser(&request); err != nil {

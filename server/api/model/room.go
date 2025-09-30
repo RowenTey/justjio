@@ -8,26 +8,26 @@ import (
 )
 
 type Room struct {
-	ID             string    `gorm:"primaryKey; type:uuid" json:"id"`
-	Name           string    `gorm:"not null" json:"name"`
-	Time           string    `gorm:"not null" json:"time"`
-	Venue          string    `gorm:"not null" json:"venue"`
-	VenuePlaceId   string    `gorm:"not null" json:"venuePlaceId"`
-	VenueUrl       string    `gorm:"not null" json:"venueUrl"`
-	Date           time.Time `gorm:"not null" json:"date"`
-	Description    string    `gorm:"not null" json:"description"`
-	HostID         uint      `gorm:"not null" json:"hostId"`
-	AttendeesCount int       `gorm:"default:1" json:"attendeesCount"`
-	Consolidated   string    `gorm:"default:'NO_BILLS'" json:"consolidated"`
-	IsClosed       bool      `gorm:"default:false" json:"isClosed"`
-	IsPrivate      bool      `gorm:"default:false" json:"isPrivate"`
-	ImageUrl       string    `gorm:"not null" json:"imageUrl"`
-	CreatedAt      time.Time `gorm:"autoCreateTime" json:"createdAt"`
-	UpdatedAt      time.Time `gorm:"autoUpdateTime" json:"updatedAt"`
+	ID            string    `gorm:"primaryKey; type:uuid" json:"id"`
+	Name          string    `gorm:"not null" json:"name"`
+	Time          string    `gorm:"not null" json:"time"`
+	Venue         string    `gorm:"not null" json:"venue"`
+	VenuePlaceId  string    `gorm:"not null" json:"venuePlaceId"`
+	VenueUrl      string    `gorm:"not null" json:"venueUrl"`
+	Date          time.Time `gorm:"not null" json:"date"`
+	Description   string    `gorm:"not null" json:"description"`
+	HostID        uint      `gorm:"not null" json:"hostId"`
+	NoOfAttendees int       `gorm:"default:1" json:"noOfAttendees"`
+	Consolidated  string    `gorm:"default:'NO_BILLS'" json:"consolidated"`
+	IsClosed      bool      `gorm:"default:false" json:"isClosed"`
+	IsPrivate     bool      `gorm:"default:false" json:"isPrivate"`
+	ImageUrl      string    `gorm:"not null" json:"imageUrl"`
+	CreatedAt     time.Time `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt     time.Time `gorm:"autoUpdateTime" json:"updatedAt"`
 
 	// Associations
-	Host  User   `gorm:"not null; foreignKey:host_id" json:"host"`
-	Users []User `gorm:"many2many:room_users" json:"users"`
+	Host  User   `gorm:"foreignKey:host_id" json:"host"`
+	Users []User `gorm:"many2many:room_users" json:"attendees"`
 }
 
 func (room *Room) BeforeCreate(tx *gorm.DB) error {
@@ -49,7 +49,7 @@ type RoomInvite struct {
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"createdAt"`
 
 	// Associations
-	User    User `gorm:"not null" json:"user"`
-	Inviter User `gorm:"not null; foreignKey:inviter_id" json:"inviter"`
-	Room    Room `gorm:"not null" json:"room"`
+	User    User `json:"user"`
+	Inviter User `foreignKey:inviter_id" json:"inviter"`
+	Room    Room `json:"room"`
 }

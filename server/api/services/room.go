@@ -14,6 +14,7 @@ import (
 	"github.com/RowenTey/JustJio/server/api/database"
 	modelLocation "github.com/RowenTey/JustJio/server/api/dto/location"
 	"github.com/RowenTey/JustJio/server/api/dto/request"
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/utils"
@@ -131,8 +132,36 @@ func (rs *RoomService) GetUnjoinedPublicRooms(userId string) (*[]model.Room, err
 	return rs.roomRepo.GetUnjoinedRoomsByIsPrivate(userId, false)
 }
 
-func (rs *RoomService) GetRoomById(roomId string) (*model.Room, error) {
-	return rs.roomRepo.GetByID(roomId)
+func (rs *RoomService) GetRoomById(roomId string) (*response.RoomDto, error) {
+	room, err := rs.roomRepo.GetByIDWithAttendees(roomId)
+
+	dto := &response.RoomDto{
+		ID:           room.ID,
+		Name:         room.Name,
+		Time:         room.Time,
+		Venue:        room.Venue,
+		VenueUrl:     room.VenueUrl,
+		Date:         room.Date,
+		Description:  room.Description,
+		Consolidated: room.Consolidated,
+		IsClosed:     room.IsClosed,
+		IsPrivate:    room.IsPrivate,
+		ImageUrl:     room.ImageUrl,
+		Host: response.AttendeesDto{
+			ID:       room.Host.ID,
+			Username: room.Host.Username,
+		},
+		NoOfAttendees: room.NoOfAttendees,
+	}
+
+	for _, u := range room.Users {
+		dto.Attendees = append(dto.Attendees, response.AttendeesDto{
+			ID:       u.ID,
+			Username: u.Username,
+		})
+	}
+
+	return dto, err
 }
 
 func (rs *RoomService) GetRoomInvites(userId string) (*[]model.RoomInvite, error) {
@@ -216,7 +245,7 @@ func (rs *RoomService) UpdateRoomInviteStatus(roomId string, userId string, stat
 		return ErrInvalidRoomStatus
 	}
 
-	return database.RunInTransaction(rs.db, sql.LevelDefault, func(tx *gorm.DB) error {
+	return database.RunInTransaction(rs.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 		userRepoTx := rs.userRepo.WithTx(tx)
 
@@ -241,7 +270,7 @@ func (rs *RoomService) UpdateRoomInviteStatus(roomId string, userId string, stat
 		}
 
 		// Update room info
-		room.AttendeesCount++
+		room.NoOfAttendees++
 		room.Users = append(room.Users, *user)
 		return roomRepoTx.UpdateRoom(room)
 	})
@@ -268,7 +297,7 @@ func (rs *RoomService) JoinRoom(roomId, userId string) (*model.Room, *[]model.Us
 	}
 
 	// Update room info
-	room.AttendeesCount++
+	room.NoOfAttendees++
 	room.Users = append(room.Users, *user)
 	err = rs.roomRepo.UpdateRoom(room)
 	if err != nil {

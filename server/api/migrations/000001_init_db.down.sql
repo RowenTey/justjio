@@ -23,3 +23,5 @@ DROP TABLE IF EXISTS transactions;
 DROP TABLE IF EXISTS notifications;
 
 DROP TABLE IF EXISTS subscriptions;
+
+DROP TABLE IF EXISTS cron_job_locks

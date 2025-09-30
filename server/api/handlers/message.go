@@ -27,6 +27,17 @@ func NewMessageHandler(
 	}
 }
 
+// GetMessage retrieves a specific message by ID
+// @Summary Get message by ID
+// @Description Retrieves a specific message by its ID
+// @Tags Messages
+// @Accept json
+// @Produce json
+// @Param msgId path string true "Message ID"
+// @Success 200 {object} object{status=string,message=string,data=model.Message} "Retrieved message successfully"
+// @Failure 404 {object} utils.EmptyApiResponse "No message found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /messages/{msgId} [get]
 func (h *MessageHandler) GetMessage(c *fiber.Ctx) error {
 	msgId := c.Params("msgId")
 
@@ -38,6 +49,19 @@ func (h *MessageHandler) GetMessage(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Retrieved message successfully", message)
 }
 
+// GetMessages retrieves messages for a room
+// @Summary Get room messages
+// @Description Retrieves paginated messages for a specific room with optional sorting
+// @Tags Messages
+// @Accept json
+// @Produce json
+// @Param roomId path string true "Room ID"
+// @Param page query int false "Page number" default(1)
+// @Param asc query bool false "Sort order (ascending if true)" default(true)
+// @Success 200 {object} object{status=string,message=string,data=[]model.Message} "Retrieved messages successfully"
+// @Failure 404 {object} utils.EmptyApiResponse "No messages found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /rooms/{roomId}/messages [get]
 func (h *MessageHandler) GetMessages(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 	page := c.QueryInt("page", 1)
@@ -56,6 +80,20 @@ func (h *MessageHandler) GetMessages(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Retrieved messages successfully", response)
 }
 
+// CreateMessage creates a new message in a room
+// @Summary Create message
+// @Description Creates and saves a new message in the specified room
+// @Tags Messages
+// @Accept json
+// @Produce json
+// @Param roomId path string true "Room ID"
+// @Param message body request.CreateMessageRequest true "Message content"
+// @Success 200 {object} utils.EmptyApiResponse "Message saved successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
+// @Failure 404 {object} utils.EmptyApiResponse "Room or user not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
+// @Router /rooms/{roomId}/messages [post]
 func (h *MessageHandler) CreateMessage(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 
@@ -73,5 +111,5 @@ func (h *MessageHandler) CreateMessage(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, "Room or user not found")
 	}
 
-	return utils.HandleSuccess(c, "Message saved successfully", nil)
+	return utils.HandleSuccess[any](c, "Message saved successfully", nil)
 }

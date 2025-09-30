@@ -27,6 +27,17 @@ func NewSubscriptionHandler(
 	}
 }
 
+// CreateSubscription creates a new push notification subscription
+// @Summary Create subscription
+// @Description Creates a new push notification subscription for the user
+// @Tags Subscriptions
+// @Accept json
+// @Produce json
+// @Param subscription body model.Subscription true "Subscription details"
+// @Success 200 {object} object{status=string,message=string,data=model.Subscription} "Subscription created successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input or missing required fields"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /subscriptions [post]
 func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 	var subscription model.Subscription
 	if err := c.BodyParser(&subscription); err != nil {
@@ -46,6 +57,18 @@ func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Subscription created successfully", createdSubscription)
 }
 
+// GetSubscriptionByEndpoint retrieves a subscription by endpoint
+// @Summary Get subscription by endpoint
+// @Description Retrieves a push notification subscription by its endpoint URL
+// @Tags Subscriptions
+// @Accept json
+// @Produce json
+// @Param endpoint path string true "URL-encoded subscription endpoint"
+// @Success 200 {object} object{status=string,message=string,data=model.Subscription} "Subscription retrieved successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid endpoint URL"
+// @Failure 404 {object} utils.EmptyApiResponse "Subscription not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /subscriptions/{endpoint} [get]
 func (h *SubscriptionHandler) GetSubscriptionByEndpoint(c *fiber.Ctx) error {
 	endpoint := c.Params("endpoint")
 	decodedEndpoint, err := url.QueryUnescape(endpoint)
@@ -61,6 +84,17 @@ func (h *SubscriptionHandler) GetSubscriptionByEndpoint(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Subscription retrieved successfully", subscription)
 }
 
+// DeleteSubscription deletes a subscription
+// @Summary Delete subscription
+// @Description Deletes a push notification subscription by ID
+// @Tags Subscriptions
+// @Accept json
+// @Produce json
+// @Param subId path string true "Subscription ID"
+// @Success 200 {object} utils.EmptyApiResponse "Subscription deleted successfully"
+// @Failure 404 {object} utils.EmptyApiResponse "Subscription not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /subscriptions/{subId} [delete]
 func (h *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
 	subId := c.Params("subId")
 
@@ -68,5 +102,5 @@ func (h *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, "Subscription not found")
 	}
 
-	return utils.HandleSuccess(c, "Subscription deleted successfully", nil)
+	return utils.HandleSuccess[any](c, "Subscription deleted successfully", nil)
 }

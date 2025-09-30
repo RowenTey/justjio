@@ -226,12 +226,12 @@ func initHandlers(services *Services, logger *logrus.Logger) *Handlers {
 }
 
 func setupDocsRoutes(router *fiber.App) {
-	router.Get("/openapi.yaml", func(c *fiber.Ctx) error {
+	router.Get("/swagger.yaml", func(c *fiber.Ctx) error {
 		c.Set("Content-Type", "text/yaml")
-		return c.SendFile("./docs/openapi.yaml")
+		return c.SendFile("./docs/swagger.yaml")
 	})
 	router.Get("/docs/*", swagger.New(swagger.Config{
-		URL: "/openapi.yaml",
+		URL: "/swagger.yaml",
 	}))
 }
 
@@ -249,16 +249,16 @@ func setupUserRoutes(v1 fiber.Router, handlers *Handlers) {
 	users := v1.Group("/users")
 	users.Get("/:userId", handlers.UserHandler.GetUser)
 	users.Patch("/:userId", handlers.UserHandler.UpdateUser)
-	users.Delete("/:userId", handlers.UserHandler.DeleteUser)
+	// users.Delete("/:userId", handlers.UserHandler.DeleteUser)
 
 	friends := users.Group("/:userId/friends")
 	friends.Get("/", handlers.UserHandler.GetFriends)
-	friends.Post("/check", handlers.UserHandler.IsFriend)
-	friends.Get("/count", handlers.UserHandler.GetNumFriends)
-	friends.Get("/search", handlers.UserHandler.SearchFriends)
+	// friends.Post("/check", handlers.UserHandler.IsFriend)
+	// friends.Get("/count", handlers.UserHandler.GetNumFriends)
+	friends.Get("/search", handlers.UserHandler.SearchNonFriends)
 	friends.Delete("/:friendId", handlers.UserHandler.RemoveFriend)
 
-	friendRequests := friends.Group("/:userId/requests")
+	friendRequests := friends.Group("/requests")
 	friendRequests.Get("/", handlers.UserHandler.GetFriendRequestsByStatus)
 	friendRequests.Get("/count", handlers.UserHandler.CountPendingFriendRequests)
 	friendRequests.Post("/", handlers.UserHandler.SendFriendRequest)

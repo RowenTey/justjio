@@ -30,6 +30,18 @@ func NewTransactionHandler(
 	}
 }
 
+// GetTransactionsByUser retrieves transactions for a user
+// @Summary Get user transactions
+// @Description Retrieves transactions for the authenticated user, optionally filtered by payment status
+// @Tags Transactions
+// @Accept json
+// @Produce json
+// @Param isPaid query bool false "Filter by payment status" default(false)
+// @Success 200 {object} object{status=string,message=string,data=[]model.Transaction} "Retrieved transactions successfully"
+// @Failure 404 {object} utils.EmptyApiResponse "No transactions found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
+// @Router /transactions [get]
 func (h *TransactionHandler) GetTransactionsByUser(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := utils.GetUserInfoFromToken(token, "user_id")
@@ -42,6 +54,20 @@ func (h *TransactionHandler) GetTransactionsByUser(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Retrieved transactions successfully", transactions)
 }
 
+// SettleTransaction settles a transaction
+// @Summary Settle transaction
+// @Description Marks a transaction as paid by the authenticated user
+// @Tags Transactions
+// @Accept json
+// @Produce json
+// @Param txId path string true "Transaction ID"
+// @Success 200 {object} utils.EmptyApiResponse "Paid transactions successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid payer or bad request"
+// @Failure 404 {object} utils.EmptyApiResponse "Transaction not found"
+// @Failure 409 {object} utils.EmptyApiResponse "Transaction already settled"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
+// @Router /transactions/{txId}/settle [patch]
 func (h *TransactionHandler) SettleTransaction(c *fiber.Ctx) error {
 	txId := c.Params("txId")
 	token := c.Locals("user").(*jwt.Token)
@@ -69,5 +95,5 @@ func (h *TransactionHandler) SettleTransaction(c *fiber.Ctx) error {
 		}
 	}()
 
-	return utils.HandleSuccess(c, "Paid transactions successfully", nil)
+	return utils.HandleSuccess[any](c, "Paid transactions successfully", nil)
 }
