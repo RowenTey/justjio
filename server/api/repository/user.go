@@ -22,7 +22,7 @@ type UserRepository interface {
 	// Friends relationships
 	CreateFriendRequest(request *model.FriendRequest) error
 	FindFriendRequest(id uint) (*model.FriendRequest, error)
-	UpdateFriendRequest(request *model.FriendRequest) error
+	UpdateFriendRequest(requestID uint, values any) error
 	FindFriendRequestsByReceiver(receiverID uint, status string) (*[]model.FriendRequest, error)
 	CountFriendRequestsByReceiver(receiverID uint, status string) (int64, error)
 	CheckFriendRequestExists(senderID, receiverID uint) (bool, error)
@@ -36,7 +36,7 @@ type UserRepository interface {
 	GetUninvitedFriends(roomID, userID string) (*[]model.User, error)
 
 	// Search
-	SearchUsers(currentUserId, query string, limit int) (*[]model.User, error)
+	SearchNonFriendUsers(currentUserId, query string, limit int) (*[]model.User, error)
 }
 
 type userRepository struct {
@@ -119,8 +119,8 @@ func (r *userRepository) FindFriendRequest(id uint) (*model.FriendRequest, error
 }
 
 // UpdateFriendRequest updates an existing friend request.
-func (r *userRepository) UpdateFriendRequest(request *model.FriendRequest) error {
-	return r.db.Save(request).Error
+func (r *userRepository) UpdateFriendRequest(requestID uint, values any) error {
+	return r.db.Model(model.FriendRequest{ID: requestID}).Updates(values).Error
 }
 
 // FindFriendRequestsByReceiver retrieves friend requests for a specific receiver with a given status.
@@ -128,8 +128,8 @@ func (r *userRepository) FindFriendRequestsByReceiver(receiverID uint, status st
 	var requests []model.FriendRequest
 	err := r.db.
 		Where("receiver_id = ? AND status = ?", receiverID, status).
-		Preload("Sender").
-		Preload("Receiver").
+		Joins("Sender").
+		Joins("Receiver").
 		Find(&requests).Error
 	return &requests, err
 }
@@ -168,36 +168,12 @@ func (r *userRepository) CheckFriendRequestExists(senderID, receiverID uint) (bo
 
 // AddFriend adds a friend relationship between two users.
 func (r *userRepository) AddFriend(userID, friendID uint) error {
-	user := model.User{ID: userID}
-	friend := model.User{ID: friendID}
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&user).Association("Friends").Append(&friend); err != nil {
-			return err
-		}
-
-		if err := tx.Model(&friend).Association("Friends").Append(&user); err != nil {
-			return err
-		}
-
-		return nil
-	})
+	return r.db.Exec("INSERT INTO user_friends (user_id, friend_id) VALUES (?, ?), (?, ?)", userID, friendID, friendID, userID).Error
 }
 
 // RemoveFriend removes a friend from a user's friend list.
 func (r *userRepository) RemoveFriend(userID, friendID uint) error {
-	user := model.User{ID: userID}
-	friend := model.User{ID: friendID}
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&user).Association("Friends").Delete(&friend); err != nil {
-			return err
-		}
-
-		if err := tx.Model(&friend).Association("Friends").Delete(&user); err != nil {
-			return err
-		}
-
-		return nil
-	})
+	return r.db.Exec("DELETE FROM user_friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", userID, friendID, friendID, userID).Error
 }
 
 // GetFriends retrieves the friends of a user.
@@ -229,8 +205,8 @@ func (r *userRepository) CheckFriendship(userID, friendID uint) (bool, error) {
 	return count > 0, nil
 }
 
-// SearchUsers retrieves users based on a search query, excluding the current user and their friends.
-func (r *userRepository) SearchUsers(currentUserId, query string, limit int) (*[]model.User, error) {
+// SearchNonFriendUsers retrieves users based on a search query, excluding the current user and their friends.
+func (r *userRepository) SearchNonFriendUsers(currentUserId, query string, limit int) (*[]model.User, error) {
 	tsQuery := fmt.Sprintf("%s:*", query)
 	var users []model.User
 	if err := r.db.

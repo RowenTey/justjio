@@ -48,9 +48,6 @@ func Fiber(a *fiber.App, conf *config.Config, env string) {
 
 		// Logging
 		logger.New(logger.Config{
-			Next: func(c *fiber.Ctx) bool {
-				return c.IP() == "127.0.0.1" // Don't log from localhost
-			},
 			Format:     "time=${time} level=info | ${latency} | ${status} - ${method} ${path}\n",
 			TimeZone:   "Asia/Singapore",
 			TimeFormat: time.RFC3339,

@@ -12,8 +12,17 @@ import (
 	"github.com/RowenTey/JustJio/server/api/worker"
 
 	"github.com/gofiber/fiber/v2"
+
+	// Swagger docs
+	_ "github.com/RowenTey/JustJio/server/api/docs"
 )
 
+// @title JustJio API
+// @version 1.0
+// @description API server for JustJio.
+// @host localhost:8080
+// @BasePath /api/v1
+// @schemes http https
 func main() {
 	env := ""
 	if len(os.Args) > 1 {

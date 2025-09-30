@@ -3,12 +3,16 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(255) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    picture_url VARCHAR(255) DEFAULT 'https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg',
-    is_email_valid BOOLEAN DEFAULT FALSE,
-    is_online BOOLEAN DEFAULT FALSE,
+    picture_url VARCHAR(255) NOT NULL DEFAULT 'https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg',
+    is_email_valid BOOLEAN NOT NULL DEFAULT FALSE,
+    is_online BOOLEAN NOT NULL DEFAULT FALSE,
     last_seen TIMESTAMP,
-    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    no_of_rooms INT NOT NULL DEFAULT 0,
+    no_of_friends INT NOT NULL DEFAULT 0,
+    no_of_room_invites INT NOT NULL DEFAULT 0,
+    no_of_pending_friend_requests INT NOT NULL DEFAULT 0,
+    registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
     -- FTS index
     search_vector tsvector GENERATED ALWAYS AS (
@@ -20,8 +24,8 @@ CREATE TABLE IF NOT EXISTS friend_requests (
     id BIGSERIAL PRIMARY KEY,
     sender_id BIGINT NOT NULL,
     receiver_id BIGINT NOT NULL,
-    status VARCHAR(50) DEFAULT 'pending',
-    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     responded_at TIMESTAMP,
 
     CONSTRAINT unique_sender_receiver UNIQUE(sender_id, receiver_id),
@@ -48,13 +52,13 @@ CREATE TABLE IF NOT EXISTS rooms (
     date TIMESTAMP NOT NULL,
     description TEXT NOT NULL,
     host_id BIGINT NOT NULL,
-    attendees_count INT DEFAULT 1,
-    consolidated VARCHAR(50) DEFAULT 'NO_BILLS', 
-    is_closed BOOLEAN DEFAULT FALSE,
-    is_private BOOLEAN DEFAULT FALSE,
+    no_of_attendees INT NOT NULL DEFAULT 1,
+    consolidated VARCHAR(50) NOT NULL DEFAULT 'NO_BILLS', 
+    is_closed BOOLEAN NOT NULL DEFAULT FALSE,
+    is_private BOOLEAN NOT NULL DEFAULT FALSE,
     image_url VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_rooms_host FOREIGN KEY (host_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -73,8 +77,8 @@ CREATE TABLE IF NOT EXISTS room_invites (
     room_id UUID NOT NULL,
     user_id BIGINT NOT NULL,
     inviter_id BIGINT NOT NULL,
-    status VARCHAR(50) DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT unique_room_user_inviter UNIQUE(room_id, user_id, inviter_id),
     CONSTRAINT fk_invites_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
@@ -87,7 +91,7 @@ CREATE TABLE IF NOT EXISTS messages (
     room_id UUID NOT NULL,
     sender_id BIGINT NOT NULL,
     content TEXT NOT NULL,
-    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    sent_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_messages_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_messages_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
@@ -95,15 +99,15 @@ CREATE TABLE IF NOT EXISTS messages (
 
 CREATE TABLE IF NOT EXISTS consolidations (
     id BIGSERIAL PRIMARY KEY,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS bills (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    amount REAL NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
     date TIMESTAMP NOT NULL,
-    include_owner BOOLEAN DEFAULT TRUE,
+    include_owner BOOLEAN NOT NULL DEFAULT TRUE,
     room_id UUID NOT NULL,
     owner_id BIGINT NOT NULL,
     consolidation_id BIGINT,
@@ -127,8 +131,8 @@ CREATE TABLE IF NOT EXISTS transactions (
     consolidation_id BIGINT NOT NULL,
     payer_id BIGINT NOT NULL,
     payee_id BIGINT NOT NULL,
-    amount REAL NOT NULL,
-    is_paid BOOLEAN DEFAULT FALSE,
+    amount DECIMAL(10, 2) NOT NULL,
+    is_paid BOOLEAN NOT NULL DEFAULT FALSE,
     paid_on TIMESTAMP,
 
     CONSTRAINT fk_transactions_consolidation FOREIGN KEY (consolidation_id) REFERENCES consolidations(id) ON DELETE CASCADE,
@@ -141,9 +145,9 @@ CREATE TABLE IF NOT EXISTS notifications (
     user_id BIGINT NOT NULL,
     title TEXT NOT NULL,
     content TEXT NOT NULL,
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -156,4 +160,16 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     p256dh TEXT NOT NULL,
 
     CONSTRAINT fk_subscriptions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS cron_job_locks (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    job_name VARCHAR(255) NOT NULL,
+    job_identifier VARCHAR(255) NOT NULL,
+    worker VARCHAR(255) NOT NULL,
+    status VARCHAR(255) NOT NULL,
+    
+    CONSTRAINT uq_job_name_identifier UNIQUE (job_name, job_identifier)
 );

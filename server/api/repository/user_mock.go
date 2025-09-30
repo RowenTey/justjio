@@ -60,8 +60,8 @@ func (m *MockUserRepository) FindFriendRequest(id uint) (*model.FriendRequest, e
 	return args.Get(0).(*model.FriendRequest), args.Error(1)
 }
 
-func (m *MockUserRepository) UpdateFriendRequest(request *model.FriendRequest) error {
-	args := m.Called(request)
+func (m *MockUserRepository) UpdateFriendRequest(requestID uint, values any) error {
+	args := m.Called(requestID, values)
 	return args.Error(0)
 }
 
@@ -110,7 +110,7 @@ func (m *MockUserRepository) GetUninvitedFriends(roomID, userID string) (*[]mode
 	return args.Get(0).(*[]model.User), args.Error(1)
 }
 
-func (m *MockUserRepository) SearchUsers(currentUserId, query string, limit int) (*[]model.User, error) {
+func (m *MockUserRepository) SearchNonFriendUsers(currentUserId, query string, limit int) (*[]model.User, error) {
 	args := m.Called(currentUserId, query, limit)
 	return args.Get(0).(*[]model.User), args.Error(1)
 }

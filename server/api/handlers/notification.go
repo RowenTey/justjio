@@ -28,7 +28,17 @@ func NewNotificationHandler(
 	}
 }
 
-// CreateNotification handles the creation of a new notification
+// CreateNotification creates a new notification
+// @Summary Create notification
+// @Description Creates and sends a new notification to a user
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Param notification body request.CreateNotificationRequest true "Notification details"
+// @Success 200 {object} utils.EmptyApiResponse "Notification created successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input or empty content"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /notifications [post]
 func (h *NotificationHandler) CreateNotification(c *fiber.Ctx) error {
 	var request request.CreateNotificationRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -45,10 +55,21 @@ func (h *NotificationHandler) CreateNotification(c *fiber.Ctx) error {
 		return utils.HandleInternalServerError(c, err)
 	}
 
-	return utils.HandleSuccess(c, "Notification created successfully", nil)
+	return utils.HandleSuccess[any](c, "Notification created successfully", nil)
 }
 
-// MarkNotificationAsRead handles marking a notification as read
+// MarkNotificationAsRead marks a notification as read
+// @Summary Mark notification as read
+// @Description Marks a specific notification as read by its ID
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Param id path string true "Notification ID"
+// @Success 200 {object} utils.EmptyApiResponse "Notification marked as read successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid notification ID"
+// @Failure 404 {object} utils.EmptyApiResponse "Notification not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /notifications/{id}/read [patch]
 func (h *NotificationHandler) MarkNotificationAsRead(c *fiber.Ctx) error {
 	notificationId, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
@@ -62,10 +83,21 @@ func (h *NotificationHandler) MarkNotificationAsRead(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, "Notification not found")
 	}
 
-	return utils.HandleSuccess(c, "Notification marked as read successfully", nil)
+	return utils.HandleSuccess[any](c, "Notification marked as read successfully", nil)
 }
 
-// GetNotification handles retrieving a single notification
+// GetNotification retrieves a specific notification
+// @Summary Get notification by ID
+// @Description Retrieves a specific notification by its ID
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Param id path string true "Notification ID"
+// @Success 200 {object} object{status=string,message=string,data=model.Notification} "Retrieved notification successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid notification ID"
+// @Failure 404 {object} utils.EmptyApiResponse "Notification not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /notifications/{id} [get]
 func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
 	notificationId, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
@@ -82,7 +114,17 @@ func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Retrieved notification successfully", notification)
 }
 
-// GetNotifications handles retrieving all notifications for a user
+// GetNotifications retrieves all notifications for a user
+// @Summary Get user notifications
+// @Description Retrieves all notifications for the authenticated user
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Success 200 {object} object{status=string,message=string,data=[]model.Notification} "Retrieved notifications successfully"
+// @Failure 404 {object} utils.EmptyApiResponse "User not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
+// @Router /notifications [get]
 func (h *NotificationHandler) GetNotifications(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := utils.GetUserInfoFromToken(token, "user_id")

@@ -11,6 +11,7 @@ type RoomRepository interface {
 
 	Create(room *model.Room) error
 	GetByID(roomID string) (*model.Room, error)
+	GetByIDWithAttendees(roomID string) (*model.Room, error)
 	GetUserRooms(userID string, page int, pageSize int) (*[]model.Room, error)
 	CountUserRooms(userID string) (int64, error)
 	GetUnjoinedRoomsByIsPrivate(userID string, isPrivate bool) (*[]model.Room, error)
@@ -54,6 +55,19 @@ func (r *roomRepository) Create(room *model.Room) error {
 func (r *roomRepository) GetByID(roomID string) (*model.Room, error) {
 	var room model.Room
 	err := r.db.Table("rooms").Preload("Users").First(&room, "id = ?", roomID).Error
+	return &room, err
+}
+
+func (r *roomRepository) GetByIDWithAttendees(roomID string) (*model.Room, error) {
+	var room model.Room
+	err := r.db.
+		Preload("Host", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, username")
+		}).
+		Preload("Users", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, username")
+		}).
+		First(&room, "id = ?", roomID).Error
 	return &room, err
 }
 

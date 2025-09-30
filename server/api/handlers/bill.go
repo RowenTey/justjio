@@ -32,6 +32,19 @@ func NewBillHandler(
 	}
 }
 
+// CreateBill creates a new bill for a room
+// @Summary Create bill
+// @Description Creates a new bill for a room with specified payers and amount
+// @Tags Bills
+// @Accept json
+// @Produce json
+// @Param bill body request.CreateBillRequest true "Bill creation details"
+// @Success 200 {object} object{status=string,message=string,data=model.Bill} "Created bill successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input, empty payers, or room already consolidated"
+// @Failure 404 {object} utils.EmptyApiResponse "Room not found or payers not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
+// @Router /bills [post]
 func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
 	var request request.CreateBillRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -64,6 +77,18 @@ func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Created bill successfully", bill)
 }
 
+// GetBillsByRoom retrieves bills for a specific room
+// @Summary Get bills by room
+// @Description Retrieves all bills for a specified room
+// @Tags Bills
+// @Accept json
+// @Produce json
+// @Param roomId query string true "Room ID"
+// @Success 200 {object} object{status=string,message=string,data=[]model.Bill} "Retrieved bills successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Missing roomId in query parameter"
+// @Failure 404 {object} utils.EmptyApiResponse "Room not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /bills [get]
 func (h *BillHandler) GetBillsByRoom(c *fiber.Ctx) error {
 	roomId := c.Query("roomId")
 	if roomId == "" {
@@ -78,6 +103,20 @@ func (h *BillHandler) GetBillsByRoom(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Retrieved bills successfully", bills)
 }
 
+// ConsolidateBills consolidates all bills for a room
+// @Summary Consolidate bills
+// @Description Consolidates all bills for a room into transactions (host only)
+// @Tags Bills
+// @Accept json
+// @Produce json
+// @Param consolidation body request.ConsolidateBillsRequest true "Consolidation request"
+// @Success 200 {object} utils.EmptyApiResponse "Bill consolidated successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input or bills already consolidated"
+// @Failure 403 {object} utils.EmptyApiResponse "Only host can consolidate bills"
+// @Failure 404 {object} utils.EmptyApiResponse "Room not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
+// @Router /bills/consolidate [post]
 func (h *BillHandler) ConsolidateBills(c *fiber.Ctx) error {
 	var request request.ConsolidateBillsRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -96,9 +135,21 @@ func (h *BillHandler) ConsolidateBills(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, RoomNotFoundErrorMsg)
 	}
 
-	return utils.HandleSuccess(c, "Bill consolidated successfully", nil)
+	return utils.HandleSuccess[any](c, "Bill consolidated successfully", nil)
 }
 
+// IsRoomBillConsolidated checks if room bills are consolidated
+// @Summary Check bill consolidation status
+// @Description Checks whether bills for a specific room have been consolidated
+// @Tags Bills
+// @Accept json
+// @Produce json
+// @Param roomId path string true "Room ID"
+// @Success 200 {object} object{status=string,message=string,data=object{isConsolidated=bool}} "Retrieved consolidation status successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Missing roomId in path parameter"
+// @Failure 404 {object} utils.EmptyApiResponse "Room not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /bills/rooms/{roomId}/consolidation-status [get]
 func (h *BillHandler) IsRoomBillConsolidated(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 	if roomId == "" {

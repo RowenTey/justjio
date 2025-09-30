@@ -146,6 +146,8 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
+    profiles:
+      - tools
     ports:
       - "5050:80"
     user: root

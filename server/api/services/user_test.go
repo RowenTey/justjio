@@ -214,9 +214,9 @@ func (s *UserServiceTestSuite) TestSearchUsers_Success() {
 	query := "test"
 	expected := []model.User{{ID: 2, Username: "testuser"}}
 
-	s.mockUserRepo.On("SearchUsers", currentUserID, query, 10).Return(&expected, nil)
+	s.mockUserRepo.On("SearchNonFriendUsers", currentUserID, query, 10).Return(&expected, nil)
 
-	result, err := s.userService.SearchUsers(currentUserID, query)
+	result, err := s.userService.SearchNonFriendUsers(currentUserID, query)
 
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), &expected, result)

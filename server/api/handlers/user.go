@@ -26,6 +26,17 @@ func NewUserHandler(userService *services.UserService, logger *log.Logger) *User
 	}
 }
 
+// GetUser retrieves a user by ID
+// @Summary Get user details
+// @Description Retrieves a user's details based on the provided user ID
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param userId path string true "User ID"
+// @Success 200 {object} object{status=string,message=string,data=model.User} "User found successfully"
+// @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /users/{userId} [get]
 func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	id := c.Params("userId")
 
@@ -37,6 +48,19 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "User found successfully", user)
 }
 
+// UpdateUser updates a user field
+// @Summary Update user field
+// @Description Updates a specific field of a user identified by user ID
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param userId path string true "User ID"
+// @Param request body request.UpdateUserRequest true "Update user request"
+// @Success 200 {object} object{status=string,message=string,data=request.UpdateUserRequest} "User successfully updated"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
+// @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /users/{userId} [patch]
 func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	var request request.UpdateUserRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -52,14 +76,20 @@ func (h *UserHandler) UpdateUser(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "User successfully updated", request)
 }
 
-func (h *UserHandler) DeleteUser(c *fiber.Ctx) error {
-	id := c.Params("userId")
-	if err := h.userService.DeleteUser(id); err != nil {
-		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
-	}
-	return utils.HandleSuccess(c, "User successfully deleted", nil)
-}
-
+// SendFriendRequest sends a friend request
+// @Summary Send friend request
+// @Description Sends a friend request from one user to another
+// @Tags Friends
+// @Accept json
+// @Produce json
+// @Param userId path int true "User ID of the sender"
+// @Param request body request.ModifyFriendRequest true "Friend request details"
+// @Success 200 {object} utils.EmptyApiResponse "Friend request sent"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
+// @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
+// @Failure 409 {object} utils.EmptyApiResponse "Conflict: Self request, already friends, or request exists"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /users/{userId}/friends/requests [post]
 func (h *UserHandler) SendFriendRequest(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
@@ -81,9 +111,22 @@ func (h *UserHandler) SendFriendRequest(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
 
-	return utils.HandleSuccess(c, "Friend request sent", nil)
+	return utils.HandleSuccess[any](c, "Friend request sent", nil)
 }
 
+// RemoveFriend removes a friend
+// @Summary Remove friend
+// @Description Removes a friend relationship between two users
+// @Tags Friends
+// @Accept json
+// @Produce json
+// @Param userId path int true "User ID"
+// @Param friendId path int true "Friend ID to remove"
+// @Success 200 {object} utils.EmptyApiResponse "Friend successfully removed"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
+// @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /users/{userId}/friends/{friendId} [delete]
 func (h *UserHandler) RemoveFriend(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
@@ -99,9 +142,20 @@ func (h *UserHandler) RemoveFriend(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
 
-	return utils.HandleSuccess(c, "Friend successfully removed", nil)
+	return utils.HandleSuccess[any](c, "Friend successfully removed", nil)
 }
 
+// GetFriends retrieves a user's friends
+// @Summary Get friends
+// @Description Retrieves the list of friends for a user
+// @Tags Friends
+// @Accept json
+// @Produce json
+// @Param userId path string true "User ID"
+// @Success 200 {object} object{status=string,message=string,data=[]model.User} "Friends retrieved successfully"
+// @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /users/{userId}/friends [get]
 func (h *UserHandler) GetFriends(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 
@@ -113,51 +167,43 @@ func (h *UserHandler) GetFriends(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Friends retrieved successfully", friends)
 }
 
-func (h *UserHandler) IsFriend(c *fiber.Ctx) error {
-	userID, err := c.ParamsInt("userId")
-	if err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
-
-	var request request.ModifyFriendRequest
-	if err := c.BodyParser(&request); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
-
-	isFriend := h.userService.IsFriend(uint(userID), request.FriendID)
-
-	response := response.IsFriendResponse{
-		IsFriend: isFriend,
-	}
-	return utils.HandleSuccess(c, "Friend check completed", response)
-}
-
-func (h *UserHandler) GetNumFriends(c *fiber.Ctx) error {
-	userID := c.Params("userId")
-
-	numFriends, err := h.userService.GetNumFriends(userID)
-	if err != nil {
-		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
-	}
-
-	response := response.GetNumFriendsResponse{
-		NumFriends: numFriends,
-	}
-	return utils.HandleSuccess(c, "Number of friends retrieved successfully", response)
-}
-
-func (h *UserHandler) SearchFriends(c *fiber.Ctx) error {
+// SearchNonFriends searches for non-friend users
+// @Summary Search non-friend users
+// @Description Searches for users who are not friends with the specified user based on a query
+// @Tags Friends
+// @Accept json
+// @Produce json
+// @Param userId path string true "User ID"
+// @Param query query string true "Search query"
+// @Success 200 {object} object{status=string,message=string,data=[]model.User} "Non-friend users retrieved successfully"
+// @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /users/{userId}/friends/search [get]
+func (h *UserHandler) SearchNonFriends(c *fiber.Ctx) error {
 	userID := c.Params("userId")
 	query := c.Query("query")
 
-	friends, err := h.userService.SearchUsers(userID, query)
+	friends, err := h.userService.SearchNonFriendUsers(userID, query)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
 
-	return utils.HandleSuccess(c, "Friends retrieved successfully", friends)
+	return utils.HandleSuccess(c, "Non-friend users retrieved successfully", friends)
 }
 
+// GetFriendRequestsByStatus retrieves friend requests by status
+// @Summary Get friend requests by status
+// @Description Retrieves friend requests for a user filtered by status (e.g., pending, accepted)
+// @Tags Friend Requests
+// @Accept json
+// @Produce json
+// @Param userId path int true "User ID"
+// @Param status query string true "Status of friend requests (e.g., pending, accepted)"
+// @Success 200 {object} object{status=string,message=string,data=[]model.FriendRequest} "Friend requests retrieved successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid status"
+// @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /users/{userId}/friends/requests [get]
 func (h *UserHandler) GetFriendRequestsByStatus(c *fiber.Ctx) error {
 	status := c.Query("status")
 	userID, err := c.ParamsInt("userId")
@@ -176,6 +222,18 @@ func (h *UserHandler) GetFriendRequestsByStatus(c *fiber.Ctx) error {
 	return utils.HandleSuccess(c, "Friend requests retrieved successfully", requests)
 }
 
+// CountPendingFriendRequests counts pending friend requests
+// @Summary Count pending friend requests
+// @Description Counts the number of pending friend requests for a user
+// @Tags Friend Requests
+// @Accept json
+// @Produce json
+// @Param userId path int true "User ID"
+// @Success 200 {object} object{status=string,message=string,data=response.CountPendingRequestsResponse} "Pending friend requests counted successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
+// @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /users/{userId}/friends/requests/count [get]
 func (h *UserHandler) CountPendingFriendRequests(c *fiber.Ctx) error {
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
@@ -187,12 +245,25 @@ func (h *UserHandler) CountPendingFriendRequests(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
 
-	response := response.CountPendingRequestsResponse{
+	return utils.HandleSuccess(c, "Pending friend requests counted successfully", response.CountPendingRequestsResponse{
 		Count: count,
-	}
-	return utils.HandleSuccess(c, "Pending friend requests counted successfully", response)
+	})
 }
 
+// RespondToFriendRequest responds to a friend request
+// @Summary Respond to friend request
+// @Description Accepts or rejects a friend request based on the provided action
+// @Tags Friend Requests
+// @Accept json
+// @Produce json
+// @Param userId path int true "User ID"
+// @Param request body request.RespondToFriendRequestRequest true "Friend request response details"
+// @Success 200 {object} utils.EmptyApiResponse "Friend request processed successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input or action"
+// @Failure 404 {object} utils.EmptyApiResponse "Error processing friend request"
+// @Failure 409 {object} utils.EmptyApiResponse "Friend request already processed"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Router /users/{userId}/friends/requests [patch]
 func (h *UserHandler) RespondToFriendRequest(c *fiber.Ctx) error {
 	var request request.RespondToFriendRequestRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -210,7 +281,7 @@ func (h *UserHandler) RespondToFriendRequest(c *fiber.Ctx) error {
 			}
 			return utils.HandleNotFoundOrInternalError(c, err, "Error processing friend request")
 		}
-		return utils.HandleSuccess(c, "Friend request accepted successfully", nil)
+		return utils.HandleSuccess[any](c, "Friend request accepted successfully", nil)
 	case "reject":
 		if err := h.userService.RejectFriendRequest(requestIdUint); err != nil {
 			if errors.Is(err, services.ErrFriendRequestAlreadyProcessed) {
@@ -219,7 +290,7 @@ func (h *UserHandler) RespondToFriendRequest(c *fiber.Ctx) error {
 			}
 			return utils.HandleNotFoundOrInternalError(c, err, "Error processing friend request")
 		}
-		return utils.HandleSuccess(c, "Friend request rejected successfully", nil)
+		return utils.HandleSuccess[any](c, "Friend request rejected successfully", nil)
 	default:
 		return utils.HandleInvalidInputError(c, fmt.Errorf("invalid action: must be 'accept' or 'reject'"))
 	}
