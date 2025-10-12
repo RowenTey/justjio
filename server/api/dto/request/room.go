@@ -2,29 +2,39 @@ package request
 
 import (
 	"time"
-
-	"github.com/RowenTey/JustJio/server/api/model"
-
-	"gorm.io/datatypes"
 )
 
+// CreateRoomRequest represents the request body for creating a new room
 type CreateRoomRequest struct {
-	Room       model.Room     `json:"room"`
-	InviteesId datatypes.JSON `json:"invitees" swaggertype:"array,string"`
+	Name         string    `json:"name" validate:"required,min=3,max=100" example:"John's Birthday Party"`
+	Time         string    `json:"time" validate:"required" example:"7:00 PM"`
+	Venue        string    `json:"venue" validate:"required" example:"Marina Bay Sands"`
+	VenuePlaceId string    `json:"venuePlaceId" validate:"required" example:"ChIJkxHPFjMZ2jERPRhLUvKGfFk"`
+	VenueUrl     string    `json:"venueUrl" validate:"required,url" example:"https://maps.google.com/?cid=123456"`
+	Date         time.Time `json:"date" validate:"required" example:"2025-12-25T19:00:00Z"`
+	Description  string    `json:"description" validate:"required,max=500" example:"Let's celebrate John's birthday!"`
+	IsPrivate    bool      `json:"isPrivate" example:"false"`
+	ImageUrl     string    `json:"imageUrl" validate:"required,url" example:"https://example.com/party.jpg"`
+	Invitees     []string  `json:"invitees" swaggertype:"array,string" example:"1,2,3"` // Array of user IDs
 }
 
+// EditRoomRequest represents the request body for editing an existing room
+type EditRoomRequest struct {
+	Name         *string    `json:"name,omitempty" validate:"omitempty,min=3,max=100" example:"Updated Party Name"`
+	Time         *string    `json:"time,omitempty" example:"8:00 PM"`
+	Venue        *string    `json:"venue,omitempty" example:"Sentosa Beach"`
+	VenuePlaceId *string    `json:"venuePlaceId,omitempty" example:"ChIJkxHPFjMZ2jERPRhLUvKGfFk"`
+	Date         *time.Time `json:"date,omitempty" example:"2025-12-26T19:00:00Z"`
+	Description  *string    `json:"description,omitempty" validate:"omitempty,max=500" example:"Updated description"`
+	ImageUrl     *string    `json:"imageUrl,omitempty" validate:"omitempty,url" example:"https://example.com/updated.jpg"`
+}
+
+// RespondToRoomInviteRequest represents the request body for accepting/rejecting room invites
 type RespondToRoomInviteRequest struct {
-	Accept bool `json:"accept"`
+	Accept bool `json:"accept" example:"true"`
 }
 
+// InviteUserRequest represents the request body for inviting users to a room
 type InviteUserRequest struct {
-	InviteesId datatypes.JSON `json:"invitees" swaggertype:"array,string"`
-}
-
-type UpdateRoomRequest struct {
-	Venue       string    `json:"venue"`
-	PlaceId     string    `json:"placeId"`
-	Date        time.Time `json:"date"`
-	Time        string    `json:"time"`
-	Description string    `json:"description"`
+	Invitees []string `json:"invitees" validate:"required,min=1" swaggertype:"array,string" example:"4,5,6"` // Array of user IDs
 }

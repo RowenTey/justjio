@@ -5,6 +5,7 @@ import (
 
 	"github.com/RowenTey/JustJio/server/api/config"
 	pushNotificationModel "github.com/RowenTey/JustJio/server/api/dto/push_notifications"
+	"github.com/RowenTey/JustJio/server/api/dto/request"
 	"github.com/RowenTey/JustJio/server/api/handlers"
 	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/repository"
@@ -236,18 +237,39 @@ func setupDocsRoutes(router *fiber.App) {
 
 func setupAuthRoutes(v1 fiber.Router, handlers *Handlers) {
 	auth := v1.Group("/auth")
-	auth.Post("/", handlers.AuthHandler.Login)
-	auth.Post("/google", handlers.AuthHandler.GoogleLogin)
-	auth.Post("/signup", handlers.AuthHandler.SignUp)
-	auth.Post("/verify", handlers.AuthHandler.VerifyOTP)
-	auth.Post("/otp", handlers.AuthHandler.SendOTPEmail)
-	auth.Patch("/reset", handlers.AuthHandler.ResetPassword)
+	auth.Post("/",
+		middleware.ParseAndValidate[request.LoginRequest](),
+		handlers.AuthHandler.Login,
+	)
+	auth.Post("/google",
+		middleware.ParseAndValidate[request.GoogleAuthRequest](),
+		handlers.AuthHandler.GoogleLogin,
+	)
+	auth.Post("/signup",
+		middleware.ParseAndValidate[request.SignUpRequest](),
+		handlers.AuthHandler.SignUp,
+	)
+	auth.Post("/verify",
+		middleware.ParseAndValidate[request.VerifyOTPRequest](),
+		handlers.AuthHandler.VerifyOTP,
+	)
+	auth.Post("/otp",
+		middleware.ParseAndValidate[request.SendOTPEmailRequest](),
+		handlers.AuthHandler.SendOTPEmail,
+	)
+	auth.Patch("/reset",
+		middleware.ParseAndValidate[request.ResetPasswordRequest](),
+		handlers.AuthHandler.ResetPassword,
+	)
 }
 
 func setupUserRoutes(v1 fiber.Router, handlers *Handlers) {
 	users := v1.Group("/users")
 	users.Get("/:userId", handlers.UserHandler.GetUser)
-	users.Patch("/:userId/username", handlers.UserHandler.UpdateUsername)
+	users.Patch("/:userId/username",
+		middleware.ParseAndValidate[request.UpdateUsernameRequest](),
+		handlers.UserHandler.UpdateUsername,
+	)
 
 	friends := users.Group("/:userId/friends")
 	friends.Get("/", handlers.UserHandler.GetFriends)
@@ -258,8 +280,14 @@ func setupUserRoutes(v1 fiber.Router, handlers *Handlers) {
 	friendRequests := users.Group("/:userId/friendRequests")
 	friendRequests.Get("/", handlers.UserHandler.GetFriendRequestsByStatus)
 	friendRequests.Get("/count", handlers.UserHandler.CountPendingFriendRequests)
-	friendRequests.Post("/", handlers.UserHandler.SendFriendRequest)
-	friendRequests.Patch("/", handlers.UserHandler.RespondToFriendRequest)
+	friendRequests.Post("/",
+		middleware.ParseAndValidate[request.ModifyFriendRequest](),
+		handlers.UserHandler.SendFriendRequest,
+	)
+	friendRequests.Patch("/",
+		middleware.ParseAndValidate[request.RespondToFriendRequestRequest](),
+		handlers.UserHandler.RespondToFriendRequest,
+	)
 
 	userNotifications := users.Group("/:userId/notifications")
 	userNotifications.Get("/", handlers.NotificationHandler.GetNotifications)
@@ -280,10 +308,23 @@ func setupRoomRoutes(
 	rooms.Get("/venues/search", handlers.RoomHandler.QueryVenue)
 	rooms.Get("/:roomId", roomMiddleware, handlers.RoomHandler.GetRoom)
 	rooms.Get("/:roomId/uninvited", roomMiddleware, handlers.RoomHandler.GetUninvitedFriendsForRoom)
-	rooms.Post("/", handlers.RoomHandler.CreateRoom)
-	rooms.Post("/:roomId", roomMiddleware, handlers.RoomHandler.InviteUser)
-	rooms.Patch("/:roomId", handlers.RoomHandler.RespondToRoomInvite)
-	rooms.Patch("/:roomId/edit", handlers.RoomHandler.EditRoom)
+	rooms.Post("/",
+		middleware.ParseAndValidate[request.CreateRoomRequest](),
+		handlers.RoomHandler.CreateRoom,
+	)
+	rooms.Post("/:roomId",
+		roomMiddleware,
+		middleware.ParseAndValidate[request.InviteUserRequest](),
+		handlers.RoomHandler.InviteUser,
+	)
+	rooms.Patch("/:roomId",
+		middleware.ParseAndValidate[request.RespondToRoomInviteRequest](),
+		handlers.RoomHandler.RespondToRoomInvite,
+	)
+	rooms.Patch("/:roomId/edit",
+		middleware.ParseAndValidate[request.EditRoomRequest](),
+		handlers.RoomHandler.EditRoom,
+	)
 	rooms.Patch("/:roomId/join", handlers.RoomHandler.JoinRoom)
 	rooms.Patch("/:roomId/close", roomMiddleware, handlers.RoomHandler.CloseRoom)
 	rooms.Delete("/:roomId/leave", roomMiddleware, handlers.RoomHandler.LeaveRoom)
@@ -292,14 +333,23 @@ func setupRoomRoutes(
 	messages.Use(roomMiddleware)
 	messages.Get("/", handlers.MessageHandler.GetMessages)
 	messages.Get("/:msgId", handlers.MessageHandler.GetMessage)
-	messages.Post("/", handlers.MessageHandler.CreateMessage)
+	messages.Post("/",
+		middleware.ParseAndValidate[request.CreateMessageRequest](),
+		handlers.MessageHandler.CreateMessage,
+	)
 }
 
 func setupBillRoutes(v1 fiber.Router, handlers *Handlers) {
 	bills := v1.Group("/bills")
 	bills.Get("/", handlers.BillHandler.GetBillsByRoom)
-	bills.Post("/", handlers.BillHandler.CreateBill)
-	bills.Post("/consolidate", handlers.BillHandler.ConsolidateBills)
+	bills.Post("/",
+		middleware.ParseAndValidate[request.CreateBillRequest](),
+		handlers.BillHandler.CreateBill,
+	)
+	bills.Post("/consolidate",
+		middleware.ParseAndValidate[request.ConsolidateBillsRequest](),
+		handlers.BillHandler.ConsolidateBills,
+	)
 }
 
 func setupTransactionRoutes(v1 fiber.Router, handlers *Handlers) {
@@ -311,12 +361,18 @@ func setupTransactionRoutes(v1 fiber.Router, handlers *Handlers) {
 func setupNotificationRoutes(v1 fiber.Router, handlers *Handlers) {
 	notifications := v1.Group("/notifications")
 	notifications.Get("/:id", handlers.NotificationHandler.GetNotification)
-	notifications.Post("/", handlers.NotificationHandler.CreateNotification)
+	notifications.Post("/",
+		middleware.ParseAndValidate[request.CreateNotificationRequest](),
+		handlers.NotificationHandler.CreateNotification,
+	)
 }
 
 func setupSubscriptionRoutes(v1 fiber.Router, handlers *Handlers) {
 	subscriptions := v1.Group("/subscriptions")
 	subscriptions.Get("/:endpoint", handlers.SubscriptionHandler.GetSubscriptionByEndpoint)
-	subscriptions.Post("/", handlers.SubscriptionHandler.CreateSubscription)
+	subscriptions.Post("/",
+		middleware.ParseAndValidate[request.CreateSubscriptionRequest](),
+		handlers.SubscriptionHandler.CreateSubscription,
+	)
 	subscriptions.Delete("/:subId", handlers.SubscriptionHandler.DeleteSubscription)
 }

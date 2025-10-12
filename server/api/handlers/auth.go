@@ -8,6 +8,7 @@ import (
 
 	"github.com/RowenTey/JustJio/server/api/dto/request"
 	"github.com/RowenTey/JustJio/server/api/dto/response"
+	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
@@ -40,20 +41,24 @@ func NewAuthHandler(
 // @Tags Authentication
 // @Accept json
 // @Produce json
-// @Param user body model.User true "User registration details"
+// @Param signUpRequest body request.SignUpRequest true "User registration details"
 // @Success 200 {object} object{status=string,message=string,data=response.AuthResponse} "User signed up successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
 // @Failure 409 {object} utils.EmptyApiResponse "Username or email already exists"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /auth/signup [post]
 func (h *AuthHandler) SignUp(c *fiber.Ctx) error {
-	var user model.User
-	if err := c.BodyParser(&user); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
-	h.logger.Info("Received sign up request for user: ", user.Username)
+	signUpReq := middleware.GetValidatedRequest[request.SignUpRequest](c)
+	h.logger.Info("Received sign up request for user: ", signUpReq.Username)
 
-	createdUser, err := h.authService.SignUp(&user, &h.ClientOtpMap)
+	// Convert DTO to model
+	user := &model.User{
+		Username: signUpReq.Username,
+		Email:    signUpReq.Email,
+		Password: signUpReq.Password,
+	}
+
+	createdUser, err := h.authService.SignUp(user, &h.ClientOtpMap)
 	if err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return utils.HandleError(
@@ -86,10 +91,7 @@ func (h *AuthHandler) SignUp(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /auth [post]
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
-	var input request.LoginRequest
-	if err := c.BodyParser(&input); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
+	input := middleware.GetValidatedRequest[request.LoginRequest](c)
 
 	token, user, err := h.authService.Login(input.Username, input.Password)
 	if err != nil {
@@ -123,14 +125,11 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /auth/otp [post]
 func (h *AuthHandler) SendOTPEmail(c *fiber.Ctx) error {
-	var request request.SendOTPEmailRequest
-	if err := c.BodyParser(&request); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
+	req := middleware.GetValidatedRequest[request.SendOTPEmailRequest](c)
 
 	if err := h.
 		authService.
-		GenerateAndSendOTPEmail(request.Email, request.Purpose, &h.ClientOtpMap); err != nil {
+		GenerateAndSendOTPEmail(req.Email, req.Purpose, &h.ClientOtpMap); err != nil {
 		if errors.Is(err, services.ErrInvalidPurpose) {
 			return utils.HandleError(c, fiber.StatusBadRequest, "Invalid purpose", err)
 		} else if errors.Is(err, services.ErrEmailAlreadyVerified) {
@@ -139,7 +138,7 @@ func (h *AuthHandler) SendOTPEmail(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
 
-	h.logger.Info("OTP sent to " + request.Email + " successfully.")
+	h.logger.Info("OTP sent to " + req.Email + " successfully.")
 	return utils.HandleSuccess[any](c, "OTP sent successfully", nil)
 }
 
@@ -156,13 +155,9 @@ func (h *AuthHandler) SendOTPEmail(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /auth/verify [post]
 func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
-	var request request.VerifyOTPRequest
-	if err := c.BodyParser(&request); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
+	req := middleware.GetValidatedRequest[request.VerifyOTPRequest](c)
 
-	err := h.authService.VerifyOTP(request.Email, request.OTP, &h.ClientOtpMap)
-	if err != nil {
+	if err := h.authService.VerifyOTP(req.Email, req.OTP, &h.ClientOtpMap); err != nil {
 		if errors.Is(err, services.ErrInvalidOTP) {
 			return utils.HandleError(c, fiber.StatusBadRequest, "Invalid OTP", err)
 		} else if errors.Is(err, services.ErrOTPNotFound) {
@@ -171,7 +166,7 @@ func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
 
-	h.logger.Println("OTP verified successfully for email", request.Email)
+	h.logger.Println("OTP verified successfully for email", req.Email)
 	return utils.HandleSuccess[any](c, "OTP verified successfully", nil)
 }
 
@@ -188,14 +183,11 @@ func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /auth/reset [post]
 func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
-	var request request.ResetPasswordRequest
-	if err := c.BodyParser(&request); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
+	req := middleware.GetValidatedRequest[request.ResetPasswordRequest](c)
 
 	if err := h.
 		authService.
-		ResetPassword(request.Email, request.Password); err != nil {
+		ResetPassword(req.Email, req.Password); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
 
@@ -214,12 +206,9 @@ func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /auth/google [post]
 func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
-	var request request.GoogleAuthRequest
-	if err := c.BodyParser(&request); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
+	req := middleware.GetValidatedRequest[request.GoogleAuthRequest](c)
 
-	token, user, err := h.authService.GoogleLogin(request.Code)
+	token, user, err := h.authService.GoogleLogin(req.Code)
 	if err != nil {
 		return utils.HandleInternalServerError(c, err)
 	}

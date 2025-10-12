@@ -8,6 +8,7 @@ import (
 
 	"github.com/RowenTey/JustJio/server/api/dto/request"
 	"github.com/RowenTey/JustJio/server/api/dto/response"
+	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
 
@@ -62,18 +63,15 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/username [patch]
 func (h *UserHandler) UpdateUsername(c *fiber.Ctx) error {
-	var request request.UpdateUsernameRequest
-	if err := c.BodyParser(&request); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
+	req := middleware.GetValidatedRequest[request.UpdateUsernameRequest](c)
 
 	id := c.Params("userId")
-	if err := h.userService.UpdateUsername(id, request.Username); err != nil {
+	if err := h.userService.UpdateUsername(id, req.Username); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
 
-	h.logger.Infof("User %s updated username to %s", id, request.Username)
-	return utils.HandleSuccess(c, "User successfully updated", request)
+	h.logger.Infof("User %s updated username to %s", id, req.Username)
+	return utils.HandleSuccess(c, "User successfully updated", req)
 }
 
 // GetNumFriends gets the number of friends for a user
@@ -198,12 +196,9 @@ func (h *UserHandler) SendFriendRequest(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	var request request.ModifyFriendRequest
-	if err := c.BodyParser(&request); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
+	req := middleware.GetValidatedRequest[request.ModifyFriendRequest](c)
 
-	if err := h.userService.SendFriendRequest(uint(userID), request.FriendID); err != nil {
+	if err := h.userService.SendFriendRequest(uint(userID), req.FriendID); err != nil {
 		if errors.Is(err, services.ErrNoSelfFriendRequest) ||
 			errors.Is(err, services.ErrAlreadyFriends) ||
 			errors.Is(err, services.ErrFriendRequestExists) {
@@ -290,14 +285,11 @@ func (h *UserHandler) CountPendingFriendRequests(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friendRequests [patch]
 func (h *UserHandler) RespondToFriendRequest(c *fiber.Ctx) error {
-	var request request.RespondToFriendRequestRequest
-	if err := c.BodyParser(&request); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
+	req := middleware.GetValidatedRequest[request.RespondToFriendRequestRequest](c)
 
-	requestIdUint := uint(request.RequestID)
+	requestIdUint := uint(req.RequestID)
 
-	switch request.Action {
+	switch req.Action {
 	case "accept":
 		if err := h.userService.AcceptFriendRequest(requestIdUint); err != nil {
 			if errors.Is(err, services.ErrFriendRequestAlreadyProcessed) {

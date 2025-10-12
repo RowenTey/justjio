@@ -43,14 +43,14 @@ func NewTransactionHandler(
 // @Security BearerAuth
 // @Router /transactions [get]
 func (h *TransactionHandler) GetTransactionsByUser(c *fiber.Ctx) error {
-	token := c.Locals("user").(*jwt.Token)
-	userId := utils.GetUserInfoFromToken(token, "user_id")
+	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 	isPaid := c.QueryBool("isPaid", false)
 
 	transactions, err := h.transactionService.GetTransactionsByUser(isPaid, userId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No transactions found")
 	}
+
 	return utils.HandleSuccess(c, "Retrieved transactions successfully", transactions)
 }
 

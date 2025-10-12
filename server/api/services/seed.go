@@ -163,7 +163,7 @@ func SeedDB(
 
 		// accept invite
 		for _, userid := range invitees {
-			_, err := roomService.UpdateRoomInviteStatus(rooms[i].ID, userid, "accepted")
+			_, err := roomService.RespondToRoomInvite(rooms[i].ID, userid, true)
 			if err != nil {
 				log.Errorf("%s", err.Error())
 				return err

@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/dto/request"
+	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
 	"github.com/gofiber/fiber/v2"
@@ -41,15 +42,11 @@ func NewNotificationHandler(
 // @Security BearerAuth
 // @Router /notifications [post]
 func (h *NotificationHandler) CreateNotification(c *fiber.Ctx) error {
-	var request request.CreateNotificationRequest
-	if err := c.BodyParser(&request); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
+	req := middleware.GetValidatedRequest[request.CreateNotificationRequest](c)
 
-	userId := utils.UIntToString(request.UserId)
+	userId := utils.UIntToString(req.UserId)
 
-	err := h.notificationService.SendNotification(userId, request.Title, request.Content)
-	if err != nil {
+	if err := h.notificationService.SendNotification(userId, req.Title, req.Content); err != nil {
 		if errors.Is(err, services.ErrEmptyContent) {
 			return utils.HandleInvalidInputError(c, err)
 		}
@@ -129,15 +126,9 @@ func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /users/{userId}/notifications [get]
 func (h *NotificationHandler) GetNotifications(c *fiber.Ctx) error {
-	token := c.Locals("user").(*jwt.Token)
-	userId := utils.GetUserInfoFromToken(token, "user_id")
+	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
-	userIdInt, err := strconv.ParseUint(userId, 10, 32)
-	if err != nil {
-		return utils.HandleInternalServerError(c, err)
-	}
-
-	notifications, err := h.notificationService.GetNotifications(uint(userIdInt))
+	notifications, err := h.notificationService.GetNotifications(userId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "User not found")
 	}

@@ -13,8 +13,7 @@ func SendSMTPEmail(from, to, subject, textBody string) error {
 		Subject:  subject,
 		TextBody: textBody,
 	}
-	_, err := smtp2go.Send(&email)
-	if err != nil {
+	if _, err := smtp2go.Send(&email); err != nil {
 		return err
 	}
 	return nil

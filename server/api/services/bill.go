@@ -58,18 +58,9 @@ func (bs *BillService) CreateBill(
 	amount float32,
 	includeOwner bool,
 ) (*model.Bill, error) {
-	if status, err := bs.billRepo.GetRoomBillConsolidationStatus(roomId); err != nil {
-		return nil, err
-	} else if status == repository.CONSOLIDATED {
-		return nil, ErrAlreadyConsolidated
-	}
+	var bill model.Bill
 
-	if len(payersId) == 0 {
-		return nil, ErrEmptyPayers
-	}
-
-	bill := model.Bill{}
-	err := database.RunInTransaction(bs.db, sql.LevelDefault, func(tx *gorm.DB) error {
+	if err := database.RunInTransaction(bs.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		roomRepoTx := bs.roomRepo.WithTx(tx)
 		billRepoTx := bs.billRepo.WithTx(tx)
 		userRepoTx := bs.userRepo.WithTx(tx)
@@ -77,6 +68,10 @@ func (bs *BillService) CreateBill(
 		room, err := roomRepoTx.GetByID(roomId)
 		if err != nil {
 			return err
+		}
+
+		if room.Consolidated == "CONSOLIDATED" {
+			return ErrAlreadyConsolidated
 		}
 
 		owner, err := userRepoTx.FindByID(ownerid)
@@ -105,17 +100,18 @@ func (bs *BillService) CreateBill(
 			return err
 		}
 
-		// Set as unconsolidated once a bill is created
 		room.Consolidated = "UNCONSOLIDATED"
 		if err := roomRepoTx.Update(room); err != nil {
 			return err
 		}
 
 		return nil
-	})
+	}); err != nil {
+		return nil, err
+	}
 
 	bs.logger.Info("Bill created in room: ", bill.RoomID)
-	return &bill, err
+	return &bill, nil
 }
 
 func (bs *BillService) GetBillById(billId uint) (*model.Bill, error) {
@@ -128,18 +124,6 @@ func (bs *BillService) GetBillsForRoom(roomId string) ([]model.Bill, error) {
 
 func (bs *BillService) DeleteRoomBills(roomId string) error {
 	return bs.billRepo.DeleteByRoom(roomId)
-}
-
-func (bs *BillService) GetRoomBillConsolidationStatus(roomId string) (repository.Status, error) {
-	if _, err := bs.roomRepo.GetByID(roomId); err != nil {
-		return repository.UNCONSOLIDATED, err
-	}
-
-	status, err := bs.billRepo.GetRoomBillConsolidationStatus(roomId)
-	if err != nil {
-		return repository.UNCONSOLIDATED, err
-	}
-	return status, nil
 }
 
 func (bs *BillService) ConsolidateBills(roomId, userId string) error {
@@ -157,9 +141,7 @@ func (bs *BillService) ConsolidateBills(roomId, userId string) error {
 			return ErrOnlyHostCanConsolidate
 		}
 
-		if status, err := bs.billRepo.GetRoomBillConsolidationStatus(roomId); err != nil {
-			return err
-		} else if status == repository.CONSOLIDATED {
+		if room.Consolidated == "CONSOLIDATED" {
 			return ErrAlreadyConsolidated
 		}
 
@@ -181,6 +163,11 @@ func (bs *BillService) ConsolidateBills(roomId, userId string) error {
 		}
 
 		if err := transactionRepoTx.Create(transaction); err != nil {
+			return err
+		}
+
+		room.Consolidated = "CONSOLIDATED"
+		if err := roomRepoTx.Update(room); err != nil {
 			return err
 		}
 

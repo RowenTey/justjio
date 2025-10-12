@@ -1,11 +1,12 @@
 package handlers
 
 import (
-	"errors"
 	"net/url"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/RowenTey/JustJio/server/api/dto/request"
+	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
@@ -33,23 +34,23 @@ func NewSubscriptionHandler(
 // @Tags Subscriptions
 // @Accept json
 // @Produce json
-// @Param subscription body model.Subscription true "Subscription details"
+// @Param subscriptionRequest body request.CreateSubscriptionRequest true "Subscription details"
 // @Success 200 {object} object{status=string,message=string,data=model.Subscription} "Subscription created successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input or missing required fields"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Security BearerAuth
 // @Router /subscriptions [post]
 func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
-	var subscription model.Subscription
-	if err := c.BodyParser(&subscription); err != nil {
-		return utils.HandleInvalidInputError(c, err)
+	req := middleware.GetValidatedRequest[request.CreateSubscriptionRequest](c)
+
+	subscription := &model.Subscription{
+		UserID:   req.UserID,
+		Endpoint: req.Endpoint,
+		Auth:     req.Auth,
+		P256dh:   req.P256dh,
 	}
 
-	if subscription.Auth == "" || subscription.P256dh == "" || subscription.Endpoint == "" {
-		return utils.HandleInvalidInputError(c, errors.New("missing required fields"))
-	}
-
-	createdSubscription, err := h.subscriptionService.CreateSubscription(&subscription)
+	createdSubscription, err := h.subscriptionService.CreateSubscription(subscription)
 	if err != nil {
 		return utils.HandleInternalServerError(c, err)
 	}
