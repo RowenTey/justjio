@@ -93,10 +93,6 @@ func (s *UserService) UpsertUser(user *model.User, isCreate bool) (*model.User, 
 	return user, err
 }
 
-func (s *UserService) DeleteUser(userId string) error {
-	return s.userRepo.Delete(userId)
-}
-
 func (s *UserService) MarkOnline(userId string) error {
 	return s.UpdateUserField(userId, "isOnline", true)
 }
@@ -135,17 +131,27 @@ func (s *UserService) SendFriendRequest(senderID, receiverID uint) error {
 		return ErrFriendRequestExists
 	}
 
-	request := model.FriendRequest{
-		SenderID:   senderID,
-		ReceiverID: receiverID,
-		Status:     "pending",
-	}
-	return s.userRepo.CreateFriendRequest(&request)
+	return database.RunInTransaction(s.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
+		userRepoTx := s.userRepo.WithTx(tx)
+
+		request := model.FriendRequest{
+			SenderID:   senderID,
+			ReceiverID: receiverID,
+			Status:     "pending",
+		}
+
+		if err := userRepoTx.CreateFriendRequest(&request); err != nil {
+			return err
+		}
+
+		// Increment receiver's pending friend requests count
+		return userRepoTx.UpdateNoOfPendingFriendRequests([]uint{receiverID}, 1)
+	})
 }
 
 // TODO: Test if addFriend will throw error for non-existing users
 func (s *UserService) AcceptFriendRequest(requestID uint) error {
-	return database.RunInTransaction(s.db, sql.LevelDefault, func(tx *gorm.DB) error {
+	return database.RunInTransaction(s.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
 		userRepoTx := s.userRepo.WithTx(tx)
 
 		request, err := userRepoTx.FindFriendRequest(requestID)
@@ -157,8 +163,6 @@ func (s *UserService) AcceptFriendRequest(requestID uint) error {
 			return ErrFriendRequestAlreadyProcessed
 		}
 
-		// request.Status = `"accepted"
-		// request.RespondedAt = time.Now()`
 		if err := userRepoTx.UpdateFriendRequest(request.ID, map[string]any{
 			"status":       "accepted",
 			"responded_at": time.Now(),
@@ -167,30 +171,56 @@ func (s *UserService) AcceptFriendRequest(requestID uint) error {
 		}
 
 		// Add each user to the other's friend list
-		return userRepoTx.AddFriend(request.SenderID, request.ReceiverID)
+		if err := userRepoTx.AddFriend(request.SenderID, request.ReceiverID); err != nil {
+			return err
+		}
+
+		// Decrement receiver's pending friend requests count
+		if err := userRepoTx.UpdateNoOfPendingFriendRequests([]uint{request.ReceiverID}, -1); err != nil {
+			return err
+		}
+
+		// Increment friend count for both users
+		return userRepoTx.UpdateNoOfFriends([]uint{request.SenderID, request.ReceiverID}, 1)
 	})
 }
 
 func (s *UserService) RejectFriendRequest(requestID uint) error {
-	request, err := s.userRepo.FindFriendRequest(requestID)
-	if err != nil {
-		return err
-	}
+	return database.RunInTransaction(s.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
+		userRepoTx := s.userRepo.WithTx(tx)
 
-	if request.Status != "pending" {
-		return ErrFriendRequestAlreadyProcessed
-	}
+		request, err := userRepoTx.FindFriendRequest(requestID)
+		if err != nil {
+			return err
+		}
 
-	// request.Status = "rejected"
-	// request.RespondedAt = time.Now()
-	return s.userRepo.UpdateFriendRequest(request.ID, map[string]any{
-		"status":       "rejected",
-		"responded_at": time.Now(),
+		if request.Status != "pending" {
+			return ErrFriendRequestAlreadyProcessed
+		}
+
+		if err := userRepoTx.UpdateFriendRequest(request.ID, map[string]any{
+			"status":       "rejected",
+			"responded_at": time.Now(),
+		}); err != nil {
+			return err
+		}
+
+		// Decrement receiver's pending friend requests count
+		return userRepoTx.UpdateNoOfPendingFriendRequests([]uint{request.ReceiverID}, -1)
 	})
 }
 
 func (s *UserService) RemoveFriend(userID, friendID uint) error {
-	return s.userRepo.RemoveFriend(userID, friendID)
+	return database.RunInTransaction(s.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
+		userRepoTx := s.userRepo.WithTx(tx)
+
+		if err := userRepoTx.RemoveFriend(userID, friendID); err != nil {
+			return err
+		}
+
+		// Decrement friend count for both users
+		return userRepoTx.UpdateNoOfFriends([]uint{userID, friendID}, -1)
+	})
 }
 
 func (s *UserService) GetFriends(userID string) ([]model.User, error) {

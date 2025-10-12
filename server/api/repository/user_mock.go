@@ -119,7 +119,7 @@ func (m *MockUserRepository) SearchNonFriendUsers(currentUserId, query string, l
 }
 
 // Pending invites
-func (m *MockUserRepository) UpdatePendingRoomInvites(userIDs []string, delta int) error {
+func (m *MockUserRepository) UpdateNoOfPendingRoomInvites(userIDs []string, delta int) error {
 	args := m.Called(userIDs, delta)
 	return args.Error(0)
 }

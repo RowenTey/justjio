@@ -39,8 +39,9 @@ type UserRepository interface {
 	// Search
 	SearchNonFriendUsers(currentUserId, query string, limit int) ([]model.User, error)
 
-	// Pending invites
-	UpdatePendingRoomInvites(userIDs []string, delta int) error
+	UpdateNoOfPendingRoomInvites(userIDs []string, delta int) error
+	UpdateNoOfPendingFriendRequests(userIDs []uint, delta int) error
+	UpdateNoOfFriends(userIDs []uint, delta int) error
 }
 
 type userRepository struct {
@@ -193,11 +194,9 @@ func (r *userRepository) GetFriends(userID uint) ([]model.User, error) {
 
 // CountFriends returns the number of friends a user has.
 func (r *userRepository) CountFriends(userID uint) (int64, error) {
-	count := r.db.
-		Model(&model.User{ID: userID}).
-		Association("Friends").
-		Count()
-	return int64(count), nil
+	var user model.User
+	err := r.db.First(&user, userID).Error
+	return int64(user.NoOfFriends), err
 }
 
 // CheckFriendship checks if a user is friends with another user.
@@ -253,7 +252,7 @@ func (r *userRepository) GetUninvitedFriends(roomID, userID string) ([]model.Use
 	return friends, err
 }
 
-func (r *userRepository) UpdatePendingRoomInvites(userIDs []string, delta int) error {
+func (r *userRepository) UpdateNoOfPendingRoomInvites(userIDs []string, delta int) error {
 	if len(userIDs) == 0 {
 		return nil
 	}
@@ -262,4 +261,26 @@ func (r *userRepository) UpdatePendingRoomInvites(userIDs []string, delta int) e
 		Model(&model.User{}).
 		Where("id IN ?", userIDs).
 		Update("no_of_pending_room_invites", gorm.Expr("no_of_pending_room_invites + ?", delta)).Error
+}
+
+func (r *userRepository) UpdateNoOfPendingFriendRequests(userIDs []uint, delta int) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	return r.db.
+		Model(&model.User{}).
+		Where("id IN ?", userIDs).
+		Update("no_of_pending_friend_requests", gorm.Expr("no_of_pending_friend_requests + ?", delta)).Error
+}
+
+func (r *userRepository) UpdateNoOfFriends(userIDs []uint, delta int) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	return r.db.
+		Model(&model.User{}).
+		Where("id IN ?", userIDs).
+		Update("no_of_friends", gorm.Expr("no_of_friends + ?", delta)).Error
 }

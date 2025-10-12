@@ -116,7 +116,7 @@ func (rs *RoomService) CreateRoomWithInvites(
 			return err
 		}
 
-		if err := userRepoTx.UpdatePendingRoomInvites(inviteesIds, 1); err != nil {
+		if err := userRepoTx.UpdateNoOfPendingRoomInvites(inviteesIds, 1); err != nil {
 			return err
 		}
 
@@ -358,7 +358,7 @@ func (rs *RoomService) CloseRoom(roomId string, userId string) error {
 		}
 
 		// Decrement number of pending invites for each invitee who haven't responded
-		if err := userRepoTx.UpdatePendingRoomInvites(inviteesId, -1); err != nil {
+		if err := userRepoTx.UpdateNoOfPendingRoomInvites(inviteesId, -1); err != nil {
 			return err
 		}
 
@@ -513,7 +513,7 @@ func (rs *RoomService) InviteUsersToRoom(
 			return err
 		}
 
-		if err := userRepoTx.UpdatePendingRoomInvites(inviteesIds, 1); err != nil {
+		if err := userRepoTx.UpdateNoOfPendingRoomInvites(inviteesIds, 1); err != nil {
 			return err
 		}
 
