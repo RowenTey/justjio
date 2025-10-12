@@ -18,10 +18,10 @@ type BillRepository interface {
 
 	Create(bill *model.Bill) error
 	FindByID(billID uint) (*model.Bill, error)
-	FindByRoom(roomID string) (*[]model.Bill, error)
+	FindByRoom(roomID string) ([]model.Bill, error)
 	DeleteByRoom(roomID string) error
 	GetRoomBillConsolidationStatus(roomID string) (Status, error)
-	FindByConsolidation(consolidationID uint) (*[]model.Bill, error)
+	FindByConsolidation(consolidationID uint) ([]model.Bill, error)
 	ConsolidateBills(roomID string) (*model.Consolidation, error)
 }
 
@@ -52,14 +52,14 @@ func (r *billRepository) FindByID(billID uint) (*model.Bill, error) {
 	return &bill, err
 }
 
-func (r *billRepository) FindByRoom(roomID string) (*[]model.Bill, error) {
+func (r *billRepository) FindByRoom(roomID string) ([]model.Bill, error) {
 	var bills []model.Bill
 	err := r.db.
 		Where("room_id = ?", roomID).
 		Preload("Owner").
 		Preload("Payers").
 		Find(&bills).Error
-	return &bills, err
+	return bills, err
 }
 
 func (r *billRepository) DeleteByRoom(roomID string) error {
@@ -111,12 +111,12 @@ func (r *billRepository) ConsolidateBills(roomID string) (*model.Consolidation, 
 	return &consolidation, nil
 }
 
-func (r *billRepository) FindByConsolidation(consolidationID uint) (*[]model.Bill, error) {
+func (r *billRepository) FindByConsolidation(consolidationID uint) ([]model.Bill, error) {
 	var bills []model.Bill
 	err := r.db.
 		Model(&model.Bill{}).
 		Where("consolidation_id = ?", consolidationID).
 		Preload("Payers").
 		Find(&bills).Error
-	return &bills, err
+	return bills, err
 }

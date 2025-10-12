@@ -1,4 +1,4 @@
-basePath: /api/v1
+basePath: /v1
 definitions:
   model.Bill:
     properties:
@@ -220,7 +220,7 @@ definitions:
         type: integer
       noOfPendingFriendRequests:
         type: integer
-      noOfRoomInvites:
+      noOfPendingRoomInvites:
         type: integer
       noOfRooms:
         type: integer
@@ -264,7 +264,7 @@ definitions:
         type: string
       payers:
         items:
-          type: integer
+          type: string
         type: array
       roomId:
         type: string
@@ -355,11 +355,9 @@ definitions:
       venue:
         type: string
     type: object
-  request.UpdateUserRequest:
+  request.UpdateUsernameRequest:
     properties:
-      field:
-        type: string
-      value:
+      username:
         type: string
     type: object
   request.VerifyOTPRequest:
@@ -373,6 +371,8 @@ definitions:
     properties:
       id:
         type: integer
+      pictureUrl:
+        type: string
       username:
         type: string
     type: object
@@ -392,33 +392,15 @@ definitions:
       count:
         type: integer
     type: object
-  response.CreateRoomResponse:
-    properties:
-      invites:
-        items:
-          $ref: '#/definitions/model.RoomInvite'
-        type: array
-      room:
-        $ref: '#/definitions/model.Room'
-    type: object
-  response.GetNumRoomInvitationsResponse:
+  response.CountResponse:
     properties:
       count:
         type: integer
     type: object
-  response.GetNumRoomsResponse:
+  response.GetNumFriendsResponse:
     properties:
-      count:
+      numFriends:
         type: integer
-    type: object
-  response.JoinRoomResponse:
-    properties:
-      attendees:
-        items:
-          $ref: '#/definitions/model.User'
-        type: array
-      room:
-        $ref: '#/definitions/model.Room'
     type: object
   response.RoomDto:
     properties:
@@ -453,6 +435,23 @@ definitions:
       venueUrl:
         type: string
     type: object
+  response.RoomListDto:
+    properties:
+      host:
+        $ref: '#/definitions/response.AttendeesDto'
+      id:
+        type: string
+      imageUrl:
+        type: string
+      isClosed:
+        type: boolean
+      isPrivate:
+        type: boolean
+      name:
+        type: string
+      noOfAttendees:
+        type: integer
+    type: object
   utils.EmptyApiResponse:
     properties:
       data:
@@ -471,46 +470,7 @@ info:
   title: JustJio API
   version: "1.0"
 paths:
-  /auth/google:
-    post:
-      consumes:
-      - application/json
-      description: Authenticates a user using Google OAuth authorization code
-      parameters:
-      - description: Google OAuth request
-        in: body
-        name: google
-        required: true
-        schema:
-          $ref: '#/definitions/request.GoogleAuthRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Authenticated via Google successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/response.AuthResponse'
-              message:
-                type: string
-              status:
-                type: string
-              token:
-                type: string
-            type: object
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Google OAuth login
-      tags:
-      - Authentication
-  /auth/login:
+  /auth:
     post:
       consumes:
       - application/json
@@ -557,41 +517,46 @@ paths:
       summary: Login
       tags:
       - Authentication
-  /auth/reset-password:
+  /auth/google:
     post:
       consumes:
       - application/json
-      description: Resets the user's password after OTP verification
+      description: Authenticates a user using Google OAuth authorization code
       parameters:
-      - description: Password reset request
+      - description: Google OAuth request
         in: body
-        name: reset
+        name: google
         required: true
         schema:
-          $ref: '#/definitions/request.ResetPasswordRequest'
+          $ref: '#/definitions/request.GoogleAuthRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Password reset successfully
+          description: Authenticated via Google successfully
           schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+            properties:
+              data:
+                $ref: '#/definitions/response.AuthResponse'
+              message:
+                type: string
+              status:
+                type: string
+              token:
+                type: string
+            type: object
         "400":
           description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "404":
-          description: User not found
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Reset password
+      summary: Google OAuth login
       tags:
       - Authentication
-  /auth/send-otp:
+  /auth/otp:
     post:
       consumes:
       - application/json
@@ -628,6 +593,40 @@ paths:
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
       summary: Send OTP email
+      tags:
+      - Authentication
+  /auth/reset:
+    post:
+      consumes:
+      - application/json
+      description: Resets the user's password after OTP verification
+      parameters:
+      - description: Password reset request
+        in: body
+        name: reset
+        required: true
+        schema:
+          $ref: '#/definitions/request.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password reset successfully
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+      summary: Reset password
       tags:
       - Authentication
   /auth/signup:
@@ -671,7 +670,7 @@ paths:
       summary: Sign up
       tags:
       - Authentication
-  /auth/verify-otp:
+  /auth/verify:
     post:
       consumes:
       - application/json
@@ -744,6 +743,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
       summary: Get bills by room
       tags:
       - Bills
@@ -829,119 +830,7 @@ paths:
       summary: Consolidate bills
       tags:
       - Bills
-  /bills/rooms/{roomId}/consolidation-status:
-    get:
-      consumes:
-      - application/json
-      description: Checks whether bills for a specific room have been consolidated
-      parameters:
-      - description: Room ID
-        in: path
-        name: roomId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Retrieved consolidation status successfully
-          schema:
-            properties:
-              data:
-                properties:
-                  isConsolidated:
-                    type: boolean
-                type: object
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-        "400":
-          description: Missing roomId in path parameter
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "404":
-          description: Room not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Check bill consolidation status
-      tags:
-      - Bills
-  /messages/{msgId}:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves a specific message by its ID
-      parameters:
-      - description: Message ID
-        in: path
-        name: msgId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Retrieved message successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/model.Message'
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-        "404":
-          description: No message found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Get message by ID
-      tags:
-      - Messages
   /notifications:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves all notifications for the authenticated user
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Retrieved notifications successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/model.Notification'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-        "404":
-          description: User not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      security:
-      - BearerAuth: []
-      summary: Get user notifications
-      tags:
-      - Notifications
     post:
       consumes:
       - application/json
@@ -968,6 +857,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
       summary: Create notification
       tags:
       - Notifications
@@ -1008,40 +899,9 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
       summary: Get notification by ID
-      tags:
-      - Notifications
-  /notifications/{id}/read:
-    patch:
-      consumes:
-      - application/json
-      description: Marks a specific notification as read by its ID
-      parameters:
-      - description: Notification ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Notification marked as read successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "400":
-          description: Invalid notification ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "404":
-          description: Notification not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Mark notification as read
       tags:
       - Notifications
   /rooms:
@@ -1064,7 +924,7 @@ paths:
             properties:
               data:
                 items:
-                  $ref: '#/definitions/model.Room'
+                  $ref: '#/definitions/response.RoomListDto'
                 type: array
               message:
                 type: string
@@ -1087,8 +947,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a new room and optionally sends invitations to specified
-        users
+      description: Creates a new room and optionally sends invites to specified users
       parameters:
       - description: Room creation details
         in: body
@@ -1102,14 +961,7 @@ paths:
         "200":
           description: Created room successfully
           schema:
-            properties:
-              data:
-                $ref: '#/definitions/response.CreateRoomResponse'
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+            $ref: '#/definitions/utils.EmptyApiResponse'
         "400":
           description: Invalid input
           schema:
@@ -1156,9 +1008,148 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
       summary: Get room details
       tags:
       - Rooms
+    patch:
+      consumes:
+      - application/json
+      description: Accepts or rejects a room invitation
+      parameters:
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      - description: Invitation response
+        in: body
+        name: response
+        required: true
+        schema:
+          $ref: '#/definitions/request.RespondToRoomInviteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Rejected room invitation successfully
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "404":
+          description: Room not found
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
+      summary: Respond to room invitation
+      tags:
+      - Room Invites
+    post:
+      consumes:
+      - application/json
+      description: Invites multiple users to a room (host only)
+      parameters:
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      - description: User invites details
+        in: body
+        name: invites
+        required: true
+        schema:
+          $ref: '#/definitions/request.InviteUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invited users successfully
+          schema:
+            properties:
+              data:
+                items:
+                  $ref: '#/definitions/model.RoomInvite'
+                type: array
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "401":
+          description: Only hosts are allowed to invite users
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "404":
+          description: Room / User not found
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "409":
+          description: User is already in the room or already has pending invite
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
+      summary: Invite users to room
+      tags:
+      - Room Invites
+  /rooms/{roomId}/close:
+    patch:
+      consumes:
+      - application/json
+      description: Closes a room (host only, no unconsolidated bills allowed)
+      parameters:
+      - description: Room ID
+        in: path
+        name: roomId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Closed room successfully
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "401":
+          description: Only hosts are allowed to close rooms
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "404":
+          description: Room not found
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "409":
+          description: Cannot close room with unconsolidated bills
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
+      summary: Close room
+      tags:
+      - Rooms
+  /rooms/{roomId}/edit:
     patch:
       consumes:
       - application/json
@@ -1210,187 +1201,11 @@ paths:
       summary: Edit room
       tags:
       - Rooms
-  /rooms/{roomId}/attendees:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves the list of attendees for a specific room
-      parameters:
-      - description: Room ID
-        in: path
-        name: roomId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Retrieved room attendees successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/model.User'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-        "404":
-          description: No attendees found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Get room attendees
-      tags:
-      - Rooms
-  /rooms/{roomId}/close:
-    patch:
-      consumes:
-      - application/json
-      description: Closes a room (host only, no unconsolidated bills allowed)
-      parameters:
-      - description: Room ID
-        in: path
-        name: roomId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Closed room successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "401":
-          description: Only hosts are allowed to close rooms
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "404":
-          description: Room not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "409":
-          description: Cannot close room with unconsolidated bills
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      security:
-      - BearerAuth: []
-      summary: Close room
-      tags:
-      - Rooms
-  /rooms/{roomId}/invitations:
-    post:
-      consumes:
-      - application/json
-      description: Invites multiple users to a room (host only)
-      parameters:
-      - description: Room ID
-        in: path
-        name: roomId
-        required: true
-        type: string
-      - description: User invitation details
-        in: body
-        name: invites
-        required: true
-        schema:
-          $ref: '#/definitions/request.InviteUserRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Invited users successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/model.RoomInvite'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "401":
-          description: Only hosts are allowed to invite users
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "404":
-          description: Room / User not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "409":
-          description: User is already in the room or already has pending invite
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      security:
-      - BearerAuth: []
-      summary: Invite users to room
-      tags:
-      - Room Invitations
-  /rooms/{roomId}/invitations/respond:
-    patch:
-      consumes:
-      - application/json
-      description: Accepts or rejects a room invitation
-      parameters:
-      - description: Room ID
-        in: path
-        name: roomId
-        required: true
-        type: string
-      - description: Invitation response
-        in: body
-        name: response
-        required: true
-        schema:
-          $ref: '#/definitions/request.RespondToRoomInviteRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Rejected room invitation successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "404":
-          description: Room not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      security:
-      - BearerAuth: []
-      summary: Respond to room invitation
-      tags:
-      - Room Invitations
   /rooms/{roomId}/join:
-    post:
+    patch:
       consumes:
       - application/json
-      description: Allows a user to join a public room
+      description: Allows a user to join a room
       parameters:
       - description: Room ID
         in: path
@@ -1405,7 +1220,7 @@ paths:
           schema:
             properties:
               data:
-                $ref: '#/definitions/response.JoinRoomResponse'
+                $ref: '#/definitions/response.RoomDto'
               message:
                 type: string
               status:
@@ -1511,6 +1326,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
       summary: Get room messages
       tags:
       - Messages
@@ -1554,7 +1371,45 @@ paths:
       summary: Create message
       tags:
       - Messages
-  /rooms/{roomId}/uninvited-friends:
+  /rooms/{roomId}/messages/{msgId}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a specific message by its ID
+      parameters:
+      - description: Message ID
+        in: path
+        name: msgId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Retrieved message successfully
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/model.Message'
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "404":
+          description: No message found
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
+      summary: Get message by ID
+      tags:
+      - Messages
+  /rooms/{roomId}/uninvited:
     get:
       consumes:
       - application/json
@@ -1608,7 +1463,7 @@ paths:
           schema:
             properties:
               data:
-                $ref: '#/definitions/response.GetNumRoomsResponse'
+                $ref: '#/definitions/response.CountResponse'
               message:
                 type: string
               status:
@@ -1627,16 +1482,16 @@ paths:
       summary: Get number of rooms
       tags:
       - Rooms
-  /rooms/invitations:
+  /rooms/invites:
     get:
       consumes:
       - application/json
-      description: Retrieves pending room invitations for the authenticated user
+      description: Retrieves pending room invites for the authenticated user
       produces:
       - application/json
       responses:
         "200":
-          description: Retrieved room invitations successfully
+          description: Retrieved room invites successfully
           schema:
             properties:
               data:
@@ -1649,7 +1504,7 @@ paths:
                 type: string
             type: object
         "404":
-          description: No room invitations found
+          description: No room invites found
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
         "500":
@@ -1658,31 +1513,31 @@ paths:
             $ref: '#/definitions/utils.EmptyApiResponse'
       security:
       - BearerAuth: []
-      summary: Get room invitations
+      summary: Get room invites
       tags:
-      - Room Invitations
-  /rooms/invitations/count:
+      - Room Invites
+  /rooms/invites/count:
     get:
       consumes:
       - application/json
-      description: Retrieves the count of pending room invitations for the authenticated
+      description: Retrieves the count of pending room invites for the authenticated
         user
       produces:
       - application/json
       responses:
         "200":
-          description: Retrieved number of invitations successfully
+          description: Retrieved number of invites successfully
           schema:
             properties:
               data:
-                $ref: '#/definitions/response.GetNumRoomInvitationsResponse'
+                $ref: '#/definitions/response.CountResponse'
               message:
                 type: string
               status:
                 type: string
             type: object
         "404":
-          description: No room invitations found
+          description: No room invites found
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
         "500":
@@ -1691,9 +1546,9 @@ paths:
             $ref: '#/definitions/utils.EmptyApiResponse'
       security:
       - BearerAuth: []
-      summary: Get number of room invitations
+      summary: Get number of room invites
       tags:
-      - Room Invitations
+      - Room Invites
   /rooms/public:
     get:
       consumes:
@@ -1729,6 +1584,46 @@ paths:
       summary: Get unjoined public rooms
       tags:
       - Rooms
+  /roooms/venues/search:
+    get:
+      consumes:
+      - application/json
+      description: Searches for venues based on a query string
+      parameters:
+      - description: Search query for venues
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Queried venues successfully
+          schema:
+            properties:
+              data:
+                items:
+                  $ref: '#/definitions/model_location.Venue'
+                type: array
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "400":
+          description: Query parameter is required
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
+      summary: Query venues
+      tags:
+      - Venues
   /subscriptions:
     post:
       consumes:
@@ -1763,6 +1658,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
       summary: Create subscription
       tags:
       - Subscriptions
@@ -1803,6 +1700,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
       summary: Get subscription by endpoint
       tags:
       - Subscriptions
@@ -1832,6 +1731,8 @@ paths:
           description: Internal server error
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
       summary: Delete subscription
       tags:
       - Subscriptions
@@ -1951,128 +1852,7 @@ paths:
       summary: Get user details
       tags:
       - Users
-    patch:
-      consumes:
-      - application/json
-      description: Updates a specific field of a user identified by user ID
-      parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: string
-      - description: Update user request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.UpdateUserRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: User successfully updated
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/request.UpdateUserRequest'
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "404":
-          description: No user found with ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Update user field
-      tags:
-      - Users
-  /users/{userId}/friends:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves the list of friends for a user
-      parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Friends retrieved successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/model.User'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-        "404":
-          description: No user found with ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Get friends
-      tags:
-      - Friends
-  /users/{userId}/friends/{friendId}:
-    delete:
-      consumes:
-      - application/json
-      description: Removes a friend relationship between two users
-      parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: integer
-      - description: Friend ID to remove
-        in: path
-        name: friendId
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Friend successfully removed
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "404":
-          description: No user found with ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Remove friend
-      tags:
-      - Friends
-  /users/{userId}/friends/requests:
+  /users/{userId}/friendRequests:
     get:
       consumes:
       - application/json
@@ -2204,7 +1984,7 @@ paths:
       summary: Send friend request
       tags:
       - Friends
-  /users/{userId}/friends/requests/count:
+  /users/{userId}/friendRequests/count:
     get:
       consumes:
       - application/json
@@ -2244,6 +2024,119 @@ paths:
       summary: Count pending friend requests
       tags:
       - Friend Requests
+  /users/{userId}/friends:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the list of friends for a user
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Friends retrieved successfully
+          schema:
+            properties:
+              data:
+                items:
+                  $ref: '#/definitions/model.User'
+                type: array
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "404":
+          description: No user found with ID
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+      summary: Get friends
+      tags:
+      - Friends
+  /users/{userId}/friends/{friendId}:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a friend relationship between two users
+      parameters:
+      - description: User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      - description: Friend ID to remove
+        in: path
+        name: friendId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Friend successfully removed
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "404":
+          description: No user found with ID
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+      summary: Remove friend
+      tags:
+      - Friends
+  /users/{userId}/friends/count:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the total count of friends for a specific user
+      parameters:
+      - description: User ID
+        example: '"123"'
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Number of friends retrieved successfully
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/response.GetNumFriendsResponse'
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "404":
+          description: No user found with ID
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+      summary: Get number of friends
+      tags:
+      - Friends
   /users/{userId}/friends/search:
     get:
       consumes:
@@ -2288,45 +2181,129 @@ paths:
       summary: Search non-friend users
       tags:
       - Friends
-  /venues/search:
+  /users/{userId}/notifications:
     get:
       consumes:
       - application/json
-      description: Searches for venues based on a query string
-      parameters:
-      - description: Search query for venues
-        in: query
-        name: query
-        required: true
-        type: string
+      description: Retrieves all notifications for the authenticated user
       produces:
       - application/json
       responses:
         "200":
-          description: Queried venues successfully
+          description: Retrieved notifications successfully
           schema:
             properties:
               data:
                 items:
-                  $ref: '#/definitions/model_location.Venue'
+                  $ref: '#/definitions/model.Notification'
                 type: array
               message:
                 type: string
               status:
                 type: string
             type: object
-        "400":
-          description: Query parameter is required
+        "404":
+          description: User not found
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
         "500":
           description: Internal server error
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Query venues
+      security:
+      - BearerAuth: []
+      summary: Get user notifications
       tags:
-      - Venues
+      - Notifications
+  /users/{userId}/notifications/{notificationId}:
+    patch:
+      consumes:
+      - application/json
+      description: Marks a specific notification as read by its ID
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Notification marked as read successfully
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "400":
+          description: Invalid notification ID
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "404":
+          description: Notification not found
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+      security:
+      - BearerAuth: []
+      summary: Mark notification as read
+      tags:
+      - Notifications
+  /users/{userId}/username:
+    patch:
+      consumes:
+      - application/json
+      description: Updates the username for a specific user
+      parameters:
+      - description: User ID
+        example: '"123"'
+        in: path
+        name: userId
+        required: true
+        type: string
+      - description: Username update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UpdateUsernameRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User successfully updated
+          schema:
+            properties:
+              data:
+                $ref: '#/definitions/request.UpdateUsernameRequest'
+              message:
+                type: string
+              status:
+                type: string
+            type: object
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "404":
+          description: No user found with ID
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+      summary: Update username
+      tags:
+      - Users
 schemes:
 - http
 - https
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

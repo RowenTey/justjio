@@ -40,7 +40,7 @@ func (m *MockMessageRepository) CountByRoom(roomID string) (int64, error) {
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (m *MockMessageRepository) FindByRoom(roomId string, page int, pageSize int, asc bool) (*[]model.Message, error) {
+func (m *MockMessageRepository) FindByRoom(roomId string, page int, pageSize int, asc bool) ([]model.Message, error) {
 	args := m.Called(roomId, page, pageSize, asc)
-	return args.Get(0).(*[]model.Message), args.Error(1)
+	return args.Get(0).([]model.Message), args.Error(1)
 }

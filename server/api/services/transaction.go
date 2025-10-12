@@ -17,8 +17,8 @@ var (
 )
 
 type TransactionService interface {
-	GenerateTransactions(bills *[]model.Bill, consolidatedBill *model.Consolidation) (*[]model.Transaction, error)
-	GetTransactionsByUser(isPaid bool, userId string) (*[]model.Transaction, error)
+	GenerateTransactions(bills []model.Bill, consolidatedBill *model.Consolidation) ([]model.Transaction, error)
+	GetTransactionsByUser(isPaid bool, userId string) ([]model.Transaction, error)
 	SettleTransaction(transactionId string, userId string) (*model.Transaction, error)
 }
 
@@ -45,11 +45,11 @@ func NewTransactionService(
 	}
 }
 
-func (ts *transactionService) GenerateTransactions(bills *[]model.Bill, consolidatedBill *model.Consolidation) (*[]model.Transaction, error) {
+func (ts *transactionService) GenerateTransactions(bills []model.Bill, consolidatedBill *model.Consolidation) ([]model.Transaction, error) {
 	var wg sync.WaitGroup
 	txChan := make(chan *model.Transaction)
 
-	for _, bill := range *bills {
+	for _, bill := range bills {
 		wg.Add(1)
 		go func(bill *model.Bill) {
 			defer wg.Done()
@@ -92,15 +92,15 @@ func (ts *transactionService) GenerateTransactions(bills *[]model.Bill, consolid
 		ts.logger.Debugf("Before %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
 	}
 
-	consolidatedTransactions := ts.consolidateTransactions(&transactions, consolidatedBill)
-	for _, transaction := range *consolidatedTransactions {
+	consolidatedTransactions := ts.consolidateTransactions(transactions, consolidatedBill)
+	for _, transaction := range consolidatedTransactions {
 		ts.logger.Debugf("After %d -> %d : %f\n", transaction.PayerID, transaction.PayeeID, transaction.Amount)
 	}
 
 	return consolidatedTransactions, nil
 }
 
-func (ts *transactionService) GetTransactionsByUser(isPaid bool, userId string) (*[]model.Transaction, error) {
+func (ts *transactionService) GetTransactionsByUser(isPaid bool, userId string) ([]model.Transaction, error) {
 	return ts.transactionRepo.FindByUser(isPaid, userId)
 }
 
@@ -126,12 +126,12 @@ func (ts *transactionService) SettleTransaction(transactionId string, userId str
 	return transaction, nil
 }
 
-func (ts *transactionService) consolidateTransactions(transactions *[]model.Transaction, consolidatedBill *model.Consolidation) *[]model.Transaction {
+func (ts *transactionService) consolidateTransactions(transactions []model.Transaction, consolidatedBill *model.Consolidation) []model.Transaction {
 	graph := make(map[uint][]edge)
 	visited := make(map[uint]bool)
 
 	// construct adjacency list and init visited set
-	for _, transaction := range *transactions {
+	for _, transaction := range transactions {
 		startNode := transaction.PayerID
 		endNode := edge{
 			userId: transaction.PayeeID,
@@ -143,7 +143,7 @@ func (ts *transactionService) consolidateTransactions(transactions *[]model.Tran
 	}
 
 	var hasCycle float32
-	for _, transaction := range *transactions {
+	for _, transaction := range transactions {
 		// trigger the do-while loop
 		hasCycle = 1
 		for hasCycle != -1 {
@@ -167,7 +167,7 @@ func (ts *transactionService) consolidateTransactions(transactions *[]model.Tran
 		}
 	}
 
-	return &newTransactions
+	return newTransactions
 }
 
 func (ts *transactionService) resetVisited(visited map[uint]bool) {

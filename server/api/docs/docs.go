@@ -15,67 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/google": {
-            "post": {
-                "description": "Authenticates a user using Google OAuth authorization code",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Authentication"
-                ],
-                "summary": "Google OAuth login",
-                "parameters": [
-                    {
-                        "description": "Google OAuth request",
-                        "name": "google",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.GoogleAuthRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Authenticated via Google successfully",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "$ref": "#/definitions/response.AuthResponse"
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                },
-                                "token": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/auth/login": {
+        "/auth": {
             "post": {
                 "description": "Authenticates a user with username and password",
                 "consumes": [
@@ -147,9 +87,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/reset-password": {
+        "/auth/google": {
             "post": {
-                "description": "Resets the user's password after OTP verification",
+                "description": "Authenticates a user using Google OAuth authorization code",
                 "consumes": [
                     "application/json"
                 ],
@@ -159,33 +99,41 @@ const docTemplate = `{
                 "tags": [
                     "Authentication"
                 ],
-                "summary": "Reset password",
+                "summary": "Google OAuth login",
                 "parameters": [
                     {
-                        "description": "Password reset request",
-                        "name": "reset",
+                        "description": "Google OAuth request",
+                        "name": "google",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.ResetPasswordRequest"
+                            "$ref": "#/definitions/request.GoogleAuthRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Password reset successfully",
+                        "description": "Authenticated via Google successfully",
                         "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/response.AuthResponse"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                },
+                                "token": {
+                                    "type": "string"
+                                }
+                            }
                         }
                     },
                     "400": {
                         "description": "Invalid input",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
                         "schema": {
                             "$ref": "#/definitions/utils.EmptyApiResponse"
                         }
@@ -199,7 +147,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/send-otp": {
+        "/auth/otp": {
             "post": {
                 "description": "Sends a One-Time Password to the user's email for verification or password reset",
                 "consumes": [
@@ -244,6 +192,58 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Email already verified",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset": {
+            "post": {
+                "description": "Resets the user's password after OTP verification",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Reset password",
+                "parameters": [
+                    {
+                        "description": "Password reset request",
+                        "name": "reset",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password reset successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
                         "schema": {
                             "$ref": "#/definitions/utils.EmptyApiResponse"
                         }
@@ -320,7 +320,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/verify-otp": {
+        "/auth/verify": {
             "post": {
                 "description": "Verifies the One-Time Password sent to the user's email",
                 "consumes": [
@@ -374,6 +374,11 @@ const docTemplate = `{
         },
         "/bills": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves all bills for a specified room",
                 "consumes": [
                     "application/json"
@@ -565,181 +570,13 @@ const docTemplate = `{
                 }
             }
         },
-        "/bills/rooms/{roomId}/consolidation-status": {
-            "get": {
-                "description": "Checks whether bills for a specific room have been consolidated",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Bills"
-                ],
-                "summary": "Check bill consolidation status",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Room ID",
-                        "name": "roomId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Retrieved consolidation status successfully",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "type": "object",
-                                    "properties": {
-                                        "isConsolidated": {
-                                            "type": "boolean"
-                                        }
-                                    }
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Missing roomId in path parameter",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Room not found",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/messages/{msgId}": {
-            "get": {
-                "description": "Retrieves a specific message by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Messages"
-                ],
-                "summary": "Get message by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Message ID",
-                        "name": "msgId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Retrieved message successfully",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "$ref": "#/definitions/model.Message"
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No message found",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/notifications": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieves all notifications for the authenticated user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Notifications"
-                ],
-                "summary": "Get user notifications",
-                "responses": {
-                    "200": {
-                        "description": "Retrieved notifications successfully",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/model.Notification"
-                                    }
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "User not found",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    }
-                }
-            },
-            "post": {
                 "description": "Creates and sends a new notification to a user",
                 "consumes": [
                     "application/json"
@@ -786,6 +623,11 @@ const docTemplate = `{
         },
         "/notifications/{id}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves a specific notification by its ID",
                 "consumes": [
                     "application/json"
@@ -845,56 +687,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/notifications/{id}/read": {
-            "patch": {
-                "description": "Marks a specific notification as read by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Notifications"
-                ],
-                "summary": "Mark notification as read",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Notification ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Notification marked as read successfully",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid notification ID",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Notification not found",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/rooms": {
             "get": {
                 "security": [
@@ -931,7 +723,7 @@ const docTemplate = `{
                                 "data": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/model.Room"
+                                        "$ref": "#/definitions/response.RoomListDto"
                                     }
                                 },
                                 "message": {
@@ -963,7 +755,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates a new room and optionally sends invitations to specified users",
+                "description": "Creates a new room and optionally sends invites to specified users",
                 "consumes": [
                     "application/json"
                 ],
@@ -989,18 +781,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Created room successfully",
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "$ref": "#/definitions/response.CreateRoomResponse"
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
                         }
                     },
                     "400": {
@@ -1043,7 +824,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/response.GetNumRoomsResponse"
+                                    "$ref": "#/definitions/response.CountResponse"
                                 },
                                 "message": {
                                     "type": "string"
@@ -1069,14 +850,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/rooms/invitations": {
+        "/rooms/invites": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieves pending room invitations for the authenticated user",
+                "description": "Retrieves pending room invites for the authenticated user",
                 "consumes": [
                     "application/json"
                 ],
@@ -1084,12 +865,12 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Room Invitations"
+                    "Room Invites"
                 ],
-                "summary": "Get room invitations",
+                "summary": "Get room invites",
                 "responses": {
                     "200": {
-                        "description": "Retrieved room invitations successfully",
+                        "description": "Retrieved room invites successfully",
                         "schema": {
                             "type": "object",
                             "properties": {
@@ -1109,7 +890,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "No room invitations found",
+                        "description": "No room invites found",
                         "schema": {
                             "$ref": "#/definitions/utils.EmptyApiResponse"
                         }
@@ -1123,14 +904,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/rooms/invitations/count": {
+        "/rooms/invites/count": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieves the count of pending room invitations for the authenticated user",
+                "description": "Retrieves the count of pending room invites for the authenticated user",
                 "consumes": [
                     "application/json"
                 ],
@@ -1138,17 +919,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Room Invitations"
+                    "Room Invites"
                 ],
-                "summary": "Get number of room invitations",
+                "summary": "Get number of room invites",
                 "responses": {
                     "200": {
-                        "description": "Retrieved number of invitations successfully",
+                        "description": "Retrieved number of invites successfully",
                         "schema": {
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/response.GetNumRoomInvitationsResponse"
+                                    "$ref": "#/definitions/response.CountResponse"
                                 },
                                 "message": {
                                     "type": "string"
@@ -1160,7 +941,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "No room invitations found",
+                        "description": "No room invites found",
                         "schema": {
                             "$ref": "#/definitions/utils.EmptyApiResponse"
                         }
@@ -1230,6 +1011,11 @@ const docTemplate = `{
         },
         "/rooms/{roomId}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves details of a specific room by its ID",
                 "consumes": [
                     "application/json"
@@ -1282,6 +1068,219 @@ const docTemplate = `{
                     }
                 }
             },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Invites multiple users to a room (host only)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Room Invites"
+                ],
+                "summary": "Invite users to room",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Room ID",
+                        "name": "roomId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "User invites details",
+                        "name": "invites",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.InviteUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invited users successfully",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/model.RoomInvite"
+                                    }
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Only hosts are allowed to invite users",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Room / User not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "User is already in the room or already has pending invite",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Accepts or rejects a room invitation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Room Invites"
+                ],
+                "summary": "Respond to room invitation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Room ID",
+                        "name": "roomId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Invitation response",
+                        "name": "response",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.RespondToRoomInviteRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rejected room invitation successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Room not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms/{roomId}/close": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Closes a room (host only, no unconsolidated bills allowed)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Rooms"
+                ],
+                "summary": "Close room",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Room ID",
+                        "name": "roomId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Closed room successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Only hosts are allowed to close rooms",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Room not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Cannot close room with unconsolidated bills",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms/{roomId}/edit": {
             "patch": {
                 "security": [
                     {
@@ -1362,287 +1361,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/rooms/{roomId}/attendees": {
-            "get": {
-                "description": "Retrieves the list of attendees for a specific room",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Rooms"
-                ],
-                "summary": "Get room attendees",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Room ID",
-                        "name": "roomId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Retrieved room attendees successfully",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/model.User"
-                                    }
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No attendees found",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/rooms/{roomId}/close": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Closes a room (host only, no unconsolidated bills allowed)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Rooms"
-                ],
-                "summary": "Close room",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Room ID",
-                        "name": "roomId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Closed room successfully",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Only hosts are allowed to close rooms",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Room not found",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "Cannot close room with unconsolidated bills",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/rooms/{roomId}/invitations": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Invites multiple users to a room (host only)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Room Invitations"
-                ],
-                "summary": "Invite users to room",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Room ID",
-                        "name": "roomId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "User invitation details",
-                        "name": "invites",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.InviteUserRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Invited users successfully",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/model.RoomInvite"
-                                    }
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "401": {
-                        "description": "Only hosts are allowed to invite users",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Room / User not found",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "409": {
-                        "description": "User is already in the room or already has pending invite",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/rooms/{roomId}/invitations/respond": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Accepts or rejects a room invitation",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Room Invitations"
-                ],
-                "summary": "Respond to room invitation",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Room ID",
-                        "name": "roomId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Invitation response",
-                        "name": "response",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.RespondToRoomInviteRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Rejected room invitation successfully",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "Room not found",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/rooms/{roomId}/join": {
-            "post": {
+            "patch": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "description": "Allows a user to join a public room",
+                "description": "Allows a user to join a room",
                 "consumes": [
                     "application/json"
                 ],
@@ -1669,7 +1395,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/response.JoinRoomResponse"
+                                    "$ref": "#/definitions/response.RoomDto"
                                 },
                                 "message": {
                                     "type": "string"
@@ -1758,6 +1484,11 @@ const docTemplate = `{
         },
         "/rooms/{roomId}/messages": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves paginated messages for a specific room with optional sorting",
                 "consumes": [
                     "application/json"
@@ -1890,7 +1621,67 @@ const docTemplate = `{
                 }
             }
         },
-        "/rooms/{roomId}/uninvited-friends": {
+        "/rooms/{roomId}/messages/{msgId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves a specific message by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Messages"
+                ],
+                "summary": "Get message by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Message ID",
+                        "name": "msgId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Retrieved message successfully",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/model.Message"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No message found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/rooms/{roomId}/uninvited": {
             "get": {
                 "security": [
                     {
@@ -1953,8 +1744,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/roooms/venues/search": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Searches for venues based on a query string",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Venues"
+                ],
+                "summary": "Query venues",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search query for venues",
+                        "name": "query",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Queried venues successfully",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/model_location.Venue"
+                                    }
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Query parameter is required",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/subscriptions": {
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Creates a new push notification subscription for the user",
                 "consumes": [
                     "application/json"
@@ -2012,6 +1871,11 @@ const docTemplate = `{
         },
         "/subscriptions/{endpoint}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retrieves a push notification subscription by its endpoint URL",
                 "consumes": [
                     "application/json"
@@ -2073,6 +1937,11 @@ const docTemplate = `{
         },
         "/subscriptions/{subId}": {
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Deletes a push notification subscription by ID",
                 "consumes": [
                     "application/json"
@@ -2292,135 +2161,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "patch": {
-                "description": "Updates a specific field of a user identified by user ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Update user field",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "userId",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Update user request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.UpdateUserRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "User successfully updated",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "$ref": "#/definitions/request.UpdateUserRequest"
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid input",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "404": {
-                        "description": "No user found with ID",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    }
-                }
             }
         },
-        "/users/{userId}/friends": {
-            "get": {
-                "description": "Retrieves the list of friends for a user",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Friends"
-                ],
-                "summary": "Get friends",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "User ID",
-                        "name": "userId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Friends retrieved successfully",
-                        "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/model.User"
-                                    }
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No user found with ID",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/users/{userId}/friends/requests": {
+        "/users/{userId}/friendRequests": {
             "get": {
                 "description": "Retrieves friend requests for a user filtered by status (e.g., pending, accepted)",
                 "consumes": [
@@ -2617,7 +2360,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{userId}/friends/requests/count": {
+        "/users/{userId}/friendRequests/count": {
             "get": {
                 "description": "Counts the number of pending friend requests for a user",
                 "consumes": [
@@ -2661,6 +2404,120 @@ const docTemplate = `{
                         "description": "Invalid input",
                         "schema": {
                             "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "No user found with ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userId}/friends": {
+            "get": {
+                "description": "Retrieves the list of friends for a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Friends"
+                ],
+                "summary": "Get friends",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Friends retrieved successfully",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/model.User"
+                                    }
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No user found with ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userId}/friends/count": {
+            "get": {
+                "description": "Retrieves the total count of friends for a specific user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Friends"
+                ],
+                "summary": "Get number of friends",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"123\"",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Number of friends retrieved successfully",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/response.GetNumFriendsResponse"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
                         }
                     },
                     "404": {
@@ -2800,9 +2657,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/venues/search": {
+        "/users/{userId}/notifications": {
             "get": {
-                "description": "Searches for venues based on a query string",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves all notifications for the authenticated user",
                 "consumes": [
                     "application/json"
                 ],
@@ -2810,28 +2672,19 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Venues"
+                    "Notifications"
                 ],
-                "summary": "Query venues",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search query for venues",
-                        "name": "query",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
+                "summary": "Get user notifications",
                 "responses": {
                     "200": {
-                        "description": "Queried venues successfully",
+                        "description": "Retrieved notifications successfully",
                         "schema": {
                             "type": "object",
                             "properties": {
                                 "data": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/model_location.Venue"
+                                        "$ref": "#/definitions/model.Notification"
                                     }
                                 },
                                 "message": {
@@ -2843,8 +2696,134 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userId}/notifications/{notificationId}": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks a specific notification as read by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Mark notification as read",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Notification ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notification marked as read successfully",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
                     "400": {
-                        "description": "Query parameter is required",
+                        "description": "Invalid notification ID",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Notification not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userId}/username": {
+            "patch": {
+                "description": "Updates the username for a specific user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update username",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"123\"",
+                        "description": "User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Username update request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.UpdateUsernameRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User successfully updated",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/request.UpdateUsernameRequest"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "No user found with ID",
                         "schema": {
                             "$ref": "#/definitions/utils.EmptyApiResponse"
                         }
@@ -3206,7 +3185,7 @@ const docTemplate = `{
                 "noOfPendingFriendRequests": {
                     "type": "integer"
                 },
-                "noOfRoomInvites": {
+                "noOfPendingRoomInvites": {
                     "type": "integer"
                 },
                 "noOfRooms": {
@@ -3273,7 +3252,7 @@ const docTemplate = `{
                 "payers": {
                     "type": "array",
                     "items": {
-                        "type": "integer"
+                        "type": "string"
                     }
                 },
                 "roomId": {
@@ -3416,13 +3395,10 @@ const docTemplate = `{
                 }
             }
         },
-        "request.UpdateUserRequest": {
+        "request.UpdateUsernameRequest": {
             "type": "object",
             "properties": {
-                "field": {
-                    "type": "string"
-                },
-                "value": {
+                "username": {
                     "type": "string"
                 }
             }
@@ -3443,6 +3419,9 @@ const docTemplate = `{
             "properties": {
                 "id": {
                     "type": "integer"
+                },
+                "pictureUrl": {
+                    "type": "string"
                 },
                 "username": {
                     "type": "string"
@@ -3474,21 +3453,7 @@ const docTemplate = `{
                 }
             }
         },
-        "response.CreateRoomResponse": {
-            "type": "object",
-            "properties": {
-                "invites": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.RoomInvite"
-                    }
-                },
-                "room": {
-                    "$ref": "#/definitions/model.Room"
-                }
-            }
-        },
-        "response.GetNumRoomInvitationsResponse": {
+        "response.CountResponse": {
             "type": "object",
             "properties": {
                 "count": {
@@ -3496,25 +3461,11 @@ const docTemplate = `{
                 }
             }
         },
-        "response.GetNumRoomsResponse": {
+        "response.GetNumFriendsResponse": {
             "type": "object",
             "properties": {
-                "count": {
+                "numFriends": {
                     "type": "integer"
-                }
-            }
-        },
-        "response.JoinRoomResponse": {
-            "type": "object",
-            "properties": {
-                "attendees": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.User"
-                    }
-                },
-                "room": {
-                    "$ref": "#/definitions/model.Room"
                 }
             }
         },
@@ -3568,6 +3519,32 @@ const docTemplate = `{
                 }
             }
         },
+        "response.RoomListDto": {
+            "type": "object",
+            "properties": {
+                "host": {
+                    "$ref": "#/definitions/response.AttendeesDto"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imageUrl": {
+                    "type": "string"
+                },
+                "isClosed": {
+                    "type": "boolean"
+                },
+                "isPrivate": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "noOfAttendees": {
+                    "type": "integer"
+                }
+            }
+        },
         "utils.EmptyApiResponse": {
             "type": "object",
             "properties": {
@@ -3584,6 +3561,14 @@ const docTemplate = `{
                 }
             }
         }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
     }
 }`
 
@@ -3591,7 +3576,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
-	BasePath:         "/api/v1",
+	BasePath:         "/v1",
 	Schemes:          []string{"http", "https"},
 	Title:            "JustJio API",
 	Description:      "API server for JustJio.",

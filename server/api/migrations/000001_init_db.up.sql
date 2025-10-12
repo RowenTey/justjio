@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     last_seen TIMESTAMP,
     no_of_rooms INT NOT NULL DEFAULT 0,
     no_of_friends INT NOT NULL DEFAULT 0,
-    no_of_room_invites INT NOT NULL DEFAULT 0,
+    no_of_pending_room_invites INT NOT NULL DEFAULT 0,
     no_of_pending_friend_requests INT NOT NULL DEFAULT 0,
     registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

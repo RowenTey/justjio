@@ -34,7 +34,6 @@ type RoomServiceTestSuite struct {
 	// Mock repositories
 	mockRoomRepo *repository.MockRoomRepository
 	mockUserRepo *repository.MockUserRepository
-	mockBillRepo *repository.MockBillRepository
 
 	// Mock HTTP client
 	mockHTTPClient *utils.MockHTTPClient
@@ -53,7 +52,6 @@ func (s *RoomServiceTestSuite) SetupTest() {
 	// Initialize mock repositories
 	s.mockRoomRepo = new(repository.MockRoomRepository)
 	s.mockUserRepo = new(repository.MockUserRepository)
-	s.mockBillRepo = new(repository.MockBillRepository)
 
 	s.mockHTTPClient = new(utils.MockHTTPClient)
 
@@ -62,7 +60,6 @@ func (s *RoomServiceTestSuite) SetupTest() {
 		s.db,
 		s.mockRoomRepo,
 		s.mockUserRepo,
-		s.mockBillRepo,
 		s.mockHTTPClient,
 		"test-api-key",
 		logrus.New(),
@@ -533,12 +530,12 @@ func (s *RoomServiceTestSuite) TestJoinRoom_Success() {
 	s.mockRoomRepo.On("GetRoomAttendees", roomId).Return(&[]model.User{*user}, nil)
 
 	// Execute
-	resultRoom, resultAttendees, err := s.roomService.JoinRoom(roomId, userId)
+	resultRoom, err := s.roomService.JoinRoom(roomId, userId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), 2, resultRoom.NoOfAttendees)
-	assert.Len(s.T(), *resultAttendees, 1)
+	assert.Len(s.T(), resultRoom.Users, 1)
 
 	// Verify mock calls
 	s.mockRoomRepo.AssertExpectations(s.T())
@@ -554,7 +551,7 @@ func (s *RoomServiceTestSuite) TestJoinRoom_AlreadyInRoom() {
 	s.mockRoomRepo.On("IsUserInRoom", roomId, userId).Return(true, nil)
 
 	// Execute
-	_, _, err := s.roomService.JoinRoom(roomId, userId)
+	_, err := s.roomService.JoinRoom(roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)

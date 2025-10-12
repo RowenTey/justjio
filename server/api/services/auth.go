@@ -73,7 +73,7 @@ func (s *AuthService) SignUp(newUser *model.User, otpMap *sync.Map) (*model.User
 		return nil, err
 	}
 
-	createdUser, err := s.userService.CreateOrUpdateUser(newUser, true)
+	createdUser, err := s.userService.UpsertUser(newUser, true)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (s *AuthService) GoogleLogin(code string) (string, *model.User, error) {
 			Password:     hashedPassword,
 			IsEmailValid: true,
 		}
-		user, err = s.userService.CreateOrUpdateUser(newUser, true)
+		user, err = s.userService.UpsertUser(newUser, true)
 		if err != nil {
 			return "", nil, err
 		}
@@ -253,7 +253,7 @@ func (s *AuthService) VerifyOTP(email, otp string, otpMap *sync.Map) error {
 	}
 
 	user.IsEmailValid = true
-	if _, err := s.userService.CreateOrUpdateUser(user, false); err != nil {
+	if _, err := s.userService.UpsertUser(user, false); err != nil {
 		return err
 	}
 
@@ -282,7 +282,7 @@ func (s *AuthService) ResetPassword(email, newPassword string) error {
 	}
 
 	user.Password = hashedPassword
-	if _, err := s.userService.CreateOrUpdateUser(user, false); err != nil {
+	if _, err := s.userService.UpsertUser(user, false); err != nil {
 		return err
 	}
 

@@ -38,6 +38,7 @@ func NewNotificationHandler(
 // @Success 200 {object} utils.EmptyApiResponse "Notification created successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input or empty content"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
 // @Router /notifications [post]
 func (h *NotificationHandler) CreateNotification(c *fiber.Ctx) error {
 	var request request.CreateNotificationRequest
@@ -69,7 +70,8 @@ func (h *NotificationHandler) CreateNotification(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid notification ID"
 // @Failure 404 {object} utils.EmptyApiResponse "Notification not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
-// @Router /notifications/{id}/read [patch]
+// @Security BearerAuth
+// @Router /users/{userId}/notifications/{notificationId} [patch]
 func (h *NotificationHandler) MarkNotificationAsRead(c *fiber.Ctx) error {
 	notificationId, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
@@ -97,6 +99,7 @@ func (h *NotificationHandler) MarkNotificationAsRead(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid notification ID"
 // @Failure 404 {object} utils.EmptyApiResponse "Notification not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
 // @Router /notifications/{id} [get]
 func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
 	notificationId, err := strconv.ParseUint(c.Params("id"), 10, 32)
@@ -124,7 +127,7 @@ func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
 // @Failure 404 {object} utils.EmptyApiResponse "User not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Security BearerAuth
-// @Router /notifications [get]
+// @Router /users/{userId}/notifications [get]
 func (h *NotificationHandler) GetNotifications(c *fiber.Ctx) error {
 	token := c.Locals("user").(*jwt.Token)
 	userId := utils.GetUserInfoFromToken(token, "user_id")

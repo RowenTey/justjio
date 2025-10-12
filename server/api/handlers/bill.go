@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/RowenTey/JustJio/server/api/dto/request"
-	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
 	log "github.com/sirupsen/logrus"
@@ -57,7 +56,7 @@ func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
 	bill, err := h.billService.CreateBill(
 		request.RoomID,
 		userId,
-		&request.Payers,
+		request.Payers,
 		request.Name,
 		request.Amount,
 		request.IncludeOwner,
@@ -88,6 +87,7 @@ func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.EmptyApiResponse "Missing roomId in query parameter"
 // @Failure 404 {object} utils.EmptyApiResponse "Room not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
 // @Router /bills [get]
 func (h *BillHandler) GetBillsByRoom(c *fiber.Ctx) error {
 	roomId := c.Query("roomId")
@@ -136,34 +136,4 @@ func (h *BillHandler) ConsolidateBills(c *fiber.Ctx) error {
 	}
 
 	return utils.HandleSuccess[any](c, "Bill consolidated successfully", nil)
-}
-
-// IsRoomBillConsolidated checks if room bills are consolidated
-// @Summary Check bill consolidation status
-// @Description Checks whether bills for a specific room have been consolidated
-// @Tags Bills
-// @Accept json
-// @Produce json
-// @Param roomId path string true "Room ID"
-// @Success 200 {object} object{status=string,message=string,data=object{isConsolidated=bool}} "Retrieved consolidation status successfully"
-// @Failure 400 {object} utils.EmptyApiResponse "Missing roomId in path parameter"
-// @Failure 404 {object} utils.EmptyApiResponse "Room not found"
-// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
-// @Router /bills/rooms/{roomId}/consolidation-status [get]
-func (h *BillHandler) IsRoomBillConsolidated(c *fiber.Ctx) error {
-	roomId := c.Params("roomId")
-	if roomId == "" {
-		return utils.HandleInvalidInputError(c, errors.New("missing roomId in path param"))
-	}
-
-	status, err := h.billService.GetRoomBillConsolidationStatus(roomId)
-	if err != nil {
-		return utils.HandleNotFoundOrInternalError(c, err, RoomNotFoundErrorMsg)
-	}
-
-	return utils.HandleSuccess(c,
-		"Retrieved consolidation status successfully",
-		fiber.Map{
-			"isConsolidated": status == repository.CONSOLIDATED,
-		})
 }

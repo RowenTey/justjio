@@ -10,7 +10,7 @@ type NotificationRepository interface {
 
 	Create(notification *model.Notification) (*model.Notification, error)
 	FindByID(notificationID uint) (*model.Notification, error)
-	FindByUser(userID uint) (*[]model.Notification, error)
+	FindByUser(userID uint) ([]model.Notification, error)
 	MarkAsRead(notificationID uint) error
 }
 
@@ -43,13 +43,13 @@ func (r *notificationRepository) FindByID(notificationID uint) (*model.Notificat
 	return &notification, err
 }
 
-func (r *notificationRepository) FindByUser(userID uint) (*[]model.Notification, error) {
+func (r *notificationRepository) FindByUser(userID uint) ([]model.Notification, error) {
 	var notifications []model.Notification
 	err := r.db.
 		Where("user_id = ?", userID).
 		Order("created_at DESC").
 		Find(&notifications).Error
-	return &notifications, err
+	return notifications, err
 }
 
 func (r *notificationRepository) MarkAsRead(notificationID uint) error {

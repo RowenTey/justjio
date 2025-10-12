@@ -26,7 +26,7 @@ func IsUserInRoom(c *fiber.Ctx, roomService *services.RoomService) error {
 	}
 
 	// Check if user is in room
-	if slices.Contains(*userIds, userId) {
+	if slices.Contains(userIds, userId) {
 		c.Locals("roomUserIds", userIds)
 		return c.Next()
 	}

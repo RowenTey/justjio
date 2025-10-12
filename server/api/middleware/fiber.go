@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"strings"
 	"time"
 
 	"github.com/RowenTey/JustJio/server/api/config"
@@ -16,6 +17,7 @@ func Fiber(a *fiber.App, conf *config.Config, env string) {
 	if env == "dev" || env == "staging" {
 		serviceName += "-" + env
 	}
+
 	prometheus := fiberprometheus.New(serviceName)
 	prometheus.RegisterAt(a, "/metrics")
 	// Skip the root path (healthcheck) and favicon path for metrics
@@ -48,6 +50,9 @@ func Fiber(a *fiber.App, conf *config.Config, env string) {
 
 		// Logging
 		logger.New(logger.Config{
+			Next: func(c *fiber.Ctx) bool {
+				return !strings.HasPrefix(c.Path(), "/v1")
+			},
 			Format:     "time=${time} level=info | ${latency} | ${status} - ${method} ${path}\n",
 			TimeZone:   "Asia/Singapore",
 			TimeFormat: time.RFC3339,

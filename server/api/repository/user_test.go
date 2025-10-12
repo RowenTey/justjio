@@ -247,7 +247,10 @@ func (suite *UserRepositoryTestSuite) TestFindByIDs_Success() {
 	suite.db.Create(&user2)
 	suite.db.Create(&user3)
 
-	ids := []uint{suite.testUser.ID, user2.ID, user3.ID}
+	ids := []string{
+		fmt.Sprintf("%d", suite.testUser.ID),
+		fmt.Sprintf("%d", user2.ID),
+		fmt.Sprintf("%d", user3.ID)}
 	users, err := suite.repo.FindByIDs(&ids)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), *users, 3)

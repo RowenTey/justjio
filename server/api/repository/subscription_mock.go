@@ -25,9 +25,9 @@ func (m *MockSubscriptionRepository) FindByID(subID string) (*model.Subscription
 	return args.Get(0).(*model.Subscription), args.Error(1)
 }
 
-func (m *MockSubscriptionRepository) FindByUserID(userID string) (*[]model.Subscription, error) {
+func (m *MockSubscriptionRepository) FindByUserID(userID string) ([]model.Subscription, error) {
 	args := m.Called(userID)
-	return args.Get(0).(*[]model.Subscription), args.Error(1)
+	return args.Get(0).([]model.Subscription), args.Error(1)
 }
 
 func (m *MockSubscriptionRepository) FindByEndpoint(endpoint string) (*model.Subscription, error) {

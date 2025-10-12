@@ -25,14 +25,16 @@ func whitelist(c *fiber.Ctx) bool {
 	whitelistPaths := []string{"/v1/auth", "/docs"}
 	whitelistEndpoints := []string{"/", "/swagger.yaml"}
 
+	endpoint := c.Path()
+
 	for _, url := range whitelistPaths {
-		if strings.HasPrefix(c.Path(), url) {
+		if strings.HasPrefix(endpoint, url) {
 			return true
 		}
 	}
 
 	for _, url := range whitelistEndpoints {
-		if c.Path() == url {
+		if endpoint == url {
 			return true
 		}
 	}

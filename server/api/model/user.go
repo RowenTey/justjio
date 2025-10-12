@@ -17,7 +17,7 @@ type User struct {
 	LastSeen                  time.Time `json:"lastSeen"`
 	NoOfRooms                 int       `gorm:"default:0" json:"noOfRooms"`
 	NoOfFriends               int       `gorm:"default:0" json:"noOfFriends"`
-	NoOfRoomInvites           int       `gorm:"default:0" json:"noOfRoomInvites"`
+	NoOfPendingRoomInvites    int       `gorm:"default:0" json:"noOfPendingRoomInvites"`
 	NoOfPendingFriendRequests int       `gorm:"default:0" json:"noOfPendingFriendRequests"`
 	RegisteredAt              time.Time `gorm:"autoCreateTime" json:"registeredAt"`
 	UpdatedAt                 time.Time `gorm:"autoUpdateTime" json:"updatedAt"`

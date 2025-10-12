@@ -84,7 +84,7 @@ func (h *AuthHandler) SignUp(c *fiber.Ctx) error {
 // @Failure 401 {object} utils.EmptyApiResponse "Invalid username or password"
 // @Failure 404 {object} utils.EmptyApiResponse "User not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
-// @Router /auth/login [post]
+// @Router /auth [post]
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var input request.LoginRequest
 	if err := c.BodyParser(&input); err != nil {
@@ -121,7 +121,7 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 // @Failure 404 {object} utils.EmptyApiResponse "User not found"
 // @Failure 409 {object} utils.EmptyApiResponse "Email already verified"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
-// @Router /auth/send-otp [post]
+// @Router /auth/otp [post]
 func (h *AuthHandler) SendOTPEmail(c *fiber.Ctx) error {
 	var request request.SendOTPEmailRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -154,7 +154,7 @@ func (h *AuthHandler) SendOTPEmail(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input or invalid OTP"
 // @Failure 404 {object} utils.EmptyApiResponse "User not found or OTP not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
-// @Router /auth/verify-otp [post]
+// @Router /auth/verify [post]
 func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
 	var request request.VerifyOTPRequest
 	if err := c.BodyParser(&request); err != nil {
@@ -186,7 +186,7 @@ func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
 // @Failure 404 {object} utils.EmptyApiResponse "User not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
-// @Router /auth/reset-password [post]
+// @Router /auth/reset [post]
 func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
 	var request request.ResetPasswordRequest
 	if err := c.BodyParser(&request); err != nil {

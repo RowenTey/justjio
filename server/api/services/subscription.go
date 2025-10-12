@@ -43,7 +43,7 @@ func (s *SubscriptionService) CreateSubscription(subscription *model.Subscriptio
 	return subscription, nil
 }
 
-func (s *SubscriptionService) GetSubscriptionsByUserID(userID string) (*[]model.Subscription, error) {
+func (s *SubscriptionService) GetSubscriptionsByUserID(userID string) ([]model.Subscription, error) {
 	return s.subscriptionRepo.FindByUserID(userID)
 }
 

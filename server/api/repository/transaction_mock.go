@@ -15,14 +15,14 @@ func (m *MockTransactionRepository) WithTx(tx *gorm.DB) TransactionRepository {
 	return args.Get(0).(TransactionRepository)
 }
 
-func (m *MockTransactionRepository) Create(transactions *[]model.Transaction) error {
+func (m *MockTransactionRepository) Create(transactions []model.Transaction) error {
 	args := m.Called(transactions)
 	return args.Error(0)
 }
 
-func (m *MockTransactionRepository) FindByUser(isPaid bool, userID string) (*[]model.Transaction, error) {
+func (m *MockTransactionRepository) FindByUser(isPaid bool, userID string) ([]model.Transaction, error) {
 	args := m.Called(isPaid, userID)
-	return args.Get(0).(*[]model.Transaction), args.Error(1)
+	return args.Get(0).([]model.Transaction), args.Error(1)
 }
 
 func (m *MockTransactionRepository) FindByID(transactionID string) (*model.Transaction, error) {

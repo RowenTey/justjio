@@ -83,12 +83,10 @@ func (suite *MessageHandlerTestSuite) SetupSuite() {
 	mockHttpClient := new(utils.MockHTTPClient)
 	roomRepository := repository.NewRoomRepository(suite.db)
 	userRepository := repository.NewUserRepository(suite.db)
-	billRepository := repository.NewBillRepository(suite.db)
 	roomService := services.NewRoomService(
 		suite.db,
 		roomRepository,
 		userRepository,
-		billRepository,
 		mockHttpClient,
 		"test-api-key",
 		suite.logger,

@@ -17,7 +17,7 @@ import (
 
 type KafkaService interface {
 	CreateTopic(topic string) error
-	BroadcastMessage(userIds *[]string, message modelKafka.KafkaMessage) error
+	BroadcastMessage(userIds []string, message modelKafka.KafkaMessage) error
 	PublishMessage(topic string, message string) error
 	Close()
 }
@@ -69,7 +69,7 @@ func (ks *kafkaService) CreateTopic(topic string) error {
 	return nil
 }
 
-func (ks *kafkaService) BroadcastMessage(userIds *[]string, message modelKafka.KafkaMessage) error {
+func (ks *kafkaService) BroadcastMessage(userIds []string, message modelKafka.KafkaMessage) error {
 	messageJSON, err := json.Marshal(message)
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func (ks *kafkaService) BroadcastMessage(userIds *[]string, message modelKafka.K
 	errorChan := make(chan error)
 
 	// TODO: Need to think more about this
-	for _, userId := range *userIds {
+	for _, userId := range userIds {
 		wg.Add(1)
 		go func(userId string) {
 			defer wg.Done()

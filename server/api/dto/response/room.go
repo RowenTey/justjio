@@ -2,13 +2,12 @@ package response
 
 import (
 	"time"
-
-	"github.com/RowenTey/JustJio/server/api/model"
 )
 
 type AttendeesDto struct {
 	ID       uint   `json:"id"`
 	Username string `json:"username"`
+	Picture  string `json:"pictureUrl"`
 }
 
 type RoomDto struct {
@@ -28,20 +27,38 @@ type RoomDto struct {
 	Attendees     []AttendeesDto `json:"attendees"`
 }
 
-type GetNumRoomsResponse struct {
+type RoomListDto struct {
+	ID            string       `json:"id"`
+	Name          string       `json:"name"`
+	IsClosed      bool         `json:"isClosed"`
+	IsPrivate     bool         `json:"isPrivate"`
+	ImageUrl      string       `json:"imageUrl"`
+	Host          AttendeesDto `json:"host"`
+	NoOfAttendees int          `json:"noOfAttendees"`
+}
+
+type SimplifiedRoomDto struct {
+	ID            string    `json:"id"`
+	Name          string    `json:"name"`
+	Time          string    `json:"time"`
+	Venue         string    `json:"venue"`
+	VenueUrl      string    `json:"venueUrl"`
+	Date          time.Time `json:"date"`
+	Description   string    `json:"description"`
+	ImageUrl      string    `json:"imageUrl"`
+	IsPrivate     bool      `json:"isPrivate"`
+	NoOfAttendees int       `json:"noOfAttendees"`
+}
+
+type RoomInviteDto struct {
+	ID        uint              `json:"id"`
+	Status    string            `json:"status"`
+	CreatedAt time.Time         `json:"createdAt"`
+	User      AttendeesDto      `json:"user"`
+	Inviter   AttendeesDto      `json:"inviter"`
+	Room      SimplifiedRoomDto `json:"room"`
+}
+
+type CountResponse struct {
 	Count int `json:"count"`
-}
-
-type JoinRoomResponse struct {
-	Room      model.Room   `json:"room"`
-	Attendees []model.User `json:"attendees"`
-}
-
-type CreateRoomResponse struct {
-	Room    model.Room         `json:"room"`
-	Invites []model.RoomInvite `json:"invites"`
-}
-
-type GetRoomResponse struct {
-	Room RoomDto `json:"room"`
 }

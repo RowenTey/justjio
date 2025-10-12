@@ -346,7 +346,7 @@ func (s *UserServiceTestSuite) TestCreateOrUpdateUser_Create() {
 	s.mockUserRepo.On("Create", newUser).Return(newUser, nil)
 
 	// Execute
-	result, err := s.userService.CreateOrUpdateUser(newUser, true)
+	result, err := s.userService.UpsertUser(newUser, true)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -364,7 +364,7 @@ func (s *UserServiceTestSuite) TestCreateOrUpdateUser_Update() {
 	s.mockUserRepo.On("Update", existingUser).Return(nil)
 
 	// Execute
-	result, err := s.userService.CreateOrUpdateUser(existingUser, false)
+	result, err := s.userService.UpsertUser(existingUser, false)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -595,45 +595,6 @@ func (s *UserServiceTestSuite) TestIsFriend_False() {
 
 	// Assertions
 	assert.False(s.T(), result)
-
-	// Verify mock calls
-	s.mockUserRepo.AssertExpectations(s.T())
-}
-
-func (s *UserServiceTestSuite) TestValidateUsers_Success() {
-	// Setup test data
-	userIds := []uint{1, 2, 3}
-	expectedUsers := []model.User{
-		{ID: 1}, {ID: 2}, {ID: 3},
-	}
-
-	// Mock expectations
-	s.mockUserRepo.On("FindByIDs", &userIds).Return(&expectedUsers, nil)
-
-	// Execute
-	result, err := s.userService.ValidateUsers(&userIds)
-
-	// Assertions
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), &expectedUsers, result)
-
-	// Verify mock calls
-	s.mockUserRepo.AssertExpectations(s.T())
-}
-
-func (s *UserServiceTestSuite) TestValidateUsers_NotFound() {
-	// Setup test data
-	userIds := []uint{999}
-
-	// Mock expectations
-	s.mockUserRepo.On("FindByIDs", &userIds).Return(&[]model.User{}, nil)
-
-	// Execute
-	result, err := s.userService.ValidateUsers(&userIds)
-
-	// Assertions
-	assert.NoError(s.T(), err)
-	assert.Empty(s.T(), *result)
 
 	// Verify mock calls
 	s.mockUserRepo.AssertExpectations(s.T())
