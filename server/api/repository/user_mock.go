@@ -20,11 +20,6 @@ func (m *MockUserRepository) Create(user *model.User) (*model.User, error) {
 	return args.Get(0).(*model.User), args.Error(1)
 }
 
-func (m *MockUserRepository) SaveAll(users []model.User) error {
-	args := m.Called(users)
-	return args.Error(0)
-}
-
 func (m *MockUserRepository) FindByID(id string) (*model.User, error) {
 	args := m.Called(id)
 	return args.Get(0).(*model.User), args.Error(1)

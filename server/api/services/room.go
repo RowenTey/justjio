@@ -274,7 +274,7 @@ func (rs *RoomService) GetNumRoomInvites(userId string) (int64, error) {
 }
 
 func (rs *RoomService) UpdateRoom(
-	updateReq *request.UpdateRoomRequest,
+	updateReq *request.EditRoomRequest,
 	roomId,
 	userId string,
 ) error {
@@ -287,18 +287,39 @@ func (rs *RoomService) UpdateRoom(
 		return ErrInvalidHost
 	}
 
-	if room.VenuePlaceId != updateReq.PlaceId {
-		room.Venue = updateReq.Venue
-		room.VenuePlaceId = updateReq.PlaceId
-		room.VenueUrl, err = rs.fetchGoogleMapsUri(updateReq.PlaceId)
+	if updateReq.Name != nil {
+		room.Name = *updateReq.Name
+	}
+
+	if updateReq.Time != nil {
+		room.Time = *updateReq.Time
+	}
+
+	if updateReq.Date != nil {
+		room.Date = *updateReq.Date
+	}
+
+	if updateReq.Description != nil {
+		room.Description = *updateReq.Description
+	}
+
+	if updateReq.ImageUrl != nil {
+		room.ImageUrl = *updateReq.ImageUrl
+	}
+
+	// TODO: Check if this is the desired logic
+	if updateReq.VenuePlaceId != nil && room.VenuePlaceId != *updateReq.VenuePlaceId {
+		room.VenuePlaceId = *updateReq.VenuePlaceId
+
+		if updateReq.Venue != nil {
+			room.Venue = *updateReq.Venue
+		}
+
+		room.VenueUrl, err = rs.fetchGoogleMapsUri(*updateReq.VenuePlaceId)
 		if err != nil {
 			return fmt.Errorf("failed to fetch Google Maps URI: %v", err)
 		}
 	}
-
-	room.Date = updateReq.Date
-	room.Time = updateReq.Time
-	room.Description = updateReq.Description
 
 	if err := rs.roomRepo.Update(room); err != nil {
 		return fmt.Errorf("failed to update room: %v", err)
@@ -343,60 +364,6 @@ func (rs *RoomService) CloseRoom(roomId string, userId string) error {
 
 		return roomRepoTx.DeletePendingInvites(roomId)
 	})
-}
-
-func (rs *RoomService) UpdateRoomInviteStatus(
-	roomId string,
-	userId string,
-	status string,
-) (*model.Room, error) {
-	if status != "accepted" && status != "rejected" {
-		return nil, ErrInvalidRoomStatus
-	}
-
-	var room *model.Room
-	if err := database.RunInTransaction(rs.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
-		roomRepoTx := rs.roomRepo.WithTx(tx)
-		userRepoTx := rs.userRepo.WithTx(tx)
-
-		// Update the invite status
-		if err := roomRepoTx.UpdateInviteStatus(roomId, userId, status); err != nil {
-			return err
-		}
-
-		user, err := userRepoTx.FindByID(userId)
-		if err != nil {
-			return err
-		}
-
-		user.NoOfPendingRoomInvites--
-		if err := userRepoTx.Update(user); err != nil {
-			return err
-		}
-
-		// If the invite is rejected, we don't need to update the room
-		if status == "rejected" {
-			return nil
-		}
-
-		room, err := roomRepoTx.GetByIDWithAttendees(roomId)
-		if err != nil {
-			return err
-		}
-
-		user.NoOfRooms++
-		if err := userRepoTx.Update(user); err != nil {
-			return err
-		}
-
-		room.NoOfAttendees++
-		room.Users = append(room.Users, *user)
-		return roomRepoTx.Update(room)
-	}); err != nil {
-		return nil, err
-	}
-
-	return room, nil
 }
 
 func (rs *RoomService) JoinRoom(roomId, userId string) (*response.RoomDto, error) {
@@ -479,7 +446,7 @@ func (rs *RoomService) RespondToRoomInvite(
 		status = "rejected"
 	}
 
-	room, err := rs.UpdateRoomInviteStatus(roomId, userId, status)
+	room, err := rs.updateRoomInviteStatus(roomId, userId, status)
 	if err != nil {
 		return nil, err
 	}
@@ -512,45 +479,6 @@ func (rs *RoomService) RespondToRoomInvite(
 	return dto, nil
 }
 
-func (rs *RoomService) ValidateInvites(
-	room *model.Room,
-	userIds []string,
-) error {
-	rs.logger.Infof("Inviting users (%v) to room %s", userIds, room.ID)
-
-	attendees, err := rs.roomRepo.GetRoomAttendeeIDs(room.ID)
-	if err != nil {
-		return err
-	}
-
-	invitees, err := rs.roomRepo.GetPendingInviteUsers(room.ID)
-	if err != nil {
-		return err
-	}
-
-	attendeeSet := make(map[string]bool)
-	for _, attendeeID := range attendees {
-		attendeeSet[attendeeID] = true
-	}
-
-	inviteeSet := make(map[string]bool)
-	for _, inviteeID := range invitees {
-		inviteeSet[inviteeID] = true
-	}
-
-	// Check if users are already in room or have pending invites
-	for _, userID := range userIds {
-		if attendeeSet[userID] {
-			return ErrAlreadyInRoom
-		}
-		if inviteeSet[userID] {
-			return ErrAlreadyInvited
-		}
-	}
-
-	return nil
-}
-
 func (rs *RoomService) InviteUsersToRoom(
 	roomId string,
 	inviterId string,
@@ -581,7 +509,7 @@ func (rs *RoomService) InviteUsersToRoom(
 			return err
 		}
 
-		if err := rs.ValidateInvites(room, inviteesIds); err != nil {
+		if err := rs.validateInvites(room, inviteesIds); err != nil {
 			return err
 		}
 
@@ -746,6 +674,99 @@ func (rs *RoomService) QueryVenue(query string) ([]modelLocation.Venue, error) {
 	}
 
 	return predictions, nil
+}
+
+func (rs *RoomService) updateRoomInviteStatus(
+	roomId string,
+	userId string,
+	status string,
+) (*model.Room, error) {
+	if status != "accepted" && status != "rejected" {
+		return nil, ErrInvalidRoomStatus
+	}
+
+	var room *model.Room
+	if err := database.RunInTransaction(rs.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
+		roomRepoTx := rs.roomRepo.WithTx(tx)
+		userRepoTx := rs.userRepo.WithTx(tx)
+
+		// Update the invite status
+		if err := roomRepoTx.UpdateInviteStatus(roomId, userId, status); err != nil {
+			return err
+		}
+
+		user, err := userRepoTx.FindByID(userId)
+		if err != nil {
+			return err
+		}
+
+		user.NoOfPendingRoomInvites--
+		if err := userRepoTx.Update(user); err != nil {
+			return err
+		}
+
+		// If the invite is rejected, we don't need to update the room
+		if status == "rejected" {
+			return nil
+		}
+
+		room, err := roomRepoTx.GetByIDWithAttendees(roomId)
+		if err != nil {
+			return err
+		}
+
+		user.NoOfRooms++
+		if err := userRepoTx.Update(user); err != nil {
+			return err
+		}
+
+		room.NoOfAttendees++
+		room.Users = append(room.Users, *user)
+		return roomRepoTx.Update(room)
+	}); err != nil {
+		return nil, err
+	}
+
+	return room, nil
+}
+
+func (rs *RoomService) validateInvites(
+	room *model.Room,
+	userIds []string,
+) error {
+	rs.logger.Infof("Inviting users (%v) to room %s", userIds, room.ID)
+
+	attendees, err := rs.roomRepo.GetRoomAttendeeIDs(room.ID)
+	if err != nil {
+		return err
+	}
+
+	invitees, err := rs.roomRepo.GetPendingInviteUsers(room.ID)
+	if err != nil {
+		return err
+	}
+
+	attendeeSet := make(map[string]bool)
+	for _, attendeeID := range attendees {
+		attendeeSet[attendeeID] = true
+	}
+
+	inviteeSet := make(map[string]bool)
+	for _, inviteeID := range invitees {
+		inviteeSet[inviteeID] = true
+	}
+
+	// Check if users are already in room or have pending invites
+	for _, userID := range userIds {
+		if attendeeSet[userID] {
+			return ErrAlreadyInRoom
+		}
+		if inviteeSet[userID] {
+			return ErrAlreadyInvited
+		}
+	}
+
+	return nil
 }
 
 func (rs *RoomService) fetchGoogleMapsUri(placeId string) (string, error) {

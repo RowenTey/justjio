@@ -50,6 +50,6 @@ type RoomInvite struct {
 
 	// Associations
 	User    User `json:"user"`
-	Inviter User `foreignKey:inviter_id" json:"inviter"`
+	Inviter User `gorm:"foreignKey:inviter_id" json:"inviter"`
 	Room    Room `json:"room"`
 }

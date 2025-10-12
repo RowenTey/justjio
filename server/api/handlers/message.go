@@ -5,6 +5,7 @@ import (
 
 	"github.com/RowenTey/JustJio/server/api/dto/request"
 	"github.com/RowenTey/JustJio/server/api/dto/response"
+	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
 
@@ -99,16 +100,12 @@ func (h *MessageHandler) GetMessages(c *fiber.Ctx) error {
 func (h *MessageHandler) CreateMessage(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
 
-	var request request.CreateMessageRequest
-	if err := c.BodyParser(&request); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
+	req := middleware.GetValidatedRequest[request.CreateMessageRequest](c)
 
-	token := c.Locals("user").(*jwt.Token)
-	userId := utils.GetUserInfoFromToken(token, "user_id")
+	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 	roomUserIds := c.Locals("roomUserIds").([]string)
 
-	err := h.messageService.SaveMessage(roomId, userId, roomUserIds, request.Content)
+	err := h.messageService.SaveMessage(roomId, userId, roomUserIds, req.Content)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Room or user not found")
 	}

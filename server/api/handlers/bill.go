@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/RowenTey/JustJio/server/api/dto/request"
+	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
 	log "github.com/sirupsen/logrus"
@@ -45,21 +46,17 @@ func NewBillHandler(
 // @Security BearerAuth
 // @Router /bills [post]
 func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
-	var request request.CreateBillRequest
-	if err := c.BodyParser(&request); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
+	req := middleware.GetValidatedRequest[request.CreateBillRequest](c)
 
-	token := c.Locals("user").(*jwt.Token)
-	userId := utils.GetUserInfoFromToken(token, "user_id")
+	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
 	bill, err := h.billService.CreateBill(
-		request.RoomID,
+		req.RoomID,
 		userId,
-		request.Payers,
-		request.Name,
-		request.Amount,
-		request.IncludeOwner,
+		req.Payers,
+		req.Name,
+		req.Amount,
+		req.IncludeOwner,
 	)
 	if err != nil {
 		if errors.Is(err, services.ErrEmptyPayers) {
@@ -118,15 +115,11 @@ func (h *BillHandler) GetBillsByRoom(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /bills/consolidate [post]
 func (h *BillHandler) ConsolidateBills(c *fiber.Ctx) error {
-	var request request.ConsolidateBillsRequest
-	if err := c.BodyParser(&request); err != nil {
-		return utils.HandleInvalidInputError(c, err)
-	}
+	req := middleware.GetValidatedRequest[request.ConsolidateBillsRequest](c)
 
-	token := c.Locals("user").(*jwt.Token)
-	userId := utils.GetUserInfoFromToken(token, "user_id")
+	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
-	if err := h.billService.ConsolidateBills(request.RoomID, userId); err != nil {
+	if err := h.billService.ConsolidateBills(req.RoomID, userId); err != nil {
 		if errors.Is(err, services.ErrAlreadyConsolidated) {
 			return utils.HandleError(c, fiber.StatusBadRequest, err.Error(), nil)
 		} else if errors.Is(err, services.ErrOnlyHostCanConsolidate) {

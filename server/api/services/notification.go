@@ -70,7 +70,7 @@ func (s *NotificationService) GetNotification(notificationId uint) (*model.Notif
 }
 
 // GetNotifications retrieves all notifications for a user
-func (s *NotificationService) GetNotifications(userId uint) ([]model.Notification, error) {
+func (s *NotificationService) GetNotifications(userId string) ([]model.Notification, error) {
 	return s.notificationRepo.FindByUser(userId)
 }
 

@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/RowenTey/JustJio/server/api/model"
 	"gorm.io/gorm"
@@ -12,7 +13,6 @@ type UserRepository interface {
 	WithTx(tx *gorm.DB) UserRepository
 
 	Create(user *model.User) (*model.User, error)
-	SaveAll(users []model.User) error
 	FindByID(id string) (*model.User, error)
 	FindByUsername(username string) (*model.User, error)
 	FindByEmail(email string) (*model.User, error)
@@ -63,15 +63,6 @@ func (r *userRepository) WithTx(tx *gorm.DB) UserRepository {
 func (r *userRepository) Create(user *model.User) (*model.User, error) {
 	err := r.db.Create(user).Error
 	return user, err
-}
-
-// SaveAll upserts multiple users into the database.
-func (r *userRepository) SaveAll(users []model.User) error {
-	if len(users) == 0 {
-		return nil
-	}
-
-	return r.db.Table("users").Save(&users).Error
 }
 
 // FindByID retrieves a user by their ID.
@@ -221,7 +212,22 @@ func (r *userRepository) CheckFriendship(userID, friendID uint) (bool, error) {
 
 // SearchNonFriendUsers retrieves users based on a search query, excluding the current user and their friends.
 func (r *userRepository) SearchNonFriendUsers(currentUserId, query string, limit int) ([]model.User, error) {
-	tsQuery := fmt.Sprintf("%s:*", query)
+	// Sanitize the query to prevent SQL injection in tsquery
+	// Remove special characters that could break tsquery syntax
+	sanitizedQuery := ""
+	for _, char := range query {
+		if (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char == ' ' {
+			sanitizedQuery += string(char)
+		}
+	}
+
+	// Trim whitespace and ensure query is not empty
+	sanitizedQuery = strings.TrimSpace(sanitizedQuery)
+	if sanitizedQuery == "" {
+		return []model.User{}, nil
+	}
+
+	tsQuery := fmt.Sprintf("%s:*", sanitizedQuery)
 	var users []model.User
 	if err := r.db.
 		Table("users").
