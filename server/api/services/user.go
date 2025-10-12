@@ -50,8 +50,18 @@ func (s *UserService) GetUserByEmail(email string) (*model.User, error) {
 	return s.userRepo.FindByEmail(email)
 }
 
-func (s *UserService) GetUsersByID(userIds *[]uint) (*[]model.User, error) {
+func (s *UserService) GetUsersByID(userIds []string) ([]model.User, error) {
 	return s.userRepo.FindByIDs(userIds)
+}
+
+func (s *UserService) UpdateUsername(userId string, newUsername string) error {
+	user, err := s.userRepo.FindByID(userId)
+	if err != nil {
+		return err
+	}
+
+	user.Username = newUsername
+	return s.userRepo.Update(user)
 }
 
 func (s *UserService) UpdateUserField(userid string, field string, value any) error {
@@ -61,8 +71,6 @@ func (s *UserService) UpdateUserField(userid string, field string, value any) er
 	}
 
 	switch field {
-	case "username":
-		user.Username = value.(string)
 	case "isEmailValid":
 		user.IsEmailValid = value.(bool)
 	case "isOnline":
@@ -76,7 +84,7 @@ func (s *UserService) UpdateUserField(userid string, field string, value any) er
 	return s.userRepo.Update(user)
 }
 
-func (s *UserService) CreateOrUpdateUser(user *model.User, isCreate bool) (*model.User, error) {
+func (s *UserService) UpsertUser(user *model.User, isCreate bool) (*model.User, error) {
 	if isCreate {
 		return s.userRepo.Create(user)
 	}
@@ -87,10 +95,6 @@ func (s *UserService) CreateOrUpdateUser(user *model.User, isCreate bool) (*mode
 
 func (s *UserService) DeleteUser(userId string) error {
 	return s.userRepo.Delete(userId)
-}
-
-func (s *UserService) ValidateUsers(userIds *[]uint) (*[]model.User, error) {
-	return s.userRepo.FindByIDs(userIds)
 }
 
 func (s *UserService) MarkOnline(userId string) error {
@@ -108,7 +112,7 @@ func (s *UserService) MarkOffline(userId string) error {
 	return s.userRepo.Update(user)
 }
 
-func (s *UserService) SearchNonFriendUsers(currentUserID, query string) (*[]model.User, error) {
+func (s *UserService) SearchNonFriendUsers(currentUserID, query string) ([]model.User, error) {
 	return s.userRepo.SearchNonFriendUsers(currentUserID, query, 10)
 }
 
@@ -189,7 +193,7 @@ func (s *UserService) RemoveFriend(userID, friendID uint) error {
 	return s.userRepo.RemoveFriend(userID, friendID)
 }
 
-func (s *UserService) GetFriends(userID string) (*[]model.User, error) {
+func (s *UserService) GetFriends(userID string) ([]model.User, error) {
 	userIDUint, err := strconv.ParseUint(userID, 10, 32)
 	if err != nil {
 		return nil, err
@@ -197,7 +201,7 @@ func (s *UserService) GetFriends(userID string) (*[]model.User, error) {
 	return s.userRepo.GetFriends(uint(userIDUint))
 }
 
-func (s *UserService) GetFriendRequestsByStatus(userID uint, status string) (*[]model.FriendRequest, error) {
+func (s *UserService) GetFriendRequestsByStatus(userID uint, status string) ([]model.FriendRequest, error) {
 	// Validate status
 	validStatuses := map[string]bool{"pending": true, "accepted": true, "rejected": true}
 	if !validStatuses[status] {

@@ -12,10 +12,11 @@ type UserRepository interface {
 	WithTx(tx *gorm.DB) UserRepository
 
 	Create(user *model.User) (*model.User, error)
+	SaveAll(users []model.User) error
 	FindByID(id string) (*model.User, error)
 	FindByUsername(username string) (*model.User, error)
 	FindByEmail(email string) (*model.User, error)
-	FindByIDs(ids *[]uint) (*[]model.User, error)
+	FindByIDs(ids []string) ([]model.User, error)
 	Update(user *model.User) error
 	Delete(id string) error
 
@@ -23,20 +24,23 @@ type UserRepository interface {
 	CreateFriendRequest(request *model.FriendRequest) error
 	FindFriendRequest(id uint) (*model.FriendRequest, error)
 	UpdateFriendRequest(requestID uint, values any) error
-	FindFriendRequestsByReceiver(receiverID uint, status string) (*[]model.FriendRequest, error)
+	FindFriendRequestsByReceiver(receiverID uint, status string) ([]model.FriendRequest, error)
 	CountFriendRequestsByReceiver(receiverID uint, status string) (int64, error)
 	CheckFriendRequestExists(senderID, receiverID uint) (bool, error)
 
 	// Friends operations
 	AddFriend(userID, friendID uint) error
 	RemoveFriend(userID, friendID uint) error
-	GetFriends(userID uint) (*[]model.User, error)
+	GetFriends(userID uint) ([]model.User, error)
 	CountFriends(userID uint) (int64, error)
 	CheckFriendship(userID, friendID uint) (bool, error)
-	GetUninvitedFriends(roomID, userID string) (*[]model.User, error)
+	GetUninvitedFriends(roomID, userID string) ([]model.User, error)
 
 	// Search
-	SearchNonFriendUsers(currentUserId, query string, limit int) (*[]model.User, error)
+	SearchNonFriendUsers(currentUserId, query string, limit int) ([]model.User, error)
+
+	// Pending invites
+	UpdatePendingRoomInvites(userIDs []string, delta int) error
 }
 
 type userRepository struct {
@@ -61,6 +65,15 @@ func (r *userRepository) Create(user *model.User) (*model.User, error) {
 	return user, err
 }
 
+// SaveAll upserts multiple users into the database.
+func (r *userRepository) SaveAll(users []model.User) error {
+	if len(users) == 0 {
+		return nil
+	}
+
+	return r.db.Table("users").Save(&users).Error
+}
+
 // FindByID retrieves a user by their ID.
 func (r *userRepository) FindByID(id string) (*model.User, error) {
 	var user model.User
@@ -83,17 +96,18 @@ func (r *userRepository) FindByEmail(email string) (*model.User, error) {
 }
 
 // FindByIDs retrieves users by their IDs.
-func (r *userRepository) FindByIDs(ids *[]uint) (*[]model.User, error) {
-	if ids == nil || len(*ids) == 0 {
-		return &[]model.User{}, nil
+func (r *userRepository) FindByIDs(ids []string) ([]model.User, error) {
+	if len(ids) == 0 {
+		return []model.User{}, nil
 	}
 
 	var users []model.User
 	err := r.db.Find(&users, ids).Error
-	if len(users) != len(*ids) {
+	if len(users) != len(ids) {
 		return nil, gorm.ErrRecordNotFound
 	}
-	return &users, err
+
+	return users, err
 }
 
 // Update modifies an existing user.
@@ -124,14 +138,14 @@ func (r *userRepository) UpdateFriendRequest(requestID uint, values any) error {
 }
 
 // FindFriendRequestsByReceiver retrieves friend requests for a specific receiver with a given status.
-func (r *userRepository) FindFriendRequestsByReceiver(receiverID uint, status string) (*[]model.FriendRequest, error) {
+func (r *userRepository) FindFriendRequestsByReceiver(receiverID uint, status string) ([]model.FriendRequest, error) {
 	var requests []model.FriendRequest
 	err := r.db.
 		Where("receiver_id = ? AND status = ?", receiverID, status).
 		Joins("Sender").
 		Joins("Receiver").
 		Find(&requests).Error
-	return &requests, err
+	return requests, err
 }
 
 // CountFriendRequestsByReceiver counts the number of friend requests for a specific receiver with a given status.
@@ -177,13 +191,13 @@ func (r *userRepository) RemoveFriend(userID, friendID uint) error {
 }
 
 // GetFriends retrieves the friends of a user.
-func (r *userRepository) GetFriends(userID uint) (*[]model.User, error) {
+func (r *userRepository) GetFriends(userID uint) ([]model.User, error) {
 	var friends []model.User
 	err := r.db.
 		Model(model.User{ID: userID}).
 		Association("Friends").
 		Find(&friends)
-	return &friends, err
+	return friends, err
 }
 
 // CountFriends returns the number of friends a user has.
@@ -206,7 +220,7 @@ func (r *userRepository) CheckFriendship(userID, friendID uint) (bool, error) {
 }
 
 // SearchNonFriendUsers retrieves users based on a search query, excluding the current user and their friends.
-func (r *userRepository) SearchNonFriendUsers(currentUserId, query string, limit int) (*[]model.User, error) {
+func (r *userRepository) SearchNonFriendUsers(currentUserId, query string, limit int) ([]model.User, error) {
 	tsQuery := fmt.Sprintf("%s:*", query)
 	var users []model.User
 	if err := r.db.
@@ -217,18 +231,29 @@ func (r *userRepository) SearchNonFriendUsers(currentUserId, query string, limit
 		Find(&users).Error; err != nil {
 		return nil, err
 	}
-	return &users, nil
+	return users, nil
 }
 
 // GetUninvitedFriends retrieves friends of a user who are not invited to a specific room.
-func (r *userRepository) GetUninvitedFriends(roomID, userID string) (*[]model.User, error) {
+func (r *userRepository) GetUninvitedFriends(roomID, userID string) ([]model.User, error) {
 	var friends []model.User
 	err := r.db.
 		Table("users u").
-		Select("u.*").
+		Select("u.id, u.username, u.picture_url").
 		Joins("JOIN user_friends uf ON uf.friend_id = u.id AND uf.user_id = ?", userID).
 		Where("NOT EXISTS (SELECT 1 FROM room_users ru WHERE ru.user_id = u.id AND ru.room_id = ?)", roomID).
 		Where("NOT EXISTS (SELECT 1 FROM room_invites ri WHERE ri.user_id = u.id AND ri.room_id = ? AND ri.status = 'pending')", roomID).
 		Find(&friends).Error
-	return &friends, err
+	return friends, err
+}
+
+func (r *userRepository) UpdatePendingRoomInvites(userIDs []string, delta int) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	return r.db.
+		Model(&model.User{}).
+		Where("id IN ?", userIDs).
+		Update("no_of_pending_room_invites", gorm.Expr("no_of_pending_room_invites + ?", delta)).Error
 }

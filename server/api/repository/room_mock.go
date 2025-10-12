@@ -30,9 +30,9 @@ func (m *MockRoomRepository) GetByIDWithAttendees(roomID string) (*model.Room, e
 	return args.Get(0).(*model.Room), args.Error(1)
 }
 
-func (m *MockRoomRepository) GetUserRooms(userID string, page int, pageSize int) (*[]model.Room, error) {
+func (m *MockRoomRepository) GetUserRooms(userID string, page int, pageSize int) ([]model.Room, error) {
 	args := m.Called(userID, page, pageSize)
-	return args.Get(0).(*[]model.Room), args.Error(1)
+	return args.Get(0).([]model.Room), args.Error(1)
 }
 
 func (m *MockRoomRepository) CountUserRooms(userID string) (int64, error) {
@@ -40,19 +40,14 @@ func (m *MockRoomRepository) CountUserRooms(userID string) (int64, error) {
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (m *MockRoomRepository) GetUnjoinedRoomsByIsPrivate(userID string, isPrivate bool) (*[]model.Room, error) {
+func (m *MockRoomRepository) GetUnjoinedRoomsByIsPrivate(userID string, isPrivate bool) ([]model.Room, error) {
 	args := m.Called(userID, isPrivate)
-	return args.Get(0).(*[]model.Room), args.Error(1)
+	return args.Get(0).([]model.Room), args.Error(1)
 }
 
-func (m *MockRoomRepository) GetRoomAttendees(roomID string) (*[]model.User, error) {
+func (m *MockRoomRepository) GetRoomAttendeeIDs(roomID string) ([]string, error) {
 	args := m.Called(roomID)
-	return args.Get(0).(*[]model.User), args.Error(1)
-}
-
-func (m *MockRoomRepository) GetRoomAttendeeIDs(roomID string) (*[]string, error) {
-	args := m.Called(roomID)
-	return args.Get(0).(*[]string), args.Error(1)
+	return args.Get(0).([]string), args.Error(1)
 }
 
 func (m *MockRoomRepository) CloseRoom(roomID string) error {
@@ -60,7 +55,7 @@ func (m *MockRoomRepository) CloseRoom(roomID string) error {
 	return args.Error(0)
 }
 
-func (m *MockRoomRepository) UpdateRoom(room *model.Room) error {
+func (m *MockRoomRepository) Update(room *model.Room) error {
 	args := m.Called(room)
 	return args.Error(0)
 }
@@ -80,9 +75,10 @@ func (m *MockRoomRepository) IsUserInRoom(roomID, userID string) (bool, error) {
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockRoomRepository) GetPendingInvites(userID string) (*[]model.RoomInvite, error) {
+// Invite related methods
+func (m *MockRoomRepository) GetPendingInvites(userID string) ([]model.RoomInvite, error) {
 	args := m.Called(userID)
-	return args.Get(0).(*[]model.RoomInvite), args.Error(1)
+	return args.Get(0).([]model.RoomInvite), args.Error(1)
 }
 
 func (m *MockRoomRepository) CountPendingInvites(userID string) (int64, error) {
@@ -95,7 +91,7 @@ func (m *MockRoomRepository) UpdateInviteStatus(roomID, userID, status string) e
 	return args.Error(0)
 }
 
-func (m *MockRoomRepository) CreateInvites(invites *[]model.RoomInvite) error {
+func (m *MockRoomRepository) CreateInvites(invites []model.RoomInvite) error {
 	args := m.Called(invites)
 	return args.Error(0)
 }
@@ -108,4 +104,9 @@ func (m *MockRoomRepository) DeletePendingInvites(roomID string) error {
 func (m *MockRoomRepository) HasPendingInvites(roomID, userID string) (bool, error) {
 	args := m.Called(roomID, userID)
 	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockRoomRepository) GetPendingInviteUsers(roomID string) ([]string, error) {
+	args := m.Called(roomID)
+	return args.Get(0).([]string), args.Error(1)
 }

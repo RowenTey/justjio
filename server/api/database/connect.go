@@ -2,9 +2,6 @@ package database
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -12,7 +9,6 @@ import (
 
 	gormPostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	gormLogger "gorm.io/gorm/logger"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -20,7 +16,6 @@ import (
 )
 
 func ConnectDB(conf *config.Config, logger *logrus.Logger) *gorm.DB {
-	// TODO: Configure properly
 	dbLogger := logger.WithFields(logrus.Fields{"service": "Database"})
 
 	dsn := fmt.Sprintf(
@@ -33,14 +28,14 @@ func ConnectDB(conf *config.Config, logger *logrus.Logger) *gorm.DB {
 	)
 	dbConn, err := gorm.Open(gormPostgres.Open(dsn), &gorm.Config{
 		TranslateError: true,
-		Logger: gormLogger.New(
-			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-			gormLogger.Config{
-				SlowThreshold: time.Second,     // slow SQL threshold
-				LogLevel:      gormLogger.Info, // show all SQL
-				Colorful:      true,
-			},
-		),
+		// Logger: gormLogger.New(
+		// 	log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		// 	gormLogger.Config{
+		// 		SlowThreshold: time.Second,     // slow SQL threshold
+		// 		LogLevel:      gormLogger.Info, // show all SQL
+		// 		Colorful:      true,
+		// 	},
+		// ),
 	})
 	if err != nil {
 		dbLogger.Error("Failed to connect to database!")

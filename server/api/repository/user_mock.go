@@ -20,6 +20,11 @@ func (m *MockUserRepository) Create(user *model.User) (*model.User, error) {
 	return args.Get(0).(*model.User), args.Error(1)
 }
 
+func (m *MockUserRepository) SaveAll(users []model.User) error {
+	args := m.Called(users)
+	return args.Error(0)
+}
+
 func (m *MockUserRepository) FindByID(id string) (*model.User, error) {
 	args := m.Called(id)
 	return args.Get(0).(*model.User), args.Error(1)
@@ -35,9 +40,9 @@ func (m *MockUserRepository) FindByEmail(email string) (*model.User, error) {
 	return args.Get(0).(*model.User), args.Error(1)
 }
 
-func (m *MockUserRepository) FindByIDs(ids *[]uint) (*[]model.User, error) {
+func (m *MockUserRepository) FindByIDs(ids []string) ([]model.User, error) {
 	args := m.Called(ids)
-	return args.Get(0).(*[]model.User), args.Error(1)
+	return args.Get(0).([]model.User), args.Error(1)
 }
 
 func (m *MockUserRepository) Update(user *model.User) error {
@@ -50,6 +55,7 @@ func (m *MockUserRepository) Delete(id string) error {
 	return args.Error(0)
 }
 
+// Friends relationships
 func (m *MockUserRepository) CreateFriendRequest(request *model.FriendRequest) error {
 	args := m.Called(request)
 	return args.Error(0)
@@ -65,9 +71,9 @@ func (m *MockUserRepository) UpdateFriendRequest(requestID uint, values any) err
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) FindFriendRequestsByReceiver(receiverID uint, status string) (*[]model.FriendRequest, error) {
+func (m *MockUserRepository) FindFriendRequestsByReceiver(receiverID uint, status string) ([]model.FriendRequest, error) {
 	args := m.Called(receiverID, status)
-	return args.Get(0).(*[]model.FriendRequest), args.Error(1)
+	return args.Get(0).([]model.FriendRequest), args.Error(1)
 }
 
 func (m *MockUserRepository) CountFriendRequestsByReceiver(receiverID uint, status string) (int64, error) {
@@ -80,6 +86,7 @@ func (m *MockUserRepository) CheckFriendRequestExists(senderID, receiverID uint)
 	return args.Bool(0), args.Error(1)
 }
 
+// Friends operations
 func (m *MockUserRepository) AddFriend(userID, friendID uint) error {
 	args := m.Called(userID, friendID)
 	return args.Error(0)
@@ -90,9 +97,9 @@ func (m *MockUserRepository) RemoveFriend(userID, friendID uint) error {
 	return args.Error(0)
 }
 
-func (m *MockUserRepository) GetFriends(userID uint) (*[]model.User, error) {
+func (m *MockUserRepository) GetFriends(userID uint) ([]model.User, error) {
 	args := m.Called(userID)
-	return args.Get(0).(*[]model.User), args.Error(1)
+	return args.Get(0).([]model.User), args.Error(1)
 }
 
 func (m *MockUserRepository) CountFriends(userID uint) (int64, error) {
@@ -105,12 +112,19 @@ func (m *MockUserRepository) CheckFriendship(userID, friendID uint) (bool, error
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockUserRepository) GetUninvitedFriends(roomID, userID string) (*[]model.User, error) {
+func (m *MockUserRepository) GetUninvitedFriends(roomID, userID string) ([]model.User, error) {
 	args := m.Called(roomID, userID)
-	return args.Get(0).(*[]model.User), args.Error(1)
+	return args.Get(0).([]model.User), args.Error(1)
 }
 
-func (m *MockUserRepository) SearchNonFriendUsers(currentUserId, query string, limit int) (*[]model.User, error) {
+// Search
+func (m *MockUserRepository) SearchNonFriendUsers(currentUserId, query string, limit int) ([]model.User, error) {
 	args := m.Called(currentUserId, query, limit)
-	return args.Get(0).(*[]model.User), args.Error(1)
+	return args.Get(0).([]model.User), args.Error(1)
+}
+
+// Pending invites
+func (m *MockUserRepository) UpdatePendingRoomInvites(userIDs []string, delta int) error {
+	args := m.Called(userIDs, delta)
+	return args.Error(0)
 }

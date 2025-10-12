@@ -14,7 +14,7 @@ type MessageRepository interface {
 	Delete(msgID string) error
 	DeleteByRoom(roomID string) error
 	CountByRoom(roomID string) (int64, error)
-	FindByRoom(roomId string, page int, pageSize int, asc bool) (*[]model.Message, error)
+	FindByRoom(roomId string, page int, pageSize int, asc bool) ([]model.Message, error)
 }
 
 type messageRepository struct {
@@ -67,7 +67,7 @@ func (r *messageRepository) CountByRoom(roomID string) (int64, error) {
 	return count, err
 }
 
-func (r *messageRepository) FindByRoom(roomId string, page int, pageSize int, asc bool) (*[]model.Message, error) {
+func (r *messageRepository) FindByRoom(roomId string, page int, pageSize int, asc bool) ([]model.Message, error) {
 	var messages []model.Message
 
 	order := "sent_at ASC"
@@ -83,5 +83,5 @@ func (r *messageRepository) FindByRoom(roomId string, page int, pageSize int, as
 		Preload("Sender").
 		Find(&messages).Error
 
-	return &messages, err
+	return messages, err
 }

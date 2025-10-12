@@ -5,7 +5,7 @@ import { AxiosError } from "axios";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import InputField from "../components/InputField";
 import { useUserCtx } from "../context/user";
-import { updateUserApi } from "../api/user";
+import { updateUsernameApi } from "../api/user";
 import { api } from "../api";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../context/toast";
@@ -25,7 +25,7 @@ const EditProfilePage = () => {
   const onSubmit: SubmitHandler<{ username: string }> = async (data) => {
     startLoading();
     try {
-      await updateUserApi(api, user.id, "username", data.username);
+      await updateUsernameApi(api, user.id, "username", data.username);
       setUser({ ...user, username: data.username });
       showToast(`Updated username successfully!`, false);
       stopLoading();

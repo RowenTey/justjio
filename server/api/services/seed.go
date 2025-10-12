@@ -47,7 +47,7 @@ func SeedDB(
 		}
 		u.Password = hashedPassword
 
-		createdUser, err := userService.CreateOrUpdateUser(&u, true)
+		createdUser, err := userService.UpsertUser(&u, true)
 		if err != nil {
 			return err
 		}
@@ -79,7 +79,7 @@ func SeedDB(
 			continue
 		}
 
-		for _, r := range *requests {
+		for _, r := range requests {
 			err := userService.AcceptFriendRequest(r.ID)
 			if err != nil {
 				log.Warn("Error accepting friend request: ", err)
@@ -134,36 +134,36 @@ func SeedDB(
 
 	for i, r := range rooms {
 		host := users[rand.Intn(len(users))]
-		log.Info("User selected as host: ", host)
+		log.Infof("User selected as host: %+v", host)
 
 		// invite users to room
-		var invitees []uint
+		var invitees []string
 		for _, u := range users {
 			if u.ID == host.ID {
 				continue
 			}
-			invitees = append(invitees, u.ID)
+			invitees = append(invitees, utils.UIntToString(u.ID))
 		}
 
-		createdRoom, _, err := roomService.CreateRoomWithInvites(
+		roomId, err := roomService.CreateRoomWithInvites(
 			&r,
 			utils.UIntToString(host.ID),
-			&invitees,
+			invitees,
 		)
 		if err != nil {
 			return err
 		}
-		rooms[i] = *createdRoom
+		rooms[i] = model.Room{ID: roomId}
 		log.Info("Room created: ", rooms[i].ID)
 
 		// only accept invite for first and second room
-		if i == 2 {
+		if i >= 2 {
 			continue
 		}
 
 		// accept invite
 		for _, userid := range invitees {
-			err := roomService.UpdateRoomInviteStatus(rooms[i].ID, utils.UIntToString(userid), "accepted")
+			_, err := roomService.UpdateRoomInviteStatus(rooms[i].ID, userid, "accepted")
 			if err != nil {
 				log.Errorf("%s", err.Error())
 				return err
@@ -177,7 +177,7 @@ func SeedDB(
 
 		// create bill
 		for j, u := range invitees {
-			var payers []uint
+			var payers []string
 			for _, p := range invitees {
 				if p == u {
 					continue
@@ -187,8 +187,8 @@ func SeedDB(
 
 			if _, err := billService.CreateBill(
 				rooms[i].ID,
-				utils.UIntToString(u),
-				&payers,
+				u,
+				payers,
 				"food",
 				float32(j+10)*10,
 				true,
@@ -199,8 +199,8 @@ func SeedDB(
 
 			if _, err = billService.CreateBill(
 				rooms[i].ID,
-				utils.UIntToString(u),
-				&payers,
+				u,
+				payers,
 				"drinks",
 				rand.Float32()*100,
 				false,
@@ -210,8 +210,8 @@ func SeedDB(
 			}
 		}
 
-		log.Info("Consolidating bills for room: ", rooms[i].ID)
 		// consolidate bills and generate transactions for this room
+		log.Info("Consolidating bills for room: ", rooms[i].ID)
 		if err := billService.
 			ConsolidateBills(rooms[i].ID, utils.UIntToString(host.ID)); err != nil {
 			log.Errorf("%s", err.Error())

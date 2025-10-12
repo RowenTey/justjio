@@ -14,7 +14,7 @@ func (m *MockKafkaService) CreateTopic(topic string) error {
 	return args.Error(0)
 }
 
-func (m *MockKafkaService) BroadcastMessage(userIds *[]string, message kafkaModel.KafkaMessage) error {
+func (m *MockKafkaService) BroadcastMessage(userIds []string, message kafkaModel.KafkaMessage) error {
 	args := m.Called(userIds, message)
 	return args.Error(0)
 }

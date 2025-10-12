@@ -8,8 +8,8 @@ import (
 type TransactionRepository interface {
 	WithTx(tx *gorm.DB) TransactionRepository
 
-	Create(transactions *[]model.Transaction) error
-	FindByUser(isPaid bool, userID string) (*[]model.Transaction, error)
+	Create(transactions []model.Transaction) error
+	FindByUser(isPaid bool, userID string) ([]model.Transaction, error)
 	FindByID(transactionID string) (*model.Transaction, error)
 	Update(transaction *model.Transaction) error
 }
@@ -30,8 +30,8 @@ func (r *transactionRepository) WithTx(tx *gorm.DB) TransactionRepository {
 	return &transactionRepository{db: tx}
 }
 
-func (r *transactionRepository) Create(transactions *[]model.Transaction) error {
-	if transactions == nil || len(*transactions) == 0 {
+func (r *transactionRepository) Create(transactions []model.Transaction) error {
+	if len(transactions) == 0 {
 		return nil
 	}
 
@@ -40,14 +40,14 @@ func (r *transactionRepository) Create(transactions *[]model.Transaction) error 
 }
 
 // TODO: Implement pagination
-func (r *transactionRepository) FindByUser(isPaid bool, userID string) (*[]model.Transaction, error) {
+func (r *transactionRepository) FindByUser(isPaid bool, userID string) ([]model.Transaction, error) {
 	var transactions []model.Transaction
 	err := r.db.
 		Where("is_paid = ? AND (payee_id = ? OR payer_id = ?)", isPaid, userID, userID).
 		Preload("Payee").
 		Preload("Payer").
 		Find(&transactions).Error
-	return &transactions, err
+	return transactions, err
 }
 
 func (r *transactionRepository) FindByID(transactionID string) (*model.Transaction, error) {

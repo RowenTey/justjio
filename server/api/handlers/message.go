@@ -37,7 +37,8 @@ func NewMessageHandler(
 // @Success 200 {object} object{status=string,message=string,data=model.Message} "Retrieved message successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "No message found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
-// @Router /messages/{msgId} [get]
+// @Security BearerAuth
+// @Router /rooms/{roomId}/messages/{msgId} [get]
 func (h *MessageHandler) GetMessage(c *fiber.Ctx) error {
 	msgId := c.Params("msgId")
 
@@ -61,6 +62,7 @@ func (h *MessageHandler) GetMessage(c *fiber.Ctx) error {
 // @Success 200 {object} object{status=string,message=string,data=[]model.Message} "Retrieved messages successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "No messages found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
 // @Router /rooms/{roomId}/messages [get]
 func (h *MessageHandler) GetMessages(c *fiber.Ctx) error {
 	roomId := c.Params("roomId")
@@ -73,7 +75,7 @@ func (h *MessageHandler) GetMessages(c *fiber.Ctx) error {
 	}
 
 	response := response.GetMessagesResponse{
-		Messages:  *messages,
+		Messages:  messages,
 		Page:      page,
 		PageCount: pageCount,
 	}
@@ -104,7 +106,7 @@ func (h *MessageHandler) CreateMessage(c *fiber.Ctx) error {
 
 	token := c.Locals("user").(*jwt.Token)
 	userId := utils.GetUserInfoFromToken(token, "user_id")
-	roomUserIds := c.Locals("roomUserIds").(*[]string)
+	roomUserIds := c.Locals("roomUserIds").([]string)
 
 	err := h.messageService.SaveMessage(roomId, userId, roomUserIds, request.Content)
 	if err != nil {

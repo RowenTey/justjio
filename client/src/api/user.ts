@@ -59,7 +59,7 @@ export const getNumFriendsApi = (
   });
 };
 
-export const updateUserApi = (
+export const updateUsernameApi = (
   api: AxiosInstance,
   userId: number,
   field: string,

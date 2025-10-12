@@ -1,10 +1,8 @@
 package request
 
-type UpdateUserRequest struct {
-	Field string `json:"field"`
-	Value string `json:"value"`
+type UpdateUsernameRequest struct {
+	Username string `json:"username"`
 }
-
 type ModifyFriendRequest struct {
 	FriendID uint `json:"friendId"`
 }

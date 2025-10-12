@@ -12,24 +12,24 @@ type RoomRepository interface {
 	Create(room *model.Room) error
 	GetByID(roomID string) (*model.Room, error)
 	GetByIDWithAttendees(roomID string) (*model.Room, error)
-	GetUserRooms(userID string, page int, pageSize int) (*[]model.Room, error)
+	GetUserRooms(userID string, page int, pageSize int) ([]model.Room, error)
 	CountUserRooms(userID string) (int64, error)
-	GetUnjoinedRoomsByIsPrivate(userID string, isPrivate bool) (*[]model.Room, error)
-	GetRoomAttendees(roomID string) (*[]model.User, error)
-	GetRoomAttendeeIDs(roomID string) (*[]string, error)
+	GetUnjoinedRoomsByIsPrivate(userID string, isPrivate bool) ([]model.Room, error)
+	GetRoomAttendeeIDs(roomID string) ([]string, error)
 	CloseRoom(roomID string) error
-	UpdateRoom(room *model.Room) error
+	Update(room *model.Room) error
 	AddUserToRoom(roomID string, user *model.User) error
 	RemoveUserFromRoom(roomID, userID string) error
 	IsUserInRoom(roomID, userID string) (bool, error)
 
 	// Invite related methods
-	GetPendingInvites(userID string) (*[]model.RoomInvite, error)
+	GetPendingInvites(userID string) ([]model.RoomInvite, error)
 	CountPendingInvites(userID string) (int64, error)
 	UpdateInviteStatus(roomID, userID, status string) error
-	CreateInvites(invites *[]model.RoomInvite) error
+	CreateInvites(invites []model.RoomInvite) error
 	DeletePendingInvites(roomID string) error
 	HasPendingInvites(roomID, userID string) (bool, error)
+	GetPendingInviteUsers(roomID string) ([]string, error)
 }
 
 type roomRepository struct {
@@ -54,7 +54,12 @@ func (r *roomRepository) Create(room *model.Room) error {
 
 func (r *roomRepository) GetByID(roomID string) (*model.Room, error) {
 	var room model.Room
-	err := r.db.Table("rooms").Preload("Users").First(&room, "id = ?", roomID).Error
+	err := r.db.
+		Table("rooms").
+		Preload("Users", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, username, picture_url")
+		}).
+		First(&room, "id = ?", roomID).Error
 	return &room, err
 }
 
@@ -62,67 +67,63 @@ func (r *roomRepository) GetByIDWithAttendees(roomID string) (*model.Room, error
 	var room model.Room
 	err := r.db.
 		Preload("Host", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id, username")
+			return db.Select("id, username, picture_url")
 		}).
 		Preload("Users", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id, username")
+			return db.Select("id, username, picture_url")
 		}).
 		First(&room, "id = ?", roomID).Error
 	return &room, err
 }
 
-func (r *roomRepository) GetUserRooms(userID string, page int, pageSize int) (*[]model.Room, error) {
+func (r *roomRepository) GetUserRooms(userID string, page int, pageSize int) ([]model.Room, error) {
 	var rooms []model.Room
 	err := r.db.
 		Model(&model.Room{}).
+		Preload("Host", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, username, picture_url")
+		}).
 		Joins("JOIN room_users ON rooms.id = room_users.room_id").
 		Where("room_users.user_id = ?", userID).
 		Where("rooms.is_closed = ?", false).
 		Order("rooms.updated_at DESC").
 		Scopes(database.Paginate(page, pageSize)).
 		Find(&rooms).Error
-	return &rooms, err
+	return rooms, err
 }
 
 func (r *roomRepository) CountUserRooms(userID string) (int64, error) {
 	var count int64
 	err := r.db.
-		Table("room_users").
-		Where("user_id = ?", userID).
-		Count(&count).Error
+		Table("users").
+		Where("id = ?", userID).
+		Pluck("no_of_rooms", &count).Error
 	return count, err
 }
 
-func (r *roomRepository) GetUnjoinedRoomsByIsPrivate(userID string, isPrivate bool) (*[]model.Room, error) {
+func (r *roomRepository) GetUnjoinedRoomsByIsPrivate(userID string, isPrivate bool) ([]model.Room, error) {
 	var rooms []model.Room
 	err := r.db.
 		Table("rooms").
-		Preload("Host").
+		Preload("Host", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, username, picture_url")
+		}).
 		Where("is_private = ?", isPrivate).
 		Where("id NOT IN (SELECT room_id FROM room_users WHERE user_id = ?)", userID).
 		Where("id NOT IN (SELECT room_id FROM room_invites WHERE user_id = ?)", userID).
 		Order("updated_at DESC").
 		Find(&rooms).Error
-	return &rooms, err
+	return rooms, err
 }
 
-func (r *roomRepository) GetRoomAttendees(roomID string) (*[]model.User, error) {
-	var room model.Room
-	err := r.db.
-		Table("rooms").
-		Preload("Users").
-		First(&room, "id = ?", roomID).Error
-	return &room.Users, err
-}
-
-func (r *roomRepository) GetRoomAttendeeIDs(roomID string) (*[]string, error) {
+func (r *roomRepository) GetRoomAttendeeIDs(roomID string) ([]string, error) {
 	var userIds []string
 	err := r.db.
 		Table("room_users").
-		Where("room_users.room_id = ?", roomID).
-		Select("room_users.user_id").
+		Where("room_id = ?", roomID).
+		Select("user_id").
 		Find(&userIds).Error
-	return &userIds, err
+	return userIds, err
 }
 
 func (r *roomRepository) CloseRoom(roomID string) error {
@@ -132,7 +133,7 @@ func (r *roomRepository) CloseRoom(roomID string) error {
 		Error
 }
 
-func (r *roomRepository) UpdateRoom(room *model.Room) error {
+func (r *roomRepository) Update(room *model.Room) error {
 	return r.db.Save(room).Error
 }
 
@@ -154,7 +155,7 @@ func (r *roomRepository) IsUserInRoom(roomID, userID string) (bool, error) {
 	var count int64
 	err := r.db.
 		Table("room_users").
-		Where("room_users.room_id = ? AND room_users.user_id = ?", roomID, userID).
+		Where("room_id = ? AND user_id = ?", roomID, userID).
 		Count(&count).Error
 	return count > 0, err
 }
@@ -165,23 +166,39 @@ func (r *roomRepository) DeletePendingInvites(roomID string) error {
 		Delete(&model.RoomInvite{}).Error
 }
 
-func (r *roomRepository) GetPendingInvites(userID string) (*[]model.RoomInvite, error) {
+func (r *roomRepository) GetPendingInviteUsers(roomID string) ([]string, error) {
+	var userIds []string
+	err := r.db.
+		Table("room_invites").
+		Where("room_id = ? AND status = ?", roomID, "pending").
+		Select("user_id").
+		Find(&userIds).Error
+	return userIds, err
+}
+
+func (r *roomRepository) GetPendingInvites(userID string) ([]model.RoomInvite, error) {
 	var invites []model.RoomInvite
 	err := r.db.
-		Preload("Room.Host").
-		Preload("User").
-		Preload("Inviter").
+		Preload("Room.Host", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, username, picture_url")
+		}).
+		Preload("User", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, username, picture_url")
+		}).
+		Preload("Inviter", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, username, picture_url")
+		}).
 		Where("user_id = ? AND status = ?", userID, "pending").
 		Find(&invites).Error
-	return &invites, err
+	return invites, err
 }
 
 func (r *roomRepository) CountPendingInvites(userID string) (int64, error) {
 	var count int64
 	err := r.db.
-		Model(&model.RoomInvite{}).
-		Where("user_id = ? AND status = ?", userID, "pending").
-		Count(&count).Error
+		Model(&model.User{}).
+		Where("id = ?", userID).
+		Pluck("no_of_pending_room_invites", &count).Error
 	return count, err
 }
 
@@ -192,14 +209,14 @@ func (r *roomRepository) UpdateInviteStatus(roomID, userID, status string) error
 		Update("status", status).Error
 }
 
-func (r *roomRepository) CreateInvites(invites *[]model.RoomInvite) error {
-	if invites == nil || len(*invites) == 0 {
+func (r *roomRepository) CreateInvites(invites []model.RoomInvite) error {
+	if len(invites) == 0 {
 		return nil
 	}
+
 	return r.db.
 		Table("room_invites").
-		// Omit("Room", "Inviter", "User").
-		Create(invites).Error
+		Create(&invites).Error
 }
 
 func (r *roomRepository) HasPendingInvites(roomID, userID string) (bool, error) {

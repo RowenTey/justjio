@@ -77,7 +77,6 @@ export const googleLoginApi = (
 export const signUpApi = (
   api: AxiosInstance,
   username: string,
-  // phoneNum: string,
   email: string,
   password: string,
   mock: boolean = false,

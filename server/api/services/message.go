@@ -46,7 +46,7 @@ func NewMessageService(
 }
 
 func (ms *MessageService) SaveMessage(
-	roomId string, senderId string, roomUserIds *[]string, content string) error {
+	roomId string, senderId string, roomUserIds []string, content string) error {
 	return database.RunInTransaction(ms.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		roomRepoTx := ms.roomRepo.WithTx(tx)
 		userRepoTx := ms.userRepo.WithTx(tx)
@@ -119,7 +119,7 @@ func (ms *MessageService) CountNumMessagesPages(roomId string) (int, error) {
 	return int(math.Ceil(float64(count) / float64(MESSAGE_PAGE_SIZE))), nil
 }
 
-func (ms *MessageService) GetMessagesByRoomId(roomId string, page int, asc bool) (*[]model.Message, int, error) {
+func (ms *MessageService) GetMessagesByRoomId(roomId string, page int, asc bool) ([]model.Message, int, error) {
 	messages, err := ms.messageRepo.FindByRoom(roomId, page, MESSAGE_PAGE_SIZE, asc)
 	if err != nil {
 		return nil, 0, err

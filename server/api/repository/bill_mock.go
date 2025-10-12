@@ -25,9 +25,9 @@ func (m *MockBillRepository) FindByID(billID uint) (*model.Bill, error) {
 	return args.Get(0).(*model.Bill), args.Error(1)
 }
 
-func (m *MockBillRepository) FindByRoom(roomID string) (*[]model.Bill, error) {
+func (m *MockBillRepository) FindByRoom(roomID string) ([]model.Bill, error) {
 	args := m.Called(roomID)
-	return args.Get(0).(*[]model.Bill), args.Error(1)
+	return args.Get(0).([]model.Bill), args.Error(1)
 }
 
 func (m *MockBillRepository) DeleteByRoom(roomID string) error {
@@ -40,9 +40,9 @@ func (m *MockBillRepository) GetRoomBillConsolidationStatus(roomID string) (Stat
 	return args.Get(0).(Status), args.Error(1)
 }
 
-func (m *MockBillRepository) FindByConsolidation(consolidationID uint) (*[]model.Bill, error) {
+func (m *MockBillRepository) FindByConsolidation(consolidationID uint) ([]model.Bill, error) {
 	args := m.Called(consolidationID)
-	return args.Get(0).(*[]model.Bill), args.Error(1)
+	return args.Get(0).([]model.Bill), args.Error(1)
 }
 
 func (m *MockBillRepository) ConsolidateBills(roomID string) (*model.Consolidation, error) {

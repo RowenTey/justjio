@@ -10,7 +10,7 @@ type SubscriptionRepository interface {
 
 	Create(subscription *model.Subscription) (*model.Subscription, error)
 	FindByID(subID string) (*model.Subscription, error)
-	FindByUserID(userID string) (*[]model.Subscription, error)
+	FindByUserID(userID string) ([]model.Subscription, error)
 	FindByEndpoint(endpoint string) (*model.Subscription, error)
 	Delete(subID string) error
 }
@@ -45,10 +45,10 @@ func (r *subscriptionRepository) FindByID(subID string) (*model.Subscription, er
 	return &subscription, nil
 }
 
-func (r *subscriptionRepository) FindByUserID(userID string) (*[]model.Subscription, error) {
+func (r *subscriptionRepository) FindByUserID(userID string) ([]model.Subscription, error) {
 	var subscriptions []model.Subscription
 	err := r.db.Where("user_id = ?", userID).Find(&subscriptions).Error
-	return &subscriptions, err
+	return subscriptions, err
 }
 
 func (r *subscriptionRepository) FindByEndpoint(endpoint string) (*model.Subscription, error) {

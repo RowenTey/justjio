@@ -84,6 +84,7 @@ func (h *TransactionHandler) SettleTransaction(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, "Transaction not found")
 	}
 
+	// TODO: Handle retries
 	// Send notification to payee
 	go func() {
 		title := "Settled"

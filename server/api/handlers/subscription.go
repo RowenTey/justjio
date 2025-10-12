@@ -37,6 +37,7 @@ func NewSubscriptionHandler(
 // @Success 200 {object} object{status=string,message=string,data=model.Subscription} "Subscription created successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input or missing required fields"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
 // @Router /subscriptions [post]
 func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 	var subscription model.Subscription
@@ -68,6 +69,7 @@ func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid endpoint URL"
 // @Failure 404 {object} utils.EmptyApiResponse "Subscription not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
 // @Router /subscriptions/{endpoint} [get]
 func (h *SubscriptionHandler) GetSubscriptionByEndpoint(c *fiber.Ctx) error {
 	endpoint := c.Params("endpoint")
@@ -94,6 +96,7 @@ func (h *SubscriptionHandler) GetSubscriptionByEndpoint(c *fiber.Ctx) error {
 // @Success 200 {object} utils.EmptyApiResponse "Subscription deleted successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "Subscription not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
 // @Router /subscriptions/{subId} [delete]
 func (h *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
 	subId := c.Params("subId")

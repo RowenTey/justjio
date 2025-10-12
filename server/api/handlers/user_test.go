@@ -70,7 +70,7 @@ func (suite *UserHandlerTestSuite) SetupSuite() {
 	// Register User routes
 	userRoutes := suite.app.Group("/users/:userId")
 	userRoutes.Get("/", userHandler.GetUser)
-	userRoutes.Patch("/", userHandler.UpdateUser)
+	userRoutes.Patch("/username", userHandler.UpdateUsername)
 	userRoutes.Get("/friends", userHandler.GetFriends)
 	userRoutes.Get("/friends/search", userHandler.SearchNonFriends)
 	userRoutes.Post("/friends", userHandler.SendFriendRequest)
@@ -174,9 +174,8 @@ func (suite *UserHandlerTestSuite) TestGetUser_NotFound() {
 }
 
 func (suite *UserHandlerTestSuite) TestUpdateUser_Success() {
-	updateReq := request.UpdateUserRequest{
-		Field: "username",
-		Value: "updatedusername",
+	updateReq := request.UpdateUsernameRequest{
+		Username: "updatedusername",
 	}
 	reqBody, _ := json.Marshal(updateReq)
 

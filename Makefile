@@ -34,5 +34,5 @@ reset-db:
 	cd infra/docker && docker compose exec $(DB_CONTAINER) psql -U postgres -d postgres -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 	
 # Generate API documentation
-docs:
+swagger:
 	cd server/api && swag init -g main.go

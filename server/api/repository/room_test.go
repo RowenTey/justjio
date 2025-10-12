@@ -107,20 +107,6 @@ func (suite *RoomRepositoryTestSuite) TestAddAndRemoveUserFromRoom_Success() {
 	assert.False(suite.T(), isIn)
 }
 
-func (suite *RoomRepositoryTestSuite) TestGetRoomAttendees_Success() {
-	room := model.Room{Name: "RoomWithAttendees", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
-	assert.NoError(suite.T(), err)
-
-	err = suite.repo.AddUserToRoom(room.ID, suite.testUser)
-	assert.NoError(suite.T(), err)
-
-	users, err := suite.repo.GetRoomAttendees(room.ID)
-	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), *users, 1)
-	assert.Equal(suite.T(), suite.testUser.ID, (*users)[0].ID)
-}
-
 func (suite *RoomRepositoryTestSuite) TestGetRoomAttendeeIDs_Success() {
 	room := model.Room{Name: "AttendeeIDRoom", HostID: suite.testUser.ID}
 	err := suite.repo.Create(&room)

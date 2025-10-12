@@ -65,7 +65,7 @@ func (s *BillServiceTestSuite) TestCreateBill_Success() {
 	// Setup test data
 	roomId := "room1"
 	ownerId := "user1"
-	payersId := []uint{2, 3}
+	payersId := []string{"2", "3"}
 	name := "Dinner"
 	amount := float32(100.50)
 	includeOwner := true
@@ -108,7 +108,7 @@ func (s *BillServiceTestSuite) TestCreateBill_Success() {
 func (s *BillServiceTestSuite) TestCreateBill_AlreadyConsolidated() {
 	roomId := "room1"
 	ownerId := "user1"
-	payersId := []uint{2, 3}
+	payersId := []string{"2", "3"}
 
 	// Mock expectations
 	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.CONSOLIDATED, nil)
@@ -129,7 +129,7 @@ func (s *BillServiceTestSuite) TestCreateBill_AlreadyConsolidated() {
 func (s *BillServiceTestSuite) TestCreateBill_EmptyPayers() {
 	roomId := "room1"
 	ownerId := "user1"
-	emptyPayers := []uint{}
+	emptyPayers := []string{}
 
 	// Mock expectations
 	s.mockBillRepo.On("GetRoomBillConsolidationStatus", roomId).Return(repository.CONSOLIDATED, nil)

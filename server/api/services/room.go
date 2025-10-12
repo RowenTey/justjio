@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 
 	"github.com/RowenTey/JustJio/server/api/database"
 	modelLocation "github.com/RowenTey/JustJio/server/api/dto/location"
@@ -39,7 +38,6 @@ type RoomService struct {
 	db               *gorm.DB
 	roomRepo         repository.RoomRepository
 	userRepo         repository.UserRepository
-	billRepo         repository.BillRepository
 	httpClient       utils.HTTPClient
 	googleMapsApiKey string
 	logger           *logrus.Entry
@@ -49,7 +47,6 @@ func NewRoomService(
 	db *gorm.DB,
 	roomRepo repository.RoomRepository,
 	userRepo repository.UserRepository,
-	billRepo repository.BillRepository,
 	httpClient utils.HTTPClient,
 	googleMapsApiKey string,
 	logger *logrus.Logger,
@@ -58,7 +55,6 @@ func NewRoomService(
 		db:               db,
 		roomRepo:         roomRepo,
 		userRepo:         userRepo,
-		billRepo:         billRepo,
 		googleMapsApiKey: googleMapsApiKey,
 		httpClient:       httpClient,
 		logger:           utils.AddServiceField(logger, "RoomService"),
@@ -66,10 +62,15 @@ func NewRoomService(
 }
 
 func (rs *RoomService) CreateRoomWithInvites(
-	room *model.Room, userId string, inviteesIds *[]uint) (*model.Room, *[]model.RoomInvite, error) {
-	var invites []model.RoomInvite
+	room *model.Room,
+	userId string,
+	inviteesIds []string,
+) (string, error) {
+	var createdRoomId string
 
-	if err := database.RunInTransaction(rs.db, sql.LevelDefault, func(tx *gorm.DB) error {
+	if err := database.RunInTransaction(rs.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
+		var invites []model.RoomInvite
+
 		userRepoTx := rs.userRepo.WithTx(tx)
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 
@@ -89,6 +90,7 @@ func (rs *RoomService) CreateRoomWithInvites(
 			return err
 		}
 
+		room.NoOfAttendees = 1
 		room.VenueUrl = googleMapsUri
 		room.HostID = host.ID
 		room.Users = append(room.Users, *host)
@@ -96,7 +98,7 @@ func (rs *RoomService) CreateRoomWithInvites(
 			return err
 		}
 
-		for _, user := range *invitees {
+		for _, user := range invitees {
 			invite := model.RoomInvite{
 				RoomID:    room.ID,
 				UserID:    user.ID,
@@ -105,35 +107,337 @@ func (rs *RoomService) CreateRoomWithInvites(
 			}
 			invites = append(invites, invite)
 		}
-		if err := roomRepoTx.CreateInvites(&invites); err != nil {
+		if err := roomRepoTx.CreateInvites(invites); err != nil {
 			return err
 		}
 
+		host.NoOfRooms++
+		if err := userRepoTx.Update(host); err != nil {
+			return err
+		}
+
+		if err := userRepoTx.UpdatePendingRoomInvites(inviteesIds, 1); err != nil {
+			return err
+		}
+
+		rs.logger.Info("Room ", room.Name, " created with ID: ", room.ID)
+		createdRoomId = room.ID
+
 		return err
 	}); err != nil {
-		return nil, nil, err
+		return "", err
 	}
 
-	rs.logger.Info("Created room with ID: ", room.ID)
-	rs.logger.Infof("Invited users: %v", invites)
-
-	return room, &invites, nil
+	return createdRoomId, nil
 }
 
-func (rs *RoomService) GetRooms(userId string, page int) (*[]model.Room, error) {
-	return rs.roomRepo.GetUserRooms(userId, page, ROOM_PAGE_SIZE)
+func (rs *RoomService) GetRooms(userId string, page int) ([]response.RoomListDto, error) {
+	rooms, err := rs.roomRepo.GetUserRooms(userId, page, ROOM_PAGE_SIZE)
+	if err != nil {
+		return nil, err
+	}
+
+	roomDtos := make([]response.RoomListDto, len(rooms))
+	for i, room := range rooms {
+		roomDtos[i] = response.RoomListDto{
+			ID:            room.ID,
+			Name:          room.Name,
+			IsClosed:      room.IsClosed,
+			IsPrivate:     room.IsPrivate,
+			ImageUrl:      room.ImageUrl,
+			NoOfAttendees: room.NoOfAttendees,
+			Host: response.AttendeesDto{
+				ID:       room.Host.ID,
+				Username: room.Host.Username,
+				Picture:  room.Host.PictureUrl,
+			},
+		}
+	}
+
+	return roomDtos, nil
 }
 
 func (rs *RoomService) GetNumRooms(userId string) (int64, error) {
 	return rs.roomRepo.CountUserRooms(userId)
 }
 
-func (rs *RoomService) GetUnjoinedPublicRooms(userId string) (*[]model.Room, error) {
-	return rs.roomRepo.GetUnjoinedRoomsByIsPrivate(userId, false)
+func (rs *RoomService) GetUnjoinedPublicRooms(userId string) ([]response.RoomListDto, error) {
+	rooms, err := rs.roomRepo.GetUnjoinedRoomsByIsPrivate(userId, false)
+	if err != nil {
+		return nil, err
+	}
+
+	roomDtos := make([]response.RoomListDto, len(rooms))
+	for i, room := range rooms {
+		roomDtos[i] = response.RoomListDto{
+			ID:            room.ID,
+			Name:          room.Name,
+			IsClosed:      room.IsClosed,
+			IsPrivate:     room.IsPrivate,
+			ImageUrl:      room.ImageUrl,
+			NoOfAttendees: room.NoOfAttendees,
+			Host: response.AttendeesDto{
+				ID:       room.Host.ID,
+				Username: room.Host.Username,
+				Picture:  room.Host.PictureUrl,
+			},
+		}
+	}
+
+	return roomDtos, nil
+}
+
+func (rs *RoomService) GetRoomAttendeesIds(roomId string) ([]string, error) {
+	return rs.roomRepo.GetRoomAttendeeIDs(roomId)
 }
 
 func (rs *RoomService) GetRoomById(roomId string) (*response.RoomDto, error) {
 	room, err := rs.roomRepo.GetByIDWithAttendees(roomId)
+	if err != nil {
+		return nil, err
+	}
+
+	dto := &response.RoomDto{
+		ID:           room.ID,
+		Name:         room.Name,
+		Time:         room.Time,
+		Venue:        room.Venue,
+		VenueUrl:     room.VenueUrl,
+		Date:         room.Date,
+		Description:  room.Description,
+		Consolidated: room.Consolidated,
+		IsClosed:     room.IsClosed,
+		IsPrivate:    room.IsPrivate,
+		ImageUrl:     room.ImageUrl,
+		Host: response.AttendeesDto{
+			ID:       room.Host.ID,
+			Username: room.Host.Username,
+			Picture:  room.Host.PictureUrl,
+		},
+		NoOfAttendees: room.NoOfAttendees,
+		Attendees:     []response.AttendeesDto{},
+	}
+
+	for _, u := range room.Users {
+		dto.Attendees = append(dto.Attendees, response.AttendeesDto{
+			ID:       u.ID,
+			Username: u.Username,
+			Picture:  u.PictureUrl,
+		})
+	}
+
+	return dto, nil
+}
+
+func (rs *RoomService) GetRoomInvites(userId string) ([]response.RoomInviteDto, error) {
+	invites, err := rs.roomRepo.GetPendingInvites(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	roomInviteDtos := make([]response.RoomInviteDto, len(invites))
+	for i, invite := range invites {
+		roomInviteDtos[i] = response.RoomInviteDto{
+			ID:        invite.ID,
+			Status:    invite.Status,
+			CreatedAt: invite.CreatedAt,
+			User: response.AttendeesDto{
+				ID:       invite.User.ID,
+				Username: invite.User.Username,
+				Picture:  invite.User.PictureUrl,
+			},
+			Inviter: response.AttendeesDto{
+				ID:       invite.Inviter.ID,
+				Username: invite.Inviter.Username,
+				Picture:  invite.Inviter.PictureUrl,
+			},
+			Room: response.SimplifiedRoomDto{
+				ID:            invite.Room.ID,
+				Name:          invite.Room.Name,
+				Time:          invite.Room.Time,
+				Venue:         invite.Room.Venue,
+				VenueUrl:      invite.Room.VenueUrl,
+				Date:          invite.Room.Date,
+				Description:   invite.Room.Description,
+				ImageUrl:      invite.Room.ImageUrl,
+				IsPrivate:     invite.Room.IsPrivate,
+				NoOfAttendees: invite.Room.NoOfAttendees,
+			},
+		}
+	}
+
+	return roomInviteDtos, nil
+}
+
+func (rs *RoomService) GetNumRoomInvites(userId string) (int64, error) {
+	return rs.roomRepo.CountPendingInvites(userId)
+}
+
+func (rs *RoomService) UpdateRoom(
+	updateReq *request.UpdateRoomRequest,
+	roomId,
+	userId string,
+) error {
+	room, err := rs.roomRepo.GetByID(roomId)
+	if err != nil {
+		return err
+	}
+
+	if utils.UIntToString(room.HostID) != userId {
+		return ErrInvalidHost
+	}
+
+	if room.VenuePlaceId != updateReq.PlaceId {
+		room.Venue = updateReq.Venue
+		room.VenuePlaceId = updateReq.PlaceId
+		room.VenueUrl, err = rs.fetchGoogleMapsUri(updateReq.PlaceId)
+		if err != nil {
+			return fmt.Errorf("failed to fetch Google Maps URI: %v", err)
+		}
+	}
+
+	room.Date = updateReq.Date
+	room.Time = updateReq.Time
+	room.Description = updateReq.Description
+
+	if err := rs.roomRepo.Update(room); err != nil {
+		return fmt.Errorf("failed to update room: %v", err)
+	}
+
+	rs.logger.Info("Room " + room.Name + " edited successfully.")
+	return nil
+}
+
+func (rs *RoomService) CloseRoom(roomId string, userId string) error {
+	return database.RunInTransaction(rs.db, sql.LevelDefault, func(tx *gorm.DB) error {
+		roomRepoTx := rs.roomRepo.WithTx(tx)
+		userRepoTx := rs.userRepo.WithTx(tx)
+
+		room, err := roomRepoTx.GetByID(roomId)
+		if err != nil {
+			return err
+		}
+
+		if utils.UIntToString(room.HostID) != userId {
+			return ErrInvalidHost
+		}
+
+		if room.Consolidated == "UNCONSOLIDATED" {
+			return ErrRoomHasUnconsolidatedBills
+		}
+
+		room.IsClosed = true
+		if err := roomRepoTx.Update(room); err != nil {
+			return err
+		}
+
+		inviteesId, err := roomRepoTx.GetPendingInviteUsers(roomId)
+		if err != nil {
+			return err
+		}
+
+		// Decrement number of pending invites for each invitee who haven't responded
+		if err := userRepoTx.UpdatePendingRoomInvites(inviteesId, -1); err != nil {
+			return err
+		}
+
+		return roomRepoTx.DeletePendingInvites(roomId)
+	})
+}
+
+func (rs *RoomService) UpdateRoomInviteStatus(
+	roomId string,
+	userId string,
+	status string,
+) (*model.Room, error) {
+	if status != "accepted" && status != "rejected" {
+		return nil, ErrInvalidRoomStatus
+	}
+
+	var room *model.Room
+	if err := database.RunInTransaction(rs.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
+		roomRepoTx := rs.roomRepo.WithTx(tx)
+		userRepoTx := rs.userRepo.WithTx(tx)
+
+		// Update the invite status
+		if err := roomRepoTx.UpdateInviteStatus(roomId, userId, status); err != nil {
+			return err
+		}
+
+		user, err := userRepoTx.FindByID(userId)
+		if err != nil {
+			return err
+		}
+
+		user.NoOfPendingRoomInvites--
+		if err := userRepoTx.Update(user); err != nil {
+			return err
+		}
+
+		// If the invite is rejected, we don't need to update the room
+		if status == "rejected" {
+			return nil
+		}
+
+		room, err := roomRepoTx.GetByIDWithAttendees(roomId)
+		if err != nil {
+			return err
+		}
+
+		user.NoOfRooms++
+		if err := userRepoTx.Update(user); err != nil {
+			return err
+		}
+
+		room.NoOfAttendees++
+		room.Users = append(room.Users, *user)
+		return roomRepoTx.Update(room)
+	}); err != nil {
+		return nil, err
+	}
+
+	return room, nil
+}
+
+func (rs *RoomService) JoinRoom(roomId, userId string) (*response.RoomDto, error) {
+	var room *model.Room
+
+	if err := database.RunInTransaction(rs.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
+		// Check if user is already in room
+		if inRoom, err := rs.roomRepo.IsUserInRoom(roomId, userId); err != nil {
+			return err
+		} else if inRoom {
+			return ErrAlreadyInRoom
+		}
+
+		// TODO: check if user is invited if room is private
+
+		room, err := rs.roomRepo.GetByIDWithAttendees(roomId)
+		if err != nil {
+			return err
+		}
+
+		user, err := rs.userRepo.FindByID(userId)
+		if err != nil {
+			return err
+		}
+
+		user.NoOfRooms++
+		if err := rs.userRepo.Update(user); err != nil {
+			return err
+		}
+
+		room.NoOfAttendees++
+		room.Users = append(room.Users, *user)
+		err = rs.roomRepo.Update(room)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
 
 	dto := &response.RoomDto{
 		ID:           room.ID,
@@ -152,6 +456,7 @@ func (rs *RoomService) GetRoomById(roomId string) (*response.RoomDto, error) {
 			Username: room.Host.Username,
 		},
 		NoOfAttendees: room.NoOfAttendees,
+		Attendees:     []response.AttendeesDto{},
 	}
 
 	for _, u := range room.Users {
@@ -161,217 +466,84 @@ func (rs *RoomService) GetRoomById(roomId string) (*response.RoomDto, error) {
 		})
 	}
 
-	return dto, err
-}
-
-func (rs *RoomService) GetRoomInvites(userId string) (*[]model.RoomInvite, error) {
-	return rs.roomRepo.GetPendingInvites(userId)
-}
-
-func (rs *RoomService) GetNumRoomInvites(userId string) (int64, error) {
-	return rs.roomRepo.CountPendingInvites(userId)
-}
-
-func (rs *RoomService) GetRoomAttendees(roomId string) (*[]model.User, error) {
-	return rs.roomRepo.GetRoomAttendees(roomId)
-}
-
-func (rs *RoomService) GetRoomAttendeesIds(roomId string) (*[]string, error) {
-	return rs.roomRepo.GetRoomAttendeeIDs(roomId)
-}
-
-func (rs *RoomService) UpdateRoom(updateReq *request.UpdateRoomRequest, roomId, userId string) (*model.Room, error) {
-	room, err := rs.roomRepo.GetByID(roomId)
-	if err != nil {
-		return nil, err
-	}
-
-	if utils.UIntToString(room.HostID) != userId {
-		return nil, ErrInvalidHost
-	}
-
-	if room.VenuePlaceId != updateReq.PlaceId {
-		room.Venue = updateReq.Venue
-		room.VenuePlaceId = updateReq.PlaceId
-		room.VenueUrl, err = rs.fetchGoogleMapsUri(updateReq.PlaceId)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch Google Maps URI: %v", err)
-		}
-	}
-
-	room.Date = updateReq.Date
-	room.Time = updateReq.Time
-	room.Description = updateReq.Description
-
-	if err := rs.roomRepo.UpdateRoom(room); err != nil {
-		return nil, fmt.Errorf("failed to update room: %v", err)
-	}
-
-	return room, nil
-}
-
-func (rs *RoomService) CloseRoom(roomId string, userId string) error {
-	return database.RunInTransaction(rs.db, sql.LevelDefault, func(tx *gorm.DB) error {
-		roomRepoTx := rs.roomRepo.WithTx(tx)
-		billRepoTx := rs.billRepo.WithTx(tx)
-
-		if status, err := billRepoTx.GetRoomBillConsolidationStatus(roomId); err != nil {
-			return err
-		} else if status == repository.UNCONSOLIDATED {
-			return ErrRoomHasUnconsolidatedBills
-		}
-
-		room, err := roomRepoTx.GetByID(roomId)
-		if err != nil {
-			return err
-		}
-
-		if utils.UIntToString(room.HostID) != userId {
-			return ErrInvalidHost
-		}
-
-		room.IsClosed = true
-		if err := roomRepoTx.UpdateRoom(room); err != nil {
-			return err
-		}
-
-		// TODO: Should we delete the room invites?
-		return roomRepoTx.DeletePendingInvites(roomId)
-	})
-}
-
-func (rs *RoomService) UpdateRoomInviteStatus(roomId string, userId string, status string) error {
-	if status != "accepted" && status != "rejected" {
-		return ErrInvalidRoomStatus
-	}
-
-	return database.RunInTransaction(rs.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
-		roomRepoTx := rs.roomRepo.WithTx(tx)
-		userRepoTx := rs.userRepo.WithTx(tx)
-
-		// Update the invite status
-		if err := roomRepoTx.UpdateInviteStatus(roomId, userId, status); err != nil {
-			return err
-		}
-
-		// If the invite is rejected, we don't need to update the room
-		if status == "rejected" {
-			return nil
-		}
-
-		room, err := roomRepoTx.GetByID(roomId)
-		if err != nil {
-			return err
-		}
-
-		user, err := userRepoTx.FindByID(userId)
-		if err != nil {
-			return err
-		}
-
-		// Update room info
-		room.NoOfAttendees++
-		room.Users = append(room.Users, *user)
-		return roomRepoTx.UpdateRoom(room)
-	})
-}
-
-func (rs *RoomService) JoinRoom(roomId, userId string) (*model.Room, *[]model.User, error) {
-	// Check if user is already in room
-	if inRoom, err := rs.roomRepo.IsUserInRoom(roomId, userId); err != nil {
-		return nil, nil, err
-	} else if inRoom {
-		return nil, nil, ErrAlreadyInRoom
-	}
-
-	// TODO: check if user is invited if room is private
-
-	room, err := rs.roomRepo.GetByID(roomId)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	user, err := rs.userRepo.FindByID(userId)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Update room info
-	room.NoOfAttendees++
-	room.Users = append(room.Users, *user)
-	err = rs.roomRepo.UpdateRoom(room)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	attendees, err := rs.GetRoomAttendees(roomId)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return room, attendees, nil
+	return dto, nil
 }
 
 func (rs *RoomService) RespondToRoomInvite(
 	roomId string,
 	userId string,
 	accept bool,
-) (*model.Room, *[]model.User, error) {
+) (*response.RoomDto, error) {
 	status := "accepted"
 	if !accept {
 		status = "rejected"
 	}
 
-	err := rs.UpdateRoomInviteStatus(roomId, userId, status)
+	room, err := rs.UpdateRoomInviteStatus(roomId, userId, status)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// No room or attendees to return if invite is rejected
 	if !accept {
-		return nil, nil, nil
+		return nil, err
 	}
 
-	room, err := rs.roomRepo.GetByID(roomId)
-	if err != nil {
-		return nil, nil, err
+	dto := &response.RoomDto{
+		ID:           room.ID,
+		Name:         room.Name,
+		Time:         room.Time,
+		Venue:        room.Venue,
+		VenueUrl:     room.VenueUrl,
+		Date:         room.Date,
+		Description:  room.Description,
+		Consolidated: room.Consolidated,
+		IsClosed:     room.IsClosed,
+		IsPrivate:    room.IsPrivate,
+		ImageUrl:     room.ImageUrl,
+		Host: response.AttendeesDto{
+			ID:       room.Host.ID,
+			Username: room.Host.Username,
+		},
+		NoOfAttendees: room.NoOfAttendees,
+		Attendees:     []response.AttendeesDto{},
 	}
 
-	attendees, err := rs.GetRoomAttendees(roomId)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return room, attendees, nil
+	return dto, nil
 }
 
 func (rs *RoomService) ValidateInvites(
 	room *model.Room,
-	inviter *model.User,
-	users *[]model.User,
+	userIds []string,
 ) error {
-	rs.logger.Infof("Inviting users (%v) to room %s", users, room.ID)
+	rs.logger.Infof("Inviting users (%v) to room %s", userIds, room.ID)
 
-	// TODO: Can optimize this
+	attendees, err := rs.roomRepo.GetRoomAttendeeIDs(room.ID)
+	if err != nil {
+		return err
+	}
+
+	invitees, err := rs.roomRepo.GetPendingInviteUsers(room.ID)
+	if err != nil {
+		return err
+	}
+
+	attendeeSet := make(map[string]bool)
+	for _, attendeeID := range attendees {
+		attendeeSet[attendeeID] = true
+	}
+
+	inviteeSet := make(map[string]bool)
+	for _, inviteeID := range invitees {
+		inviteeSet[inviteeID] = true
+	}
+
 	// Check if users are already in room or have pending invites
-	for _, user := range *users {
-		// Check if user is already in room
-		if inRoom, err := rs.roomRepo.IsUserInRoom(
-			room.ID,
-			strconv.FormatUint(uint64(user.ID), 10),
-		); err != nil {
-			return err
-		} else if inRoom {
+	for _, userID := range userIds {
+		if attendeeSet[userID] {
 			return ErrAlreadyInRoom
 		}
-
-		// Check if user has already pending invite
-		if hasInvite, err := rs.roomRepo.HasPendingInvites(
-			room.ID,
-			strconv.FormatUint(uint64(user.ID), 10),
-		); err != nil {
-			return err
-		} else if hasInvite {
+		if inviteeSet[userID] {
 			return ErrAlreadyInvited
 		}
 	}
@@ -380,10 +552,13 @@ func (rs *RoomService) ValidateInvites(
 }
 
 func (rs *RoomService) InviteUsersToRoom(
-	roomId string, inviterId string, inviteesIds *[]uint) (*[]model.RoomInvite, error) {
+	roomId string,
+	inviterId string,
+	inviteesIds []string,
+) ([]model.RoomInvite, error) {
 	var roomInvites []model.RoomInvite
 
-	err := database.RunInTransaction(rs.db, sql.LevelDefault, func(tx *gorm.DB) error {
+	err := database.RunInTransaction(rs.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 		userRepoTx := rs.userRepo.WithTx(tx)
 
@@ -406,11 +581,15 @@ func (rs *RoomService) InviteUsersToRoom(
 			return err
 		}
 
-		if err := rs.ValidateInvites(room, inviter, invitees); err != nil {
+		if err := rs.ValidateInvites(room, inviteesIds); err != nil {
 			return err
 		}
 
-		for _, invitee := range *invitees {
+		if err := userRepoTx.UpdatePendingRoomInvites(inviteesIds, 1); err != nil {
+			return err
+		}
+
+		for _, invitee := range invitees {
 			roomInvite := model.RoomInvite{
 				RoomID:    room.ID,
 				UserID:    invitee.ID,
@@ -419,25 +598,29 @@ func (rs *RoomService) InviteUsersToRoom(
 			}
 			roomInvites = append(roomInvites, roomInvite)
 		}
-		return rs.roomRepo.CreateInvites(&roomInvites)
+
+		return roomRepoTx.CreateInvites(roomInvites)
 	})
 
-	return &roomInvites, err
+	return roomInvites, err
 }
 
 func (rs *RoomService) LeaveRoom(roomId string, userId string) error {
 	return database.RunInTransaction(rs.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		roomRepoTx := rs.roomRepo.WithTx(tx)
-		billRepoTx := rs.billRepo.WithTx(tx)
+		userRepoTx := rs.userRepo.WithTx(tx)
+
+		room, err := roomRepoTx.GetByID(roomId)
+		if err != nil {
+			return err
+		}
 
 		// TODO: check if user is involved in any bills first
-		if status, err := billRepoTx.GetRoomBillConsolidationStatus(roomId); err != nil {
-			return err
-		} else if status == repository.UNCONSOLIDATED {
+		if room.Consolidated == "UNCONSOLIDATED" {
 			return ErrRoomHasUnconsolidatedBills
 		}
 
-		room, err := roomRepoTx.GetByID(roomId)
+		user, err := userRepoTx.FindByID(userId)
 		if err != nil {
 			return err
 		}
@@ -446,20 +629,39 @@ func (rs *RoomService) LeaveRoom(roomId string, userId string) error {
 			return ErrLeaveRoomAsHost
 		}
 
-		// TODO: Should we delete the room invites?
+		user.NoOfRooms--
+		if err := userRepoTx.Update(user); err != nil {
+			return err
+		}
+
+		room.NoOfAttendees--
+		if err := roomRepoTx.Update(room); err != nil {
+			return err
+		}
+
 		return roomRepoTx.RemoveUserFromRoom(roomId, userId)
 	})
 }
 
-func (rs *RoomService) RemoveUserFromRoom(roomId string, userId string) error {
-	return rs.roomRepo.RemoveUserFromRoom(roomId, userId)
+func (rs *RoomService) GetUninvitedFriendsForRoom(roomId string, userId string) ([]response.AttendeesDto, error) {
+	friends, err := rs.userRepo.GetUninvitedFriends(roomId, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	friendDtos := make([]response.AttendeesDto, len(friends))
+	for i, friend := range friends {
+		friendDtos[i] = response.AttendeesDto{
+			ID:       friend.ID,
+			Username: friend.Username,
+			Picture:  friend.PictureUrl,
+		}
+	}
+
+	return friendDtos, nil
 }
 
-func (rs *RoomService) GetUninvitedFriendsForRoom(roomId string, userId string) (*[]model.User, error) {
-	return rs.userRepo.GetUninvitedFriends(roomId, userId)
-}
-
-func (rs *RoomService) QueryVenue(query string) (*[]modelLocation.Venue, error) {
+func (rs *RoomService) QueryVenue(query string) ([]modelLocation.Venue, error) {
 	if query == "" {
 		return nil, errors.New("location query cannot be empty")
 	}
@@ -543,7 +745,7 @@ func (rs *RoomService) QueryVenue(query string) (*[]modelLocation.Venue, error) 
 		predictions = append(predictions, venue)
 	}
 
-	return &predictions, nil
+	return predictions, nil
 }
 
 func (rs *RoomService) fetchGoogleMapsUri(placeId string) (string, error) {

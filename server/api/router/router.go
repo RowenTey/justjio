@@ -161,7 +161,6 @@ func initServices(
 		dbConn,
 		repositories.RoomRepository,
 		repositories.UserRepository,
-		repositories.BillRepository,
 		http.DefaultClient,
 		conf.GoogleMapsApiKey,
 		logger,
@@ -248,24 +247,22 @@ func setupAuthRoutes(v1 fiber.Router, handlers *Handlers) {
 func setupUserRoutes(v1 fiber.Router, handlers *Handlers) {
 	users := v1.Group("/users")
 	users.Get("/:userId", handlers.UserHandler.GetUser)
-	users.Patch("/:userId", handlers.UserHandler.UpdateUser)
-	// users.Delete("/:userId", handlers.UserHandler.DeleteUser)
+	users.Patch("/:userId/username", handlers.UserHandler.UpdateUsername)
 
 	friends := users.Group("/:userId/friends")
 	friends.Get("/", handlers.UserHandler.GetFriends)
-	// friends.Post("/check", handlers.UserHandler.IsFriend)
-	// friends.Get("/count", handlers.UserHandler.GetNumFriends)
+	friends.Get("/count", handlers.UserHandler.GetNumFriends)
 	friends.Get("/search", handlers.UserHandler.SearchNonFriends)
 	friends.Delete("/:friendId", handlers.UserHandler.RemoveFriend)
 
-	friendRequests := friends.Group("/requests")
+	friendRequests := users.Group("/:userId/friendRequests")
 	friendRequests.Get("/", handlers.UserHandler.GetFriendRequestsByStatus)
 	friendRequests.Get("/count", handlers.UserHandler.CountPendingFriendRequests)
 	friendRequests.Post("/", handlers.UserHandler.SendFriendRequest)
 	friendRequests.Patch("/", handlers.UserHandler.RespondToFriendRequest)
 
 	userNotifications := users.Group("/:userId/notifications")
-	userNotifications.Get("/:id", handlers.NotificationHandler.GetNotification)
+	userNotifications.Get("/", handlers.NotificationHandler.GetNotifications)
 	userNotifications.Patch("/:id", handlers.NotificationHandler.MarkNotificationAsRead)
 }
 
@@ -278,11 +275,10 @@ func setupRoomRoutes(
 	rooms.Get("/", handlers.RoomHandler.GetRooms)
 	rooms.Get("/public", handlers.RoomHandler.GetUnjoinedPublicRooms)
 	rooms.Get("/count", handlers.RoomHandler.GetNumRooms)
-	rooms.Get("/invites", handlers.RoomHandler.GetRoomInvitations)
-	rooms.Get("/invites/count", handlers.RoomHandler.GetNumRoomInvitations)
+	rooms.Get("/invites", handlers.RoomHandler.GetRoomInvites)
+	rooms.Get("/invites/count", handlers.RoomHandler.GetNumRoomInvites)
 	rooms.Get("/venues/search", handlers.RoomHandler.QueryVenue)
 	rooms.Get("/:roomId", roomMiddleware, handlers.RoomHandler.GetRoom)
-	rooms.Get("/:roomId/attendees", roomMiddleware, handlers.RoomHandler.GetRoomAttendees)
 	rooms.Get("/:roomId/uninvited", roomMiddleware, handlers.RoomHandler.GetUninvitedFriendsForRoom)
 	rooms.Post("/", handlers.RoomHandler.CreateRoom)
 	rooms.Post("/:roomId", roomMiddleware, handlers.RoomHandler.InviteUser)
@@ -290,7 +286,7 @@ func setupRoomRoutes(
 	rooms.Patch("/:roomId/edit", handlers.RoomHandler.EditRoom)
 	rooms.Patch("/:roomId/join", handlers.RoomHandler.JoinRoom)
 	rooms.Patch("/:roomId/close", roomMiddleware, handlers.RoomHandler.CloseRoom)
-	rooms.Patch("/:roomId/leave", roomMiddleware, handlers.RoomHandler.LeaveRoom)
+	rooms.Delete("/:roomId/leave", roomMiddleware, handlers.RoomHandler.LeaveRoom)
 
 	messages := rooms.Group("/:roomId/messages")
 	messages.Use(roomMiddleware)
@@ -302,7 +298,6 @@ func setupRoomRoutes(
 func setupBillRoutes(v1 fiber.Router, handlers *Handlers) {
 	bills := v1.Group("/bills")
 	bills.Get("/", handlers.BillHandler.GetBillsByRoom)
-	bills.Get("/consolidate/:roomId", handlers.BillHandler.IsRoomBillConsolidated)
 	bills.Post("/", handlers.BillHandler.CreateBill)
 	bills.Post("/consolidate", handlers.BillHandler.ConsolidateBills)
 }
@@ -315,7 +310,7 @@ func setupTransactionRoutes(v1 fiber.Router, handlers *Handlers) {
 
 func setupNotificationRoutes(v1 fiber.Router, handlers *Handlers) {
 	notifications := v1.Group("/notifications")
-	notifications.Get("/", handlers.NotificationHandler.GetNotifications)
+	notifications.Get("/:id", handlers.NotificationHandler.GetNotification)
 	notifications.Post("/", handlers.NotificationHandler.CreateNotification)
 }
 

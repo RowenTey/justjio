@@ -53,7 +53,7 @@ func NewBillService(
 func (bs *BillService) CreateBill(
 	roomId string,
 	ownerid string,
-	payersId *[]uint,
+	payersId []string,
 	name string,
 	amount float32,
 	includeOwner bool,
@@ -64,7 +64,7 @@ func (bs *BillService) CreateBill(
 		return nil, ErrAlreadyConsolidated
 	}
 
-	if len(*payersId) == 0 {
+	if len(payersId) == 0 {
 		return nil, ErrEmptyPayers
 	}
 
@@ -99,7 +99,7 @@ func (bs *BillService) CreateBill(
 			IncludeOwner: includeOwner,
 			RoomID:       room.ID,
 			OwnerID:      owner.ID,
-			Payers:       *payers,
+			Payers:       payers,
 		}
 		if err := billRepoTx.Create(&bill); err != nil {
 			return err
@@ -107,7 +107,7 @@ func (bs *BillService) CreateBill(
 
 		// Set as unconsolidated once a bill is created
 		room.Consolidated = "UNCONSOLIDATED"
-		if err := roomRepoTx.UpdateRoom(room); err != nil {
+		if err := roomRepoTx.Update(room); err != nil {
 			return err
 		}
 
@@ -122,7 +122,7 @@ func (bs *BillService) GetBillById(billId uint) (*model.Bill, error) {
 	return bs.billRepo.FindByID(billId)
 }
 
-func (bs *BillService) GetBillsForRoom(roomId string) (*[]model.Bill, error) {
+func (bs *BillService) GetBillsForRoom(roomId string) ([]model.Bill, error) {
 	return bs.billRepo.FindByRoom(roomId)
 }
 

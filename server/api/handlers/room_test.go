@@ -70,12 +70,10 @@ func (suite *RoomHandlerTestSuite) SetupSuite() {
 	suite.mockHttpClient = new(utils.MockHTTPClient)
 	roomRepository := repository.NewRoomRepository(suite.db)
 	userRepository := repository.NewUserRepository(suite.db)
-	billRepository := repository.NewBillRepository(suite.db)
 	suite.roomService = services.NewRoomService(
 		suite.db,
 		roomRepository,
 		userRepository,
-		billRepository,
 		suite.mockHttpClient,
 		"test-api-key",
 		suite.logger,
@@ -90,10 +88,9 @@ func (suite *RoomHandlerTestSuite) SetupSuite() {
 	roomRoutes := suite.app.Group("/rooms")
 	roomRoutes.Get("/", roomHandler.GetRooms)
 	roomRoutes.Get("/count", roomHandler.GetNumRooms)
-	roomRoutes.Get("/invites", roomHandler.GetRoomInvitations)
-	roomRoutes.Get("/invites/count", roomHandler.GetNumRoomInvitations)
+	roomRoutes.Get("/invites", roomHandler.GetRoomInvites)
+	roomRoutes.Get("/invites/count", roomHandler.GetNumRoomInvites)
 	roomRoutes.Get("/:roomId", roomHandler.GetRoom)
-	roomRoutes.Get("/:roomId/attendees", roomHandler.GetRoomAttendees)
 	roomRoutes.Get("/:roomId/uninvited", roomHandler.GetUninvitedFriendsForRoom)
 	roomRoutes.Post("/", roomHandler.CreateRoom)
 	roomRoutes.Post("/:roomId", roomHandler.InviteUser)
@@ -284,23 +281,23 @@ func (suite *RoomHandlerTestSuite) TestGetNumRoomInvitations_Success() {
 	assert.Equal(suite.T(), 1, int(responseBody["data"].(map[string]any)["count"].(float64)))
 }
 
-func (suite *RoomHandlerTestSuite) TestGetRoomAttendees_Success() {
-	req := httptest.NewRequest(http.MethodGet, "/rooms/"+suite.testRoomID+"/attendees", nil)
-	req.Header.Set("Authorization", "Bearer "+suite.testHostToken)
+// func (suite *RoomHandlerTestSuite) TestGetRoomAttendees_Success() {
+// 	req := httptest.NewRequest(http.MethodGet, "/rooms/"+suite.testRoomID+"/attendees", nil)
+// 	req.Header.Set("Authorization", "Bearer "+suite.testHostToken)
 
-	resp, err := suite.app.Test(req, -1)
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+// 	resp, err := suite.app.Test(req, -1)
+// 	assert.NoError(suite.T(), err)
+// 	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
 
-	var responseBody map[string]any
-	err = json.NewDecoder(resp.Body).Decode(&responseBody)
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "Retrieved room attendees successfully", responseBody["message"])
+// 	var responseBody map[string]any
+// 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
+// 	assert.NoError(suite.T(), err)
+// 	assert.Equal(suite.T(), "Retrieved room attendees successfully", responseBody["message"])
 
-	userData := responseBody["data"].([]any)
-	assert.Len(suite.T(), userData, 1)
-	assert.Equal(suite.T(), suite.testHostID, uint(userData[0].(map[string]any)["id"].(float64)))
-}
+// 	userData := responseBody["data"].([]any)
+// 	assert.Len(suite.T(), userData, 1)
+// 	assert.Equal(suite.T(), suite.testHostID, uint(userData[0].(map[string]any)["id"].(float64)))
+// }
 
 func (suite *RoomHandlerTestSuite) TestCreateRoom_Success() {
 	invitees := []string{fmt.Sprintf("%d", suite.testUserID)}
@@ -452,7 +449,7 @@ func (suite *RoomHandlerTestSuite) TestRespondToRoomInvite_Reject() {
 
 func (suite *RoomHandlerTestSuite) TestLeaveRoom_Success() {
 	// First have the user join the room
-	_, _, err := suite.roomService.JoinRoom(suite.testRoomID, fmt.Sprintf("%d", suite.testUserID))
+	_, err := suite.roomService.JoinRoom(suite.testRoomID, fmt.Sprintf("%d", suite.testUserID))
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodPatch,
