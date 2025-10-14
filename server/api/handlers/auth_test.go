@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/RowenTey/JustJio/server/api/config"
+	"github.com/RowenTey/JustJio/server/api/dto/request"
+	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/services"
@@ -51,7 +53,7 @@ func (suite *AuthHandlerTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Setup DB Conn
-	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "auth_test")
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "auth_test", "file://../migrations")
 	assert.NoError(suite.T(), err)
 
 	// Get Kafka broker address
@@ -104,12 +106,24 @@ func (suite *AuthHandlerTestSuite) SetupTest() {
 
 	// Setup Fiber app
 	suite.app = fiber.New()
-	suite.app.Post("/signup", suite.authHandler.SignUp)
-	suite.app.Post("/login", suite.authHandler.Login)
-	suite.app.Post("/verify", suite.authHandler.VerifyOTP)
-	suite.app.Post("/otp", suite.authHandler.SendOTPEmail)
-	suite.app.Patch("/reset", suite.authHandler.ResetPassword)
-	suite.app.Post("/google", suite.authHandler.GoogleLogin)
+	suite.app.Post("/signup",
+		middleware.ParseAndValidate[request.SignUpRequest](),
+		suite.authHandler.SignUp)
+	suite.app.Post("/login",
+		middleware.ParseAndValidate[request.LoginRequest](),
+		suite.authHandler.Login)
+	suite.app.Post("/verify",
+		middleware.ParseAndValidate[request.VerifyOTPRequest](),
+		suite.authHandler.VerifyOTP)
+	suite.app.Post("/otp",
+		middleware.ParseAndValidate[request.SendOTPEmailRequest](),
+		suite.authHandler.SendOTPEmail)
+	suite.app.Patch("/reset",
+		middleware.ParseAndValidate[request.ResetPasswordRequest](),
+		suite.authHandler.ResetPassword)
+	suite.app.Post("/google",
+		middleware.ParseAndValidate[request.GoogleAuthRequest](),
+		suite.authHandler.GoogleLogin)
 }
 
 func (suite *AuthHandlerTestSuite) TearDownTest() {
@@ -233,7 +247,9 @@ func (suite *AuthHandlerTestSuite) TestSignUp_InternalServerError() {
 
 	// Re-setup Fiber app
 	suite.app = fiber.New()
-	suite.app.Post("/signup", suite.authHandler.SignUp)
+	suite.app.Post("/signup",
+		middleware.ParseAndValidate[request.SignUpRequest](),
+		suite.authHandler.SignUp)
 
 	// Prepare request
 	newUser := model.User{
@@ -432,6 +448,38 @@ func (suite *AuthHandlerTestSuite) TestSendOTPEmail_EmailAlreadyVerified() {
 	assert.Equal(suite.T(), "Email already verified", response["message"])
 }
 
+func (suite *AuthHandlerTestSuite) TestSendOTPEmail_Success() {
+	// Create a user with unverified email
+	hashedPassword, err := utils.HashPassword("password123")
+	assert.NoError(suite.T(), err)
+	user := model.User{
+		Username:     "testuser",
+		Email:        "test@example.com",
+		Password:     hashedPassword,
+		IsEmailValid: false,
+	}
+	err = suite.db.Create(&user).Error
+	assert.NoError(suite.T(), err)
+
+	// Prepare request to send OTP
+	reqBody := bytes.NewBuffer([]byte(`{"email": "test@example.com", "purpose": "verify-email"}`))
+
+	req := httptest.NewRequest("POST", "/otp", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "OTP sent successfully", response["message"])
+}
+
 func (suite *AuthHandlerTestSuite) TestVerifyOTP_InvalidInput() {
 	// Prepare request with invalid data
 	reqBody := bytes.NewBuffer([]byte(`{"test@email.com", "otp": "123456"}`))
@@ -534,6 +582,48 @@ func (suite *AuthHandlerTestSuite) TestVerifyOTP_InvalidOTP() {
 	assert.Equal(suite.T(), "Invalid OTP", response["message"])
 }
 
+func (suite *AuthHandlerTestSuite) TestVerifyOTP_Success() {
+	// Create a user
+	hashedPassword, err := utils.HashPassword("password123")
+	assert.NoError(suite.T(), err)
+	user := model.User{
+		Username:     "testuser",
+		Email:        "test@example.com",
+		Password:     hashedPassword,
+		IsEmailValid: false,
+	}
+	err = suite.db.Create(&user).Error
+	assert.NoError(suite.T(), err)
+
+	// Store a valid OTP
+	suite.authHandler.ClientOtpMap.Store("test@example.com", "123456")
+	defer suite.authHandler.ClientOtpMap.Delete("test@example.com")
+
+	// Prepare request with correct OTP
+	reqBody := bytes.NewBuffer([]byte(`{"email": "test@example.com", "otp": "123456"}`))
+
+	req := httptest.NewRequest("POST", "/verify", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "OTP verified successfully", response["message"])
+
+	// Verify user's email is now validated in database
+	var updatedUser model.User
+	err = suite.db.First(&updatedUser, user.ID).Error
+	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), updatedUser.IsEmailValid)
+}
+
 func (suite *AuthHandlerTestSuite) TestResetPassword_InvalidInput() {
 	// Prepare request with invalid data
 	reqBody := bytes.NewBuffer([]byte(`{"random", "password": "password123"}`))
@@ -572,6 +662,49 @@ func (suite *AuthHandlerTestSuite) TestResetPassword_UserNotFound() {
 	assert.NoError(suite.T(), err)
 
 	assert.Equal(suite.T(), "User not found", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestResetPassword_Success() {
+	// Create a user
+	oldHashedPassword, err := utils.HashPassword("oldpassword123")
+	assert.NoError(suite.T(), err)
+	user := model.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+		Password: oldHashedPassword,
+	}
+	err = suite.db.Create(&user).Error
+	assert.NoError(suite.T(), err)
+
+	// Prepare request to reset password
+	newPassword := "newpassword123"
+	reqBody := bytes.NewBuffer([]byte(strings.Join([]string{`{"email": "test@example.com", "password": "`, newPassword, `"}`}, "")))
+
+	req := httptest.NewRequest("PATCH", "/reset", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Password reset successfully", response["message"])
+
+	// Verify password was actually changed in database
+	var updatedUser model.User
+	err = suite.db.First(&updatedUser, user.ID).Error
+	assert.NoError(suite.T(), err)
+
+	// Verify old password no longer works
+	assert.False(suite.T(), utils.CheckPasswordHash("oldpassword123", updatedUser.Password))
+
+	// Verify new password works
+	assert.True(suite.T(), utils.CheckPasswordHash(newPassword, updatedUser.Password))
 }
 
 func (suite *AuthHandlerTestSuite) TestGoogleLogin_InvalidInput() {

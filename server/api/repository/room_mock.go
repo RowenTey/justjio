@@ -22,11 +22,17 @@ func (m *MockRoomRepository) Create(room *model.Room) error {
 
 func (m *MockRoomRepository) GetByID(roomID string) (*model.Room, error) {
 	args := m.Called(roomID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*model.Room), args.Error(1)
 }
 
 func (m *MockRoomRepository) GetByIDWithAttendees(roomID string) (*model.Room, error) {
 	args := m.Called(roomID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*model.Room), args.Error(1)
 }
 

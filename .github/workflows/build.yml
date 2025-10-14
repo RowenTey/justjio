@@ -106,7 +106,7 @@ jobs:
           - ws
           - web
     steps:
-      # transform RowenTey/teybot into rowentey/teybot
+      # transform RowenTey/justjio into rowentey/justjio
       - name: Prepare REPOSITORY
         run: |
           repo=${{ github.repository }}

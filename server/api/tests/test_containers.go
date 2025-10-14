@@ -52,7 +52,7 @@ func SetupPgDependency(
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).
-				WithStartupTimeout(5*time.Second)),
+				WithStartupTimeout(10*time.Second)),
 		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Name: "test-postgres",
@@ -78,7 +78,7 @@ func SetupKafkaDependency(ctx context.Context, testDep *TestDependencies, logger
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("Kafka Server started").
 				WithOccurrence(1).
-				WithStartupTimeout(5*time.Second)),
+				WithStartupTimeout(10*time.Second)),
 		testcontainers.CustomizeRequest(testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
 				Name: "test-kafka",

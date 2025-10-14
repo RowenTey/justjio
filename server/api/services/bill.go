@@ -15,7 +15,6 @@ import (
 
 var (
 	ErrAlreadyConsolidated    = errors.New("bills for this room have already been consolidated")
-	ErrEmptyPayers            = errors.New("payers of a bill can't be empty")
 	ErrPayersNotFound         = errors.New("payer(s) not found")
 	ErrOnlyHostCanConsolidate = errors.New("only the host can consolidate bills")
 )

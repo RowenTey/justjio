@@ -60,7 +60,7 @@ func (suite *MessageHandlerTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Setup DB Conn
-	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "msg_test")
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "msg_test", "file://../migrations")
 	assert.NoError(suite.T(), err)
 
 	// Get Kafka broker address
@@ -116,7 +116,9 @@ func (suite *MessageHandlerTestSuite) SetupSuite() {
 	messageRoutes.Use(roomMiddleware)
 	messageRoutes.Get("/:msgId", messageHandler.GetMessage)
 	messageRoutes.Get("/", messageHandler.GetMessages)
-	messageRoutes.Post("/", messageHandler.CreateMessage)
+	messageRoutes.Post("/",
+		middleware.ParseAndValidate[request.CreateMessageRequest](),
+		messageHandler.CreateMessage)
 }
 
 func (suite *MessageHandlerTestSuite) TearDownSuite() {

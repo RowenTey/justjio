@@ -43,7 +43,7 @@ func ConnectDB(conf *config.Config, logger *logrus.Logger) *gorm.DB {
 	}
 	dbLogger.Info("Connection opened to database")
 
-	if err := Migrate(dbConn); err != nil {
+	if err := Migrate(dbConn, "file://migrations"); err != nil {
 		dbLogger.Error("Migration failed: ", err.Error())
 	}
 	dbLogger.Info("Database migrated")
@@ -51,7 +51,7 @@ func ConnectDB(conf *config.Config, logger *logrus.Logger) *gorm.DB {
 	return dbConn
 }
 
-func Migrate(db *gorm.DB) error {
+func Migrate(db *gorm.DB, migrationsUrl string) error {
 	sqlConn, err := db.DB()
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func Migrate(db *gorm.DB) error {
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://migrations",
+		migrationsUrl,
 		"postgres",
 		driver)
 	if err != nil {

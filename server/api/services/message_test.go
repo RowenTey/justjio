@@ -81,13 +81,13 @@ func (s *MessageServiceTestSuite) TestSaveMessage_Success() {
 	s.mockRoomRepo.On("GetByID", roomID).Return(room, nil)
 	s.mockUserRepo.On("FindByID", senderID).Return(sender, nil)
 	s.mockMessageRepo.On("Create", mock.AnythingOfType("*model.Message")).Return(nil)
-	s.mockKafkaSvc.On("BroadcastMessage", &roomUserIDs, mock.AnythingOfType("model_kafka.KafkaMessage")).Return(nil)
+	s.mockKafkaSvc.On("BroadcastMessage", roomUserIDs, mock.AnythingOfType("model_kafka.KafkaMessage")).Return(nil)
 
 	// Expect transaction commit
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	err := s.messageService.SaveMessage(roomID, senderID, &roomUserIDs, content)
+	err := s.messageService.SaveMessage(roomID, senderID, roomUserIDs, content)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -120,7 +120,7 @@ func (s *MessageServiceTestSuite) TestSaveMessage_RoomNotFound() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.messageService.SaveMessage(roomID, senderID, &roomUserIDs, content)
+	err := s.messageService.SaveMessage(roomID, senderID, roomUserIDs, content)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -154,13 +154,13 @@ func (s *MessageServiceTestSuite) TestSaveMessage_KafkaBroadcastFailure() {
 	s.mockRoomRepo.On("GetByID", roomID).Return(room, nil)
 	s.mockUserRepo.On("FindByID", senderID).Return(sender, nil)
 	s.mockMessageRepo.On("Create", mock.AnythingOfType("*model.Message")).Return(nil)
-	s.mockKafkaSvc.On("BroadcastMessage", &roomUserIDs, mock.AnythingOfType("model_kafka.KafkaMessage")).Return(kafkaErr)
+	s.mockKafkaSvc.On("BroadcastMessage", roomUserIDs, mock.AnythingOfType("model_kafka.KafkaMessage")).Return(kafkaErr)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.messageService.SaveMessage(roomID, senderID, &roomUserIDs, content)
+	err := s.messageService.SaveMessage(roomID, senderID, roomUserIDs, content)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -175,15 +175,14 @@ func (s *MessageServiceTestSuite) TestSaveMessage_KafkaBroadcastFailure() {
 
 func (s *MessageServiceTestSuite) TestGetMessageById_Success() {
 	msgID := "1"
-	roomID := "room1"
 	expectedMsg := &model.Message{
 		ID:       1,
-		RoomID:   roomID,
+		RoomID:   "room1",
 		SenderID: 1,
 		Content:  "test message",
 	}
 
-	s.mockMessageRepo.On("FindByID", msgID, roomID).Return(expectedMsg, nil)
+	s.mockMessageRepo.On("FindByID", msgID).Return(expectedMsg, nil)
 
 	result, err := s.messageService.GetMessageById(msgID)
 
@@ -194,9 +193,8 @@ func (s *MessageServiceTestSuite) TestGetMessageById_Success() {
 
 func (s *MessageServiceTestSuite) TestDeleteMessage_Success() {
 	msgID := "1"
-	roomID := "room1"
 
-	s.mockMessageRepo.On("Delete", msgID, roomID).Return(nil)
+	s.mockMessageRepo.On("Delete", msgID).Return(nil)
 
 	err := s.messageService.DeleteMessage(msgID)
 
@@ -238,13 +236,13 @@ func (s *MessageServiceTestSuite) TestGetMessagesByRoomId_Success() {
 	}
 	totalPages := 2
 
-	s.mockMessageRepo.On("FindByRoom", roomID, page, MESSAGE_PAGE_SIZE, false).Return(&expectedMessages, nil)
+	s.mockMessageRepo.On("FindByRoom", roomID, page, MESSAGE_PAGE_SIZE, false).Return(expectedMessages, nil)
 	s.mockMessageRepo.On("CountByRoom", roomID).Return(int64(15), nil)
 
 	messages, pages, err := s.messageService.GetMessagesByRoomId(roomID, page, false)
 
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), &expectedMessages, messages)
+	assert.Equal(s.T(), expectedMessages, messages)
 	assert.Equal(s.T(), totalPages, pages)
 	s.mockMessageRepo.AssertExpectations(s.T())
 }
@@ -253,13 +251,13 @@ func (s *MessageServiceTestSuite) TestGetMessagesByRoomId_EmptyRoom() {
 	roomID := "empty-room"
 	page := 1
 
-	s.mockMessageRepo.On("FindByRoom", roomID, page, MESSAGE_PAGE_SIZE, true).Return(&[]model.Message{}, nil)
+	s.mockMessageRepo.On("FindByRoom", roomID, page, MESSAGE_PAGE_SIZE, true).Return([]model.Message{}, nil)
 	s.mockMessageRepo.On("CountByRoom", roomID).Return(int64(0), nil)
 
 	messages, pages, err := s.messageService.GetMessagesByRoomId(roomID, page, true)
 
 	assert.NoError(s.T(), err)
-	assert.Empty(s.T(), *messages)
+	assert.Empty(s.T(), messages)
 	assert.Equal(s.T(), 0, pages)
 	s.mockMessageRepo.AssertExpectations(s.T())
 }

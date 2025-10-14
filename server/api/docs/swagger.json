@@ -271,11 +271,11 @@
                 "parameters": [
                     {
                         "description": "User registration details",
-                        "name": "user",
+                        "name": "signUpRequest",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.User"
+                            "$ref": "#/definitions/request.SignUpRequest"
                         }
                     }
                 ],
@@ -1310,7 +1310,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.UpdateRoomRequest"
+                            "$ref": "#/definitions/request.EditRoomRequest"
                         }
                     }
                 ],
@@ -1826,11 +1826,11 @@
                 "parameters": [
                     {
                         "description": "Subscription details",
-                        "name": "subscription",
+                        "name": "subscriptionRequest",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/model.Subscription"
+                            "$ref": "#/definitions/request.CreateSubscriptionRequest"
                         }
                     }
                 ],
@@ -3229,6 +3229,9 @@
         },
         "request.ConsolidateBillsRequest": {
             "type": "object",
+            "required": [
+                "roomId"
+            ],
             "properties": {
                 "roomId": {
                     "type": "string"
@@ -3237,6 +3240,12 @@
         },
         "request.CreateBillRequest": {
             "type": "object",
+            "required": [
+                "amount",
+                "name",
+                "payers",
+                "roomId"
+            ],
             "properties": {
                 "amount": {
                     "type": "number"
@@ -3245,10 +3254,13 @@
                     "type": "boolean"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
                 },
                 "payers": {
                     "type": "array",
+                    "minItems": 1,
                     "items": {
                         "type": "string"
                     }
@@ -3260,20 +3272,34 @@
         },
         "request.CreateMessageRequest": {
             "type": "object",
+            "required": [
+                "content"
+            ],
             "properties": {
                 "content": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 2000,
+                    "minLength": 1
                 }
             }
         },
         "request.CreateNotificationRequest": {
             "type": "object",
+            "required": [
+                "content",
+                "title",
+                "userId"
+            ],
             "properties": {
                 "content": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 500,
+                    "minLength": 1
                 },
                 "title": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 1
                 },
                 "userId": {
                     "type": "integer"
@@ -3282,50 +3308,189 @@
         },
         "request.CreateRoomRequest": {
             "type": "object",
+            "required": [
+                "date",
+                "description",
+                "imageUrl",
+                "name",
+                "time",
+                "venue",
+                "venuePlaceId",
+                "venueUrl"
+            ],
             "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2025-12-25T19:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Let's celebrate John's birthday!"
+                },
+                "imageUrl": {
+                    "type": "string",
+                    "example": "https://example.com/party.jpg"
+                },
                 "invitees": {
+                    "description": "Array of user IDs",
                     "type": "array",
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "1",
+                        "2",
+                        "3"
+                    ]
                 },
-                "room": {
-                    "$ref": "#/definitions/model.Room"
+                "isPrivate": {
+                    "type": "boolean",
+                    "example": false
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3,
+                    "example": "John's Birthday Party"
+                },
+                "time": {
+                    "type": "string",
+                    "example": "7:00 PM"
+                },
+                "venue": {
+                    "type": "string",
+                    "example": "Marina Bay Sands"
+                },
+                "venuePlaceId": {
+                    "type": "string",
+                    "example": "ChIJkxHPFjMZ2jERPRhLUvKGfFk"
+                },
+                "venueUrl": {
+                    "type": "string",
+                    "example": "https://maps.google.com/?cid=123456"
+                }
+            }
+        },
+        "request.CreateSubscriptionRequest": {
+            "type": "object",
+            "required": [
+                "auth",
+                "endpoint",
+                "p256dh",
+                "userId"
+            ],
+            "properties": {
+                "auth": {
+                    "type": "string",
+                    "example": "BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcx"
+                },
+                "endpoint": {
+                    "type": "string",
+                    "example": "https://fcm.googleapis.com/fcm/send/abc123"
+                },
+                "p256dh": {
+                    "type": "string",
+                    "example": "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u"
+                },
+                "userId": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "request.EditRoomRequest": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2025-12-26T19:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 500,
+                    "example": "Updated description"
+                },
+                "imageUrl": {
+                    "type": "string",
+                    "example": "https://example.com/updated.jpg"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 3,
+                    "example": "Updated Party Name"
+                },
+                "time": {
+                    "type": "string",
+                    "example": "8:00 PM"
+                },
+                "venue": {
+                    "type": "string",
+                    "example": "Sentosa Beach"
+                },
+                "venuePlaceId": {
+                    "type": "string",
+                    "example": "ChIJkxHPFjMZ2jERPRhLUvKGfFk"
                 }
             }
         },
         "request.GoogleAuthRequest": {
             "type": "object",
+            "required": [
+                "code"
+            ],
             "properties": {
                 "code": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "4/0AY0e-g7X..."
                 }
             }
         },
         "request.InviteUserRequest": {
             "type": "object",
+            "required": [
+                "invitees"
+            ],
             "properties": {
                 "invitees": {
+                    "description": "Array of user IDs",
                     "type": "array",
+                    "minItems": 1,
                     "items": {
                         "type": "string"
-                    }
+                    },
+                    "example": [
+                        "4",
+                        "5",
+                        "6"
+                    ]
                 }
             }
         },
         "request.LoginRequest": {
             "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
             "properties": {
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 8,
+                    "example": "SecurePass123!"
                 },
                 "username": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "johndoe123"
                 }
             }
         },
         "request.ModifyFriendRequest": {
             "type": "object",
+            "required": [
+                "friendId"
+            ],
             "properties": {
                 "friendId": {
                     "type": "integer"
@@ -3334,20 +3499,35 @@
         },
         "request.ResetPasswordRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
             "properties": {
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "john.doe@example.com"
                 },
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "minLength": 8,
+                    "example": "NewSecurePass123!"
                 }
             }
         },
         "request.RespondToFriendRequestRequest": {
             "type": "object",
+            "required": [
+                "action",
+                "requestId"
+            ],
             "properties": {
                 "action": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "accept",
+                        "reject"
+                    ]
                 },
                 "requestId": {
                     "type": "integer"
@@ -3358,57 +3538,84 @@
             "type": "object",
             "properties": {
                 "accept": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
         "request.SendOTPEmailRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "purpose"
+            ],
             "properties": {
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "john.doe@example.com"
                 },
                 "purpose": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "registration",
+                        "reset_password"
+                    ],
+                    "example": "registration"
                 }
             }
         },
-        "request.UpdateRoomRequest": {
+        "request.SignUpRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "password",
+                "username"
+            ],
             "properties": {
-                "date": {
-                    "type": "string"
+                "email": {
+                    "type": "string",
+                    "example": "john.doe@example.com"
                 },
-                "description": {
-                    "type": "string"
+                "password": {
+                    "type": "string",
+                    "minLength": 8,
+                    "example": "SecurePass123!"
                 },
-                "placeId": {
-                    "type": "string"
-                },
-                "time": {
-                    "type": "string"
-                },
-                "venue": {
-                    "type": "string"
+                "username": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3,
+                    "example": "johndoe123"
                 }
             }
         },
         "request.UpdateUsernameRequest": {
             "type": "object",
+            "required": [
+                "username"
+            ],
             "properties": {
                 "username": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3
                 }
             }
         },
         "request.VerifyOTPRequest": {
             "type": "object",
+            "required": [
+                "email",
+                "otp"
+            ],
             "properties": {
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "john.doe@example.com"
                 },
                 "otp": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "123456"
                 }
             }
         },

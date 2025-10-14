@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 	// Setup test containers
 	logger.Info("Starting test dependencies...")
 	dependencies := &tests.TestDependencies{}
-	dependencies, err := tests.SetupTestDependencies(ctx, dependencies, logger)
+	dependencies, err := tests.SetupPgDependency(ctx, dependencies, logger)
 	if err != nil {
 		logger.Errorf("failed to start container: %v\n", err)
 		os.Exit(1)

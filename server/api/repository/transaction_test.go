@@ -39,7 +39,7 @@ func (suite *TransactionRepositoryTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Setup DB Conn
-	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "tx_test")
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "tx_test", "file://../migrations")
 	assert.NoError(suite.T(), err)
 
 	suite.repo = NewTransactionRepository(suite.db)
@@ -110,7 +110,7 @@ func (suite *TransactionRepositoryTestSuite) TestCreateTransactions_Success() {
 		},
 	}
 
-	err := suite.repo.Create(&txs)
+	err := suite.repo.Create(txs)
 	assert.NoError(suite.T(), err)
 
 	var count int64
@@ -127,14 +127,14 @@ func (suite *TransactionRepositoryTestSuite) TestFindByUser_Unpaid() {
 		Amount:          100.0,
 		IsPaid:          false,
 	}
-	err := suite.repo.Create(&[]model.Transaction{tx})
+	err := suite.repo.Create([]model.Transaction{tx})
 	assert.NoError(suite.T(), err)
 
 	txs, err := suite.repo.FindByUser(false, fmt.Sprint(suite.userA.ID))
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), *txs, 1)
-	assert.Equal(suite.T(), false, (*txs)[0].IsPaid)
-	assert.Equal(suite.T(), tx.Amount, (*txs)[0].Amount)
+	assert.Len(suite.T(), txs, 1)
+	assert.Equal(suite.T(), false, txs[0].IsPaid)
+	assert.Equal(suite.T(), tx.Amount, txs[0].Amount)
 }
 
 func (suite *TransactionRepositoryTestSuite) TestFindByUser_Paid() {
@@ -145,14 +145,14 @@ func (suite *TransactionRepositoryTestSuite) TestFindByUser_Paid() {
 		Amount:          200.0,
 		IsPaid:          true,
 	}
-	err := suite.repo.Create(&[]model.Transaction{tx})
+	err := suite.repo.Create([]model.Transaction{tx})
 	assert.NoError(suite.T(), err)
 
 	txs, err := suite.repo.FindByUser(true, fmt.Sprint(suite.userA.ID))
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), *txs, 1)
-	assert.Equal(suite.T(), true, (*txs)[0].IsPaid)
-	assert.Equal(suite.T(), tx.Amount, (*txs)[0].Amount)
+	assert.Len(suite.T(), txs, 1)
+	assert.Equal(suite.T(), true, txs[0].IsPaid)
+	assert.Equal(suite.T(), tx.Amount, txs[0].Amount)
 }
 
 func (suite *TransactionRepositoryTestSuite) TestFindByID_Success() {
@@ -165,7 +165,7 @@ func (suite *TransactionRepositoryTestSuite) TestFindByID_Success() {
 		Amount:          75.0,
 		IsPaid:          false,
 	}
-	err := suite.repo.Create(&[]model.Transaction{tx})
+	err := suite.repo.Create([]model.Transaction{tx})
 	assert.NoError(suite.T(), err)
 
 	found, err := suite.repo.FindByID(fmt.Sprintf("%d", tx.ID))
@@ -182,7 +182,7 @@ func (suite *TransactionRepositoryTestSuite) TestUpdateTransaction_Success() {
 		Amount:          10.0,
 		IsPaid:          false,
 	}
-	err := suite.repo.Create(&[]model.Transaction{tx})
+	err := suite.repo.Create([]model.Transaction{tx})
 	assert.NoError(suite.T(), err)
 
 	// Update IsPaid to true

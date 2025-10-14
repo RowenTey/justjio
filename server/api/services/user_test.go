@@ -71,8 +71,10 @@ func (s *UserServiceTestSuite) TestAcceptFriendRequest_Success() {
 
 	// Mock expectations
 	s.mockUserRepo.On("FindFriendRequest", requestID).Return(request, nil)
-	s.mockUserRepo.On("UpdateFriendRequest", request).Return(nil)
+	s.mockUserRepo.On("UpdateFriendRequest", requestID, mock.AnythingOfType("map[string]interface {}")).Return(nil)
 	s.mockUserRepo.On("AddFriend", senderID, receiverID).Return(nil)
+	s.mockUserRepo.On("UpdateNoOfPendingFriendRequests", []uint{receiverID}, -1).Return(nil)
+	s.mockUserRepo.On("UpdateNoOfFriends", []uint{senderID, receiverID}, 1).Return(nil)
 
 	// Expect transaction commit
 	s.sqlMock.ExpectCommit()
@@ -135,7 +137,7 @@ func (s *UserServiceTestSuite) TestAcceptFriendRequest_UpdateFails() {
 
 	// Mock expectations
 	s.mockUserRepo.On("FindFriendRequest", requestID).Return(request, nil)
-	s.mockUserRepo.On("UpdateFriendRequest", request).Return(errors.New("update failed"))
+	s.mockUserRepo.On("UpdateFriendRequest", requestID, mock.AnythingOfType("map[string]interface {}")).Return(errors.New("update failed"))
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -155,10 +157,20 @@ func (s *UserServiceTestSuite) TestSendFriendRequest_Success() {
 	senderID := uint(1)
 	receiverID := uint(2)
 
+	// Expect transaction begin
+	s.sqlMock.ExpectBegin()
+
+	// Setup repository mocks with transaction support
+	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
+
 	// Mock expectations
 	s.mockUserRepo.On("CheckFriendship", senderID, receiverID).Return(false, nil)
 	s.mockUserRepo.On("CheckFriendRequestExists", senderID, receiverID).Return(false, nil)
 	s.mockUserRepo.On("CreateFriendRequest", mock.AnythingOfType("*model.FriendRequest")).Return(nil)
+	s.mockUserRepo.On("UpdateNoOfPendingFriendRequests", []uint{receiverID}, 1).Return(nil)
+
+	// Expect transaction commit
+	s.sqlMock.ExpectCommit()
 
 	// Execute
 	err := s.userService.SendFriendRequest(senderID, receiverID)
@@ -214,12 +226,12 @@ func (s *UserServiceTestSuite) TestSearchUsers_Success() {
 	query := "test"
 	expected := []model.User{{ID: 2, Username: "testuser"}}
 
-	s.mockUserRepo.On("SearchNonFriendUsers", currentUserID, query, 10).Return(&expected, nil)
+	s.mockUserRepo.On("SearchNonFriendUsers", currentUserID, query, 10).Return(expected, nil)
 
 	result, err := s.userService.SearchNonFriendUsers(currentUserID, query)
 
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), &expected, result)
+	assert.Equal(s.T(), expected, result)
 }
 
 func (s *UserServiceTestSuite) TestGetFriendRequestsByStatus_ValidStatus() {
@@ -231,14 +243,14 @@ func (s *UserServiceTestSuite) TestGetFriendRequestsByStatus_ValidStatus() {
 	}
 
 	// Mock expectations
-	s.mockUserRepo.On("FindFriendRequestsByReceiver", userID, status).Return(&requests, nil)
+	s.mockUserRepo.On("FindFriendRequestsByReceiver", userID, status).Return(requests, nil)
 
 	// Execute
 	result, err := s.userService.GetFriendRequestsByStatus(userID, status)
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), &requests, result)
+	assert.Equal(s.T(), requests, result)
 
 	// Verify mock calls
 	s.mockUserRepo.AssertExpectations(s.T())
@@ -299,11 +311,11 @@ func (s *UserServiceTestSuite) TestGetUserByID_NotFound() {
 func (s *UserServiceTestSuite) TestUpdateUserField_Success() {
 	// Setup test data
 	userID := "1"
-	field := "username"
-	value := "newusername"
+	field := "isOnline"
+	value := true
 
 	// Mock repository calls
-	existingUser := &model.User{ID: 1, Username: "oldusername"}
+	existingUser := &model.User{ID: 1, IsOnline: false}
 	s.mockUserRepo.On("FindByID", userID).Return(existingUser, nil)
 	s.mockUserRepo.On("Update", mock.AnythingOfType("*model.User")).Return(nil)
 
@@ -374,22 +386,7 @@ func (s *UserServiceTestSuite) TestCreateOrUpdateUser_Update() {
 	s.mockUserRepo.AssertExpectations(s.T())
 }
 
-func (s *UserServiceTestSuite) TestDeleteUser_Success() {
-	// Setup test data
-	userID := "1"
-
-	// Mock expectations
-	s.mockUserRepo.On("Delete", userID).Return(nil)
-
-	// Execute
-	err := s.userService.DeleteUser(userID)
-
-	// Assertions
-	assert.NoError(s.T(), err)
-
-	// Verify mock calls
-	s.mockUserRepo.AssertExpectations(s.T())
-}
+// TestDeleteUser_Success - Removed because DeleteUser method doesn't exist in UserService
 
 func (s *UserServiceTestSuite) TestMarkOnline_Success() {
 	// Setup test data
@@ -431,21 +428,31 @@ func (s *UserServiceTestSuite) TestMarkOffline_Success() {
 func (s *UserServiceTestSuite) TestRejectFriendRequest_Success() {
 	// Setup test data
 	requestID := uint(1)
+	receiverID := uint(3)
 	request := &model.FriendRequest{
-		ID:     requestID,
-		Status: "pending",
+		ID:         requestID,
+		ReceiverID: receiverID,
+		Status:     "pending",
 	}
+
+	// Expect transaction begin
+	s.sqlMock.ExpectBegin()
+
+	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
 
 	// Mock repository calls
 	s.mockUserRepo.On("FindFriendRequest", requestID).Return(request, nil)
-	s.mockUserRepo.On("UpdateFriendRequest", request).Return(nil)
+	s.mockUserRepo.On("UpdateFriendRequest", requestID, mock.AnythingOfType("map[string]interface {}")).Return(nil)
+	s.mockUserRepo.On("UpdateNoOfPendingFriendRequests", []uint{receiverID}, -1).Return(nil)
+
+	// Expect transaction commit
+	s.sqlMock.ExpectCommit()
 
 	// Execute
 	err := s.userService.RejectFriendRequest(requestID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), "rejected", request.Status)
 
 	// Verify mock calls
 	s.mockUserRepo.AssertExpectations(s.T())
@@ -460,8 +467,16 @@ func (s *UserServiceTestSuite) TestRejectFriendRequest_AlreadyProcessed() {
 		RespondedAt: time.Now(),
 	}
 
+	// Expect transaction begin
+	s.sqlMock.ExpectBegin()
+
+	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
+
 	// Mock expectations
 	s.mockUserRepo.On("FindFriendRequest", requestID).Return(request, nil)
+
+	// Expect transaction rollback
+	s.sqlMock.ExpectRollback()
 
 	// Execute
 	err := s.userService.RejectFriendRequest(requestID)
@@ -479,8 +494,17 @@ func (s *UserServiceTestSuite) TestRemoveFriend_Success() {
 	userID := uint(1)
 	friendID := uint(2)
 
+	// Expect transaction begin
+	s.sqlMock.ExpectBegin()
+
+	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
+
 	// Mock expectations
 	s.mockUserRepo.On("RemoveFriend", userID, friendID).Return(nil)
+	s.mockUserRepo.On("UpdateNoOfFriends", []uint{userID, friendID}, -1).Return(nil)
+
+	// Expect transaction commit
+	s.sqlMock.ExpectCommit()
 
 	// Execute
 	err := s.userService.RemoveFriend(userID, friendID)
@@ -501,14 +525,14 @@ func (s *UserServiceTestSuite) TestGetFriends_Success() {
 	}
 
 	// Mock expectations
-	s.mockUserRepo.On("GetFriends", uint(1)).Return(&expectedFriends, nil)
+	s.mockUserRepo.On("GetFriends", uint(1)).Return(expectedFriends, nil)
 
 	// Execute
 	result, err := s.userService.GetFriends(userID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), &expectedFriends, result)
+	assert.Equal(s.T(), expectedFriends, result)
 
 	// Verify mock calls
 	s.mockUserRepo.AssertExpectations(s.T())

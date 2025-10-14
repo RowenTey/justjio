@@ -94,7 +94,7 @@ func GenerateTestToken(userID uint, username, email, jwtSecret string) (string, 
 func CreateAndConnectToTestDb(
 	ctx context.Context,
 	postgresContainer *postgresTc.PostgresContainer,
-	dbName string,
+	dbName, migrationsUrl string,
 ) (*gorm.DB, error) {
 	pgConnStr, err := postgresContainer.ConnectionString(ctx)
 	if err != nil {
@@ -129,7 +129,7 @@ func CreateAndConnectToTestDb(
 	}
 
 	// Run migrations
-	err = database.Migrate(db)
+	err = database.Migrate(db, migrationsUrl)
 	if err != nil {
 		return nil, err
 	}
