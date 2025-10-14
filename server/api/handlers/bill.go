@@ -59,9 +59,7 @@ func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
 		req.IncludeOwner,
 	)
 	if err != nil {
-		if errors.Is(err, services.ErrEmptyPayers) {
-			return utils.HandleInvalidInputError(c, err)
-		} else if errors.Is(err, services.ErrAlreadyConsolidated) {
+		if errors.Is(err, services.ErrAlreadyConsolidated) {
 			return utils.HandleError(c, fiber.StatusBadRequest, err.Error(), nil)
 		} else if errors.Is(err, services.ErrPayersNotFound) {
 			return utils.HandleError(c, fiber.StatusNotFound, err.Error(), nil)

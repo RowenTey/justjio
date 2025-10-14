@@ -129,14 +129,14 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_Success() {
 	}
 
 	// Mock expectations
-	s.mockSubscriptionRepo.On("FindByUserID", userID).Return(&expectedSubscriptions, nil)
+	s.mockSubscriptionRepo.On("FindByUserID", userID).Return(expectedSubscriptions, nil)
 
 	// Execute
 	result, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), &expectedSubscriptions, result)
+	assert.Equal(s.T(), expectedSubscriptions, result)
 	s.mockSubscriptionRepo.AssertExpectations(s.T())
 }
 
@@ -145,14 +145,14 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_NotFound() {
 	userID := "999"
 
 	// Mock expectations
-	s.mockSubscriptionRepo.On("FindByUserID", userID).Return(&[]model.Subscription{}, nil)
+	s.mockSubscriptionRepo.On("FindByUserID", userID).Return([]model.Subscription{}, nil)
 
 	// Execute
 	result, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Empty(s.T(), *result)
+	assert.Empty(s.T(), result)
 	s.mockSubscriptionRepo.AssertExpectations(s.T())
 }
 

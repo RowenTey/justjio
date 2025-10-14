@@ -37,7 +37,7 @@ func (suite *MessageRepositoryTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Setup DB Conn
-	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "msg_test")
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "msg_test", "file://../migrations")
 	assert.NoError(suite.T(), err)
 
 	suite.repo = NewMessageRepository(suite.db)
@@ -163,12 +163,12 @@ func (suite *MessageRepositoryTestSuite) TestFindByRoom_WithPaginationAndOrder()
 	// Get first 3 messages in descending order
 	msgs, err := suite.repo.FindByRoom(suite.testRoom.ID, 1, 3, false)
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), *msgs, 3)
-	assert.True(suite.T(), (*msgs)[0].SentAt.After((*msgs)[1].SentAt))
+	assert.Len(suite.T(), msgs, 3)
+	assert.True(suite.T(), msgs[0].SentAt.After(msgs[1].SentAt))
 
 	// Get in ascending order
 	msgsAsc, err := suite.repo.FindByRoom(suite.testRoom.ID, 1, 3, true)
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), *msgsAsc, 3)
-	assert.True(suite.T(), (*msgsAsc)[0].SentAt.Before((*msgsAsc)[1].SentAt))
+	assert.Len(suite.T(), msgsAsc, 3)
+	assert.True(suite.T(), msgsAsc[0].SentAt.Before(msgsAsc[1].SentAt))
 }

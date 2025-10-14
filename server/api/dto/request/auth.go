@@ -13,7 +13,7 @@ type LoginRequest struct {
 
 type SendOTPEmailRequest struct {
 	Email   string `json:"email" validate:"required,email" example:"john.doe@example.com"`
-	Purpose string `json:"purpose" validate:"required,oneof=registration reset_password" example:"registration"`
+	Purpose string `json:"purpose" validate:"required,oneof=verify-email reset-password" example:"verify-email"`
 }
 
 type GoogleAuthRequest struct {

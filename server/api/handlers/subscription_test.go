@@ -11,6 +11,7 @@ import (
 	"time"
 
 	pushNotificationsModel "github.com/RowenTey/JustJio/server/api/dto/push_notifications"
+	"github.com/RowenTey/JustJio/server/api/dto/request"
 	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
@@ -57,7 +58,7 @@ func (suite *SubscriptionHandlerTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Setup DB Conn
-	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "sub_test")
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "sub_test", "file://../migrations")
 	assert.NoError(suite.T(), err)
 
 	// Initialize deps
@@ -77,7 +78,9 @@ func (suite *SubscriptionHandlerTestSuite) SetupSuite() {
 
 	// Register Subscription routes
 	subscriptionRoutes := suite.app.Group("/subscriptions")
-	subscriptionRoutes.Post("/", subscriptionHandler.CreateSubscription)
+	subscriptionRoutes.Post("/",
+		middleware.ParseAndValidate[request.CreateSubscriptionRequest](),
+		subscriptionHandler.CreateSubscription)
 	subscriptionRoutes.Get("/:endpoint", subscriptionHandler.GetSubscriptionByEndpoint)
 	subscriptionRoutes.Delete("/:subId", subscriptionHandler.DeleteSubscription)
 }
@@ -194,7 +197,8 @@ func (suite *SubscriptionHandlerTestSuite) TestCreateSubscription_InvalidInput()
 	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "Review your input", responseBody["message"])
+	// Validation middleware returns specific error messages
+	assert.Contains(suite.T(), responseBody["message"].(string), "required")
 }
 
 func (suite *SubscriptionHandlerTestSuite) TestGetSubscriptionByEndpoint_Success() {

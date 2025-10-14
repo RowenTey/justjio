@@ -253,6 +253,8 @@ definitions:
     properties:
       roomId:
         type: string
+    required:
+    - roomId
     type: object
   request.CreateBillRequest:
     properties:
@@ -261,111 +263,275 @@ definitions:
       includeOwner:
         type: boolean
       name:
+        maxLength: 100
+        minLength: 1
         type: string
       payers:
         items:
           type: string
+        minItems: 1
         type: array
       roomId:
         type: string
+    required:
+    - amount
+    - name
+    - payers
+    - roomId
     type: object
   request.CreateMessageRequest:
     properties:
       content:
+        maxLength: 2000
+        minLength: 1
         type: string
+    required:
+    - content
     type: object
   request.CreateNotificationRequest:
     properties:
       content:
+        maxLength: 500
+        minLength: 1
         type: string
       title:
+        maxLength: 100
+        minLength: 1
         type: string
       userId:
         type: integer
+    required:
+    - content
+    - title
+    - userId
     type: object
   request.CreateRoomRequest:
     properties:
+      date:
+        example: "2025-12-25T19:00:00Z"
+        type: string
+      description:
+        example: Let's celebrate John's birthday!
+        maxLength: 500
+        type: string
+      imageUrl:
+        example: https://example.com/party.jpg
+        type: string
       invitees:
+        description: Array of user IDs
+        example:
+        - "1"
+        - "2"
+        - "3"
         items:
           type: string
         type: array
-      room:
-        $ref: '#/definitions/model.Room'
+      isPrivate:
+        example: false
+        type: boolean
+      name:
+        example: John's Birthday Party
+        maxLength: 100
+        minLength: 3
+        type: string
+      time:
+        example: 7:00 PM
+        type: string
+      venue:
+        example: Marina Bay Sands
+        type: string
+      venuePlaceId:
+        example: ChIJkxHPFjMZ2jERPRhLUvKGfFk
+        type: string
+      venueUrl:
+        example: https://maps.google.com/?cid=123456
+        type: string
+    required:
+    - date
+    - description
+    - imageUrl
+    - name
+    - time
+    - venue
+    - venuePlaceId
+    - venueUrl
+    type: object
+  request.CreateSubscriptionRequest:
+    properties:
+      auth:
+        example: BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcx
+        type: string
+      endpoint:
+        example: https://fcm.googleapis.com/fcm/send/abc123
+        type: string
+      p256dh:
+        example: BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u
+        type: string
+      userId:
+        example: 1
+        type: integer
+    required:
+    - auth
+    - endpoint
+    - p256dh
+    - userId
+    type: object
+  request.EditRoomRequest:
+    properties:
+      date:
+        example: "2025-12-26T19:00:00Z"
+        type: string
+      description:
+        example: Updated description
+        maxLength: 500
+        type: string
+      imageUrl:
+        example: https://example.com/updated.jpg
+        type: string
+      name:
+        example: Updated Party Name
+        maxLength: 100
+        minLength: 3
+        type: string
+      time:
+        example: 8:00 PM
+        type: string
+      venue:
+        example: Sentosa Beach
+        type: string
+      venuePlaceId:
+        example: ChIJkxHPFjMZ2jERPRhLUvKGfFk
+        type: string
     type: object
   request.GoogleAuthRequest:
     properties:
       code:
+        example: 4/0AY0e-g7X...
         type: string
+    required:
+    - code
     type: object
   request.InviteUserRequest:
     properties:
       invitees:
+        description: Array of user IDs
+        example:
+        - "4"
+        - "5"
+        - "6"
         items:
           type: string
+        minItems: 1
         type: array
+    required:
+    - invitees
     type: object
   request.LoginRequest:
     properties:
       password:
+        example: SecurePass123!
+        minLength: 8
         type: string
       username:
+        example: johndoe123
         type: string
+    required:
+    - password
+    - username
     type: object
   request.ModifyFriendRequest:
     properties:
       friendId:
         type: integer
+    required:
+    - friendId
     type: object
   request.ResetPasswordRequest:
     properties:
       email:
+        example: john.doe@example.com
         type: string
       password:
+        example: NewSecurePass123!
+        minLength: 8
         type: string
+    required:
+    - email
+    - password
     type: object
   request.RespondToFriendRequestRequest:
     properties:
       action:
+        enum:
+        - accept
+        - reject
         type: string
       requestId:
         type: integer
+    required:
+    - action
+    - requestId
     type: object
   request.RespondToRoomInviteRequest:
     properties:
       accept:
+        example: true
         type: boolean
     type: object
   request.SendOTPEmailRequest:
     properties:
       email:
+        example: john.doe@example.com
         type: string
       purpose:
+        enum:
+        - registration
+        - reset_password
+        example: registration
         type: string
+    required:
+    - email
+    - purpose
     type: object
-  request.UpdateRoomRequest:
+  request.SignUpRequest:
     properties:
-      date:
+      email:
+        example: john.doe@example.com
         type: string
-      description:
+      password:
+        example: SecurePass123!
+        minLength: 8
         type: string
-      placeId:
+      username:
+        example: johndoe123
+        maxLength: 50
+        minLength: 3
         type: string
-      time:
-        type: string
-      venue:
-        type: string
+    required:
+    - email
+    - password
+    - username
     type: object
   request.UpdateUsernameRequest:
     properties:
       username:
+        maxLength: 50
+        minLength: 3
         type: string
+    required:
+    - username
     type: object
   request.VerifyOTPRequest:
     properties:
       email:
+        example: john.doe@example.com
         type: string
       otp:
+        example: "123456"
         type: string
+    required:
+    - email
+    - otp
     type: object
   response.AttendeesDto:
     properties:
@@ -637,10 +803,10 @@ paths:
       parameters:
       - description: User registration details
         in: body
-        name: user
+        name: signUpRequest
         required: true
         schema:
-          $ref: '#/definitions/model.User'
+          $ref: '#/definitions/request.SignUpRequest'
       produces:
       - application/json
       responses:
@@ -1165,7 +1331,7 @@ paths:
         name: room
         required: true
         schema:
-          $ref: '#/definitions/request.UpdateRoomRequest'
+          $ref: '#/definitions/request.EditRoomRequest'
       produces:
       - application/json
       responses:
@@ -1632,10 +1798,10 @@ paths:
       parameters:
       - description: Subscription details
         in: body
-        name: subscription
+        name: subscriptionRequest
         required: true
         schema:
-          $ref: '#/definitions/model.Subscription'
+          $ref: '#/definitions/request.CreateSubscriptionRequest'
       produces:
       - application/json
       responses:

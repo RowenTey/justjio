@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/RowenTey/JustJio/server/api/dto/request"
 	"github.com/RowenTey/JustJio/server/api/dto/response"
@@ -60,6 +61,7 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 // @Success 200 {object} object{status=string,message=string,data=request.UpdateUsernameRequest} "User successfully updated"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
 // @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
+// @Failure 409 {object} utils.EmptyApiResponse "Username already taken"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/username [patch]
 func (h *UserHandler) UpdateUsername(c *fiber.Ctx) error {
@@ -67,7 +69,12 @@ func (h *UserHandler) UpdateUsername(c *fiber.Ctx) error {
 
 	id := c.Params("userId")
 	if err := h.userService.UpdateUsername(id, req.Username); err != nil {
-		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return utils.HandleError(
+				c, fiber.StatusConflict, fmt.Sprintf("Username '%s' is already taken", req.Username), nil)
+		}
+		return utils.HandleNotFoundOrInternalError(c, err,
+			fmt.Sprintf("No user found with ID %s", id))
 	}
 
 	h.logger.Infof("User %s updated username to %s", id, req.Username)

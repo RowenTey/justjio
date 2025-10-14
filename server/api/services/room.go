@@ -378,8 +378,8 @@ func (rs *RoomService) JoinRoom(roomId, userId string) (*response.RoomDto, error
 		}
 
 		// TODO: check if user is invited if room is private
-
-		room, err := rs.roomRepo.GetByIDWithAttendees(roomId)
+		var err error
+		room, err = rs.roomRepo.GetByIDWithAttendees(roomId)
 		if err != nil {
 			return err
 		}
@@ -396,8 +396,7 @@ func (rs *RoomService) JoinRoom(roomId, userId string) (*response.RoomDto, error
 
 		room.NoOfAttendees++
 		room.Users = append(room.Users, *user)
-		err = rs.roomRepo.Update(room)
-		if err != nil {
+		if err = rs.roomRepo.Update(room); err != nil {
 			return err
 		}
 
@@ -710,13 +709,13 @@ func (rs *RoomService) updateRoomInviteStatus(
 			return nil
 		}
 
-		room, err := roomRepoTx.GetByIDWithAttendees(roomId)
+		room, err = roomRepoTx.GetByIDWithAttendees(roomId)
 		if err != nil {
 			return err
 		}
 
 		user.NoOfRooms++
-		if err := userRepoTx.Update(user); err != nil {
+		if err = userRepoTx.Update(user); err != nil {
 			return err
 		}
 

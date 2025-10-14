@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/RowenTey/JustJio/server/api/model"
@@ -34,7 +35,7 @@ func (suite *NotificationRepositoryTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Setup DB Conn
-	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "noti_test")
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "noti_test", "file://../migrations")
 	assert.NoError(suite.T(), err)
 
 	suite.repo = NewNotificationRepository(suite.db)
@@ -108,9 +109,9 @@ func (suite *NotificationRepositoryTestSuite) TestFindByUser_Success() {
 		assert.NoError(suite.T(), err)
 	}
 
-	found, err := suite.repo.FindByUser(suite.testUser.ID)
+	found, err := suite.repo.FindByUser(fmt.Sprintf("%d", suite.testUser.ID))
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), *found, 2)
+	assert.Len(suite.T(), found, 2)
 }
 
 func (suite *NotificationRepositoryTestSuite) TestMarkAsRead_Success() {

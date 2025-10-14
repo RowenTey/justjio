@@ -35,7 +35,7 @@ func (suite *BillRepositoryTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Setup DB Conn
-	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "bill_test")
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "bill_test", "file://../migrations")
 	assert.NoError(suite.T(), err)
 
 	suite.repo = NewBillRepository(suite.db)
@@ -101,7 +101,7 @@ func (suite *BillRepositoryTestSuite) TestFindByRoom_Success() {
 
 	bills, err := suite.repo.FindByRoom(suite.testRoom.ID)
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), *bills, 1)
+	assert.Len(suite.T(), bills, 1)
 }
 
 func (suite *BillRepositoryTestSuite) TestDeleteByRoom_Success() {
@@ -118,27 +118,7 @@ func (suite *BillRepositoryTestSuite) TestDeleteByRoom_Success() {
 
 	found, err := suite.repo.FindByRoom(suite.testRoom.ID)
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), *found, 0)
-}
-
-func (suite *BillRepositoryTestSuite) TestHasUnconsolidatedBills_Success() {
-	// No bills yet
-	status, err := suite.repo.GetRoomBillConsolidationStatus(suite.testRoom.ID)
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), NO_BILLS, status)
-
-	// Add an unconsolidated bill
-	bill := model.Bill{
-		Amount:  30.0,
-		RoomID:  suite.testRoom.ID,
-		OwnerID: suite.testUser.ID,
-	}
-	err = suite.repo.Create(&bill)
-	assert.NoError(suite.T(), err)
-
-	status, err = suite.repo.GetRoomBillConsolidationStatus(suite.testRoom.ID)
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), UNCONSOLIDATED, status)
+	assert.Len(suite.T(), found, 0)
 }
 
 func (suite *BillRepositoryTestSuite) TestConsolidateBills_Success() {
@@ -157,11 +137,6 @@ func (suite *BillRepositoryTestSuite) TestConsolidateBills_Success() {
 	updated, err := suite.repo.FindByID(bill.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), consolidation.ID, updated.ConsolidationID)
-
-	// Confirm status
-	status, err := suite.repo.GetRoomBillConsolidationStatus(suite.testRoom.ID)
-	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), CONSOLIDATED, status)
 }
 
 func (suite *BillRepositoryTestSuite) TestFindByConsolidation_Success() {
@@ -180,5 +155,5 @@ func (suite *BillRepositoryTestSuite) TestFindByConsolidation_Success() {
 
 	bills, err := suite.repo.FindByConsolidation(consolidation.ID)
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), *bills, 1)
+	assert.Len(suite.T(), bills, 1)
 }

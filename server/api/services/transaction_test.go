@@ -86,14 +86,14 @@ func (s *TransactionServiceTestSuite) TestGenerateTransactions_Success() {
 		Return(nil)
 
 	// Execute
-	transactions, err := s.transactionService.GenerateTransactions(&bills, consolidation)
+	transactions, err := s.transactionService.GenerateTransactions(bills, consolidation)
 
 	// Assertions
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), transactions)
-	assert.Len(s.T(), *transactions, 3) // After consolidation
+	assert.Len(s.T(), transactions, 3) // After consolidation
 
-	for _, tx := range *transactions {
+	for _, tx := range transactions {
 		assert.Equal(s.T(), consolidation.ID, tx.ConsolidationID)
 		assert.True(s.T(), tx.Amount == expectedAmount)
 	}
@@ -132,14 +132,14 @@ func (s *TransactionServiceTestSuite) TestGenerateTransactions_Consolidation() {
 		Return(nil)
 
 	// Execute
-	transactions, err := s.transactionService.GenerateTransactions(&bills, consolidation)
+	transactions, err := s.transactionService.GenerateTransactions(bills, consolidation)
 
 	// Assertions
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), transactions)
-	assert.Len(s.T(), *transactions, 1) // Should be consolidated to one transaction
+	assert.Len(s.T(), transactions, 1) // Should be consolidated to one transaction
 
-	finalTx := (*transactions)[0]
+	finalTx := transactions[0]
 	assert.Equal(s.T(), float32(25.0), finalTx.Amount) // 100/2 - 50/2 = 25
 }
 
@@ -153,14 +153,14 @@ func (s *TransactionServiceTestSuite) TestGetTransactionsByUser_Success() {
 	}
 
 	// Mock expectations
-	s.mockTransactionRepo.On("FindByUser", isPaid, userId).Return(&expectedTransactions, nil)
+	s.mockTransactionRepo.On("FindByUser", isPaid, userId).Return(expectedTransactions, nil)
 
 	// Execute
 	transactions, err := s.transactionService.GetTransactionsByUser(isPaid, userId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), &expectedTransactions, transactions)
+	assert.Equal(s.T(), expectedTransactions, transactions)
 	s.mockTransactionRepo.AssertExpectations(s.T())
 }
 
@@ -263,11 +263,11 @@ func (s *TransactionServiceTestSuite) TestConsolidateTransactions() {
 	consolidation := &model.Consolidation{ID: 1}
 
 	// Execute
-	result := s.transactionService.consolidateTransactions(&transactions, consolidation)
+	result := s.transactionService.consolidateTransactions(transactions, consolidation)
 
 	// Assertions
-	assert.Len(s.T(), *result, 1)
-	assert.Equal(s.T(), float32(50.0), (*result)[0].Amount)
-	assert.Equal(s.T(), uint(1), (*result)[0].PayerID)
-	assert.Equal(s.T(), uint(2), (*result)[0].PayeeID)
+	assert.Len(s.T(), result, 1)
+	assert.Equal(s.T(), float32(50.0), result[0].Amount)
+	assert.Equal(s.T(), uint(1), result[0].PayerID)
+	assert.Equal(s.T(), uint(2), result[0].PayeeID)
 }

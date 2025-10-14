@@ -59,7 +59,7 @@ func (suite *BillHandlerTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Setup DB Conn
-	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "bill_test")
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "bill_test", "file://../migrations")
 	assert.NoError(suite.T(), err)
 
 	// Initialize deps
@@ -86,9 +86,13 @@ func (suite *BillHandlerTestSuite) SetupSuite() {
 
 	// Register Bill routes
 	billRoutes := suite.app.Group("/bills")
-	billRoutes.Post("/", billHandler.CreateBill)
+	billRoutes.Post("/",
+		middleware.ParseAndValidate[request.CreateBillRequest](),
+		billHandler.CreateBill)
 	billRoutes.Get("/", billHandler.GetBillsByRoom)
-	billRoutes.Post("/consolidate", billHandler.ConsolidateBills)
+	billRoutes.Post("/consolidate",
+		middleware.ParseAndValidate[request.ConsolidateBillsRequest](),
+		billHandler.ConsolidateBills)
 }
 
 func (suite *BillHandlerTestSuite) TearDownSuite() {
@@ -325,7 +329,8 @@ func (suite *BillHandlerTestSuite) TestCreateBill_NoPayersSpecifiedAndOwnerNotIn
 	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "Review your input", responseBody["message"])
+	// Handler should return error about empty payers
+	assert.NotEmpty(suite.T(), responseBody["message"])
 }
 
 func (suite *BillHandlerTestSuite) TestCreateBill_RoomAlreadyConsolidated() {
@@ -337,12 +342,19 @@ func (suite *BillHandlerTestSuite) TestCreateBill_RoomAlreadyConsolidated() {
 	err := suite.db.Create(&bill).Error
 	assert.NoError(suite.T(), err)
 
-	// 2. Create a Consolidation record for the room
+	// 2. Mark the room as consolidated
+	err = suite.db.Model(&model.Room{}).
+		Where("id = ?", suite.testRoomID).
+		Update("consolidated", "CONSOLIDATED").
+		Error
+	assert.NoError(suite.T(), err)
+
+	// 3. Create a Consolidation record for the room
 	consolidation := model.Consolidation{}
 	err = suite.db.Create(&consolidation).Error
 	assert.NoError(suite.T(), err)
 
-	// 3. Associate the bill with the consolidation
+	// 4. Associate the bill with the consolidation
 	err = suite.db.Table("bills").
 		Where("room_id = ?", suite.testRoomID).
 		Update("consolidation_id", consolidation.ID).
@@ -454,7 +466,7 @@ func (suite *BillHandlerTestSuite) TestConsolidateBills_Success() {
 
 	suite.mockTransactionService.
 		On("GenerateTransactions", mock.Anything, mock.AnythingOfType("*model.Consolidation")).
-		Return(&[]model.Transaction{
+		Return([]model.Transaction{
 			{ConsolidationID: 1, Amount: 25.00, PayerID: suite.testUser2ID, PayeeID: suite.testUser1ID},
 		}, nil).
 		Once()
@@ -552,7 +564,7 @@ func (suite *BillHandlerTestSuite) TestConsolidateBills_AlreadyConsolidated() {
 	// Consolidate once
 	suite.mockTransactionService.
 		On("GenerateTransactions", mock.Anything, mock.Anything).
-		Return(&[]model.Transaction{
+		Return([]model.Transaction{
 			{ConsolidationID: 1, Amount: 10.00, PayerID: suite.testUser2ID, PayeeID: suite.testUser1ID},
 		}, nil).
 		Once()

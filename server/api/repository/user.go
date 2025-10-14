@@ -179,7 +179,13 @@ func (r *userRepository) AddFriend(userID, friendID uint) error {
 
 // RemoveFriend removes a friend from a user's friend list.
 func (r *userRepository) RemoveFriend(userID, friendID uint) error {
-	return r.db.Exec("DELETE FROM user_friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", userID, friendID, friendID, userID).Error
+	result := r.db.Exec("DELETE FROM user_friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", userID, friendID, friendID, userID)
+	if result.Error != nil {
+		return result.Error
+	} else if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 // GetFriends retrieves the friends of a user.

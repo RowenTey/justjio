@@ -35,7 +35,7 @@ func (suite *SubscriptionRepositoryTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Setup DB Conn
-	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "sub_test")
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "sub_test", "file://../migrations")
 	assert.NoError(suite.T(), err)
 
 	suite.repo = NewSubscriptionRepository(suite.db)
@@ -108,8 +108,8 @@ func (suite *SubscriptionRepositoryTestSuite) TestFindByUserID_Success() {
 
 	found, err := suite.repo.FindByUserID(fmt.Sprintf("%d", suite.testUser.ID))
 	assert.NoError(suite.T(), err)
-	assert.Len(suite.T(), *found, 1)
-	assert.Equal(suite.T(), sub.Endpoint, (*found)[0].Endpoint)
+	assert.Len(suite.T(), found, 1)
+	assert.Equal(suite.T(), sub.Endpoint, found[0].Endpoint)
 }
 
 func (suite *SubscriptionRepositoryTestSuite) TestFindByEndpoint_Success() {

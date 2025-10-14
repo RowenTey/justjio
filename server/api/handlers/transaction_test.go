@@ -58,7 +58,7 @@ func (suite *TransactionHandlerTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Setup DB Conn
-	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "tx_test")
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "tx_test", "file://../migrations")
 	assert.NoError(suite.T(), err)
 
 	// Initialize deps

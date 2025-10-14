@@ -22,6 +22,9 @@ func (m *MockUserRepository) Create(user *model.User) (*model.User, error) {
 
 func (m *MockUserRepository) FindByID(id string) (*model.User, error) {
 	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
 	return args.Get(0).(*model.User), args.Error(1)
 }
 
@@ -120,6 +123,16 @@ func (m *MockUserRepository) SearchNonFriendUsers(currentUserId, query string, l
 
 // Pending invites
 func (m *MockUserRepository) UpdateNoOfPendingRoomInvites(userIDs []string, delta int) error {
+	args := m.Called(userIDs, delta)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) UpdateNoOfPendingFriendRequests(userIDs []uint, delta int) error {
+	args := m.Called(userIDs, delta)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) UpdateNoOfFriends(userIDs []uint, delta int) error {
 	args := m.Called(userIDs, delta)
 	return args.Error(0)
 }

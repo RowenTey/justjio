@@ -54,7 +54,7 @@ func (suite *NotificationHandlerTestSuite) SetupSuite() {
 	assert.NoError(suite.T(), err)
 
 	// Setup DB Conn
-	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "noti_test")
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "noti_test", "file://../migrations")
 	assert.NoError(suite.T(), err)
 
 	// Initialize deps
@@ -77,7 +77,9 @@ func (suite *NotificationHandlerTestSuite) SetupSuite() {
 	// Register Notification routes
 	notifRoutes := suite.app.Group("/notifications")
 	notifRoutes.Get("/", notificationHandler.GetNotifications)
-	notifRoutes.Post("/", notificationHandler.CreateNotification)
+	notifRoutes.Post("/",
+		middleware.ParseAndValidate[request.CreateNotificationRequest](),
+		notificationHandler.CreateNotification)
 	userNotifRoutes := suite.app.Group("/users/:userId/notifications")
 	userNotifRoutes.Get("/:id", notificationHandler.GetNotification)
 	userNotifRoutes.Patch("/:id", notificationHandler.MarkNotificationAsRead)
@@ -196,7 +198,8 @@ func (suite *NotificationHandlerTestSuite) TestCreateNotification_InvalidInput()
 	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "Review your input", responseBody["message"])
+	// Validation middleware returns specific error messages
+	assert.Contains(suite.T(), responseBody["message"].(string), "required")
 
 	// Test bad JSON
 	reqBody = []byte(`{"userId": "notanumber", "title": "Bad JSON", "content": "Test"}`)

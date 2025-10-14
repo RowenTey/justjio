@@ -234,7 +234,7 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param roomId path string true "Room ID"
-// @Param room body request.UpdateRoomRequest true "Room update details"
+// @Param room body request.EditRoomRequest true "Room update details"
 // @Success 200 {object} object{status=string,message=string,data=model.Room} "Edited room successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
 // @Failure 401 {object} utils.EmptyApiResponse "Only hosts can edit rooms"
