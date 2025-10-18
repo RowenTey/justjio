@@ -2828,6 +2828,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/utils.EmptyApiResponse"
                         }
                     },
+                    "409": {
+                        "description": "Username already taken",
+                        "schema": {
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
@@ -3559,10 +3565,10 @@ const docTemplate = `{
                 "purpose": {
                     "type": "string",
                     "enum": [
-                        "registration",
-                        "reset_password"
+                        "verify-email",
+                        "reset-password"
                     ],
-                    "example": "registration"
+                    "example": "verify-email"
                 }
             }
         },
