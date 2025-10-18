@@ -44,3 +44,7 @@ reset-db:
 # Generate API documentation
 swagger:
 	cd server/api && swag init -g main.go
+	
+# Start API server 
+api:
+	cd server/api && air dev
