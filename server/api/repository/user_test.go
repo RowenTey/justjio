@@ -79,20 +79,20 @@ func (suite *UserRepositoryTestSuite) TestCreateAndFindByID_Success() {
 		Email:    "john@example.com",
 		Password: "pass",
 	}
-	created, err := suite.repo.Create(user)
+	created, err := suite.repo.Create(suite.ctx, user)
 	assert.NoError(suite.T(), err)
 
-	found, err := suite.repo.FindByID(fmt.Sprintf("%d", created.ID))
+	found, err := suite.repo.FindByID(suite.ctx, fmt.Sprintf("%d", created.ID))
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "john", found.Username)
 }
 
 func (suite *UserRepositoryTestSuite) TestFindByUsernameAndEmail_Success() {
-	foundByUsername, err := suite.repo.FindByUsername(suite.testUser.Username)
+	foundByUsername, err := suite.repo.FindByUsername(suite.ctx, suite.testUser.Username)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), suite.testUser.Email, foundByUsername.Email)
 
-	foundByEmail, err := suite.repo.FindByEmail(suite.testUser.Email)
+	foundByEmail, err := suite.repo.FindByEmail(suite.ctx, suite.testUser.Email)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), suite.testUser.Username, foundByEmail.Username)
 }
@@ -106,10 +106,10 @@ func (suite *UserRepositoryTestSuite) TestAddAndCheckFriendship_Success() {
 	err := suite.db.Create(&friend).Error
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.AddFriend(suite.testUser.ID, friend.ID)
+	err = suite.repo.AddFriend(suite.ctx, suite.testUser.ID, friend.ID)
 	assert.NoError(suite.T(), err)
 
-	isFriend, err := suite.repo.CheckFriendship(suite.testUser.ID, friend.ID)
+	isFriend, err := suite.repo.CheckFriendship(suite.ctx, suite.testUser.ID, friend.ID)
 	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), isFriend)
 }
@@ -128,10 +128,10 @@ func (suite *UserRepositoryTestSuite) TestCreateFriendRequestAndExists_Success()
 		ReceiverID: receiver.ID,
 		Status:     "pending",
 	}
-	err = suite.repo.CreateFriendRequest(req)
+	err = suite.repo.CreateFriendRequest(suite.ctx, req)
 	assert.NoError(suite.T(), err)
 
-	exists, err := suite.repo.CheckFriendRequestExists(suite.testUser.ID, receiver.ID)
+	exists, err := suite.repo.CheckFriendRequestExists(suite.ctx, suite.testUser.ID, receiver.ID)
 	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), exists)
 }
@@ -147,7 +147,7 @@ func (suite *UserRepositoryTestSuite) TestSearchUsers_NoFriends_Success() {
 	// Refresh the materialized view
 	suite.db.Exec("REFRESH MATERIALIZED VIEW user_non_friends")
 
-	results, err := suite.repo.SearchNonFriendUsers(fmt.Sprintf("%d", suite.testUser.ID), "search", 10)
+	results, err := suite.repo.SearchNonFriendUsers(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID), "search", 10)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), results, 1)
 	assert.Equal(suite.T(), "search_target", results[0].Username)
@@ -162,7 +162,7 @@ func (suite *UserRepositoryTestSuite) TestSearchUsers_WithFriends_Success() {
 	suite.db.Create(&user2)
 
 	// Add user2 as a friend to testUser
-	err := suite.repo.AddFriend(suite.testUser.ID, user2.ID)
+	err := suite.repo.AddFriend(suite.ctx, suite.testUser.ID, user2.ID)
 	assert.NoError(suite.T(), err)
 
 	user3 := model.User{
@@ -175,7 +175,7 @@ func (suite *UserRepositoryTestSuite) TestSearchUsers_WithFriends_Success() {
 	// Refresh the materialized view to reflect the new friendship
 	suite.db.Exec("REFRESH MATERIALIZED VIEW user_non_friends")
 
-	results, err := suite.repo.SearchNonFriendUsers(fmt.Sprintf("%d", suite.testUser.ID), "another", 10)
+	results, err := suite.repo.SearchNonFriendUsers(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID), "another", 10)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), results, 1)
 	assert.Equal(suite.T(), "another_target", results[0].Username)
@@ -190,14 +190,14 @@ func (suite *UserRepositoryTestSuite) TestCountFriends_Success() {
 	err := suite.db.Create(&friend).Error
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.AddFriend(suite.testUser.ID, friend.ID)
+	err = suite.repo.AddFriend(suite.ctx, suite.testUser.ID, friend.ID)
 	assert.NoError(suite.T(), err)
 
 	// Update the counters
-	err = suite.repo.UpdateNoOfFriends([]uint{suite.testUser.ID, friend.ID}, 1)
+	err = suite.repo.UpdateNoOfFriends(suite.ctx, []uint{suite.testUser.ID, friend.ID}, 1)
 	assert.NoError(suite.T(), err)
 
-	count, err := suite.repo.CountFriends(suite.testUser.ID)
+	count, err := suite.repo.CountFriends(suite.ctx, suite.testUser.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), int64(1), count)
 }
@@ -211,13 +211,13 @@ func (suite *UserRepositoryTestSuite) TestRemoveFriend_Success() {
 	err := suite.db.Create(&friend).Error
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.AddFriend(suite.testUser.ID, friend.ID)
+	err = suite.repo.AddFriend(suite.ctx, suite.testUser.ID, friend.ID)
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.RemoveFriend(suite.testUser.ID, friend.ID)
+	err = suite.repo.RemoveFriend(suite.ctx, suite.testUser.ID, friend.ID)
 	assert.NoError(suite.T(), err)
 
-	isFriend, err := suite.repo.CheckFriendship(suite.testUser.ID, friend.ID)
+	isFriend, err := suite.repo.CheckFriendship(suite.ctx, suite.testUser.ID, friend.ID)
 	assert.NoError(suite.T(), err)
 	assert.False(suite.T(), isFriend)
 }
@@ -233,7 +233,7 @@ func (suite *UserRepositoryTestSuite) TestGetUninvitedFriends_Success() {
 	assert.NoError(suite.T(), err)
 
 	// Make them friends
-	err = suite.repo.AddFriend(suite.testUser.ID, friend.ID)
+	err = suite.repo.AddFriend(suite.ctx, suite.testUser.ID, friend.ID)
 	assert.NoError(suite.T(), err)
 
 	// Create a room and do not invite the friend
@@ -245,7 +245,7 @@ func (suite *UserRepositoryTestSuite) TestGetUninvitedFriends_Success() {
 	assert.NoError(suite.T(), err)
 
 	// Check GetUninvitedFriends
-	uninvited, err := suite.repo.GetUninvitedFriends(room.ID, fmt.Sprintf("%d", suite.testUser.ID))
+	uninvited, err := suite.repo.GetUninvitedFriends(suite.ctx, room.ID, fmt.Sprintf("%d", suite.testUser.ID))
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), uninvited, 1)
 	assert.Equal(suite.T(), friend.ID, uninvited[0].ID)
@@ -261,14 +261,14 @@ func (suite *UserRepositoryTestSuite) TestFindByIDs_Success() {
 		fmt.Sprintf("%d", suite.testUser.ID),
 		fmt.Sprintf("%d", user2.ID),
 		fmt.Sprintf("%d", user3.ID)}
-	users, err := suite.repo.FindByIDs(ids)
+	users, err := suite.repo.FindByIDs(suite.ctx, ids)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), users, 3)
 }
 
 func (suite *UserRepositoryTestSuite) TestUpdateUser_Success() {
 	suite.testUser.Username = "updated_username"
-	err := suite.repo.Update(suite.testUser)
+	err := suite.repo.Update(suite.ctx, suite.testUser)
 	assert.NoError(suite.T(), err)
 
 	var user model.User
@@ -277,7 +277,7 @@ func (suite *UserRepositoryTestSuite) TestUpdateUser_Success() {
 }
 
 func (suite *UserRepositoryTestSuite) TestDeleteUser_Success() {
-	err := suite.repo.Delete(fmt.Sprintf("%d", suite.testUser.ID))
+	err := suite.repo.Delete(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID))
 	assert.NoError(suite.T(), err)
 
 	var user model.User
@@ -297,12 +297,12 @@ func (suite *UserRepositoryTestSuite) TestFindAndCountFriendRequestsByReceiver_S
 	}
 	suite.db.Create(&request)
 
-	requests, err := suite.repo.FindFriendRequestsByReceiver(suite.testUser.ID, "pending")
+	requests, err := suite.repo.FindFriendRequestsByReceiver(suite.ctx, suite.testUser.ID, "pending")
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), requests, 1)
 	assert.Equal(suite.T(), sender.ID, requests[0].SenderID)
 
-	count, err := suite.repo.CountFriendRequestsByReceiver(suite.testUser.ID, "pending")
+	count, err := suite.repo.CountFriendRequestsByReceiver(suite.ctx, suite.testUser.ID, "pending")
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), int64(1), count)
 }
@@ -317,14 +317,14 @@ func (suite *UserRepositoryTestSuite) TestUpdateNoOfPendingRoomInvites_Success()
 	assert.Equal(suite.T(), 0, user.NoOfPendingRoomInvites)
 
 	// Increment by 2
-	err := suite.repo.UpdateNoOfPendingRoomInvites([]string{fmt.Sprintf("%d", suite.testUser.ID)}, 2)
+	err := suite.repo.UpdateNoOfPendingRoomInvites(suite.ctx, []string{fmt.Sprintf("%d", suite.testUser.ID)}, 2)
 	assert.NoError(suite.T(), err)
 
 	suite.db.First(&user, suite.testUser.ID)
 	assert.Equal(suite.T(), 2, user.NoOfPendingRoomInvites)
 
 	// Decrement by 1
-	err = suite.repo.UpdateNoOfPendingRoomInvites([]string{fmt.Sprintf("%d", suite.testUser.ID)}, -1)
+	err = suite.repo.UpdateNoOfPendingRoomInvites(suite.ctx, []string{fmt.Sprintf("%d", suite.testUser.ID)}, -1)
 	assert.NoError(suite.T(), err)
 
 	suite.db.First(&user, suite.testUser.ID)
@@ -338,14 +338,14 @@ func (suite *UserRepositoryTestSuite) TestUpdateNoOfPendingFriendRequests_Succes
 	assert.Equal(suite.T(), 0, user.NoOfPendingFriendRequests)
 
 	// Increment by 3
-	err := suite.repo.UpdateNoOfPendingFriendRequests([]uint{suite.testUser.ID}, 3)
+	err := suite.repo.UpdateNoOfPendingFriendRequests(suite.ctx, []uint{suite.testUser.ID}, 3)
 	assert.NoError(suite.T(), err)
 
 	suite.db.First(&user, suite.testUser.ID)
 	assert.Equal(suite.T(), 3, user.NoOfPendingFriendRequests)
 
 	// Decrement by 2
-	err = suite.repo.UpdateNoOfPendingFriendRequests([]uint{suite.testUser.ID}, -2)
+	err = suite.repo.UpdateNoOfPendingFriendRequests(suite.ctx, []uint{suite.testUser.ID}, -2)
 	assert.NoError(suite.T(), err)
 
 	suite.db.First(&user, suite.testUser.ID)
@@ -364,7 +364,7 @@ func (suite *UserRepositoryTestSuite) TestUpdateNoOfFriends_Success() {
 	assert.Equal(suite.T(), 0, user2.NoOfFriends)
 
 	// Increment both users by 1
-	err := suite.repo.UpdateNoOfFriends([]uint{suite.testUser.ID, friend.ID}, 1)
+	err := suite.repo.UpdateNoOfFriends(suite.ctx, []uint{suite.testUser.ID, friend.ID}, 1)
 	assert.NoError(suite.T(), err)
 
 	suite.db.First(&user1, suite.testUser.ID)
@@ -373,7 +373,7 @@ func (suite *UserRepositoryTestSuite) TestUpdateNoOfFriends_Success() {
 	assert.Equal(suite.T(), 1, user2.NoOfFriends)
 
 	// Decrement both users by 1
-	err = suite.repo.UpdateNoOfFriends([]uint{suite.testUser.ID, friend.ID}, -1)
+	err = suite.repo.UpdateNoOfFriends(suite.ctx, []uint{suite.testUser.ID, friend.ID}, -1)
 	assert.NoError(suite.T(), err)
 
 	suite.db.First(&user1, suite.testUser.ID)
@@ -384,13 +384,13 @@ func (suite *UserRepositoryTestSuite) TestUpdateNoOfFriends_Success() {
 
 func (suite *UserRepositoryTestSuite) TestUpdateCounters_EmptySlice_Success() {
 	// Test that empty slices don't cause errors
-	err := suite.repo.UpdateNoOfPendingRoomInvites([]string{}, 1)
+	err := suite.repo.UpdateNoOfPendingRoomInvites(suite.ctx, []string{}, 1)
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.UpdateNoOfPendingFriendRequests([]uint{}, 1)
+	err = suite.repo.UpdateNoOfPendingFriendRequests(suite.ctx, []uint{}, 1)
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.UpdateNoOfFriends([]uint{}, 1)
+	err = suite.repo.UpdateNoOfFriends(suite.ctx, []uint{}, 1)
 	assert.NoError(suite.T(), err)
 }
 
@@ -406,15 +406,15 @@ func (suite *UserRepositoryTestSuite) TestUpdateFriendRequest_AcceptRequest() {
 		ReceiverID: receiver.ID,
 		Status:     "pending",
 	}
-	err := suite.repo.CreateFriendRequest(req)
+	err := suite.repo.CreateFriendRequest(suite.ctx, req)
 	assert.NoError(suite.T(), err)
 
 	// Update to accepted
-	err = suite.repo.UpdateFriendRequest(req.ID, map[string]interface{}{"status": "accepted"})
+	err = suite.repo.UpdateFriendRequest(suite.ctx, req.ID, map[string]interface{}{"status": "accepted"})
 	assert.NoError(suite.T(), err)
 
 	// Verify update
-	found, err := suite.repo.FindFriendRequest(req.ID)
+	found, err := suite.repo.FindFriendRequest(suite.ctx, req.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "accepted", found.Status)
 }
@@ -428,22 +428,22 @@ func (suite *UserRepositoryTestSuite) TestUpdateFriendRequest_RejectRequest() {
 		ReceiverID: receiver.ID,
 		Status:     "pending",
 	}
-	err := suite.repo.CreateFriendRequest(req)
+	err := suite.repo.CreateFriendRequest(suite.ctx, req)
 	assert.NoError(suite.T(), err)
 
 	// Update to rejected
-	err = suite.repo.UpdateFriendRequest(req.ID, map[string]interface{}{"status": "rejected"})
+	err = suite.repo.UpdateFriendRequest(suite.ctx, req.ID, map[string]interface{}{"status": "rejected"})
 	assert.NoError(suite.T(), err)
 
 	// Verify update
-	found, err := suite.repo.FindFriendRequest(req.ID)
+	found, err := suite.repo.FindFriendRequest(suite.ctx, req.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "rejected", found.Status)
 }
 
 func (suite *UserRepositoryTestSuite) TestUpdateFriendRequest_NonExistent() {
 	// Try to update non-existent friend request
-	err := suite.repo.UpdateFriendRequest(99999, map[string]interface{}{"status": "accepted"})
+	err := suite.repo.UpdateFriendRequest(suite.ctx, 99999, map[string]interface{}{"status": "accepted"})
 	// Should not error but no rows affected
 	assert.NoError(suite.T(), err)
 }
@@ -458,23 +458,23 @@ func (suite *UserRepositoryTestSuite) TestGetFriends_MultipleFriends() {
 			Password: "pass",
 		}
 		suite.db.Create(&friend)
-		suite.repo.AddFriend(suite.testUser.ID, friend.ID)
+		suite.repo.AddFriend(suite.ctx, suite.testUser.ID, friend.ID)
 	}
 
-	friends, err := suite.repo.GetFriends(suite.testUser.ID)
+	friends, err := suite.repo.GetFriends(suite.ctx, suite.testUser.ID)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), friends, 3)
 }
 
 func (suite *UserRepositoryTestSuite) TestGetFriends_NoFriends() {
-	friends, err := suite.repo.GetFriends(suite.testUser.ID)
+	friends, err := suite.repo.GetFriends(suite.ctx, suite.testUser.ID)
 	assert.NoError(suite.T(), err)
 	assert.Empty(suite.T(), friends)
 }
 
 // Error handling tests for Find methods
 func (suite *UserRepositoryTestSuite) TestFindByID_NotFound() {
-	user, err := suite.repo.FindByID("999999")
+	user, err := suite.repo.FindByID(suite.ctx, "999999")
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
 	assert.NotNil(suite.T(), user)            // Repository returns &model.User{} even on error
@@ -482,7 +482,7 @@ func (suite *UserRepositoryTestSuite) TestFindByID_NotFound() {
 }
 
 func (suite *UserRepositoryTestSuite) TestFindByUsername_NotFound() {
-	user, err := suite.repo.FindByUsername("nonexistentuser")
+	user, err := suite.repo.FindByUsername(suite.ctx, "nonexistentuser")
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
 	assert.NotNil(suite.T(), user)            // Repository returns &model.User{} even on error
@@ -490,7 +490,7 @@ func (suite *UserRepositoryTestSuite) TestFindByUsername_NotFound() {
 }
 
 func (suite *UserRepositoryTestSuite) TestFindByEmail_NotFound() {
-	user, err := suite.repo.FindByEmail("nonexistent@example.com")
+	user, err := suite.repo.FindByEmail(suite.ctx, "nonexistent@example.com")
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
 	assert.NotNil(suite.T(), user)            // Repository returns &model.User{} even on error
@@ -498,7 +498,7 @@ func (suite *UserRepositoryTestSuite) TestFindByEmail_NotFound() {
 }
 
 func (suite *UserRepositoryTestSuite) TestFindByIDs_EmptyArray() {
-	users, err := suite.repo.FindByIDs([]string{})
+	users, err := suite.repo.FindByIDs(suite.ctx, []string{})
 	assert.NoError(suite.T(), err)
 	assert.Empty(suite.T(), users)
 }
@@ -511,7 +511,7 @@ func (suite *UserRepositoryTestSuite) TestFindByIDs_SomeInvalid() {
 		fmt.Sprintf("%d", user2.ID),
 		"999999", // non-existent
 	}
-	users, err := suite.repo.FindByIDs(ids)
+	users, err := suite.repo.FindByIDs(suite.ctx, ids)
 	// GORM may error or return partial results depending on implementation
 	// For now, just verify it doesn't panic
 	_ = err
@@ -520,7 +520,7 @@ func (suite *UserRepositoryTestSuite) TestFindByIDs_SomeInvalid() {
 
 // Boundary condition tests
 func (suite *UserRepositoryTestSuite) TestSearchNonFriendUsers_EmptyQuery() {
-	results, err := suite.repo.SearchNonFriendUsers(fmt.Sprintf("%d", suite.testUser.ID), "", 10)
+	results, err := suite.repo.SearchNonFriendUsers(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID), "", 10)
 	assert.NoError(suite.T(), err)
 	assert.Empty(suite.T(), results)
 }
@@ -535,7 +535,7 @@ func (suite *UserRepositoryTestSuite) TestSearchNonFriendUsers_SpecialCharacters
 	suite.db.Exec("REFRESH MATERIALIZED VIEW user_non_friends")
 
 	// Test with special characters - PostgreSQL full-text search properly rejects malformed syntax
-	results, err := suite.repo.SearchNonFriendUsers(fmt.Sprintf("%d", suite.testUser.ID), "search';DROP TABLE users;--", 10)
+	results, err := suite.repo.SearchNonFriendUsers(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID), "search';DROP TABLE users;--", 10)
 	// PostgreSQL ts_query rejects invalid syntax which is GOOD for security
 	assert.Error(suite.T(), err) // Should error on invalid tsquery syntax
 	// The important thing is it doesn't execute the SQL injection
@@ -543,7 +543,7 @@ func (suite *UserRepositoryTestSuite) TestSearchNonFriendUsers_SpecialCharacters
 }
 
 func (suite *UserRepositoryTestSuite) TestFindFriendRequest_NotFound() {
-	found, err := suite.repo.FindFriendRequest(99999)
+	found, err := suite.repo.FindFriendRequest(suite.ctx, 99999)
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
 	assert.NotNil(suite.T(), found)            // Repository returns &model.FriendRequest{} even on error

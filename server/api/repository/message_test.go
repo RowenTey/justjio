@@ -85,10 +85,10 @@ func (suite *MessageRepositoryTestSuite) TestCreateAndFindByID_Success() {
 		SentAt:   time.Now(),
 	}
 
-	err := suite.repo.Create(&message)
+	err := suite.repo.Create(suite.ctx, &message)
 	assert.NoError(suite.T(), err)
 
-	found, err := suite.repo.FindByID(fmt.Sprintf("%d", message.ID))
+	found, err := suite.repo.FindByID(suite.ctx, fmt.Sprintf("%d", message.ID))
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), message.Content, found.Content)
 	assert.Equal(suite.T(), message.RoomID, found.RoomID)
@@ -101,13 +101,13 @@ func (suite *MessageRepositoryTestSuite) TestDelete_Success() {
 		SenderID: suite.testUser.ID,
 		SentAt:   time.Now(),
 	}
-	err := suite.repo.Create(&message)
+	err := suite.repo.Create(suite.ctx, &message)
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.Delete(fmt.Sprintf("%d", message.ID))
+	err = suite.repo.Delete(suite.ctx, fmt.Sprintf("%d", message.ID))
 	assert.NoError(suite.T(), err)
 
-	_, err = suite.repo.FindByID(fmt.Sprintf("%d", message.ID))
+	_, err = suite.repo.FindByID(suite.ctx, fmt.Sprintf("%d", message.ID))
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
 }
@@ -120,14 +120,14 @@ func (suite *MessageRepositoryTestSuite) TestDeleteByRoom_Success() {
 			SenderID: suite.testUser.ID,
 			SentAt:   time.Now(),
 		}
-		err := suite.repo.Create(&msg)
+		err := suite.repo.Create(suite.ctx, &msg)
 		assert.NoError(suite.T(), err)
 	}
 
-	err := suite.repo.DeleteByRoom(suite.testRoom.ID)
+	err := suite.repo.DeleteByRoom(suite.ctx, suite.testRoom.ID)
 	assert.NoError(suite.T(), err)
 
-	count, err := suite.repo.CountByRoom(suite.testRoom.ID)
+	count, err := suite.repo.CountByRoom(suite.ctx, suite.testRoom.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), int64(0), count)
 }
@@ -139,10 +139,10 @@ func (suite *MessageRepositoryTestSuite) TestCountByRoom_Success() {
 		SenderID: suite.testUser.ID,
 		SentAt:   time.Now(),
 	}
-	err := suite.repo.Create(&msg)
+	err := suite.repo.Create(suite.ctx, &msg)
 	assert.NoError(suite.T(), err)
 
-	count, err := suite.repo.CountByRoom(suite.testRoom.ID)
+	count, err := suite.repo.CountByRoom(suite.ctx, suite.testRoom.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), int64(1), count)
 }
@@ -156,18 +156,18 @@ func (suite *MessageRepositoryTestSuite) TestFindByRoom_WithPaginationAndOrder()
 			SenderID: suite.testUser.ID,
 			SentAt:   time.Now().Add(time.Duration(i) * time.Minute),
 		}
-		err := suite.repo.Create(&msg)
+		err := suite.repo.Create(suite.ctx, &msg)
 		assert.NoError(suite.T(), err)
 	}
 
 	// Get first 3 messages in descending order
-	msgs, err := suite.repo.FindByRoom(suite.testRoom.ID, 1, 3, false)
+	msgs, err := suite.repo.FindByRoom(suite.ctx, suite.testRoom.ID, 1, 3, false)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), msgs, 3)
 	assert.True(suite.T(), msgs[0].SentAt.After(msgs[1].SentAt))
 
 	// Get in ascending order
-	msgsAsc, err := suite.repo.FindByRoom(suite.testRoom.ID, 1, 3, true)
+	msgsAsc, err := suite.repo.FindByRoom(suite.ctx, suite.testRoom.ID, 1, 3, true)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), msgsAsc, 3)
 	assert.True(suite.T(), msgsAsc[0].SentAt.Before(msgsAsc[1].SentAt))

@@ -41,6 +41,7 @@ func NewSubscriptionHandler(
 // @Security BearerAuth
 // @Router /subscriptions [post]
 func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.CreateSubscriptionRequest](c)
 
 	subscription := &model.Subscription{
@@ -50,7 +51,7 @@ func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 		P256dh:   req.P256dh,
 	}
 
-	createdSubscription, err := h.subscriptionService.CreateSubscription(subscription)
+	createdSubscription, err := h.subscriptionService.CreateSubscription(ctx, subscription)
 	if err != nil {
 		return utils.HandleInternalServerError(c, err)
 	}
@@ -73,13 +74,14 @@ func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /subscriptions/{endpoint} [get]
 func (h *SubscriptionHandler) GetSubscriptionByEndpoint(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	endpoint := c.Params("endpoint")
 	decodedEndpoint, err := url.QueryUnescape(endpoint)
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	subscription, err := h.subscriptionService.GetSubscriptionsByEndpoint(decodedEndpoint)
+	subscription, err := h.subscriptionService.GetSubscriptionsByEndpoint(ctx, decodedEndpoint)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Subscription not found")
 	}
@@ -100,9 +102,10 @@ func (h *SubscriptionHandler) GetSubscriptionByEndpoint(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /subscriptions/{subId} [delete]
 func (h *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	subId := c.Params("subId")
 
-	if err := h.subscriptionService.DeleteSubscription(subId); err != nil {
+	if err := h.subscriptionService.DeleteSubscription(ctx, subId); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Subscription not found")
 	}
 

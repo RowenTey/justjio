@@ -587,7 +587,7 @@ func (suite *RoomHandlerTestSuite) TestInviteUser_AlreadyInRoom() {
 
 func (suite *RoomHandlerTestSuite) TestInviteUser_NotHost() {
 	// First, have the test user join the room so they're a member but not the host
-	_, err := suite.roomService.JoinRoom(suite.testRoomID, fmt.Sprintf("%d", suite.testUserID))
+	_, err := suite.roomService.JoinRoom(context.Background(), suite.testRoomID, fmt.Sprintf("%d", suite.testUserID))
 	assert.NoError(suite.T(), err)
 
 	// Create a new user to invite
@@ -763,7 +763,7 @@ func (suite *RoomHandlerTestSuite) TestRespondToRoomInvite_Reject() {
 
 func (suite *RoomHandlerTestSuite) TestLeaveRoom_Success() {
 	// First have the user join the room
-	_, err := suite.roomService.JoinRoom(suite.testRoomID, fmt.Sprintf("%d", suite.testUserID))
+	_, err := suite.roomService.JoinRoom(context.Background(), suite.testRoomID, fmt.Sprintf("%d", suite.testUserID))
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodPatch,
@@ -965,7 +965,7 @@ func (suite *RoomHandlerTestSuite) TestCloseRoom_Success() {
 
 func (suite *RoomHandlerTestSuite) TestCloseRoom_NotHost() {
 	// First, have the test user join the room so they're a member but not the host
-	_, err := suite.roomService.JoinRoom(suite.testRoomID, fmt.Sprintf("%d", suite.testUserID))
+	_, err := suite.roomService.JoinRoom(context.Background(), suite.testRoomID, fmt.Sprintf("%d", suite.testUserID))
 	assert.NoError(suite.T(), err)
 
 	// Try to close room as non-host user (but member of room)

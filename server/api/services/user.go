@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"strconv"
@@ -38,34 +39,34 @@ func NewUserService(db *gorm.DB, userRepo repository.UserRepository, logger *log
 	}
 }
 
-func (s *UserService) GetUserByID(userId string) (*model.User, error) {
-	return s.userRepo.FindByID(userId)
+func (s *UserService) GetUserByID(ctx context.Context, userId string) (*model.User, error) {
+	return s.userRepo.FindByID(ctx, userId)
 }
 
-func (s *UserService) GetUserByUsername(username string) (*model.User, error) {
-	return s.userRepo.FindByUsername(username)
+func (s *UserService) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
+	return s.userRepo.FindByUsername(ctx, username)
 }
 
-func (s *UserService) GetUserByEmail(email string) (*model.User, error) {
-	return s.userRepo.FindByEmail(email)
+func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
+	return s.userRepo.FindByEmail(ctx, email)
 }
 
-func (s *UserService) GetUsersByID(userIds []string) ([]model.User, error) {
-	return s.userRepo.FindByIDs(userIds)
+func (s *UserService) GetUsersByID(ctx context.Context, userIds []string) ([]model.User, error) {
+	return s.userRepo.FindByIDs(ctx, userIds)
 }
 
-func (s *UserService) UpdateUsername(userId string, newUsername string) error {
-	user, err := s.userRepo.FindByID(userId)
+func (s *UserService) UpdateUsername(ctx context.Context, userId string, newUsername string) error {
+	user, err := s.userRepo.FindByID(ctx, userId)
 	if err != nil {
 		return err
 	}
 
 	user.Username = newUsername
-	return s.userRepo.Update(user)
+	return s.userRepo.Update(ctx, user)
 }
 
-func (s *UserService) UpdateUserField(userid string, field string, value any) error {
-	user, err := s.userRepo.FindByID(userid)
+func (s *UserService) UpdateUserField(ctx context.Context, userid string, field string, value any) error {
+	user, err := s.userRepo.FindByID(ctx, userid)
 	if err != nil {
 		return err
 	}
@@ -81,51 +82,51 @@ func (s *UserService) UpdateUserField(userid string, field string, value any) er
 		return ErrUserFieldNotSupported
 	}
 
-	return s.userRepo.Update(user)
+	return s.userRepo.Update(ctx, user)
 }
 
-func (s *UserService) UpsertUser(user *model.User, isCreate bool) (*model.User, error) {
+func (s *UserService) UpsertUser(ctx context.Context, user *model.User, isCreate bool) (*model.User, error) {
 	if isCreate {
-		return s.userRepo.Create(user)
+		return s.userRepo.Create(ctx, user)
 	}
 
-	err := s.userRepo.Update(user)
+	err := s.userRepo.Update(ctx, user)
 	return user, err
 }
 
-func (s *UserService) MarkOnline(userId string) error {
-	return s.UpdateUserField(userId, "isOnline", true)
+func (s *UserService) MarkOnline(ctx context.Context, userId string) error {
+	return s.UpdateUserField(ctx, userId, "isOnline", true)
 }
 
-func (s *UserService) MarkOffline(userId string) error {
-	user, err := s.userRepo.FindByID(userId)
+func (s *UserService) MarkOffline(ctx context.Context, userId string) error {
+	user, err := s.userRepo.FindByID(ctx, userId)
 	if err != nil {
 		return err
 	}
 
 	user.IsOnline = false
 	user.LastSeen = time.Now()
-	return s.userRepo.Update(user)
+	return s.userRepo.Update(ctx, user)
 }
 
-func (s *UserService) SearchNonFriendUsers(currentUserID, query string) ([]model.User, error) {
-	return s.userRepo.SearchNonFriendUsers(currentUserID, query, 10)
+func (s *UserService) SearchNonFriendUsers(ctx context.Context, currentUserID, query string) ([]model.User, error) {
+	return s.userRepo.SearchNonFriendUsers(ctx, currentUserID, query, 10)
 }
 
-func (s *UserService) SendFriendRequest(senderID, receiverID uint) error {
+func (s *UserService) SendFriendRequest(ctx context.Context, senderID, receiverID uint) error {
 	if senderID == receiverID {
 		return ErrNoSelfFriendRequest
 	}
 
 	// Check if they are already friends
-	if isFriend, err := s.userRepo.CheckFriendship(senderID, receiverID); err != nil {
+	if isFriend, err := s.userRepo.CheckFriendship(ctx, senderID, receiverID); err != nil {
 		return err
 	} else if isFriend {
 		return ErrAlreadyFriends
 	}
 
 	// Check if a friend request already exists
-	if exists, err := s.userRepo.CheckFriendRequestExists(senderID, receiverID); err != nil {
+	if exists, err := s.userRepo.CheckFriendRequestExists(ctx, senderID, receiverID); err != nil {
 		return err
 	} else if exists {
 		return ErrFriendRequestExists
@@ -140,21 +141,21 @@ func (s *UserService) SendFriendRequest(senderID, receiverID uint) error {
 			Status:     "pending",
 		}
 
-		if err := userRepoTx.CreateFriendRequest(&request); err != nil {
+		if err := userRepoTx.CreateFriendRequest(ctx, &request); err != nil {
 			return err
 		}
 
 		// Increment receiver's pending friend requests count
-		return userRepoTx.UpdateNoOfPendingFriendRequests([]uint{receiverID}, 1)
+		return userRepoTx.UpdateNoOfPendingFriendRequests(ctx, []uint{receiverID}, 1)
 	})
 }
 
 // TODO: Test if addFriend will throw error for non-existing users
-func (s *UserService) AcceptFriendRequest(requestID uint) error {
+func (s *UserService) AcceptFriendRequest(ctx context.Context, requestID uint) error {
 	return database.RunInTransaction(s.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
 		userRepoTx := s.userRepo.WithTx(tx)
 
-		request, err := userRepoTx.FindFriendRequest(requestID)
+		request, err := userRepoTx.FindFriendRequest(ctx, requestID)
 		if err != nil {
 			return err
 		}
@@ -163,7 +164,7 @@ func (s *UserService) AcceptFriendRequest(requestID uint) error {
 			return ErrFriendRequestAlreadyProcessed
 		}
 
-		if err := userRepoTx.UpdateFriendRequest(request.ID, map[string]any{
+		if err := userRepoTx.UpdateFriendRequest(ctx, request.ID, map[string]any{
 			"status":       "accepted",
 			"responded_at": time.Now(),
 		}); err != nil {
@@ -171,25 +172,25 @@ func (s *UserService) AcceptFriendRequest(requestID uint) error {
 		}
 
 		// Add each user to the other's friend list
-		if err := userRepoTx.AddFriend(request.SenderID, request.ReceiverID); err != nil {
+		if err := userRepoTx.AddFriend(ctx, request.SenderID, request.ReceiverID); err != nil {
 			return err
 		}
 
 		// Decrement receiver's pending friend requests count
-		if err := userRepoTx.UpdateNoOfPendingFriendRequests([]uint{request.ReceiverID}, -1); err != nil {
+		if err := userRepoTx.UpdateNoOfPendingFriendRequests(ctx, []uint{request.ReceiverID}, -1); err != nil {
 			return err
 		}
 
 		// Increment friend count for both users
-		return userRepoTx.UpdateNoOfFriends([]uint{request.SenderID, request.ReceiverID}, 1)
+		return userRepoTx.UpdateNoOfFriends(ctx, []uint{request.SenderID, request.ReceiverID}, 1)
 	})
 }
 
-func (s *UserService) RejectFriendRequest(requestID uint) error {
+func (s *UserService) RejectFriendRequest(ctx context.Context, requestID uint) error {
 	return database.RunInTransaction(s.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
 		userRepoTx := s.userRepo.WithTx(tx)
 
-		request, err := userRepoTx.FindFriendRequest(requestID)
+		request, err := userRepoTx.FindFriendRequest(ctx, requestID)
 		if err != nil {
 			return err
 		}
@@ -198,7 +199,7 @@ func (s *UserService) RejectFriendRequest(requestID uint) error {
 			return ErrFriendRequestAlreadyProcessed
 		}
 
-		if err := userRepoTx.UpdateFriendRequest(request.ID, map[string]any{
+		if err := userRepoTx.UpdateFriendRequest(ctx, request.ID, map[string]any{
 			"status":       "rejected",
 			"responded_at": time.Now(),
 		}); err != nil {
@@ -206,54 +207,54 @@ func (s *UserService) RejectFriendRequest(requestID uint) error {
 		}
 
 		// Decrement receiver's pending friend requests count
-		return userRepoTx.UpdateNoOfPendingFriendRequests([]uint{request.ReceiverID}, -1)
+		return userRepoTx.UpdateNoOfPendingFriendRequests(ctx, []uint{request.ReceiverID}, -1)
 	})
 }
 
-func (s *UserService) RemoveFriend(userID, friendID uint) error {
+func (s *UserService) RemoveFriend(ctx context.Context, userID, friendID uint) error {
 	return database.RunInTransaction(s.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
 		userRepoTx := s.userRepo.WithTx(tx)
 
-		if err := userRepoTx.RemoveFriend(userID, friendID); err != nil {
+		if err := userRepoTx.RemoveFriend(ctx, userID, friendID); err != nil {
 			return err
 		}
 
 		// Decrement friend count for both users
-		return userRepoTx.UpdateNoOfFriends([]uint{userID, friendID}, -1)
+		return userRepoTx.UpdateNoOfFriends(ctx, []uint{userID, friendID}, -1)
 	})
 }
 
-func (s *UserService) GetFriends(userID string) ([]model.User, error) {
+func (s *UserService) GetFriends(ctx context.Context, userID string) ([]model.User, error) {
 	userIDUint, err := strconv.ParseUint(userID, 10, 32)
 	if err != nil {
 		return nil, err
 	}
-	return s.userRepo.GetFriends(uint(userIDUint))
+	return s.userRepo.GetFriends(ctx, uint(userIDUint))
 }
 
-func (s *UserService) GetFriendRequestsByStatus(userID uint, status string) ([]model.FriendRequest, error) {
+func (s *UserService) GetFriendRequestsByStatus(ctx context.Context, userID uint, status string) ([]model.FriendRequest, error) {
 	// Validate status
 	validStatuses := map[string]bool{"pending": true, "accepted": true, "rejected": true}
 	if !validStatuses[status] {
 		return nil, ErrInvalidFriendRequestStatus
 	}
-	return s.userRepo.FindFriendRequestsByReceiver(userID, status)
+	return s.userRepo.FindFriendRequestsByReceiver(ctx, userID, status)
 }
 
-func (s *UserService) CountPendingFriendRequests(userID uint) (int64, error) {
-	return s.userRepo.CountFriendRequestsByReceiver(userID, "pending")
+func (s *UserService) CountPendingFriendRequests(ctx context.Context, userID uint) (int64, error) {
+	return s.userRepo.CountFriendRequestsByReceiver(ctx, userID, "pending")
 }
 
-func (s *UserService) GetNumFriends(userID string) (int64, error) {
+func (s *UserService) GetNumFriends(ctx context.Context, userID string) (int64, error) {
 	userIDUint, err := strconv.ParseUint(userID, 10, 32)
 	if err != nil {
 		return 0, err
 	}
-	return s.userRepo.CountFriends(uint(userIDUint))
+	return s.userRepo.CountFriends(ctx, uint(userIDUint))
 }
 
-func (s *UserService) IsFriend(userID uint, friendID uint) bool {
-	isFriend, err := s.userRepo.CheckFriendship(userID, friendID)
+func (s *UserService) IsFriend(ctx context.Context, userID uint, friendID uint) bool {
+	isFriend, err := s.userRepo.CheckFriendship(ctx, userID, friendID)
 	if err != nil {
 		return false
 	}

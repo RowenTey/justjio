@@ -65,7 +65,7 @@ func NewAuthService(
 	}
 }
 
-func (s *AuthService) SignUp(newUser *model.User, otpMap *sync.Map) (*model.User, error) {
+func (s *AuthService) SignUp(ctx context.Context, newUser *model.User, otpMap *sync.Map) (*model.User, error) {
 	var err error
 
 	newUser.Password, err = s.hashFunc(newUser.Password)
@@ -73,7 +73,7 @@ func (s *AuthService) SignUp(newUser *model.User, otpMap *sync.Map) (*model.User
 		return nil, err
 	}
 
-	createdUser, err := s.userService.UpsertUser(newUser, true)
+	createdUser, err := s.userService.UpsertUser(ctx, newUser, true)
 	if err != nil {
 		return nil, err
 	}
@@ -96,9 +96,9 @@ func (s *AuthService) SignUp(newUser *model.User, otpMap *sync.Map) (*model.User
 	return createdUser, nil
 }
 
-func (s *AuthService) Login(username, password string) (string, *model.User, error) {
+func (s *AuthService) Login(ctx context.Context, username, password string) (string, *model.User, error) {
 	start := time.Now()
-	user, err := s.userService.GetUserByUsername(username)
+	user, err := s.userService.GetUserByUsername(ctx, username)
 	if err != nil {
 		return "", nil, err
 	}
@@ -118,7 +118,7 @@ func (s *AuthService) Login(username, password string) (string, *model.User, err
 	s.logger.Infof("Time taken to create token: %v", time.Since(start))
 
 	// TODO: Create on sign up instead of login?
-	// create user channel when login
+	// Create user channel when login
 	go func() {
 		channel := fmt.Sprintf("user-%d", user.ID)
 		if err := s.kafkaService.CreateTopic(channel); err != nil {
@@ -129,13 +129,13 @@ func (s *AuthService) Login(username, password string) (string, *model.User, err
 	return token, user, nil
 }
 
-func (s *AuthService) GoogleLogin(code string) (string, *model.User, error) {
+func (s *AuthService) GoogleLogin(ctx context.Context, code string) (string, *model.User, error) {
 	googleUser, err := s.GetGoogleUser(code)
 	if err != nil {
 		return "", nil, err
 	}
 
-	user, err := s.userService.GetUserByEmail(googleUser.Email)
+	user, err := s.userService.GetUserByEmail(ctx, googleUser.Email)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return "", nil, err
 	}
@@ -155,7 +155,7 @@ func (s *AuthService) GoogleLogin(code string) (string, *model.User, error) {
 			Password:     hashedPassword,
 			IsEmailValid: true,
 		}
-		user, err = s.userService.UpsertUser(newUser, true)
+		user, err = s.userService.UpsertUser(ctx, newUser, true)
 		if err != nil {
 			return "", nil, err
 		}
@@ -166,7 +166,7 @@ func (s *AuthService) GoogleLogin(code string) (string, *model.User, error) {
 		return "", nil, err
 	}
 
-	// create user channel when login
+	// Create user channel when login
 	go func() {
 		channel := fmt.Sprintf("user-%d", user.ID)
 		if err := s.kafkaService.CreateTopic(channel); err != nil {
@@ -194,12 +194,12 @@ func (s *AuthService) CreateToken(user *model.User) (string, error) {
 	return t, nil
 }
 
-func (s *AuthService) GenerateAndSendOTPEmail(email, purpose string, otpMap *sync.Map) error {
+func (s *AuthService) GenerateAndSendOTPEmail(ctx context.Context, email, purpose string, otpMap *sync.Map) error {
 	if purpose != VerifyEmailPurpose && purpose != "reset-password" {
 		return ErrInvalidPurpose
 	}
 
-	user, err := s.userService.GetUserByEmail(email)
+	user, err := s.userService.GetUserByEmail(ctx, email)
 	if err != nil {
 		return err
 	}
@@ -246,14 +246,14 @@ func (s *AuthService) SendOTPEmail(otp, username, email, purpose string) error {
 	return nil
 }
 
-func (s *AuthService) VerifyOTP(email, otp string, otpMap *sync.Map) error {
-	user, err := s.userService.GetUserByEmail(email)
+func (s *AuthService) VerifyOTP(ctx context.Context, email, otp string, otpMap *sync.Map) error {
+	user, err := s.userService.GetUserByEmail(ctx, email)
 	if err != nil {
 		return err
 	}
 
 	user.IsEmailValid = true
-	if _, err := s.userService.UpsertUser(user, false); err != nil {
+	if _, err := s.userService.UpsertUser(ctx, user, false); err != nil {
 		return err
 	}
 
@@ -270,8 +270,8 @@ func (s *AuthService) VerifyOTP(email, otp string, otpMap *sync.Map) error {
 	return nil
 }
 
-func (s *AuthService) ResetPassword(email, newPassword string) error {
-	user, err := s.userService.GetUserByEmail(email)
+func (s *AuthService) ResetPassword(ctx context.Context, email, newPassword string) error {
+	user, err := s.userService.GetUserByEmail(ctx, email)
 	if err != nil {
 		return err
 	}
@@ -282,7 +282,7 @@ func (s *AuthService) ResetPassword(email, newPassword string) error {
 	}
 
 	user.Password = hashedPassword
-	if _, err := s.userService.UpsertUser(user, false); err != nil {
+	if _, err := s.userService.UpsertUser(ctx, user, false); err != nil {
 		return err
 	}
 

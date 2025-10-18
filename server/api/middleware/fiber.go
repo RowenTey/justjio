@@ -31,6 +31,18 @@ func Fiber(a *fiber.App, conf *config.Config, env string) {
 			AllowMethods: "GET, POST, PUT, PATCH, DELETE, OPTIONS",
 		}),
 
+		// OpenTelemetry tracing
+		Tracing(TracingConfig{
+			Next: func(c *fiber.Ctx) bool {
+				// Skip healthcheck, metrics, Swagger endpoints
+				return c.Path() == "/" || c.Path() == "/metrics" || c.Path() == "/favicon.ico" || strings.HasPrefix(c.Path(), "/docs")
+			},
+			TracerName: serviceName,
+			SpanNameFormatter: func(c *fiber.Ctx) string {
+				return c.Method() + " " + c.Path()
+			},
+		}),
+
 		// Prometheus metrics
 		prometheus.Middleware,
 

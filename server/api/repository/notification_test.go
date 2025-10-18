@@ -73,7 +73,7 @@ func (suite *NotificationRepositoryTestSuite) TestCreateNotification_Success() {
 		Title:   "Welcome",
 		Content: "You've been notified!",
 	}
-	created, err := suite.repo.Create(notification)
+	created, err := suite.repo.Create(suite.ctx, notification)
 	assert.NoError(suite.T(), err)
 	assert.NotZero(suite.T(), created.ID)
 	assert.Equal(suite.T(), notification.Title, created.Title)
@@ -85,16 +85,16 @@ func (suite *NotificationRepositoryTestSuite) TestFindByIDAndUser_Success() {
 		Title:   "FindMe",
 		Content: "This is searchable",
 	}
-	created, err := suite.repo.Create(notification)
+	created, err := suite.repo.Create(suite.ctx, notification)
 	assert.NoError(suite.T(), err)
 
-	found, err := suite.repo.FindByID(created.ID)
+	found, err := suite.repo.FindByID(suite.ctx, created.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), created.ID, found.ID)
 }
 
 func (suite *NotificationRepositoryTestSuite) TestFindByIDAndUser_NotFound() {
-	_, err := suite.repo.FindByID(999)
+	_, err := suite.repo.FindByID(suite.ctx, 999)
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
 }
@@ -109,7 +109,7 @@ func (suite *NotificationRepositoryTestSuite) TestFindByUser_Success() {
 		assert.NoError(suite.T(), err)
 	}
 
-	found, err := suite.repo.FindByUser(fmt.Sprintf("%d", suite.testUser.ID))
+	found, err := suite.repo.FindByUser(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID))
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), found, 2)
 }
@@ -124,7 +124,7 @@ func (suite *NotificationRepositoryTestSuite) TestMarkAsRead_Success() {
 	err := suite.db.Create(&notification).Error
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.MarkAsRead(notification.ID)
+	err = suite.repo.MarkAsRead(suite.ctx, notification.ID)
 	assert.NoError(suite.T(), err)
 
 	var updated model.Notification

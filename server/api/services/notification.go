@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 
 	"github.com/sirupsen/logrus"
@@ -37,7 +38,7 @@ func NewNotificationService(
 }
 
 // CreateNotification creates a new notification for a user
-func (s *NotificationService) CreateNotification(userId, title, content string) (*model.Notification, error) {
+func (s *NotificationService) CreateNotification(ctx context.Context, userId, title, content string) (*model.Notification, error) {
 	if content == "" {
 		return nil, ErrEmptyContent
 	}
@@ -53,35 +54,35 @@ func (s *NotificationService) CreateNotification(userId, title, content string) 
 		Content: content,
 		IsRead:  false,
 	}
-	return s.notificationRepo.Create(notification)
+	return s.notificationRepo.Create(ctx, notification)
 }
 
 // MarkNotificationAsRead updates a notification's read status
-func (s *NotificationService) MarkNotificationAsRead(notificationId uint) error {
-	if _, err := s.notificationRepo.FindByID(notificationId); err != nil {
+func (s *NotificationService) MarkNotificationAsRead(ctx context.Context, notificationId uint) error {
+	if _, err := s.notificationRepo.FindByID(ctx, notificationId); err != nil {
 		return err
 	}
-	return s.notificationRepo.MarkAsRead(notificationId)
+	return s.notificationRepo.MarkAsRead(ctx, notificationId)
 }
 
 // GetNotification retrieves a notification by ID
-func (s *NotificationService) GetNotification(notificationId uint) (*model.Notification, error) {
-	return s.notificationRepo.FindByID(notificationId)
+func (s *NotificationService) GetNotification(ctx context.Context, notificationId uint) (*model.Notification, error) {
+	return s.notificationRepo.FindByID(ctx, notificationId)
 }
 
 // GetNotifications retrieves all notifications for a user
-func (s *NotificationService) GetNotifications(userId string) ([]model.Notification, error) {
-	return s.notificationRepo.FindByUser(userId)
+func (s *NotificationService) GetNotifications(ctx context.Context, userId string) ([]model.Notification, error) {
+	return s.notificationRepo.FindByUser(ctx, userId)
 }
 
 // SendNotification sends a notification to a user and their subscriptions
-func (s *NotificationService) SendNotification(userId, title, message string) error {
-	if _, err := s.CreateNotification(userId, title, message); err != nil {
+func (s *NotificationService) SendNotification(ctx context.Context, userId, title, message string) error {
+	if _, err := s.CreateNotification(ctx, userId, title, message); err != nil {
 		s.logger.Error("Error creating notification: ", err)
 		return err
 	}
 
-	subscriptions, err := s.subscriptionRepo.FindByUserID(userId)
+	subscriptions, err := s.subscriptionRepo.FindByUserID(ctx, userId)
 	if err != nil {
 		s.logger.Error("Error getting subscriptions: ", err)
 		return err

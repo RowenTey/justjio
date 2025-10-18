@@ -12,6 +12,14 @@ down:
 # Restart containers
 restart:
 	cd infra/docker && docker compose down -v && docker compose up -d
+	
+# Start containers with observability tools
+lgtm-up:
+	cd infra/docker && docker compose -f docker-compose.yml -f docker-compose-tempo.yml up -d
+	
+# Stop containers with observability tools
+lgtm-down:
+	cd infra/docker && docker compose -f docker-compose.yml -f docker-compose-tempo.yml up -d
 
 # Rebuild everything and start containers
 rebuild:

@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  # Grafana Tempo - distributed tracing backend
+  tempo:
+    image: grafana/tempo:latest
+    command: ["-config.file=/etc/tempo.yaml"]
+    ports:
+      - "4318:4318"   # OTLP HTTP receiver
+    volumes:
+      - ./config/tempo/tempo-config.yaml:/etc/tempo.yaml
+      - tempo-data:/var/tempo
+
+  # Grafana - visualization
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    volumes:
+      - ./config/tempo/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+
+volumes:
+  tempo-data:

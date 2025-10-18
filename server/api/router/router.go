@@ -1,8 +1,6 @@
 package router
 
 import (
-	"net/http"
-
 	"github.com/RowenTey/JustJio/server/api/config"
 	pushNotificationModel "github.com/RowenTey/JustJio/server/api/dto/push_notifications"
 	"github.com/RowenTey/JustJio/server/api/dto/request"
@@ -162,7 +160,7 @@ func initServices(
 		dbConn,
 		repositories.RoomRepository,
 		repositories.UserRepository,
-		http.DefaultClient,
+		utils.NewHTTPClient(), // Instrumented HTTP client with OpenTelemetry
 		conf.GoogleMapsApiKey,
 		logger,
 	)

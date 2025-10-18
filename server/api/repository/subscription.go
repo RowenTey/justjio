@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"context"
+
 	"github.com/RowenTey/JustJio/server/api/model"
 	"gorm.io/gorm"
 )
@@ -8,11 +10,11 @@ import (
 type SubscriptionRepository interface {
 	WithTx(tx *gorm.DB) SubscriptionRepository
 
-	Create(subscription *model.Subscription) (*model.Subscription, error)
-	FindByID(subID string) (*model.Subscription, error)
-	FindByUserID(userID string) ([]model.Subscription, error)
-	FindByEndpoint(endpoint string) (*model.Subscription, error)
-	Delete(subID string) error
+	Create(ctx context.Context, subscription *model.Subscription) (*model.Subscription, error)
+	FindByID(ctx context.Context, subID string) (*model.Subscription, error)
+	FindByUserID(ctx context.Context, userID string) ([]model.Subscription, error)
+	FindByEndpoint(ctx context.Context, endpoint string) (*model.Subscription, error)
+	Delete(ctx context.Context, subID string) error
 }
 
 type subscriptionRepository struct {
@@ -31,32 +33,32 @@ func (r *subscriptionRepository) WithTx(tx *gorm.DB) SubscriptionRepository {
 	return &subscriptionRepository{db: tx}
 }
 
-func (r *subscriptionRepository) Create(subscription *model.Subscription) (*model.Subscription, error) {
-	err := r.db.Create(subscription).Error
+func (r *subscriptionRepository) Create(ctx context.Context, subscription *model.Subscription) (*model.Subscription, error) {
+	err := r.db.WithContext(ctx).Create(subscription).Error
 	return subscription, err
 }
 
-func (r *subscriptionRepository) FindByID(subID string) (*model.Subscription, error) {
+func (r *subscriptionRepository) FindByID(ctx context.Context, subID string) (*model.Subscription, error) {
 	var subscription model.Subscription
-	err := r.db.Where("id = ?", subID).First(&subscription).Error
+	err := r.db.WithContext(ctx).Where("id = ?", subID).First(&subscription).Error
 	if err != nil {
 		return nil, err
 	}
 	return &subscription, nil
 }
 
-func (r *subscriptionRepository) FindByUserID(userID string) ([]model.Subscription, error) {
+func (r *subscriptionRepository) FindByUserID(ctx context.Context, userID string) ([]model.Subscription, error) {
 	var subscriptions []model.Subscription
-	err := r.db.Where("user_id = ?", userID).Find(&subscriptions).Error
+	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&subscriptions).Error
 	return subscriptions, err
 }
 
-func (r *subscriptionRepository) FindByEndpoint(endpoint string) (*model.Subscription, error) {
+func (r *subscriptionRepository) FindByEndpoint(ctx context.Context, endpoint string) (*model.Subscription, error) {
 	var subscription model.Subscription
-	err := r.db.Where("endpoint = ?", endpoint).First(&subscription).Error
+	err := r.db.WithContext(ctx).Where("endpoint = ?", endpoint).First(&subscription).Error
 	return &subscription, err
 }
 
-func (r *subscriptionRepository) Delete(subID string) error {
-	return r.db.Where("id = ?", subID).Delete(&model.Subscription{}).Error
+func (r *subscriptionRepository) Delete(ctx context.Context, subID string) error {
+	return r.db.WithContext(ctx).Where("id = ?", subID).Delete(&model.Subscription{}).Error
 }

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -80,7 +81,7 @@ func (s *UserServiceTestSuite) TestAcceptFriendRequest_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	err := s.userService.AcceptFriendRequest(requestID)
+	err := s.userService.AcceptFriendRequest(context.Background(), requestID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -110,7 +111,7 @@ func (s *UserServiceTestSuite) TestAcceptFriendRequest_AlreadyProcessed() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.userService.AcceptFriendRequest(requestID)
+	err := s.userService.AcceptFriendRequest(context.Background(), requestID)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -143,7 +144,7 @@ func (s *UserServiceTestSuite) TestAcceptFriendRequest_UpdateFails() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.userService.AcceptFriendRequest(requestID)
+	err := s.userService.AcceptFriendRequest(context.Background(), requestID)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -173,7 +174,7 @@ func (s *UserServiceTestSuite) TestSendFriendRequest_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	err := s.userService.SendFriendRequest(senderID, receiverID)
+	err := s.userService.SendFriendRequest(context.Background(), senderID, receiverID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -191,7 +192,7 @@ func (s *UserServiceTestSuite) TestSendFriendRequest_AlreadyFriends() {
 	s.mockUserRepo.On("CheckFriendship", senderID, receiverID).Return(true, nil)
 
 	// Execute
-	err := s.userService.SendFriendRequest(senderID, receiverID)
+	err := s.userService.SendFriendRequest(context.Background(), senderID, receiverID)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -211,7 +212,7 @@ func (s *UserServiceTestSuite) TestSendFriendRequest_RequestExists() {
 	s.mockUserRepo.On("CheckFriendRequestExists", senderID, receiverID).Return(true, nil)
 
 	// Execute
-	err := s.userService.SendFriendRequest(senderID, receiverID)
+	err := s.userService.SendFriendRequest(context.Background(), senderID, receiverID)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -228,7 +229,7 @@ func (s *UserServiceTestSuite) TestSearchUsers_Success() {
 
 	s.mockUserRepo.On("SearchNonFriendUsers", currentUserID, query, 10).Return(expected, nil)
 
-	result, err := s.userService.SearchNonFriendUsers(currentUserID, query)
+	result, err := s.userService.SearchNonFriendUsers(context.Background(), currentUserID, query)
 
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), expected, result)
@@ -246,7 +247,7 @@ func (s *UserServiceTestSuite) TestGetFriendRequestsByStatus_ValidStatus() {
 	s.mockUserRepo.On("FindFriendRequestsByReceiver", userID, status).Return(requests, nil)
 
 	// Execute
-	result, err := s.userService.GetFriendRequestsByStatus(userID, status)
+	result, err := s.userService.GetFriendRequestsByStatus(context.Background(), userID, status)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -262,7 +263,7 @@ func (s *UserServiceTestSuite) TestGetFriendRequestsByStatus_InvalidStatus() {
 	status := "invalid"
 
 	// Execute
-	result, err := s.userService.GetFriendRequestsByStatus(userID, status)
+	result, err := s.userService.GetFriendRequestsByStatus(context.Background(), userID, status)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -279,7 +280,7 @@ func (s *UserServiceTestSuite) TestGetUserByID_Success() {
 	s.mockUserRepo.On("FindByID", userID).Return(expectedUser, nil)
 
 	// Execute
-	result, err := s.userService.GetUserByID(userID)
+	result, err := s.userService.GetUserByID(context.Background(), userID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -297,7 +298,7 @@ func (s *UserServiceTestSuite) TestGetUserByID_NotFound() {
 	s.mockUserRepo.On("FindByID", userID).Return((*model.User)(nil), gorm.ErrRecordNotFound)
 
 	// Execute
-	result, err := s.userService.GetUserByID(userID)
+	result, err := s.userService.GetUserByID(context.Background(), userID)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -320,7 +321,7 @@ func (s *UserServiceTestSuite) TestUpdateUserField_Success() {
 	s.mockUserRepo.On("Update", mock.AnythingOfType("*model.User")).Return(nil)
 
 	// Execute
-	err := s.userService.UpdateUserField(userID, field, value)
+	err := s.userService.UpdateUserField(context.Background(), userID, field, value)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -340,7 +341,7 @@ func (s *UserServiceTestSuite) TestUpdateUserField_InvalidField() {
 	s.mockUserRepo.On("FindByID", userID).Return(existingUser, nil)
 
 	// Execute
-	err := s.userService.UpdateUserField(userID, field, value)
+	err := s.userService.UpdateUserField(context.Background(), userID, field, value)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -358,7 +359,7 @@ func (s *UserServiceTestSuite) TestCreateOrUpdateUser_Create() {
 	s.mockUserRepo.On("Create", newUser).Return(newUser, nil)
 
 	// Execute
-	result, err := s.userService.UpsertUser(newUser, true)
+	result, err := s.userService.UpsertUser(context.Background(), newUser, true)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -376,7 +377,7 @@ func (s *UserServiceTestSuite) TestCreateOrUpdateUser_Update() {
 	s.mockUserRepo.On("Update", existingUser).Return(nil)
 
 	// Execute
-	result, err := s.userService.UpsertUser(existingUser, false)
+	result, err := s.userService.UpsertUser(context.Background(), existingUser, false)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -397,7 +398,7 @@ func (s *UserServiceTestSuite) TestMarkOnline_Success() {
 	s.mockUserRepo.On("Update", mock.AnythingOfType("*model.User")).Return(nil)
 
 	// Execute
-	err := s.userService.MarkOnline(userID)
+	err := s.userService.MarkOnline(context.Background(), userID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -416,7 +417,7 @@ func (s *UserServiceTestSuite) TestMarkOffline_Success() {
 	s.mockUserRepo.On("Update", mock.AnythingOfType("*model.User")).Return(nil)
 
 	// Execute
-	err := s.userService.MarkOffline(userID)
+	err := s.userService.MarkOffline(context.Background(), userID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -449,7 +450,7 @@ func (s *UserServiceTestSuite) TestRejectFriendRequest_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	err := s.userService.RejectFriendRequest(requestID)
+	err := s.userService.RejectFriendRequest(context.Background(), requestID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -479,7 +480,7 @@ func (s *UserServiceTestSuite) TestRejectFriendRequest_AlreadyProcessed() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.userService.RejectFriendRequest(requestID)
+	err := s.userService.RejectFriendRequest(context.Background(), requestID)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -507,7 +508,7 @@ func (s *UserServiceTestSuite) TestRemoveFriend_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	err := s.userService.RemoveFriend(userID, friendID)
+	err := s.userService.RemoveFriend(context.Background(), userID, friendID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -528,7 +529,7 @@ func (s *UserServiceTestSuite) TestGetFriends_Success() {
 	s.mockUserRepo.On("GetFriends", uint(1)).Return(expectedFriends, nil)
 
 	// Execute
-	result, err := s.userService.GetFriends(userID)
+	result, err := s.userService.GetFriends(context.Background(), userID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -543,7 +544,7 @@ func (s *UserServiceTestSuite) TestGetFriends_InvalidID() {
 	userID := "invalid"
 
 	// Execute
-	result, err := s.userService.GetFriends(userID)
+	result, err := s.userService.GetFriends(context.Background(), userID)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -559,7 +560,7 @@ func (s *UserServiceTestSuite) TestCountPendingFriendRequests_Success() {
 	s.mockUserRepo.On("CountFriendRequestsByReceiver", userID, "pending").Return(expectedCount, nil)
 
 	// Execute
-	result, err := s.userService.CountPendingFriendRequests(userID)
+	result, err := s.userService.CountPendingFriendRequests(context.Background(), userID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -578,7 +579,7 @@ func (s *UserServiceTestSuite) TestGetNumFriends_Success() {
 	s.mockUserRepo.On("CountFriends", uint(1)).Return(expectedCount, nil)
 
 	// Execute
-	result, err := s.userService.GetNumFriends(userID)
+	result, err := s.userService.GetNumFriends(context.Background(), userID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -597,7 +598,7 @@ func (s *UserServiceTestSuite) TestIsFriend_True() {
 	s.mockUserRepo.On("CheckFriendship", userID, friendID).Return(true, nil)
 
 	// Execute
-	result := s.userService.IsFriend(userID, friendID)
+	result := s.userService.IsFriend(context.Background(), userID, friendID)
 
 	// Assertions
 	assert.True(s.T(), result)
@@ -615,7 +616,7 @@ func (s *UserServiceTestSuite) TestIsFriend_False() {
 	s.mockUserRepo.On("CheckFriendship", userID, friendID).Return(false, nil)
 
 	// Execute
-	result := s.userService.IsFriend(userID, friendID)
+	result := s.userService.IsFriend(context.Background(), userID, friendID)
 
 	// Assertions
 	assert.False(s.T(), result)

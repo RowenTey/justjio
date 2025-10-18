@@ -8,11 +8,13 @@ import (
 
 type Config struct {
 	Port             string
+	Version          string
 	JwtSecret        string
 	AdminEmail       string
 	Smtp2goApiKey    string
 	GoogleMapsApiKey string
 	AllowedOrigins   string
+	TracingEndpoint  string
 	DB               PostgresConfig
 	Kafka            KafkaConfig
 	Vapid            VapidConfig
@@ -48,11 +50,13 @@ type GoogleOauthConfig struct {
 func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		Port:             os.Getenv("PORT"),
+		Version:          os.Getenv("VERSION"),
 		JwtSecret:        os.Getenv("JWT_SECRET"),
 		AdminEmail:       os.Getenv("ADMIN_EMAIL"),
 		Smtp2goApiKey:    os.Getenv("SMTP2GO_API_KEY"),
 		GoogleMapsApiKey: os.Getenv("GOOGLE_MAPS_API_KEY"),
 		AllowedOrigins:   os.Getenv("ALLOWED_ORIGINS"),
+		TracingEndpoint:  os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
 		DB: PostgresConfig{
 			Username: os.Getenv("POSTGRES_USER"),
 			Password: os.Getenv("POSTGRES_PASSWORD"),

@@ -1,6 +1,8 @@
 package services
 
 import (
+	"context"
+
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/utils"
@@ -28,8 +30,8 @@ func NewSubscriptionService(
 	}
 }
 
-func (s *SubscriptionService) CreateSubscription(subscription *model.Subscription) (*model.Subscription, error) {
-	subscription, err := s.subscriptionRepo.Create(subscription)
+func (s *SubscriptionService) CreateSubscription(ctx context.Context, subscription *model.Subscription) (*model.Subscription, error) {
+	subscription, err := s.subscriptionRepo.Create(ctx, subscription)
 	if err != nil {
 		return nil, err
 	}
@@ -43,19 +45,19 @@ func (s *SubscriptionService) CreateSubscription(subscription *model.Subscriptio
 	return subscription, nil
 }
 
-func (s *SubscriptionService) GetSubscriptionsByUserID(userID string) ([]model.Subscription, error) {
-	return s.subscriptionRepo.FindByUserID(userID)
+func (s *SubscriptionService) GetSubscriptionsByUserID(ctx context.Context, userID string) ([]model.Subscription, error) {
+	return s.subscriptionRepo.FindByUserID(ctx, userID)
 }
 
-func (s *SubscriptionService) GetSubscriptionsByEndpoint(endpoint string) (*model.Subscription, error) {
-	return s.subscriptionRepo.FindByEndpoint(endpoint)
+func (s *SubscriptionService) GetSubscriptionsByEndpoint(ctx context.Context, endpoint string) (*model.Subscription, error) {
+	return s.subscriptionRepo.FindByEndpoint(ctx, endpoint)
 }
 
-func (s *SubscriptionService) DeleteSubscription(subId string) error {
-	if _, err := s.subscriptionRepo.FindByID(subId); err != nil {
+func (s *SubscriptionService) DeleteSubscription(ctx context.Context, subId string) error {
+	if _, err := s.subscriptionRepo.FindByID(ctx, subId); err != nil {
 		return err
 	}
-	return s.subscriptionRepo.Delete(subId)
+	return s.subscriptionRepo.Delete(ctx, subId)
 }
 
 func NewWebPushSubscriptionObj(subscription *model.Subscription) *webpush.Subscription {

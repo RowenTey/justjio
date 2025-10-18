@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"database/sql"
 	"math"
 	"time"
@@ -46,18 +47,18 @@ func NewMessageService(
 }
 
 func (ms *MessageService) SaveMessage(
-	roomId string, senderId string, roomUserIds []string, content string) error {
+	ctx context.Context, roomId string, senderId string, roomUserIds []string, content string) error {
 	return database.RunInTransaction(ms.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		roomRepoTx := ms.roomRepo.WithTx(tx)
 		userRepoTx := ms.userRepo.WithTx(tx)
 		messageRepoTx := ms.messageRepo.WithTx(tx)
 
-		room, err := roomRepoTx.GetByID(roomId)
+		room, err := roomRepoTx.GetByID(ctx, roomId)
 		if err != nil {
 			return err
 		}
 
-		sender, err := userRepoTx.FindByID(senderId)
+		sender, err := userRepoTx.FindByID(ctx, senderId)
 		if err != nil {
 			return err
 		}
@@ -67,7 +68,7 @@ func (ms *MessageService) SaveMessage(
 			SenderID: sender.ID,
 			Content:  content,
 		}
-		if err := messageRepoTx.Create(&msg); err != nil {
+		if err := messageRepoTx.Create(ctx, &msg); err != nil {
 			return err
 		}
 
@@ -99,33 +100,33 @@ func (ms *MessageService) SaveMessage(
 	})
 }
 
-func (ms *MessageService) GetMessageById(msgId string) (*model.Message, error) {
-	return ms.messageRepo.FindByID(msgId)
+func (ms *MessageService) GetMessageById(ctx context.Context, msgId string) (*model.Message, error) {
+	return ms.messageRepo.FindByID(ctx, msgId)
 }
 
-func (ms *MessageService) DeleteMessage(msgId string) error {
-	return ms.messageRepo.Delete(msgId)
+func (ms *MessageService) DeleteMessage(ctx context.Context, msgId string) error {
+	return ms.messageRepo.Delete(ctx, msgId)
 }
 
-func (ms *MessageService) DeleteRoomMessages(roomId string) error {
-	return ms.messageRepo.DeleteByRoom(roomId)
+func (ms *MessageService) DeleteRoomMessages(ctx context.Context, roomId string) error {
+	return ms.messageRepo.DeleteByRoom(ctx, roomId)
 }
 
-func (ms *MessageService) CountNumMessagesPages(roomId string) (int, error) {
-	count, err := ms.messageRepo.CountByRoom(roomId)
+func (ms *MessageService) CountNumMessagesPages(ctx context.Context, roomId string) (int, error) {
+	count, err := ms.messageRepo.CountByRoom(ctx, roomId)
 	if err != nil {
 		return 0, err
 	}
 	return int(math.Ceil(float64(count) / float64(MESSAGE_PAGE_SIZE))), nil
 }
 
-func (ms *MessageService) GetMessagesByRoomId(roomId string, page int, asc bool) ([]model.Message, int, error) {
-	messages, err := ms.messageRepo.FindByRoom(roomId, page, MESSAGE_PAGE_SIZE, asc)
+func (ms *MessageService) GetMessagesByRoomId(ctx context.Context, roomId string, page int, asc bool) ([]model.Message, int, error) {
+	messages, err := ms.messageRepo.FindByRoom(ctx, roomId, page, MESSAGE_PAGE_SIZE, asc)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	pageCount, err := ms.CountNumMessagesPages(roomId)
+	pageCount, err := ms.CountNumMessagesPages(ctx, roomId)
 	if err != nil {
 		return nil, 0, err
 	}

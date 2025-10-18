@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -87,7 +88,7 @@ func (s *MessageServiceTestSuite) TestSaveMessage_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	err := s.messageService.SaveMessage(roomID, senderID, roomUserIDs, content)
+	err := s.messageService.SaveMessage(context.Background(), roomID, senderID, roomUserIDs, content)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -120,7 +121,7 @@ func (s *MessageServiceTestSuite) TestSaveMessage_RoomNotFound() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.messageService.SaveMessage(roomID, senderID, roomUserIDs, content)
+	err := s.messageService.SaveMessage(context.Background(), roomID, senderID, roomUserIDs, content)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -160,7 +161,7 @@ func (s *MessageServiceTestSuite) TestSaveMessage_KafkaBroadcastFailure() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.messageService.SaveMessage(roomID, senderID, roomUserIDs, content)
+	err := s.messageService.SaveMessage(context.Background(), roomID, senderID, roomUserIDs, content)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -184,7 +185,7 @@ func (s *MessageServiceTestSuite) TestGetMessageById_Success() {
 
 	s.mockMessageRepo.On("FindByID", msgID).Return(expectedMsg, nil)
 
-	result, err := s.messageService.GetMessageById(msgID)
+	result, err := s.messageService.GetMessageById(context.Background(), msgID)
 
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), expectedMsg, result)
@@ -196,7 +197,7 @@ func (s *MessageServiceTestSuite) TestDeleteMessage_Success() {
 
 	s.mockMessageRepo.On("Delete", msgID).Return(nil)
 
-	err := s.messageService.DeleteMessage(msgID)
+	err := s.messageService.DeleteMessage(context.Background(), msgID)
 
 	assert.NoError(s.T(), err)
 	s.mockMessageRepo.AssertExpectations(s.T())
@@ -207,7 +208,7 @@ func (s *MessageServiceTestSuite) TestDeleteRoomMessages_Success() {
 
 	s.mockMessageRepo.On("DeleteByRoom", roomID).Return(nil)
 
-	err := s.messageService.DeleteRoomMessages(roomID)
+	err := s.messageService.DeleteRoomMessages(context.Background(), roomID)
 
 	assert.NoError(s.T(), err)
 	s.mockMessageRepo.AssertExpectations(s.T())
@@ -220,7 +221,7 @@ func (s *MessageServiceTestSuite) TestCountNumMessagesPages_Success() {
 
 	s.mockMessageRepo.On("CountByRoom", roomID).Return(totalMessages, nil)
 
-	result, err := s.messageService.CountNumMessagesPages(roomID)
+	result, err := s.messageService.CountNumMessagesPages(context.Background(), roomID)
 
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), expectedPages, result)
@@ -239,7 +240,7 @@ func (s *MessageServiceTestSuite) TestGetMessagesByRoomId_Success() {
 	s.mockMessageRepo.On("FindByRoom", roomID, page, MESSAGE_PAGE_SIZE, false).Return(expectedMessages, nil)
 	s.mockMessageRepo.On("CountByRoom", roomID).Return(int64(15), nil)
 
-	messages, pages, err := s.messageService.GetMessagesByRoomId(roomID, page, false)
+	messages, pages, err := s.messageService.GetMessagesByRoomId(context.Background(), roomID, page, false)
 
 	assert.NoError(s.T(), err)
 	assert.Equal(s.T(), expectedMessages, messages)
@@ -254,7 +255,7 @@ func (s *MessageServiceTestSuite) TestGetMessagesByRoomId_EmptyRoom() {
 	s.mockMessageRepo.On("FindByRoom", roomID, page, MESSAGE_PAGE_SIZE, true).Return([]model.Message{}, nil)
 	s.mockMessageRepo.On("CountByRoom", roomID).Return(int64(0), nil)
 
-	messages, pages, err := s.messageService.GetMessagesByRoomId(roomID, page, true)
+	messages, pages, err := s.messageService.GetMessagesByRoomId(context.Background(), roomID, page, true)
 
 	assert.NoError(s.T(), err)
 	assert.Empty(s.T(), messages)

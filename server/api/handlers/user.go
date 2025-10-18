@@ -40,9 +40,10 @@ func NewUserHandler(userService *services.UserService, logger *log.Logger) *User
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId} [get]
 func (h *UserHandler) GetUser(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	id := c.Params("userId")
 
-	user, err := h.userService.GetUserByID(id)
+	user, err := h.userService.GetUserByID(ctx, id)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", id))
 	}
@@ -65,10 +66,11 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/username [patch]
 func (h *UserHandler) UpdateUsername(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.UpdateUsernameRequest](c)
 
 	id := c.Params("userId")
-	if err := h.userService.UpdateUsername(id, req.Username); err != nil {
+	if err := h.userService.UpdateUsername(ctx, id, req.Username); err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return utils.HandleError(
 				c, fiber.StatusConflict, fmt.Sprintf("Username '%s' is already taken", req.Username), nil)
@@ -93,9 +95,10 @@ func (h *UserHandler) UpdateUsername(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friends/count [get]
 func (h *UserHandler) GetNumFriends(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userID := c.Params("userId")
 
-	numFriends, err := h.userService.GetNumFriends(userID)
+	numFriends, err := h.userService.GetNumFriends(ctx, userID)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
@@ -120,6 +123,7 @@ func (h *UserHandler) GetNumFriends(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friends/{friendId} [delete]
 func (h *UserHandler) RemoveFriend(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
@@ -130,7 +134,7 @@ func (h *UserHandler) RemoveFriend(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	if err := h.userService.RemoveFriend(uint(userID), uint(friendID)); err != nil {
+	if err := h.userService.RemoveFriend(ctx, uint(userID), uint(friendID)); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
 
@@ -149,9 +153,10 @@ func (h *UserHandler) RemoveFriend(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friends [get]
 func (h *UserHandler) GetFriends(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userID := c.Params("userId")
 
-	friends, err := h.userService.GetFriends(userID)
+	friends, err := h.userService.GetFriends(ctx, userID)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
@@ -172,10 +177,11 @@ func (h *UserHandler) GetFriends(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friends/search [get]
 func (h *UserHandler) SearchNonFriends(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userID := c.Params("userId")
 	query := c.Query("query")
 
-	friends, err := h.userService.SearchNonFriendUsers(userID, query)
+	friends, err := h.userService.SearchNonFriendUsers(ctx, userID, query)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
@@ -198,6 +204,7 @@ func (h *UserHandler) SearchNonFriends(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friendRequests [post]
 func (h *UserHandler) SendFriendRequest(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
@@ -205,7 +212,7 @@ func (h *UserHandler) SendFriendRequest(c *fiber.Ctx) error {
 
 	req := middleware.GetValidatedRequest[request.ModifyFriendRequest](c)
 
-	if err := h.userService.SendFriendRequest(uint(userID), req.FriendID); err != nil {
+	if err := h.userService.SendFriendRequest(ctx, uint(userID), req.FriendID); err != nil {
 		if errors.Is(err, services.ErrNoSelfFriendRequest) ||
 			errors.Is(err, services.ErrAlreadyFriends) ||
 			errors.Is(err, services.ErrFriendRequestExists) {
@@ -232,13 +239,14 @@ func (h *UserHandler) SendFriendRequest(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friendRequests [get]
 func (h *UserHandler) GetFriendRequestsByStatus(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	status := c.Query("status")
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	requests, err := h.userService.GetFriendRequestsByStatus(uint(userID), status)
+	requests, err := h.userService.GetFriendRequestsByStatus(ctx, uint(userID), status)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidFriendRequestStatus) {
 			return utils.HandleInvalidInputError(c, err)
@@ -262,12 +270,13 @@ func (h *UserHandler) GetFriendRequestsByStatus(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friendRequests/count [get]
 func (h *UserHandler) CountPendingFriendRequests(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	count, err := h.userService.CountPendingFriendRequests(uint(userID))
+	count, err := h.userService.CountPendingFriendRequests(ctx, uint(userID))
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
@@ -292,13 +301,14 @@ func (h *UserHandler) CountPendingFriendRequests(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friendRequests [patch]
 func (h *UserHandler) RespondToFriendRequest(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.RespondToFriendRequestRequest](c)
 
 	requestIdUint := uint(req.RequestID)
 
 	switch req.Action {
 	case "accept":
-		if err := h.userService.AcceptFriendRequest(requestIdUint); err != nil {
+		if err := h.userService.AcceptFriendRequest(ctx, requestIdUint); err != nil {
 			if errors.Is(err, services.ErrFriendRequestAlreadyProcessed) {
 				return utils.HandleError(
 					c, fiber.StatusConflict, err.Error(), err)
@@ -307,7 +317,7 @@ func (h *UserHandler) RespondToFriendRequest(c *fiber.Ctx) error {
 		}
 		return utils.HandleSuccess[any](c, "Friend request accepted successfully", nil)
 	case "reject":
-		if err := h.userService.RejectFriendRequest(requestIdUint); err != nil {
+		if err := h.userService.RejectFriendRequest(ctx, requestIdUint); err != nil {
 			if errors.Is(err, services.ErrFriendRequestAlreadyProcessed) {
 				return utils.HandleError(
 					c, fiber.StatusConflict, err.Error(), err)

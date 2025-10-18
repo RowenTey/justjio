@@ -42,11 +42,12 @@ func NewNotificationHandler(
 // @Security BearerAuth
 // @Router /notifications [post]
 func (h *NotificationHandler) CreateNotification(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.CreateNotificationRequest](c)
 
 	userId := utils.UIntToString(req.UserId)
 
-	if err := h.notificationService.SendNotification(userId, req.Title, req.Content); err != nil {
+	if err := h.notificationService.SendNotification(ctx, userId, req.Title, req.Content); err != nil {
 		if errors.Is(err, services.ErrEmptyContent) {
 			return utils.HandleInvalidInputError(c, err)
 		}
@@ -70,6 +71,7 @@ func (h *NotificationHandler) CreateNotification(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /users/{userId}/notifications/{notificationId} [patch]
 func (h *NotificationHandler) MarkNotificationAsRead(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	notificationId, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
@@ -78,7 +80,7 @@ func (h *NotificationHandler) MarkNotificationAsRead(c *fiber.Ctx) error {
 	h.logger.Infof("Marking notification %d as read", notificationId)
 	if err := h.
 		notificationService.
-		MarkNotificationAsRead(uint(notificationId)); err != nil {
+		MarkNotificationAsRead(ctx, uint(notificationId)); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Notification not found")
 	}
 
@@ -99,6 +101,7 @@ func (h *NotificationHandler) MarkNotificationAsRead(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /notifications/{id} [get]
 func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	notificationId, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
@@ -106,7 +109,7 @@ func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
 
 	notification, err := h.
 		notificationService.
-		GetNotification(uint(notificationId))
+		GetNotification(ctx, uint(notificationId))
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Notification not found")
 	}
@@ -126,9 +129,10 @@ func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /users/{userId}/notifications [get]
 func (h *NotificationHandler) GetNotifications(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
-	notifications, err := h.notificationService.GetNotifications(userId)
+	notifications, err := h.notificationService.GetNotifications(ctx, userId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "User not found")
 	}

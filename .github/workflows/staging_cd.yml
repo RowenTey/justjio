@@ -42,6 +42,7 @@ jobs:
           SMTP2GO_API_KEY=${{ secrets.SMTP2GO_API_KEY }}
           CF_ACCESS_CLIENT_ID=${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET=${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          TEMPO_ENDPOINT=${{ vars.TEMPO_ENDPOINT }}
           EOF
 
       - name: Transfer files to staging server

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"math/rand"
 	"time"
 
@@ -47,7 +48,7 @@ func SeedDB(
 		}
 		u.Password = hashedPassword
 
-		createdUser, err := userService.UpsertUser(&u, true)
+		createdUser, err := userService.UpsertUser(nil, &u, true)
 		if err != nil {
 			return err
 		}
@@ -65,7 +66,7 @@ func SeedDB(
 				continue
 			}
 
-			err := userService.SendFriendRequest(u.ID, f.ID)
+			err := userService.SendFriendRequest(nil, u.ID, f.ID)
 			if err != nil {
 				log.Warn("Error sending friend request: ", err)
 				continue
@@ -73,14 +74,14 @@ func SeedDB(
 		}
 
 		// accept friend requests
-		requests, err := userService.GetFriendRequestsByStatus(u.ID, "pending")
+		requests, err := userService.GetFriendRequestsByStatus(nil, u.ID, "pending")
 		if err != nil {
 			log.Warn("Error getting friend requests: ", err)
 			continue
 		}
 
 		for _, r := range requests {
-			err := userService.AcceptFriendRequest(r.ID)
+			err := userService.AcceptFriendRequest(nil, r.ID)
 			if err != nil {
 				log.Warn("Error accepting friend request: ", err)
 				continue
@@ -146,6 +147,7 @@ func SeedDB(
 		}
 
 		roomId, err := roomService.CreateRoomWithInvites(
+			context.Background(),
 			&r,
 			utils.UIntToString(host.ID),
 			invitees,
@@ -163,7 +165,7 @@ func SeedDB(
 
 		// accept invite
 		for _, userid := range invitees {
-			_, err := roomService.RespondToRoomInvite(rooms[i].ID, userid, true)
+			_, err := roomService.RespondToRoomInvite(context.Background(), rooms[i].ID, userid, true)
 			if err != nil {
 				log.Errorf("%s", err.Error())
 				return err
@@ -186,6 +188,7 @@ func SeedDB(
 			}
 
 			if _, err := billService.CreateBill(
+				context.Background(),
 				rooms[i].ID,
 				u,
 				payers,
@@ -198,6 +201,7 @@ func SeedDB(
 			}
 
 			if _, err = billService.CreateBill(
+				context.Background(),
 				rooms[i].ID,
 				u,
 				payers,
@@ -213,7 +217,7 @@ func SeedDB(
 		// consolidate bills and generate transactions for this room
 		log.Info("Consolidating bills for room: ", rooms[i].ID)
 		if err := billService.
-			ConsolidateBills(rooms[i].ID, utils.UIntToString(host.ID)); err != nil {
+			ConsolidateBills(context.Background(), rooms[i].ID, utils.UIntToString(host.ID)); err != nil {
 			log.Errorf("%s", err.Error())
 			return err
 		}

@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/RowenTey/JustJio/server/api/config"
 	"github.com/RowenTey/JustJio/server/api/database"
@@ -42,6 +45,17 @@ func main() {
 
 	logger.Info("Starting API server...")
 
+	tp, err := utils.InitTracer(env)
+	if err != nil {
+		logger.Warn("Failed to initialize tracer: ", err)
+	}
+	logger.Info("OpenTelemetry tracer initialized")
+	defer func() {
+		if err := utils.ShutdownTracer(context.Background(), tp); err != nil {
+			logger.Error("Failed to shutdown tracer: ", err)
+		}
+	}()
+
 	db := database.ConnectDB(conf, logger)
 	notificationsChan := worker.StartWorkers(conf, logger, db)
 
@@ -67,6 +81,22 @@ func main() {
 		notificationsChan,
 	)
 
-	logger.Info("Server running on port ", conf.Port)
-	logger.Fatal(app.Listen(":" + conf.Port))
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		logger.Info("Server running on port ", conf.Port)
+		if err := app.Listen(":" + conf.Port); err != nil {
+			logger.Fatal(err)
+		}
+	}()
+
+	<-quit
+	logger.Info("Shutting down server...")
+
+	if err := app.Shutdown(); err != nil {
+		logger.Error("Server forced to shutdown: ", err)
+	}
+
+	logger.Info("Server exited gracefully")
 }
