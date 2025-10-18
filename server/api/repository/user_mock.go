@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
@@ -75,8 +76,8 @@ func (m *MockUserRepository) FindFriendRequestsByReceiver(ctx context.Context, r
 	return args.Get(0).([]model.FriendRequest), args.Error(1)
 }
 
-func (m *MockUserRepository) CountFriendRequestsByReceiver(ctx context.Context, receiverID uint, status string) (int64, error) {
-	args := m.Called(ctx, receiverID, status)
+func (m *MockUserRepository) CountPendingFriendRequestsByReceiver(ctx context.Context, receiverID uint) (int64, error) {
+	args := m.Called(ctx, receiverID)
 	return args.Get(0).(int64), args.Error(1)
 }
 

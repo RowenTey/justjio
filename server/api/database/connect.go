@@ -2,6 +2,9 @@ package database
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -9,6 +12,7 @@ import (
 
 	gormPostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	gormLogger "gorm.io/gorm/logger"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -17,7 +21,7 @@ import (
 	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 )
 
-func ConnectDB(conf *config.Config, logger *logrus.Logger) *gorm.DB {
+func ConnectDB(conf *config.Config, environment string, logger *logrus.Logger) *gorm.DB {
 	dbLogger := logger.WithFields(logrus.Fields{"service": "Database"})
 
 	dsn := fmt.Sprintf(
@@ -28,24 +32,29 @@ func ConnectDB(conf *config.Config, logger *logrus.Logger) *gorm.DB {
 		conf.DB.Port,
 		conf.DB.Database,
 	)
-	dbConn, err := gorm.Open(gormPostgres.Open(dsn), &gorm.Config{
+
+	gormConfig := &gorm.Config{
 		TranslateError: true,
-		// Logger: gormLogger.New(
-		// 	log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
-		// 	gormLogger.Config{
-		// 		SlowThreshold: time.Second,     // slow SQL threshold
-		// 		LogLevel:      gormLogger.Info, // show all SQL
-		// 		Colorful:      true,
-		// 	},
-		// ),
-	})
+		Logger:         nil,
+	}
+	if environment == "dev" || environment == "staging" {
+		gormConfig.Logger = gormLogger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+			gormLogger.Config{
+				SlowThreshold: time.Second,     // slow SQL threshold
+				LogLevel:      gormLogger.Info, // show all SQL
+				Colorful:      true,
+			},
+		)
+	}
+
+	dbConn, err := gorm.Open(gormPostgres.Open(dsn), gormConfig)
 	if err != nil {
 		dbLogger.Error("Failed to connect to database!")
 		dbLogger.Fatal(err)
 	}
 	dbLogger.Info("Connection opened to database")
 
-	// Add OpenTelemetry instrumentation to GORM
 	if err := dbConn.Use(otelgorm.NewPlugin(otelgorm.WithDBName(conf.DB.Database))); err != nil {
 		dbLogger.Warn("Failed to add OpenTelemetry plugin to GORM: ", err.Error())
 	}
@@ -97,4 +106,10 @@ func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 		offset := (page - 1) * pageSize
 		return db.Offset(offset).Limit(pageSize)
 	}
+}
+
+func InitTestDB(dsn string) (*gorm.DB, error) {
+	return gorm.Open(gormPostgres.Open(dsn), &gorm.Config{
+		TranslateError: true,
+	})
 }

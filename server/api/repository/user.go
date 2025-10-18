@@ -26,7 +26,7 @@ type UserRepository interface {
 	FindFriendRequest(ctx context.Context, id uint) (*model.FriendRequest, error)
 	UpdateFriendRequest(ctx context.Context, requestID uint, values any) error
 	FindFriendRequestsByReceiver(ctx context.Context, receiverID uint, status string) ([]model.FriendRequest, error)
-	CountFriendRequestsByReceiver(ctx context.Context, receiverID uint, status string) (int64, error)
+	CountPendingFriendRequestsByReceiver(ctx context.Context, receiverID uint) (int64, error)
 	CheckFriendRequestExists(ctx context.Context, senderID, receiverID uint) (bool, error)
 
 	// Friends operations
@@ -141,13 +141,11 @@ func (r *userRepository) FindFriendRequestsByReceiver(ctx context.Context, recei
 	return requests, err
 }
 
-// CountFriendRequestsByReceiver counts the number of friend requests for a specific receiver with a given status.
-func (r *userRepository) CountFriendRequestsByReceiver(ctx context.Context, receiverID uint, status string) (int64, error) {
-	var count int64
-	err := r.db.WithContext(ctx).Model(&model.FriendRequest{}).
-		Where("receiver_id = ? AND status = ?", receiverID, status).
-		Count(&count).Error
-	return count, err
+// CountPendingFriendRequestsByReceiver counts the number of friend requests for a specific receiver with a given status.
+func (r *userRepository) CountPendingFriendRequestsByReceiver(ctx context.Context, receiverID uint) (int64, error) {
+	var user model.User
+	err := r.db.WithContext(ctx).First(&user, receiverID).Error
+	return int64(user.NoOfPendingFriendRequests), err
 }
 
 // CheckFriendRequestExists checks if a friend request exists between two users.

@@ -302,7 +302,7 @@ func (suite *UserRepositoryTestSuite) TestFindAndCountFriendRequestsByReceiver_S
 	assert.Len(suite.T(), requests, 1)
 	assert.Equal(suite.T(), sender.ID, requests[0].SenderID)
 
-	count, err := suite.repo.CountFriendRequestsByReceiver(suite.ctx, suite.testUser.ID, "pending")
+	count, err := suite.repo.CountPendingFriendRequestsByReceiver(suite.ctx, suite.testUser.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), int64(1), count)
 }

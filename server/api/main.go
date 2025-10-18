@@ -56,7 +56,7 @@ func main() {
 		}
 	}()
 
-	db := database.ConnectDB(conf, logger)
+	db := database.ConnectDB(conf, env, logger)
 	notificationsChan := worker.StartWorkers(conf, logger, db)
 
 	kafkaService, err := services.NewKafkaService(
@@ -93,7 +93,6 @@ func main() {
 
 	<-quit
 	logger.Info("Shutting down server...")
-
 	if err := app.Shutdown(); err != nil {
 		logger.Error("Server forced to shutdown: ", err)
 	}
