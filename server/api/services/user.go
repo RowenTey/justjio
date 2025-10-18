@@ -242,7 +242,7 @@ func (s *UserService) GetFriendRequestsByStatus(ctx context.Context, userID uint
 }
 
 func (s *UserService) CountPendingFriendRequests(ctx context.Context, userID uint) (int64, error) {
-	return s.userRepo.CountFriendRequestsByReceiver(ctx, userID, "pending")
+	return s.userRepo.CountPendingFriendRequestsByReceiver(ctx, userID)
 }
 
 func (s *UserService) GetNumFriends(ctx context.Context, userID string) (int64, error) {
