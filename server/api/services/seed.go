@@ -48,7 +48,7 @@ func SeedDB(
 		}
 		u.Password = hashedPassword
 
-		createdUser, err := userService.UpsertUser(nil, &u, true)
+		createdUser, err := userService.UpsertUser(context.TODO(), &u, true)
 		if err != nil {
 			return err
 		}
@@ -66,7 +66,7 @@ func SeedDB(
 				continue
 			}
 
-			err := userService.SendFriendRequest(nil, u.ID, f.ID)
+			err := userService.SendFriendRequest(context.TODO(), u.ID, f.ID)
 			if err != nil {
 				log.Warn("Error sending friend request: ", err)
 				continue
@@ -74,22 +74,20 @@ func SeedDB(
 		}
 
 		// accept friend requests
-		requests, err := userService.GetFriendRequestsByStatus(nil, u.ID, "pending")
+		requests, err := userService.GetFriendRequestsByStatus(context.TODO(), u.ID, "pending")
 		if err != nil {
 			log.Warn("Error getting friend requests: ", err)
 			continue
 		}
 
 		for _, r := range requests {
-			err := userService.AcceptFriendRequest(nil, r.ID)
+			err := userService.AcceptFriendRequest(context.TODO(), r.ID)
 			if err != nil {
 				log.Warn("Error accepting friend request: ", err)
 				continue
 			}
 		}
-	}
-
-	// create rooms
+	} // create rooms
 	rooms := []model.Room{
 		{
 			Name:         "ks birthday",

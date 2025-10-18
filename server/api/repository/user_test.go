@@ -458,7 +458,8 @@ func (suite *UserRepositoryTestSuite) TestGetFriends_MultipleFriends() {
 			Password: "pass",
 		}
 		suite.db.Create(&friend)
-		suite.repo.AddFriend(suite.ctx, suite.testUser.ID, friend.ID)
+		err := suite.repo.AddFriend(suite.ctx, suite.testUser.ID, friend.ID)
+		assert.NoError(suite.T(), err)
 	}
 
 	friends, err := suite.repo.GetFriends(suite.ctx, suite.testUser.ID)

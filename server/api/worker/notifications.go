@@ -48,7 +48,9 @@ func notificationWorker(
 		}
 
 		logger.Infof("Worker %d: Sent notification! Response: %v\n", id, resp)
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			logger.Errorf("Worker %d: Failed to close response body: %v\n", id, err)
+		}
 	}
 }
 

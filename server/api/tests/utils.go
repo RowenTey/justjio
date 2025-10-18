@@ -15,8 +15,6 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/golang-jwt/jwt"
 	postgresTc "github.com/testcontainers/testcontainers-go/modules/postgres"
-	gormPostgres "gorm.io/driver/postgres"
-
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -139,7 +137,7 @@ func CreateAndConnectToTestDb(
 }
 
 func initTestDB(dsn string) (*gorm.DB, error) {
-	return gorm.Open(gormPostgres.Open(dsn), &gorm.Config{
+	return gorm.Open(postgres.Open(dsn), &gorm.Config{
 		TranslateError: true,
 	})
 }
