@@ -80,8 +80,9 @@ func (s *TransactionServiceTestSuite) TestGenerateTransactions_Success() {
 
 	// Mock expectations
 	s.mockTransactionRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Transaction")).
+	s.mockTransactionRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Transaction")).
 		Run(func(args mock.Arguments) {
-			tx := args.Get(1).(*model.Transaction)          // Get second argument (index 1) since first is context
+			tx := args.Get(1).(*model.Transaction) // Get second argument (index 1) since first is context
 			tx.ID = uint(len(bills) * len(bills[0].Payers)) // Simulate ID generation
 		}).
 		Return(nil)
@@ -130,6 +131,7 @@ func (s *TransactionServiceTestSuite) TestGenerateTransactions_Consolidation() {
 
 	// Mock expectations
 	s.mockTransactionRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Transaction")).
+	s.mockTransactionRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Transaction")).
 		Return(nil)
 
 	// Execute
@@ -154,6 +156,7 @@ func (s *TransactionServiceTestSuite) TestGetTransactionsByUser_Success() {
 	}
 
 	// Mock expectations
+	s.mockTransactionRepo.On("FindByUser", mock.Anything, isPaid, userId).Return(expectedTransactions, nil)
 	s.mockTransactionRepo.On("FindByUser", mock.Anything, isPaid, userId).Return(expectedTransactions, nil)
 
 	// Execute
@@ -180,6 +183,8 @@ func (s *TransactionServiceTestSuite) TestSettleTransaction_Success() {
 	// Mock expectations
 	s.mockTransactionRepo.On("FindByID", mock.Anything, transactionId).Return(transaction, nil)
 	s.mockTransactionRepo.On("Update", mock.Anything, transaction).Return(nil)
+	s.mockTransactionRepo.On("FindByID", mock.Anything, transactionId).Return(transaction, nil)
+	s.mockTransactionRepo.On("Update", mock.Anything, transaction).Return(nil)
 
 	// Execute
 	result, err := s.transactionService.SettleTransaction(context.Background(), transactionId, userId)
@@ -201,6 +206,7 @@ func (s *TransactionServiceTestSuite) TestSettleTransaction_AlreadySettled() {
 	}
 
 	// Mock expectations
+	s.mockTransactionRepo.On("FindByID", mock.Anything, transactionId).Return(transaction, nil)
 	s.mockTransactionRepo.On("FindByID", mock.Anything, transactionId).Return(transaction, nil)
 
 	// Execute
@@ -225,6 +231,7 @@ func (s *TransactionServiceTestSuite) TestSettleTransaction_InvalidPayer() {
 	}
 
 	// Mock expectations
+	s.mockTransactionRepo.On("FindByID", mock.Anything, transactionId).Return(transaction, nil)
 	s.mockTransactionRepo.On("FindByID", mock.Anything, transactionId).Return(transaction, nil)
 
 	// Execute

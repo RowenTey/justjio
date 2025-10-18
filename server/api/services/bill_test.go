@@ -93,8 +93,9 @@ func (s *BillServiceTestSuite) TestCreateBill_Success() {
 	s.mockUserRepo.On("FindByIDs", mock.Anything, payersId).Return(payers, nil)
 	s.mockBillRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Bill")).Run(func(args mock.Arguments) {
 		bill := args.Get(1).(*model.Bill) // Get second argument (index 1) since first is context
-		bill.ID = 1                       // Set ID for the created bill
+		bill.ID = 1 // Set ID for the created bill
 	}).Return(nil)
+	s.mockRoomRepo.On("Update", mock.Anything, room).Return(nil)
 	s.mockRoomRepo.On("Update", mock.Anything, room).Return(nil)
 
 	// Expect transaction commit
@@ -134,6 +135,7 @@ func (s *BillServiceTestSuite) TestCreateBill_AlreadyConsolidated() {
 
 	// Mock expectations
 	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 
 	// Expect transaction rollback due to error
 	s.sqlMock.ExpectRollback()
@@ -170,6 +172,9 @@ func (s *BillServiceTestSuite) TestCreateBill_EmptyPayers() {
 	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 	s.mockUserRepo.On("FindByID", mock.Anything, ownerId).Return(owner, nil)
 	s.mockUserRepo.On("FindByIDs", mock.Anything, emptyPayers).Return([]model.User{}, ErrPayersNotFound)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
+	s.mockUserRepo.On("FindByID", mock.Anything, ownerId).Return(owner, nil)
+	s.mockUserRepo.On("FindByIDs", mock.Anything, emptyPayers).Return([]model.User{}, ErrPayersNotFound)
 
 	// Expect transaction rollback due to error
 	s.sqlMock.ExpectRollback()
@@ -197,6 +202,7 @@ func (s *BillServiceTestSuite) TestGetBillById_Success() {
 
 	// Mock expectations
 	s.mockBillRepo.On("FindByID", mock.Anything, billId).Return(expectedBill, nil)
+	s.mockBillRepo.On("FindByID", mock.Anything, billId).Return(expectedBill, nil)
 
 	// Execute
 	bill, err := s.billService.GetBillById(context.Background(), billId)
@@ -216,6 +222,7 @@ func (s *BillServiceTestSuite) TestGetBillsForRoom_Success() {
 
 	// Mock expectations
 	s.mockBillRepo.On("FindByRoom", mock.Anything, roomId).Return(expectedBills, nil)
+	s.mockBillRepo.On("FindByRoom", mock.Anything, roomId).Return(expectedBills, nil)
 
 	// Execute
 	bills, err := s.billService.GetBillsForRoom(context.Background(), roomId)
@@ -230,6 +237,7 @@ func (s *BillServiceTestSuite) TestDeleteRoomBills_Success() {
 	roomId := "room1"
 
 	// Mock expectations
+	s.mockBillRepo.On("DeleteByRoom", mock.Anything, roomId).Return(nil)
 	s.mockBillRepo.On("DeleteByRoom", mock.Anything, roomId).Return(nil)
 
 	// Execute
@@ -263,6 +271,12 @@ func (s *BillServiceTestSuite) TestConsolidateBills_Success() {
 	s.mockTransactionRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockTransactionRepo)
 
 	// Mock expectations
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
+	s.mockBillRepo.On("ConsolidateBills", mock.Anything, roomId).Return(consolidation, nil)
+	s.mockBillRepo.On("FindByConsolidation", mock.Anything, consolidation.ID).Return(bills, nil)
+	s.mockTransactionSvc.On("GenerateTransactions", bills, consolidation).Return(transaction, nil) // GenerateTransactions does NOT take context
+	s.mockTransactionRepo.On("Create", mock.Anything, transaction).Return(nil)
+	s.mockRoomRepo.On("Update", mock.Anything, room).Return(nil)
 	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 	s.mockBillRepo.On("ConsolidateBills", mock.Anything, roomId).Return(consolidation, nil)
 	s.mockBillRepo.On("FindByConsolidation", mock.Anything, consolidation.ID).Return(bills, nil)
@@ -303,6 +317,7 @@ func (s *BillServiceTestSuite) TestConsolidateBills_NotHost() {
 
 	// Mock expectations
 	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -332,6 +347,7 @@ func (s *BillServiceTestSuite) TestConsolidateBills_AlreadyConsolidated() {
 	s.mockTransactionRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockTransactionRepo)
 
 	// Mock expectations
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 
 	// Execute
