@@ -69,7 +69,7 @@ func (s *NotificationServiceTestSuite) TestCreateNotification_Success() {
 	}
 
 	// Mock expectations
-	s.mockNotificationRepo.On("Create", expectedNotification).Return(expectedNotification, nil)
+	s.mockNotificationRepo.On("Create", mock.Anything, expectedNotification).Return(expectedNotification, nil)
 
 	// Execute
 	result, err := s.notificationService.CreateNotification(context.Background(), userId, title, content)
@@ -117,11 +117,11 @@ func (s *NotificationServiceTestSuite) TestMarkNotificationAsRead_Success() {
 	userId := uint(1)
 
 	// Mock expectations
-	s.mockNotificationRepo.On("FindByID", notificationId).Return(&model.Notification{
+	s.mockNotificationRepo.On("FindByID", mock.Anything, notificationId).Return(&model.Notification{
 		ID:     notificationId,
 		UserID: userId,
 	}, nil)
-	s.mockNotificationRepo.On("MarkAsRead", notificationId).Return(nil)
+	s.mockNotificationRepo.On("MarkAsRead", mock.Anything, notificationId).Return(nil)
 
 	// Execute
 	err := s.notificationService.MarkNotificationAsRead(context.Background(), notificationId)
@@ -144,7 +144,7 @@ func (s *NotificationServiceTestSuite) TestGetNotification_Success() {
 	}
 
 	// Mock expectations
-	s.mockNotificationRepo.On("FindByID", notificationId).Return(expectedNotification, nil)
+	s.mockNotificationRepo.On("FindByID", mock.Anything, notificationId).Return(expectedNotification, nil)
 
 	// Execute
 	result, err := s.notificationService.GetNotification(context.Background(), notificationId)
@@ -177,7 +177,7 @@ func (s *NotificationServiceTestSuite) TestGetNotifications_Success() {
 	}
 
 	// Mock expectations
-	s.mockNotificationRepo.On("FindByUser", userIdStr).Return(expectedNotifications, nil)
+	s.mockNotificationRepo.On("FindByUser", mock.Anything, userIdStr).Return(expectedNotifications, nil)
 
 	// Execute
 	result, err := s.notificationService.GetNotifications(context.Background(), userIdStr)
@@ -201,8 +201,8 @@ func (s *NotificationServiceTestSuite) TestSendNotification_Success() {
 	}
 
 	// Mock expectations
-	s.mockNotificationRepo.On("Create", mock.AnythingOfType("*model.Notification")).Return(&model.Notification{}, nil)
-	s.mockSubscriptionRepo.On("FindByUserID", userId).Return(subscriptions, nil)
+	s.mockNotificationRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Notification")).Return(&model.Notification{}, nil)
+	s.mockSubscriptionRepo.On("FindByUserID", mock.Anything, userId).Return(subscriptions, nil)
 
 	// Execute
 	err := s.notificationService.SendNotification(context.Background(), userId, title, message)
@@ -227,7 +227,7 @@ func (s *NotificationServiceTestSuite) TestSendNotification_CreateFails() {
 	message := "Test Message"
 
 	// Mock expectations
-	s.mockNotificationRepo.On("Create", mock.AnythingOfType("*model.Notification")).Return((*model.Notification)(nil), errors.New("create error"))
+	s.mockNotificationRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Notification")).Return((*model.Notification)(nil), errors.New("create error"))
 
 	// Execute
 	err := s.notificationService.SendNotification(context.Background(), userId, title, message)
@@ -246,8 +246,8 @@ func (s *NotificationServiceTestSuite) TestSendNotification_NoSubscriptions() {
 	message := "Test Message"
 
 	// Mock expectations
-	s.mockNotificationRepo.On("Create", mock.AnythingOfType("*model.Notification")).Return(&model.Notification{}, nil)
-	s.mockSubscriptionRepo.On("FindByUserID", userId).Return([]model.Subscription{}, nil)
+	s.mockNotificationRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Notification")).Return(&model.Notification{}, nil)
+	s.mockSubscriptionRepo.On("FindByUserID", mock.Anything, userId).Return([]model.Subscription{}, nil)
 
 	// Execute
 	err := s.notificationService.SendNotification(context.Background(), userId, title, message)

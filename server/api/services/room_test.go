@@ -80,8 +80,8 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_Success() {
 	s.mockRoomRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockRoomRepo)
 
 	// Mock expectations
-	s.mockUserRepo.On("FindByID", "1").Return(host, nil)
-	s.mockUserRepo.On("FindByIDs", inviteesStr).Return([]model.User{
+	s.mockUserRepo.On("FindByID", mock.Anything, "1").Return(host, nil)
+	s.mockUserRepo.On("FindByIDs", mock.Anything, inviteesStr).Return([]model.User{
 		{ID: 2}, {ID: 3},
 	}, nil)
 
@@ -104,14 +104,14 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_Success() {
 			req.Header.Get("X-Goog-FieldMask") == "googleMapsUri"
 	})).Return(mockResponse, nil)
 
-	s.mockRoomRepo.On("Create", room).Run(func(args mock.Arguments) {
+	s.mockRoomRepo.On("Create", mock.Anything, room).Run(func(args mock.Arguments) {
 		// Simulate DB setting the ID
-		r := args.Get(0).(*model.Room)
+		r := args.Get(1).(*model.Room) // Get second argument (index 1) since first is context
 		r.ID = "test-room-id"
 	}).Return(nil)
-	s.mockRoomRepo.On("CreateInvites", mock.Anything).Return(nil)
-	s.mockUserRepo.On("Update", host).Return(nil)
-	s.mockUserRepo.On("UpdateNoOfPendingRoomInvites", inviteesStr, 1).Return(nil)
+	s.mockRoomRepo.On("CreateInvites", mock.Anything, mock.Anything).Return(nil)
+	s.mockUserRepo.On("Update", mock.Anything, host).Return(nil)
+	s.mockUserRepo.On("UpdateNoOfPendingRoomInvites", mock.Anything, inviteesStr, 1).Return(nil)
 
 	// Expect transaction commit
 	s.sqlMock.ExpectCommit()
@@ -142,7 +142,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_HostNotFound() {
 	s.mockRoomRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockRoomRepo)
 
 	// Simulate an error
-	s.mockUserRepo.On("FindByID", "1").Return((*model.User)(nil), errors.New("user not found"))
+	s.mockUserRepo.On("FindByID", mock.Anything, "1").Return((*model.User)(nil), errors.New("user not found"))
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -173,7 +173,7 @@ func (s *RoomServiceTestSuite) TestGetRooms_Success() {
 	}
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetUserRooms", userId, page, ROOM_PAGE_SIZE).Return(mockRooms, nil)
+	s.mockRoomRepo.On("GetUserRooms", mock.Anything, userId, page, ROOM_PAGE_SIZE).Return(mockRooms, nil)
 
 	// Execute
 	rooms, err := s.roomService.GetRooms(context.Background(), userId, page)
@@ -197,7 +197,7 @@ func (s *RoomServiceTestSuite) TestGetUnjoinedPublicRooms_Success() {
 	}
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetUnjoinedRoomsByIsPrivate", userId, false).Return(mockRooms, nil)
+	s.mockRoomRepo.On("GetUnjoinedRoomsByIsPrivate", mock.Anything, userId, false).Return(mockRooms, nil)
 
 	// Execute
 	rooms, err := s.roomService.GetUnjoinedPublicRooms(context.Background(), userId)
@@ -236,7 +236,7 @@ func (s *RoomServiceTestSuite) TestUpdateRoom_VenueChanged_Success() {
 	expectedUri := "http://maps.google.com/new_place"
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 
 	// Mock fetchGoogleMapsUri call
 	mockResponse := &http.Response{
@@ -247,8 +247,8 @@ func (s *RoomServiceTestSuite) TestUpdateRoom_VenueChanged_Success() {
 	mockResponse.Header.Set("Content-Type", "application/json")
 	s.mockHTTPClient.On("Do", mock.AnythingOfType("*http.Request")).Return(mockResponse, nil)
 
-	s.mockRoomRepo.On("Update", mock.AnythingOfType("*model.Room")).Return(nil).Run(func(args mock.Arguments) {
-		arg := args.Get(0).(*model.Room)
+	s.mockRoomRepo.On("Update", mock.Anything, mock.AnythingOfType("*model.Room")).Return(nil).Run(func(args mock.Arguments) {
+		arg := args.Get(1).(*model.Room) // Get second argument (index 1) since first is context
 		assert.Equal(s.T(), *updateReq.Venue, arg.Venue)
 		assert.Equal(s.T(), *updateReq.VenuePlaceId, arg.VenuePlaceId)
 		assert.Equal(s.T(), expectedUri, arg.VenueUrl)
@@ -289,8 +289,8 @@ func (s *RoomServiceTestSuite) TestUpdateRoom_VenueNotChanged_Success() {
 	}
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
-	s.mockRoomRepo.On("Update", mock.AnythingOfType("*model.Room")).Return(nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
+	s.mockRoomRepo.On("Update", mock.Anything, mock.AnythingOfType("*model.Room")).Return(nil)
 
 	// Execute
 	err := s.roomService.UpdateRoom(context.Background(), updateReq, roomId, userId)
@@ -314,7 +314,7 @@ func (s *RoomServiceTestSuite) TestUpdateRoom_NotHost() {
 	}
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 
 	// Execute
 	err := s.roomService.UpdateRoom(context.Background(), updateReq, roomId, userId)
@@ -343,7 +343,7 @@ func (s *RoomServiceTestSuite) TestUpdateRoom_FetchGoogleMapsUriFails() {
 	}
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 
 	// Mock fetchGoogleMapsUri failure
 	s.mockHTTPClient.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("network error"))
@@ -374,11 +374,11 @@ func (s *RoomServiceTestSuite) TestCloseRoom_Success() {
 	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
-	s.mockRoomRepo.On("Update", mock.AnythingOfType("*model.Room")).Return(nil)
-	s.mockRoomRepo.On("GetPendingInviteUsers", roomId).Return([]string{}, nil)
-	s.mockUserRepo.On("UpdateNoOfPendingRoomInvites", []string{}, -1).Return(nil)
-	s.mockRoomRepo.On("DeletePendingInvites", roomId).Return(nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
+	s.mockRoomRepo.On("Update", mock.Anything, mock.AnythingOfType("*model.Room")).Return(nil)
+	s.mockRoomRepo.On("GetPendingInviteUsers", mock.Anything, roomId).Return([]string{}, nil)
+	s.mockUserRepo.On("UpdateNoOfPendingRoomInvites", mock.Anything, []string{}, -1).Return(nil)
+	s.mockRoomRepo.On("DeletePendingInvites", mock.Anything, roomId).Return(nil)
 
 	// Expect transaction commit
 	s.sqlMock.ExpectCommit()
@@ -408,7 +408,7 @@ func (s *RoomServiceTestSuite) TestCloseRoom_NotHost() {
 	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -438,7 +438,7 @@ func (s *RoomServiceTestSuite) TestCloseRoom_UnconsolidatedBills() {
 	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
 
 	// Simulate unconsolidated bills via room.Consolidated
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -469,9 +469,9 @@ func (s *RoomServiceTestSuite) TestRespondToRoomInvite_Rejected() {
 
 	// Mock expectations
 	user := &model.User{ID: 2, NoOfPendingRoomInvites: 1}
-	s.mockRoomRepo.On("UpdateInviteStatus", roomId, userId, "rejected").Return(nil)
-	s.mockUserRepo.On("FindByID", userId).Return(user, nil)
-	s.mockUserRepo.On("Update", user).Return(nil)
+	s.mockRoomRepo.On("UpdateInviteStatus", mock.Anything, roomId, userId, "rejected").Return(nil)
+	s.mockUserRepo.On("FindByID", mock.Anything, userId).Return(user, nil)
+	s.mockUserRepo.On("Update", mock.Anything, user).Return(nil)
 
 	// Expect transaction commit
 	s.sqlMock.ExpectCommit()
@@ -501,11 +501,11 @@ func (s *RoomServiceTestSuite) TestJoinRoom_Success() {
 	s.sqlMock.ExpectBegin()
 
 	// Mock expectations
-	s.mockRoomRepo.On("IsUserInRoom", roomId, userId).Return(false, nil)
-	s.mockRoomRepo.On("GetByIDWithAttendees", roomId).Return(room, nil)
-	s.mockUserRepo.On("FindByID", userId).Return(user, nil)
-	s.mockUserRepo.On("Update", user).Return(nil)
-	s.mockRoomRepo.On("Update", room).Return(nil)
+	s.mockRoomRepo.On("IsUserInRoom", mock.Anything, roomId, userId).Return(false, nil)
+	s.mockRoomRepo.On("GetByIDWithAttendees", mock.Anything, roomId).Return(room, nil)
+	s.mockUserRepo.On("FindByID", mock.Anything, userId).Return(user, nil)
+	s.mockUserRepo.On("Update", mock.Anything, user).Return(nil)
+	s.mockRoomRepo.On("Update", mock.Anything, room).Return(nil)
 
 	// Expect transaction commit
 	s.sqlMock.ExpectCommit()
@@ -529,7 +529,7 @@ func (s *RoomServiceTestSuite) TestJoinRoom_AlreadyInRoom() {
 	userId := "2"
 
 	// Mock expectations
-	s.mockRoomRepo.On("IsUserInRoom", roomId, userId).Return(true, nil)
+	s.mockRoomRepo.On("IsUserInRoom", mock.Anything, roomId, userId).Return(true, nil)
 
 	// Execute
 	_, err := s.roomService.JoinRoom(context.Background(), roomId, userId)
@@ -556,11 +556,11 @@ func (s *RoomServiceTestSuite) TestLeaveRoom_Success() {
 	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
-	s.mockUserRepo.On("FindByID", userId).Return(user, nil)
-	s.mockUserRepo.On("Update", user).Return(nil)
-	s.mockRoomRepo.On("Update", room).Return(nil)
-	s.mockRoomRepo.On("RemoveUserFromRoom", roomId, userId).Return(nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
+	s.mockUserRepo.On("FindByID", mock.Anything, userId).Return(user, nil)
+	s.mockUserRepo.On("Update", mock.Anything, user).Return(nil)
+	s.mockRoomRepo.On("Update", mock.Anything, room).Return(nil)
+	s.mockRoomRepo.On("RemoveUserFromRoom", mock.Anything, roomId, userId).Return(nil)
 
 	// Expect transaction commit
 	s.sqlMock.ExpectCommit()
@@ -590,8 +590,8 @@ func (s *RoomServiceTestSuite) TestLeaveRoom_AsHost() {
 	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
-	s.mockUserRepo.On("FindByID", userId).Return(user, nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
+	s.mockUserRepo.On("FindByID", mock.Anything, userId).Return(user, nil)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -624,13 +624,13 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_Success() {
 	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
-	s.mockUserRepo.On("FindByID", inviterId).Return(inviter, nil)
-	s.mockUserRepo.On("FindByIDs", inviteesIds).Return(invitees, nil)
-	s.mockRoomRepo.On("GetRoomAttendeeIDs", roomId).Return([]string{"1"}, nil)
-	s.mockRoomRepo.On("GetPendingInviteUsers", roomId).Return([]string{}, nil)
-	s.mockUserRepo.On("UpdateNoOfPendingRoomInvites", inviteesIds, 1).Return(nil)
-	s.mockRoomRepo.On("CreateInvites", mock.Anything).Return(nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
+	s.mockUserRepo.On("FindByID", mock.Anything, inviterId).Return(inviter, nil)
+	s.mockUserRepo.On("FindByIDs", mock.Anything, inviteesIds).Return(invitees, nil)
+	s.mockRoomRepo.On("GetRoomAttendeeIDs", mock.Anything, roomId).Return([]string{"1"}, nil)
+	s.mockRoomRepo.On("GetPendingInviteUsers", mock.Anything, roomId).Return([]string{}, nil)
+	s.mockUserRepo.On("UpdateNoOfPendingRoomInvites", mock.Anything, inviteesIds, 1).Return(nil)
+	s.mockRoomRepo.On("CreateInvites", mock.Anything, mock.Anything).Return(nil)
 
 	// Expect transaction commit
 	s.sqlMock.ExpectCommit()
@@ -661,7 +661,7 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_NotHost() {
 	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -741,13 +741,13 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_EmptyRoomName() {
 	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
 
 	host := &model.User{ID: 1, Username: "host", NoOfRooms: 0}
-	s.mockUserRepo.On("FindByID", hostId).Return(host, nil)
+	s.mockUserRepo.On("FindByID", mock.Anything, hostId).Return(host, nil)
 
 	invitees := []model.User{
 		{ID: 2, Username: "user2"},
 		{ID: 3, Username: "user3"},
 	}
-	s.mockUserRepo.On("FindByIDs", inviteUserIds).Return(invitees, nil)
+	s.mockUserRepo.On("FindByIDs", mock.Anything, inviteUserIds).Return(invitees, nil)
 
 	// Room with empty name - should fail validation
 	room := &model.Room{
@@ -771,15 +771,15 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_EmptyRoomName() {
 	s.mockHTTPClient.On("Do", mock.MatchedBy(expectedGMapsRequest)).Return(mockGMapsResponse, nil)
 
 	// Even if create succeeds, empty name is not ideal
-	s.mockRoomRepo.On("Create", mock.AnythingOfType("*model.Room")).Run(func(args mock.Arguments) {
-		r := args.Get(0).(*model.Room)
+	s.mockRoomRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Room")).Run(func(args mock.Arguments) {
+		r := args.Get(1).(*model.Room) // Get second argument (index 1) since first is context
 		r.ID = "1"
 	}).Return(nil)
 
 	// Mock CreateInvites with room invites
-	s.mockRoomRepo.On("CreateInvites", mock.AnythingOfType("[]model.RoomInvite")).Return(nil)
-	s.mockUserRepo.On("Update", host).Return(nil)
-	s.mockUserRepo.On("UpdateNoOfPendingRoomInvites", inviteUserIds, 1).Return(nil)
+	s.mockRoomRepo.On("CreateInvites", mock.Anything, mock.AnythingOfType("[]model.RoomInvite")).Return(nil)
+	s.mockUserRepo.On("Update", mock.Anything, host).Return(nil)
+	s.mockUserRepo.On("UpdateNoOfPendingRoomInvites", mock.Anything, inviteUserIds, 1).Return(nil)
 
 	// Expect transaction commit
 	s.sqlMock.ExpectCommit()
@@ -806,13 +806,13 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_UserNotFound() {
 	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
 
 	room := &model.Room{ID: roomId, HostID: 1}
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 
 	inviter := &model.User{ID: 1, Username: "host"}
-	s.mockUserRepo.On("FindByID", inviterId).Return(inviter, nil)
+	s.mockUserRepo.On("FindByID", mock.Anything, inviterId).Return(inviter, nil)
 
 	// User not found
-	s.mockUserRepo.On("FindByIDs", inviteUserIds).Return([]model.User{}, gorm.ErrRecordNotFound)
+	s.mockUserRepo.On("FindByIDs", mock.Anything, inviteUserIds).Return([]model.User{}, gorm.ErrRecordNotFound)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -838,7 +838,7 @@ func (s *RoomServiceTestSuite) TestJoinRoom_RoomNotFound() {
 	s.sqlMock.ExpectBegin()
 
 	// First check is IsUserInRoom - user not in non-existent room
-	s.mockRoomRepo.On("IsUserInRoom", roomId, userId).Return(false, gorm.ErrRecordNotFound)
+	s.mockRoomRepo.On("IsUserInRoom", mock.Anything, roomId, userId).Return(false, gorm.ErrRecordNotFound)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -863,7 +863,7 @@ func (s *RoomServiceTestSuite) TestJoinRoom_PrivateRoomWithoutInvite() {
 	s.sqlMock.ExpectBegin()
 
 	// First check is IsUserInRoom
-	s.mockRoomRepo.On("IsUserInRoom", roomId, userId).Return(false, nil)
+	s.mockRoomRepo.On("IsUserInRoom", mock.Anything, roomId, userId).Return(false, nil)
 
 	// Private room
 	room := &model.Room{
@@ -872,13 +872,13 @@ func (s *RoomServiceTestSuite) TestJoinRoom_PrivateRoomWithoutInvite() {
 		HostID:    1,
 		IsPrivate: true,
 	}
-	s.mockRoomRepo.On("GetByIDWithAttendees", roomId).Return(room, nil)
+	s.mockRoomRepo.On("GetByIDWithAttendees", mock.Anything, roomId).Return(room, nil)
 
 	// User to join
 	user := &model.User{ID: 2, Username: "user2", NoOfRooms: 0}
-	s.mockUserRepo.On("FindByID", userId).Return(user, nil)
-	s.mockUserRepo.On("Update", user).Return(nil)
-	s.mockRoomRepo.On("Update", room).Return(nil)
+	s.mockUserRepo.On("FindByID", mock.Anything, userId).Return(user, nil)
+	s.mockUserRepo.On("Update", mock.Anything, user).Return(nil)
+	s.mockRoomRepo.On("Update", mock.Anything, room).Return(nil)
 
 	// Expect transaction commit
 	s.sqlMock.ExpectCommit()
@@ -910,10 +910,10 @@ func (s *RoomServiceTestSuite) TestLeaveRoom_UserNotInRoom() {
 	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
 
 	room := &model.Room{ID: roomId, HostID: 1, Consolidated: "CONSOLIDATED"}
-	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(room, nil)
 
 	// User not found (not in room)
-	s.mockUserRepo.On("FindByID", userId).Return(nil, gorm.ErrRecordNotFound)
+	s.mockUserRepo.On("FindByID", mock.Anything, userId).Return(nil, gorm.ErrRecordNotFound)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -942,7 +942,7 @@ func (s *RoomServiceTestSuite) TestCloseRoom_RoomNotFound() {
 	s.mockUserRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockUserRepo)
 
 	// Room not found
-	s.mockRoomRepo.On("GetByID", roomId).Return(nil, gorm.ErrRecordNotFound)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(nil, gorm.ErrRecordNotFound)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -969,7 +969,7 @@ func (s *RoomServiceTestSuite) TestUpdateRoom_InvalidRoomId() {
 	}
 
 	// Room not found
-	s.mockRoomRepo.On("GetByID", roomId).Return(nil, gorm.ErrRecordNotFound)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomId).Return(nil, gorm.ErrRecordNotFound)
 
 	// Execute
 	err := s.roomService.UpdateRoom(context.Background(), updateReq, roomId, userId)

@@ -79,9 +79,9 @@ func (s *MessageServiceTestSuite) TestSaveMessage_Success() {
 	s.mockMessageRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockMessageRepo)
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomID).Return(room, nil)
-	s.mockUserRepo.On("FindByID", senderID).Return(sender, nil)
-	s.mockMessageRepo.On("Create", mock.AnythingOfType("*model.Message")).Return(nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomID).Return(room, nil)
+	s.mockUserRepo.On("FindByID", mock.Anything, senderID).Return(sender, nil)
+	s.mockMessageRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Message")).Return(nil)
 	s.mockKafkaSvc.On("BroadcastMessage", roomUserIDs, mock.AnythingOfType("model_kafka.KafkaMessage")).Return(nil)
 
 	// Expect transaction commit
@@ -115,7 +115,7 @@ func (s *MessageServiceTestSuite) TestSaveMessage_RoomNotFound() {
 	s.mockMessageRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockMessageRepo)
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomID).Return((*model.Room)(nil), gorm.ErrRecordNotFound)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomID).Return((*model.Room)(nil), gorm.ErrRecordNotFound)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -152,9 +152,9 @@ func (s *MessageServiceTestSuite) TestSaveMessage_KafkaBroadcastFailure() {
 	s.mockMessageRepo.On("WithTx", mock.AnythingOfType("*gorm.DB")).Return(s.mockMessageRepo)
 
 	// Mock expectations
-	s.mockRoomRepo.On("GetByID", roomID).Return(room, nil)
-	s.mockUserRepo.On("FindByID", senderID).Return(sender, nil)
-	s.mockMessageRepo.On("Create", mock.AnythingOfType("*model.Message")).Return(nil)
+	s.mockRoomRepo.On("GetByID", mock.Anything, roomID).Return(room, nil)
+	s.mockUserRepo.On("FindByID", mock.Anything, senderID).Return(sender, nil)
+	s.mockMessageRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Message")).Return(nil)
 	s.mockKafkaSvc.On("BroadcastMessage", roomUserIDs, mock.AnythingOfType("model_kafka.KafkaMessage")).Return(kafkaErr)
 
 	// Expect transaction rollback
@@ -183,7 +183,7 @@ func (s *MessageServiceTestSuite) TestGetMessageById_Success() {
 		Content:  "test message",
 	}
 
-	s.mockMessageRepo.On("FindByID", msgID).Return(expectedMsg, nil)
+	s.mockMessageRepo.On("FindByID", mock.Anything, msgID).Return(expectedMsg, nil)
 
 	result, err := s.messageService.GetMessageById(context.Background(), msgID)
 
@@ -195,7 +195,7 @@ func (s *MessageServiceTestSuite) TestGetMessageById_Success() {
 func (s *MessageServiceTestSuite) TestDeleteMessage_Success() {
 	msgID := "1"
 
-	s.mockMessageRepo.On("Delete", msgID).Return(nil)
+	s.mockMessageRepo.On("Delete", mock.Anything, msgID).Return(nil)
 
 	err := s.messageService.DeleteMessage(context.Background(), msgID)
 
@@ -206,7 +206,7 @@ func (s *MessageServiceTestSuite) TestDeleteMessage_Success() {
 func (s *MessageServiceTestSuite) TestDeleteRoomMessages_Success() {
 	roomID := "room1"
 
-	s.mockMessageRepo.On("DeleteByRoom", roomID).Return(nil)
+	s.mockMessageRepo.On("DeleteByRoom", mock.Anything, roomID).Return(nil)
 
 	err := s.messageService.DeleteRoomMessages(context.Background(), roomID)
 
@@ -219,7 +219,7 @@ func (s *MessageServiceTestSuite) TestCountNumMessagesPages_Success() {
 	totalMessages := int64(25)
 	expectedPages := 3 // 25 messages / 10 per page = 2.5 → ceil to 3
 
-	s.mockMessageRepo.On("CountByRoom", roomID).Return(totalMessages, nil)
+	s.mockMessageRepo.On("CountByRoom", mock.Anything, roomID).Return(totalMessages, nil)
 
 	result, err := s.messageService.CountNumMessagesPages(context.Background(), roomID)
 
@@ -237,8 +237,8 @@ func (s *MessageServiceTestSuite) TestGetMessagesByRoomId_Success() {
 	}
 	totalPages := 2
 
-	s.mockMessageRepo.On("FindByRoom", roomID, page, MESSAGE_PAGE_SIZE, false).Return(expectedMessages, nil)
-	s.mockMessageRepo.On("CountByRoom", roomID).Return(int64(15), nil)
+	s.mockMessageRepo.On("FindByRoom", mock.Anything, roomID, page, MESSAGE_PAGE_SIZE, false).Return(expectedMessages, nil)
+	s.mockMessageRepo.On("CountByRoom", mock.Anything, roomID).Return(int64(15), nil)
 
 	messages, pages, err := s.messageService.GetMessagesByRoomId(context.Background(), roomID, page, false)
 
@@ -252,8 +252,8 @@ func (s *MessageServiceTestSuite) TestGetMessagesByRoomId_EmptyRoom() {
 	roomID := "empty-room"
 	page := 1
 
-	s.mockMessageRepo.On("FindByRoom", roomID, page, MESSAGE_PAGE_SIZE, true).Return([]model.Message{}, nil)
-	s.mockMessageRepo.On("CountByRoom", roomID).Return(int64(0), nil)
+	s.mockMessageRepo.On("FindByRoom", mock.Anything, roomID, page, MESSAGE_PAGE_SIZE, true).Return([]model.Message{}, nil)
+	s.mockMessageRepo.On("CountByRoom", mock.Anything, roomID).Return(int64(0), nil)
 
 	messages, pages, err := s.messageService.GetMessagesByRoomId(context.Background(), roomID, page, true)
 

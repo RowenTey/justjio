@@ -297,6 +297,10 @@ func (suite *UserRepositoryTestSuite) TestFindAndCountFriendRequestsByReceiver_S
 	}
 	suite.db.Create(&request)
 
+	// Update the pending friend requests count
+	err := suite.repo.UpdateNoOfPendingFriendRequests(suite.ctx, []uint{suite.testUser.ID}, 1)
+	assert.NoError(suite.T(), err)
+
 	requests, err := suite.repo.FindFriendRequestsByReceiver(suite.ctx, suite.testUser.ID, "pending")
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), requests, 1)
