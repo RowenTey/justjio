@@ -92,7 +92,10 @@ func setupHeartbeat(c *websocket.Conn, logger *logrus.Logger) {
 			case <-heartbeat.C:
 				if err := c.WriteMessage(websocket.PingMessage, nil); err != nil {
 					wsLogger.Error("Ping error: ", err)
-					c.Close()
+
+					if closeErr := c.Close(); closeErr != nil {
+						wsLogger.Error("Error closing connection: ", closeErr)
+					}
 					return
 				}
 			case <-ctx.Done():
@@ -191,5 +194,7 @@ func handleAuthError(c *websocket.Conn, logger *logrus.Logger, err error) {
 		logger.WithField("service", "WebSocket").Error("Error writing JSON:", err)
 	}
 
-	c.Close()
+	if closeErr := c.Close(); closeErr != nil {
+		logger.WithField("service", "WebSocket").Error("Error closing connection:", closeErr)
+	}
 }

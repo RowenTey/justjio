@@ -100,7 +100,10 @@ func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) {
 
 func (s *KafkaService) Close() {
 	s.logger.Info("Closing Kafka client")
-	s.Consumer.Close()
+
+	if err := s.Consumer.Close(); err != nil {
+		s.logger.Error("Error closing Kafka consumer: ", err)
+	}
 }
 
 func (s *KafkaService) GetUserChannel(userId string) string {
