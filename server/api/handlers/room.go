@@ -44,8 +44,9 @@ func NewRoomHandler(
 // @Security BearerAuth
 // @Router /rooms/{roomId} [get]
 func (h *RoomHandler) GetRoom(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	roomId := c.Params("roomId")
-	room, err := h.roomService.GetRoomById(roomId)
+	room, err := h.roomService.GetRoomById(ctx, roomId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
@@ -66,10 +67,11 @@ func (h *RoomHandler) GetRoom(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms [get]
 func (h *RoomHandler) GetRooms(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 	page := c.QueryInt("page", 1)
 
-	rooms, err := h.roomService.GetRooms(userId, page)
+	rooms, err := h.roomService.GetRooms(ctx, userId, page)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No rooms found")
 	}
@@ -89,9 +91,10 @@ func (h *RoomHandler) GetRooms(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/count [get]
 func (h *RoomHandler) GetNumRooms(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
-	numRooms, err := h.roomService.GetNumRooms(userId)
+	numRooms, err := h.roomService.GetNumRooms(ctx, userId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No rooms found")
 	}
@@ -112,9 +115,10 @@ func (h *RoomHandler) GetNumRooms(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/public [get]
 func (h *RoomHandler) GetUnjoinedPublicRooms(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
-	rooms, err := h.roomService.GetUnjoinedPublicRooms(userId)
+	rooms, err := h.roomService.GetUnjoinedPublicRooms(ctx, userId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No public rooms found")
 	}
@@ -134,9 +138,10 @@ func (h *RoomHandler) GetUnjoinedPublicRooms(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/invites [get]
 func (h *RoomHandler) GetRoomInvites(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
-	invites, err := h.roomService.GetRoomInvites(userId)
+	invites, err := h.roomService.GetRoomInvites(ctx, userId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No room invites found")
 	}
@@ -156,9 +161,10 @@ func (h *RoomHandler) GetRoomInvites(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/invites/count [get]
 func (h *RoomHandler) GetNumRoomInvites(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
-	numInvites, err := h.roomService.GetNumRoomInvites(userId)
+	numInvites, err := h.roomService.GetNumRoomInvites(ctx, userId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No room invites found")
 	}
@@ -180,10 +186,11 @@ func (h *RoomHandler) GetNumRoomInvites(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/{roomId}/uninvited [get]
 func (h *RoomHandler) GetUninvitedFriendsForRoom(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 	roomId := c.Params("roomId")
 
-	friends, err := h.roomService.GetUninvitedFriendsForRoom(roomId, userId)
+	friends, err := h.roomService.GetUninvitedFriendsForRoom(ctx, roomId, userId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No uninvited friends found")
 	}
@@ -204,6 +211,7 @@ func (h *RoomHandler) GetUninvitedFriendsForRoom(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms [post]
 func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.CreateRoomRequest](c)
 
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
@@ -220,7 +228,7 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 		ImageUrl:     req.ImageUrl,
 	}
 
-	if _, err := h.roomService.CreateRoomWithInvites(room, userId, req.Invitees); err != nil {
+	if _, err := h.roomService.CreateRoomWithInvites(ctx, room, userId, req.Invitees); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Failed to create room and invites")
 	}
 
@@ -243,12 +251,13 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/{roomId}/edit [patch]
 func (h *RoomHandler) EditRoom(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.EditRoomRequest](c)
 
 	roomId := c.Params("roomId")
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
-	if err := h.roomService.UpdateRoom(req, roomId, userId); err != nil {
+	if err := h.roomService.UpdateRoom(ctx, req, roomId, userId); err != nil {
 		if errors.Is(err, services.ErrInvalidHost) {
 			return utils.HandleError(c, fiber.StatusUnauthorized, "Only hosts can edit rooms", err)
 		}
@@ -273,10 +282,11 @@ func (h *RoomHandler) EditRoom(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/{roomId}/close [patch]
 func (h *RoomHandler) CloseRoom(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	roomId := c.Params("roomId")
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
-	if err := h.roomService.CloseRoom(roomId, userId); err != nil {
+	if err := h.roomService.CloseRoom(ctx, roomId, userId); err != nil {
 		if errors.Is(err, services.ErrInvalidHost) {
 			return utils.HandleError(
 				c, fiber.StatusUnauthorized, "Only hosts are allowed to close rooms", err)
@@ -304,11 +314,12 @@ func (h *RoomHandler) CloseRoom(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/{roomId}/join [patch]
 func (h *RoomHandler) JoinRoom(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	token := c.Locals("user").(*jwt.Token)
 	userId := utils.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	room, err := h.roomService.JoinRoom(roomId, userId)
+	room, err := h.roomService.JoinRoom(ctx, roomId, userId)
 	if err != nil {
 		if errors.Is(err, services.ErrAlreadyInRoom) {
 			return utils.HandleError(c, fiber.StatusConflict, "User is already in room", err)
@@ -336,13 +347,14 @@ func (h *RoomHandler) JoinRoom(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/{roomId} [patch]
 func (h *RoomHandler) RespondToRoomInvite(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.RespondToRoomInviteRequest](c)
 
 	token := c.Locals("user").(*jwt.Token)
 	userId := utils.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	room, err := h.roomService.RespondToRoomInvite(roomId, userId, req.Accept)
+	room, err := h.roomService.RespondToRoomInvite(ctx, roomId, userId, req.Accept)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
 	}
@@ -373,12 +385,13 @@ func (h *RoomHandler) RespondToRoomInvite(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/{roomId} [post]
 func (h *RoomHandler) InviteUser(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.InviteUserRequest](c)
 
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 	roomId := c.Params("roomId")
 
-	roomInvites, err := h.roomService.InviteUsersToRoom(roomId, userId, req.Invitees)
+	roomInvites, err := h.roomService.InviteUsersToRoom(ctx, roomId, userId, req.Invitees)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidHost) {
 			return utils.HandleError(c, fiber.StatusUnauthorized, "Only hosts are allowed to invite users", err)
@@ -407,10 +420,11 @@ func (h *RoomHandler) InviteUser(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/{roomId}/leave [delete]
 func (h *RoomHandler) LeaveRoom(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 	roomId := c.Params("roomId")
 
-	if err := h.roomService.LeaveRoom(roomId, userId); err != nil {
+	if err := h.roomService.LeaveRoom(ctx, roomId, userId); err != nil {
 		if errors.Is(err, services.ErrRoomHasUnconsolidatedBills) {
 			return utils.HandleError(c, fiber.StatusConflict, "Cannot leave room with unconsolidated bills", err)
 		} else if errors.Is(err, services.ErrLeaveRoomAsHost) {

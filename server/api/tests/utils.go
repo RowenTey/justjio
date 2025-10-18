@@ -15,6 +15,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/golang-jwt/jwt"
 	postgresTc "github.com/testcontainers/testcontainers-go/modules/postgres"
+	gormPostgres "gorm.io/driver/postgres"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -110,7 +111,7 @@ func CreateAndConnectToTestDb(
 	fmt.Println("Mapped port:", mappedPort.Port())
 
 	// Initialize database
-	db, err := database.InitTestDB(pgConnStr)
+	db, err := initTestDB(pgConnStr)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +123,7 @@ func CreateAndConnectToTestDb(
 	}
 
 	// Connect to test database
-	db, err = database.InitTestDB(fmt.Sprintf(
+	db, err = initTestDB(fmt.Sprintf(
 		"postgres://postgres:postgres@localhost:%s/%s?", mappedPort.Port(), dbName))
 	if err != nil {
 		return nil, err
@@ -135,4 +136,10 @@ func CreateAndConnectToTestDb(
 	}
 
 	return db, nil
+}
+
+func initTestDB(dsn string) (*gorm.DB, error) {
+	return gorm.Open(gormPostgres.Open(dsn), &gorm.Config{
+		TranslateError: true,
+	})
 }

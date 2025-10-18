@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"time"
@@ -50,6 +51,7 @@ func NewBillService(
 }
 
 func (bs *BillService) CreateBill(
+	ctx context.Context,
 	roomId string,
 	ownerid string,
 	payersId []string,
@@ -64,7 +66,7 @@ func (bs *BillService) CreateBill(
 		billRepoTx := bs.billRepo.WithTx(tx)
 		userRepoTx := bs.userRepo.WithTx(tx)
 
-		room, err := roomRepoTx.GetByID(roomId)
+		room, err := roomRepoTx.GetByID(ctx, roomId)
 		if err != nil {
 			return err
 		}
@@ -73,12 +75,12 @@ func (bs *BillService) CreateBill(
 			return ErrAlreadyConsolidated
 		}
 
-		owner, err := userRepoTx.FindByID(ownerid)
+		owner, err := userRepoTx.FindByID(ctx, ownerid)
 		if err != nil {
 			return err
 		}
 
-		payers, err := userRepoTx.FindByIDs(payersId)
+		payers, err := userRepoTx.FindByIDs(ctx, payersId)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return ErrPayersNotFound
@@ -95,12 +97,12 @@ func (bs *BillService) CreateBill(
 			OwnerID:      owner.ID,
 			Payers:       payers,
 		}
-		if err := billRepoTx.Create(&bill); err != nil {
+		if err := billRepoTx.Create(ctx, &bill); err != nil {
 			return err
 		}
 
 		room.Consolidated = "UNCONSOLIDATED"
-		if err := roomRepoTx.Update(room); err != nil {
+		if err := roomRepoTx.Update(ctx, room); err != nil {
 			return err
 		}
 
@@ -113,25 +115,25 @@ func (bs *BillService) CreateBill(
 	return &bill, nil
 }
 
-func (bs *BillService) GetBillById(billId uint) (*model.Bill, error) {
-	return bs.billRepo.FindByID(billId)
+func (bs *BillService) GetBillById(ctx context.Context, billId uint) (*model.Bill, error) {
+	return bs.billRepo.FindByID(ctx, billId)
 }
 
-func (bs *BillService) GetBillsForRoom(roomId string) ([]model.Bill, error) {
-	return bs.billRepo.FindByRoom(roomId)
+func (bs *BillService) GetBillsForRoom(ctx context.Context, roomId string) ([]model.Bill, error) {
+	return bs.billRepo.FindByRoom(ctx, roomId)
 }
 
-func (bs *BillService) DeleteRoomBills(roomId string) error {
-	return bs.billRepo.DeleteByRoom(roomId)
+func (bs *BillService) DeleteRoomBills(ctx context.Context, roomId string) error {
+	return bs.billRepo.DeleteByRoom(ctx, roomId)
 }
 
-func (bs *BillService) ConsolidateBills(roomId, userId string) error {
+func (bs *BillService) ConsolidateBills(ctx context.Context, roomId, userId string) error {
 	return database.RunInTransaction(bs.db, sql.LevelDefault, func(tx *gorm.DB) error {
 		roomRepoTx := bs.roomRepo.WithTx(tx)
 		billRepoTx := bs.billRepo.WithTx(tx)
 		transactionRepoTx := bs.transactionRepo.WithTx(tx)
 
-		room, err := roomRepoTx.GetByID(roomId)
+		room, err := roomRepoTx.GetByID(ctx, roomId)
 		if err != nil {
 			return err
 		}
@@ -145,13 +147,13 @@ func (bs *BillService) ConsolidateBills(roomId, userId string) error {
 		}
 
 		bs.logger.Info("Consolidating bills...")
-		consolidation, err := billRepoTx.ConsolidateBills(roomId)
+		consolidation, err := billRepoTx.ConsolidateBills(ctx, roomId)
 		if err != nil {
 			return err
 		}
 		bs.logger.Info("Bills consolidated: ", consolidation.ID)
 
-		bills, err := billRepoTx.FindByConsolidation(consolidation.ID)
+		bills, err := billRepoTx.FindByConsolidation(ctx, consolidation.ID)
 		if err != nil {
 			return err
 		}
@@ -161,12 +163,12 @@ func (bs *BillService) ConsolidateBills(roomId, userId string) error {
 			return err
 		}
 
-		if err := transactionRepoTx.Create(transaction); err != nil {
+		if err := transactionRepoTx.Create(ctx, transaction); err != nil {
 			return err
 		}
 
 		room.Consolidated = "CONSOLIDATED"
-		if err := roomRepoTx.Update(room); err != nil {
+		if err := roomRepoTx.Update(ctx, room); err != nil {
 			return err
 		}
 

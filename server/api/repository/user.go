@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -12,36 +13,36 @@ import (
 type UserRepository interface {
 	WithTx(tx *gorm.DB) UserRepository
 
-	Create(user *model.User) (*model.User, error)
-	FindByID(id string) (*model.User, error)
-	FindByUsername(username string) (*model.User, error)
-	FindByEmail(email string) (*model.User, error)
-	FindByIDs(ids []string) ([]model.User, error)
-	Update(user *model.User) error
-	Delete(id string) error
+	Create(ctx context.Context, user *model.User) (*model.User, error)
+	FindByID(ctx context.Context, id string) (*model.User, error)
+	FindByUsername(ctx context.Context, username string) (*model.User, error)
+	FindByEmail(ctx context.Context, email string) (*model.User, error)
+	FindByIDs(ctx context.Context, ids []string) ([]model.User, error)
+	Update(ctx context.Context, user *model.User) error
+	Delete(ctx context.Context, id string) error
 
 	// Friends relationships
-	CreateFriendRequest(request *model.FriendRequest) error
-	FindFriendRequest(id uint) (*model.FriendRequest, error)
-	UpdateFriendRequest(requestID uint, values any) error
-	FindFriendRequestsByReceiver(receiverID uint, status string) ([]model.FriendRequest, error)
-	CountFriendRequestsByReceiver(receiverID uint, status string) (int64, error)
-	CheckFriendRequestExists(senderID, receiverID uint) (bool, error)
+	CreateFriendRequest(ctx context.Context, request *model.FriendRequest) error
+	FindFriendRequest(ctx context.Context, id uint) (*model.FriendRequest, error)
+	UpdateFriendRequest(ctx context.Context, requestID uint, values any) error
+	FindFriendRequestsByReceiver(ctx context.Context, receiverID uint, status string) ([]model.FriendRequest, error)
+	CountFriendRequestsByReceiver(ctx context.Context, receiverID uint, status string) (int64, error)
+	CheckFriendRequestExists(ctx context.Context, senderID, receiverID uint) (bool, error)
 
 	// Friends operations
-	AddFriend(userID, friendID uint) error
-	RemoveFriend(userID, friendID uint) error
-	GetFriends(userID uint) ([]model.User, error)
-	CountFriends(userID uint) (int64, error)
-	CheckFriendship(userID, friendID uint) (bool, error)
-	GetUninvitedFriends(roomID, userID string) ([]model.User, error)
+	AddFriend(ctx context.Context, userID, friendID uint) error
+	RemoveFriend(ctx context.Context, userID, friendID uint) error
+	GetFriends(ctx context.Context, userID uint) ([]model.User, error)
+	CountFriends(ctx context.Context, userID uint) (int64, error)
+	CheckFriendship(ctx context.Context, userID, friendID uint) (bool, error)
+	GetUninvitedFriends(ctx context.Context, roomID, userID string) ([]model.User, error)
 
 	// Search
-	SearchNonFriendUsers(currentUserId, query string, limit int) ([]model.User, error)
+	SearchNonFriendUsers(ctx context.Context, currentUserId, query string, limit int) ([]model.User, error)
 
-	UpdateNoOfPendingRoomInvites(userIDs []string, delta int) error
-	UpdateNoOfPendingFriendRequests(userIDs []uint, delta int) error
-	UpdateNoOfFriends(userIDs []uint, delta int) error
+	UpdateNoOfPendingRoomInvites(ctx context.Context, userIDs []string, delta int) error
+	UpdateNoOfPendingFriendRequests(ctx context.Context, userIDs []uint, delta int) error
+	UpdateNoOfFriends(ctx context.Context, userIDs []uint, delta int) error
 }
 
 type userRepository struct {
@@ -61,40 +62,40 @@ func (r *userRepository) WithTx(tx *gorm.DB) UserRepository {
 }
 
 // Create inserts a new user into the database.
-func (r *userRepository) Create(user *model.User) (*model.User, error) {
-	err := r.db.Create(user).Error
+func (r *userRepository) Create(ctx context.Context, user *model.User) (*model.User, error) {
+	err := r.db.WithContext(ctx).Create(user).Error
 	return user, err
 }
 
 // FindByID retrieves a user by their ID.
-func (r *userRepository) FindByID(id string) (*model.User, error) {
+func (r *userRepository) FindByID(ctx context.Context, id string) (*model.User, error) {
 	var user model.User
-	err := r.db.First(&user, id).Error
+	err := r.db.WithContext(ctx).First(&user, id).Error
 	return &user, err
 }
 
 // FindByUsername retrieves a user by their username.
-func (r *userRepository) FindByUsername(username string) (*model.User, error) {
+func (r *userRepository) FindByUsername(ctx context.Context, username string) (*model.User, error) {
 	var user model.User
-	err := r.db.Where("username = ?", username).First(&user).Error
+	err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error
 	return &user, err
 }
 
 // FindByEmail retrieves a user by their email address.
-func (r *userRepository) FindByEmail(email string) (*model.User, error) {
+func (r *userRepository) FindByEmail(ctx context.Context, email string) (*model.User, error) {
 	var user model.User
-	err := r.db.Where("email = ?", email).First(&user).Error
+	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
 	return &user, err
 }
 
 // FindByIDs retrieves users by their IDs.
-func (r *userRepository) FindByIDs(ids []string) ([]model.User, error) {
+func (r *userRepository) FindByIDs(ctx context.Context, ids []string) ([]model.User, error) {
 	if len(ids) == 0 {
 		return []model.User{}, nil
 	}
 
 	var users []model.User
-	err := r.db.Find(&users, ids).Error
+	err := r.db.WithContext(ctx).Find(&users, ids).Error
 	if len(users) != len(ids) {
 		return nil, gorm.ErrRecordNotFound
 	}
@@ -103,36 +104,36 @@ func (r *userRepository) FindByIDs(ids []string) ([]model.User, error) {
 }
 
 // Update modifies an existing user.
-func (r *userRepository) Update(user *model.User) error {
-	return r.db.Save(user).Error
+func (r *userRepository) Update(ctx context.Context, user *model.User) error {
+	return r.db.WithContext(ctx).Save(user).Error
 }
 
 // Delete removes a user by ID.
-func (r *userRepository) Delete(id string) error {
-	return r.db.Delete(&model.User{}, id).Error
+func (r *userRepository) Delete(ctx context.Context, id string) error {
+	return r.db.WithContext(ctx).Delete(&model.User{}, id).Error
 }
 
 // CreateFriendRequest creates a new friend request.
-func (r *userRepository) CreateFriendRequest(request *model.FriendRequest) error {
-	return r.db.Create(request).Error
+func (r *userRepository) CreateFriendRequest(ctx context.Context, request *model.FriendRequest) error {
+	return r.db.WithContext(ctx).Create(request).Error
 }
 
 // FindFriendRequest retrieves a friend request by its ID.
-func (r *userRepository) FindFriendRequest(id uint) (*model.FriendRequest, error) {
+func (r *userRepository) FindFriendRequest(ctx context.Context, id uint) (*model.FriendRequest, error) {
 	var request model.FriendRequest
-	err := r.db.First(&request, id).Error
+	err := r.db.WithContext(ctx).First(&request, id).Error
 	return &request, err
 }
 
 // UpdateFriendRequest updates an existing friend request.
-func (r *userRepository) UpdateFriendRequest(requestID uint, values any) error {
-	return r.db.Model(model.FriendRequest{ID: requestID}).Updates(values).Error
+func (r *userRepository) UpdateFriendRequest(ctx context.Context, requestID uint, values any) error {
+	return r.db.WithContext(ctx).Model(model.FriendRequest{ID: requestID}).Updates(values).Error
 }
 
 // FindFriendRequestsByReceiver retrieves friend requests for a specific receiver with a given status.
-func (r *userRepository) FindFriendRequestsByReceiver(receiverID uint, status string) ([]model.FriendRequest, error) {
+func (r *userRepository) FindFriendRequestsByReceiver(ctx context.Context, receiverID uint, status string) ([]model.FriendRequest, error) {
 	var requests []model.FriendRequest
-	err := r.db.
+	err := r.db.WithContext(ctx).
 		Where("receiver_id = ? AND status = ?", receiverID, status).
 		Joins("Sender").
 		Joins("Receiver").
@@ -141,18 +142,18 @@ func (r *userRepository) FindFriendRequestsByReceiver(receiverID uint, status st
 }
 
 // CountFriendRequestsByReceiver counts the number of friend requests for a specific receiver with a given status.
-func (r *userRepository) CountFriendRequestsByReceiver(receiverID uint, status string) (int64, error) {
+func (r *userRepository) CountFriendRequestsByReceiver(ctx context.Context, receiverID uint, status string) (int64, error) {
 	var count int64
-	err := r.db.Model(&model.FriendRequest{}).
+	err := r.db.WithContext(ctx).Model(&model.FriendRequest{}).
 		Where("receiver_id = ? AND status = ?", receiverID, status).
 		Count(&count).Error
 	return count, err
 }
 
 // CheckFriendRequestExists checks if a friend request exists between two users.
-func (r *userRepository) CheckFriendRequestExists(senderID, receiverID uint) (bool, error) {
+func (r *userRepository) CheckFriendRequestExists(ctx context.Context, senderID, receiverID uint) (bool, error) {
 	var existing model.FriendRequest
-	err := r.db.
+	err := r.db.WithContext(ctx).
 		Where(
 			"((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) AND status = ?",
 			senderID,
@@ -173,13 +174,13 @@ func (r *userRepository) CheckFriendRequestExists(senderID, receiverID uint) (bo
 }
 
 // AddFriend adds a friend relationship between two users.
-func (r *userRepository) AddFriend(userID, friendID uint) error {
-	return r.db.Exec("INSERT INTO user_friends (user_id, friend_id) VALUES (?, ?), (?, ?)", userID, friendID, friendID, userID).Error
+func (r *userRepository) AddFriend(ctx context.Context, userID, friendID uint) error {
+	return r.db.WithContext(ctx).Exec("INSERT INTO user_friends (user_id, friend_id) VALUES (?, ?), (?, ?)", userID, friendID, friendID, userID).Error
 }
 
 // RemoveFriend removes a friend from a user's friend list.
-func (r *userRepository) RemoveFriend(userID, friendID uint) error {
-	result := r.db.Exec("DELETE FROM user_friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", userID, friendID, friendID, userID)
+func (r *userRepository) RemoveFriend(ctx context.Context, userID, friendID uint) error {
+	result := r.db.WithContext(ctx).Exec("DELETE FROM user_friends WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", userID, friendID, friendID, userID)
 	if result.Error != nil {
 		return result.Error
 	} else if result.RowsAffected == 0 {
@@ -189,9 +190,9 @@ func (r *userRepository) RemoveFriend(userID, friendID uint) error {
 }
 
 // GetFriends retrieves the friends of a user.
-func (r *userRepository) GetFriends(userID uint) ([]model.User, error) {
+func (r *userRepository) GetFriends(ctx context.Context, userID uint) ([]model.User, error) {
 	var friends []model.User
-	err := r.db.
+	err := r.db.WithContext(ctx).
 		Model(model.User{ID: userID}).
 		Association("Friends").
 		Find(&friends)
@@ -199,15 +200,15 @@ func (r *userRepository) GetFriends(userID uint) ([]model.User, error) {
 }
 
 // CountFriends returns the number of friends a user has.
-func (r *userRepository) CountFriends(userID uint) (int64, error) {
+func (r *userRepository) CountFriends(ctx context.Context, userID uint) (int64, error) {
 	var user model.User
-	err := r.db.First(&user, userID).Error
+	err := r.db.WithContext(ctx).First(&user, userID).Error
 	return int64(user.NoOfFriends), err
 }
 
 // CheckFriendship checks if a user is friends with another user.
-func (r *userRepository) CheckFriendship(userID, friendID uint) (bool, error) {
-	count := r.db.
+func (r *userRepository) CheckFriendship(ctx context.Context, userID, friendID uint) (bool, error) {
+	count := r.db.WithContext(ctx).
 		Model(&model.User{ID: userID}).
 		Where("id = ?", friendID).
 		Association("Friends").
@@ -216,7 +217,7 @@ func (r *userRepository) CheckFriendship(userID, friendID uint) (bool, error) {
 }
 
 // SearchNonFriendUsers retrieves users based on a search query, excluding the current user and their friends.
-func (r *userRepository) SearchNonFriendUsers(currentUserId, query string, limit int) ([]model.User, error) {
+func (r *userRepository) SearchNonFriendUsers(ctx context.Context, currentUserId, query string, limit int) ([]model.User, error) {
 	// Sanitize the query to prevent SQL injection in tsquery
 	// Remove special characters that could break tsquery syntax
 	sanitizedQuery := ""
@@ -234,7 +235,7 @@ func (r *userRepository) SearchNonFriendUsers(currentUserId, query string, limit
 
 	tsQuery := fmt.Sprintf("%s:*", sanitizedQuery)
 	var users []model.User
-	if err := r.db.
+	if err := r.db.WithContext(ctx).
 		Table("users").
 		Joins("JOIN user_non_friends ON users.id = user_non_friends.non_friend_id AND user_non_friends.user_id = ?", currentUserId).
 		Where("users.search_vector @@ to_tsquery('english', ?)", tsQuery).
@@ -246,9 +247,9 @@ func (r *userRepository) SearchNonFriendUsers(currentUserId, query string, limit
 }
 
 // GetUninvitedFriends retrieves friends of a user who are not invited to a specific room.
-func (r *userRepository) GetUninvitedFriends(roomID, userID string) ([]model.User, error) {
+func (r *userRepository) GetUninvitedFriends(ctx context.Context, roomID, userID string) ([]model.User, error) {
 	var friends []model.User
-	err := r.db.
+	err := r.db.WithContext(ctx).
 		Table("users u").
 		Select("u.id, u.username, u.picture_url").
 		Joins("JOIN user_friends uf ON uf.friend_id = u.id AND uf.user_id = ?", userID).
@@ -258,34 +259,34 @@ func (r *userRepository) GetUninvitedFriends(roomID, userID string) ([]model.Use
 	return friends, err
 }
 
-func (r *userRepository) UpdateNoOfPendingRoomInvites(userIDs []string, delta int) error {
+func (r *userRepository) UpdateNoOfPendingRoomInvites(ctx context.Context, userIDs []string, delta int) error {
 	if len(userIDs) == 0 {
 		return nil
 	}
 
-	return r.db.
+	return r.db.WithContext(ctx).
 		Model(&model.User{}).
 		Where("id IN ?", userIDs).
 		Update("no_of_pending_room_invites", gorm.Expr("no_of_pending_room_invites + ?", delta)).Error
 }
 
-func (r *userRepository) UpdateNoOfPendingFriendRequests(userIDs []uint, delta int) error {
+func (r *userRepository) UpdateNoOfPendingFriendRequests(ctx context.Context, userIDs []uint, delta int) error {
 	if len(userIDs) == 0 {
 		return nil
 	}
 
-	return r.db.
+	return r.db.WithContext(ctx).
 		Model(&model.User{}).
 		Where("id IN ?", userIDs).
 		Update("no_of_pending_friend_requests", gorm.Expr("no_of_pending_friend_requests + ?", delta)).Error
 }
 
-func (r *userRepository) UpdateNoOfFriends(userIDs []uint, delta int) error {
+func (r *userRepository) UpdateNoOfFriends(ctx context.Context, userIDs []uint, delta int) error {
 	if len(userIDs) == 0 {
 		return nil
 	}
 
-	return r.db.
+	return r.db.WithContext(ctx).
 		Model(&model.User{}).
 		Where("id IN ?", userIDs).
 		Update("no_of_friends", gorm.Expr("no_of_friends + ?", delta)).Error

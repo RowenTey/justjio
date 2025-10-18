@@ -41,9 +41,10 @@ func NewMessageHandler(
 // @Security BearerAuth
 // @Router /rooms/{roomId}/messages/{msgId} [get]
 func (h *MessageHandler) GetMessage(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	msgId := c.Params("msgId")
 
-	message, err := h.messageService.GetMessageById(msgId)
+	message, err := h.messageService.GetMessageById(ctx, msgId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No message found")
 	}
@@ -66,11 +67,12 @@ func (h *MessageHandler) GetMessage(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/{roomId}/messages [get]
 func (h *MessageHandler) GetMessages(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	roomId := c.Params("roomId")
 	page := c.QueryInt("page", 1)
 	asc := c.QueryBool("asc", true)
 
-	messages, pageCount, err := h.messageService.GetMessagesByRoomId(roomId, page, asc)
+	messages, pageCount, err := h.messageService.GetMessagesByRoomId(ctx, roomId, page, asc)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No messages found")
 	}
@@ -98,6 +100,7 @@ func (h *MessageHandler) GetMessages(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /rooms/{roomId}/messages [post]
 func (h *MessageHandler) CreateMessage(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	roomId := c.Params("roomId")
 
 	req := middleware.GetValidatedRequest[request.CreateMessageRequest](c)
@@ -105,7 +108,7 @@ func (h *MessageHandler) CreateMessage(c *fiber.Ctx) error {
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 	roomUserIds := c.Locals("roomUserIds").([]string)
 
-	err := h.messageService.SaveMessage(roomId, userId, roomUserIds, req.Content)
+	err := h.messageService.SaveMessage(ctx, roomId, userId, roomUserIds, req.Content)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Room or user not found")
 	}

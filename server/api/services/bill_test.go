@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -100,7 +101,7 @@ func (s *BillServiceTestSuite) TestCreateBill_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	bill, err := s.billService.CreateBill(roomId, ownerId, payersId, name, amount, includeOwner)
+	bill, err := s.billService.CreateBill(context.Background(), roomId, ownerId, payersId, name, amount, includeOwner)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -138,7 +139,7 @@ func (s *BillServiceTestSuite) TestCreateBill_AlreadyConsolidated() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	bill, err := s.billService.CreateBill(roomId, ownerId, payersId, "Dinner", 100.50, true)
+	bill, err := s.billService.CreateBill(context.Background(), roomId, ownerId, payersId, "Dinner", 100.50, true)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -174,7 +175,7 @@ func (s *BillServiceTestSuite) TestCreateBill_EmptyPayers() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	bill, err := s.billService.CreateBill(roomId, ownerId, emptyPayers, "Dinner", 100.50, true)
+	bill, err := s.billService.CreateBill(context.Background(), roomId, ownerId, emptyPayers, "Dinner", 100.50, true)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -198,7 +199,7 @@ func (s *BillServiceTestSuite) TestGetBillById_Success() {
 	s.mockBillRepo.On("FindByID", billId).Return(expectedBill, nil)
 
 	// Execute
-	bill, err := s.billService.GetBillById(billId)
+	bill, err := s.billService.GetBillById(context.Background(), billId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -217,7 +218,7 @@ func (s *BillServiceTestSuite) TestGetBillsForRoom_Success() {
 	s.mockBillRepo.On("FindByRoom", roomId).Return(expectedBills, nil)
 
 	// Execute
-	bills, err := s.billService.GetBillsForRoom(roomId)
+	bills, err := s.billService.GetBillsForRoom(context.Background(), roomId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -232,7 +233,7 @@ func (s *BillServiceTestSuite) TestDeleteRoomBills_Success() {
 	s.mockBillRepo.On("DeleteByRoom", roomId).Return(nil)
 
 	// Execute
-	err := s.billService.DeleteRoomBills(roomId)
+	err := s.billService.DeleteRoomBills(context.Background(), roomId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -273,7 +274,7 @@ func (s *BillServiceTestSuite) TestConsolidateBills_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	err := s.billService.ConsolidateBills(roomId, userId)
+	err := s.billService.ConsolidateBills(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -307,7 +308,7 @@ func (s *BillServiceTestSuite) TestConsolidateBills_NotHost() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.billService.ConsolidateBills(roomId, userId)
+	err := s.billService.ConsolidateBills(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -334,7 +335,7 @@ func (s *BillServiceTestSuite) TestConsolidateBills_AlreadyConsolidated() {
 	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
 
 	// Execute
-	err := s.billService.ConsolidateBills(roomId, userId)
+	err := s.billService.ConsolidateBills(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)

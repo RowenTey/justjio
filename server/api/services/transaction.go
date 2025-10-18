@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"math"
 	"sync"
@@ -18,8 +19,8 @@ var (
 
 type TransactionService interface {
 	GenerateTransactions(bills []model.Bill, consolidatedBill *model.Consolidation) ([]model.Transaction, error)
-	GetTransactionsByUser(isPaid bool, userId string) ([]model.Transaction, error)
-	SettleTransaction(transactionId string, userId string) (*model.Transaction, error)
+	GetTransactionsByUser(ctx context.Context, isPaid bool, userId string) ([]model.Transaction, error)
+	SettleTransaction(ctx context.Context, transactionId string, userId string) (*model.Transaction, error)
 }
 
 type transactionService struct {
@@ -100,12 +101,12 @@ func (ts *transactionService) GenerateTransactions(bills []model.Bill, consolida
 	return consolidatedTransactions, nil
 }
 
-func (ts *transactionService) GetTransactionsByUser(isPaid bool, userId string) ([]model.Transaction, error) {
-	return ts.transactionRepo.FindByUser(isPaid, userId)
+func (ts *transactionService) GetTransactionsByUser(ctx context.Context, isPaid bool, userId string) ([]model.Transaction, error) {
+	return ts.transactionRepo.FindByUser(ctx, isPaid, userId)
 }
 
-func (ts *transactionService) SettleTransaction(transactionId string, userId string) (*model.Transaction, error) {
-	transaction, err := ts.transactionRepo.FindByID(transactionId)
+func (ts *transactionService) SettleTransaction(ctx context.Context, transactionId string, userId string) (*model.Transaction, error) {
+	transaction, err := ts.transactionRepo.FindByID(ctx, transactionId)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +120,7 @@ func (ts *transactionService) SettleTransaction(transactionId string, userId str
 	}
 
 	transaction.IsPaid = true
-	if err := ts.transactionRepo.Update(transaction); err != nil {
+	if err := ts.transactionRepo.Update(ctx, transaction); err != nil {
 		return nil, err
 	}
 

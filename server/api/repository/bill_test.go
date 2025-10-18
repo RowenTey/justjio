@@ -82,10 +82,10 @@ func (suite *BillRepositoryTestSuite) TestCreateAndFindByID_Success() {
 		RoomID:  suite.testRoom.ID,
 		OwnerID: suite.testUser.ID,
 	}
-	err := suite.repo.Create(&bill)
+	err := suite.repo.Create(suite.ctx, &bill)
 	assert.NoError(suite.T(), err)
 
-	found, err := suite.repo.FindByID(bill.ID)
+	found, err := suite.repo.FindByID(suite.ctx, bill.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), bill.Amount, found.Amount)
 }
@@ -96,10 +96,10 @@ func (suite *BillRepositoryTestSuite) TestFindByRoom_Success() {
 		RoomID:  suite.testRoom.ID,
 		OwnerID: suite.testUser.ID,
 	}
-	err := suite.repo.Create(&bill)
+	err := suite.repo.Create(suite.ctx, &bill)
 	assert.NoError(suite.T(), err)
 
-	bills, err := suite.repo.FindByRoom(suite.testRoom.ID)
+	bills, err := suite.repo.FindByRoom(suite.ctx, suite.testRoom.ID)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), bills, 1)
 }
@@ -110,13 +110,13 @@ func (suite *BillRepositoryTestSuite) TestDeleteByRoom_Success() {
 		RoomID:  suite.testRoom.ID,
 		OwnerID: suite.testUser.ID,
 	}
-	err := suite.repo.Create(&bill)
+	err := suite.repo.Create(suite.ctx, &bill)
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.DeleteByRoom(suite.testRoom.ID)
+	err = suite.repo.DeleteByRoom(suite.ctx, suite.testRoom.ID)
 	assert.NoError(suite.T(), err)
 
-	found, err := suite.repo.FindByRoom(suite.testRoom.ID)
+	found, err := suite.repo.FindByRoom(suite.ctx, suite.testRoom.ID)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), found, 0)
 }
@@ -127,14 +127,14 @@ func (suite *BillRepositoryTestSuite) TestConsolidateBills_Success() {
 		RoomID:  suite.testRoom.ID,
 		OwnerID: suite.testUser.ID,
 	}
-	err := suite.repo.Create(&bill)
+	err := suite.repo.Create(suite.ctx, &bill)
 	assert.NoError(suite.T(), err)
 
-	consolidation, err := suite.repo.ConsolidateBills(suite.testRoom.ID)
+	consolidation, err := suite.repo.ConsolidateBills(suite.ctx, suite.testRoom.ID)
 	assert.NoError(suite.T(), err)
 	assert.NotZero(suite.T(), consolidation.ID)
 
-	updated, err := suite.repo.FindByID(bill.ID)
+	updated, err := suite.repo.FindByID(suite.ctx, bill.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), consolidation.ID, updated.ConsolidationID)
 }
@@ -150,10 +150,10 @@ func (suite *BillRepositoryTestSuite) TestFindByConsolidation_Success() {
 		OwnerID:         suite.testUser.ID,
 		ConsolidationID: consolidation.ID,
 	}
-	err = suite.repo.Create(&bill)
+	err = suite.repo.Create(suite.ctx, &bill)
 	assert.NoError(suite.T(), err)
 
-	bills, err := suite.repo.FindByConsolidation(consolidation.ID)
+	bills, err := suite.repo.FindByConsolidation(suite.ctx, consolidation.ID)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), bills, 1)
 }

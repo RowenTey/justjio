@@ -13,6 +13,8 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+
+	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 )
 
 func ConnectDB(conf *config.Config, logger *logrus.Logger) *gorm.DB {
@@ -42,6 +44,12 @@ func ConnectDB(conf *config.Config, logger *logrus.Logger) *gorm.DB {
 		dbLogger.Fatal(err)
 	}
 	dbLogger.Info("Connection opened to database")
+
+	// Add OpenTelemetry instrumentation to GORM
+	if err := dbConn.Use(otelgorm.NewPlugin(otelgorm.WithDBName(conf.DB.Database))); err != nil {
+		dbLogger.Warn("Failed to add OpenTelemetry plugin to GORM: ", err.Error())
+	}
+	dbLogger.Info("OpenTelemetry tracing enabled for database")
 
 	if err := Migrate(dbConn, "file://migrations"); err != nil {
 		dbLogger.Error("Migration failed: ", err.Error())
@@ -89,10 +97,4 @@ func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 		offset := (page - 1) * pageSize
 		return db.Offset(offset).Limit(pageSize)
 	}
-}
-
-func InitTestDB(dsn string) (*gorm.DB, error) {
-	return gorm.Open(gormPostgres.Open(dsn), &gorm.Config{
-		TranslateError: true,
-	})
 }

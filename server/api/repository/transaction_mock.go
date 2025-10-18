@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
@@ -15,22 +16,22 @@ func (m *MockTransactionRepository) WithTx(tx *gorm.DB) TransactionRepository {
 	return args.Get(0).(TransactionRepository)
 }
 
-func (m *MockTransactionRepository) Create(transactions []model.Transaction) error {
-	args := m.Called(transactions)
+func (m *MockTransactionRepository) Create(ctx context.Context, transactions []model.Transaction) error {
+	args := m.Called(ctx, transactions)
 	return args.Error(0)
 }
 
-func (m *MockTransactionRepository) FindByUser(isPaid bool, userID string) ([]model.Transaction, error) {
-	args := m.Called(isPaid, userID)
+func (m *MockTransactionRepository) FindByUser(ctx context.Context, isPaid bool, userID string) ([]model.Transaction, error) {
+	args := m.Called(ctx, isPaid, userID)
 	return args.Get(0).([]model.Transaction), args.Error(1)
 }
 
-func (m *MockTransactionRepository) FindByID(transactionID string) (*model.Transaction, error) {
-	args := m.Called(transactionID)
+func (m *MockTransactionRepository) FindByID(ctx context.Context, transactionID string) (*model.Transaction, error) {
+	args := m.Called(ctx, transactionID)
 	return args.Get(0).(*model.Transaction), args.Error(1)
 }
 
-func (m *MockTransactionRepository) Update(transaction *model.Transaction) error {
-	args := m.Called(transaction)
+func (m *MockTransactionRepository) Update(ctx context.Context, transaction *model.Transaction) error {
+	args := m.Called(ctx, transaction)
 	return args.Error(0)
 }

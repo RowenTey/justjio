@@ -77,10 +77,10 @@ func (suite *RoomRepositoryTestSuite) TestCreateAndGetByID_Success() {
 		Name:   "Test Room",
 		HostID: suite.testUser.ID,
 	}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
-	got, err := suite.repo.GetByID(room.ID)
+	got, err := suite.repo.GetByID(suite.ctx, room.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), room.ID, got.ID)
 	assert.Equal(suite.T(), "Test Room", got.Name)
@@ -89,27 +89,27 @@ func (suite *RoomRepositoryTestSuite) TestCreateAndGetByID_Success() {
 func (suite *RoomRepositoryTestSuite) TestAddAndRemoveUserFromRoom_Success() {
 	userIdStr := fmt.Sprintf("%d", suite.testUser.ID)
 	room := model.Room{Name: "WithUser", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.AddUserToRoom(room.ID, suite.testUser)
+	err = suite.repo.AddUserToRoom(suite.ctx, room.ID, suite.testUser)
 	assert.NoError(suite.T(), err)
 
-	isIn, err := suite.repo.IsUserInRoom(room.ID, userIdStr)
+	isIn, err := suite.repo.IsUserInRoom(suite.ctx, room.ID, userIdStr)
 	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), isIn)
 
-	err = suite.repo.RemoveUserFromRoom(room.ID, userIdStr)
+	err = suite.repo.RemoveUserFromRoom(suite.ctx, room.ID, userIdStr)
 	assert.NoError(suite.T(), err)
 
-	isIn, err = suite.repo.IsUserInRoom(room.ID, userIdStr)
+	isIn, err = suite.repo.IsUserInRoom(suite.ctx, room.ID, userIdStr)
 	assert.NoError(suite.T(), err)
 	assert.False(suite.T(), isIn)
 }
 
 func (suite *RoomRepositoryTestSuite) TestGetRoomAttendeeIDs_Success() {
 	room := model.Room{Name: "AttendeeIDRoom", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	user1 := model.User{Username: "userA", Email: "userA@example.com", Password: "pass"}
@@ -119,49 +119,49 @@ func (suite *RoomRepositoryTestSuite) TestGetRoomAttendeeIDs_Success() {
 	err = suite.db.Create(&user2).Error
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.AddUserToRoom(room.ID, &user1)
+	err = suite.repo.AddUserToRoom(suite.ctx, room.ID, &user1)
 	assert.NoError(suite.T(), err)
-	err = suite.repo.AddUserToRoom(room.ID, &user2)
+	err = suite.repo.AddUserToRoom(suite.ctx, room.ID, &user2)
 	assert.NoError(suite.T(), err)
 
-	ids, err := suite.repo.GetRoomAttendeeIDs(room.ID)
+	ids, err := suite.repo.GetRoomAttendeeIDs(suite.ctx, room.ID)
 	assert.NoError(suite.T(), err)
 	assert.ElementsMatch(suite.T(), []string{fmt.Sprintf("%d", user1.ID), fmt.Sprintf("%d", user2.ID)}, ids)
 }
 
 func (suite *RoomRepositoryTestSuite) TestCountUserRooms_Success() {
 	room := model.Room{Name: "CountRoom", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.AddUserToRoom(room.ID, suite.testUser)
+	err = suite.repo.AddUserToRoom(suite.ctx, room.ID, suite.testUser)
 	assert.NoError(suite.T(), err)
 
 	// Update the counter for rooms
 	err = suite.db.Model(&model.User{}).Where("id = ?", suite.testUser.ID).UpdateColumn("no_of_rooms", gorm.Expr("no_of_rooms + ?", 1)).Error
 	assert.NoError(suite.T(), err)
 
-	count, err := suite.repo.CountUserRooms(fmt.Sprintf("%d", suite.testUser.ID))
+	count, err := suite.repo.CountUserRooms(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID))
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), int64(1), count)
 }
 
 func (suite *RoomRepositoryTestSuite) TestCloseRoom_Success() {
 	room := model.Room{Name: "Closable", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.CloseRoom(room.ID)
+	err = suite.repo.CloseRoom(suite.ctx, room.ID)
 	assert.NoError(suite.T(), err)
 
-	updated, err := suite.repo.GetByID(room.ID)
+	updated, err := suite.repo.GetByID(suite.ctx, room.ID)
 	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), updated.IsClosed)
 }
 
 func (suite *RoomRepositoryTestSuite) TestCreateInviteAndHasPendingInvites_Success() {
 	room := model.Room{Name: "HasPending", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	invitee := model.User{Username: "invitee1", Email: "invitee1@example.com", Password: "pass"}
@@ -174,17 +174,17 @@ func (suite *RoomRepositoryTestSuite) TestCreateInviteAndHasPendingInvites_Succe
 		InviterID: suite.testUser.ID,
 		Status:    "pending",
 	}
-	err = suite.repo.CreateInvites([]model.RoomInvite{invite})
+	err = suite.repo.CreateInvites(suite.ctx, []model.RoomInvite{invite})
 	assert.NoError(suite.T(), err)
 
-	has, err := suite.repo.HasPendingInvites(room.ID, fmt.Sprintf("%d", invitee.ID))
+	has, err := suite.repo.HasPendingInvites(suite.ctx, room.ID, fmt.Sprintf("%d", invitee.ID))
 	assert.NoError(suite.T(), err)
 	assert.True(suite.T(), has)
 }
 
 func (suite *RoomRepositoryTestSuite) TestCountPendingInvites_Success() {
 	room := model.Room{Name: "CountPending", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	invitee := model.User{Username: "invitee2", Email: "invitee2@example.com", Password: "pass"}
@@ -197,21 +197,21 @@ func (suite *RoomRepositoryTestSuite) TestCountPendingInvites_Success() {
 		InviterID: suite.testUser.ID,
 		Status:    "pending",
 	}
-	err = suite.repo.CreateInvites([]model.RoomInvite{invite})
+	err = suite.repo.CreateInvites(suite.ctx, []model.RoomInvite{invite})
 	assert.NoError(suite.T(), err)
 
 	// Update the counter for pending invites
 	err = suite.db.Model(&model.User{}).Where("id = ?", invitee.ID).UpdateColumn("no_of_pending_room_invites", gorm.Expr("no_of_pending_room_invites + ?", 1)).Error
 	assert.NoError(suite.T(), err)
 
-	count, err := suite.repo.CountPendingInvites(fmt.Sprintf("%d", invitee.ID))
+	count, err := suite.repo.CountPendingInvites(suite.ctx, fmt.Sprintf("%d", invitee.ID))
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), int64(1), count)
 }
 
 func (suite *RoomRepositoryTestSuite) TestGetPendingInvites_Success() {
 	room := model.Room{Name: "GetPending", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	invitee := model.User{Username: "invitee3", Email: "invitee3@example.com", Password: "pass"}
@@ -224,10 +224,10 @@ func (suite *RoomRepositoryTestSuite) TestGetPendingInvites_Success() {
 		InviterID: suite.testUser.ID,
 		Status:    "pending",
 	}
-	err = suite.repo.CreateInvites([]model.RoomInvite{invite})
+	err = suite.repo.CreateInvites(suite.ctx, []model.RoomInvite{invite})
 	assert.NoError(suite.T(), err)
 
-	invites, err := suite.repo.GetPendingInvites(fmt.Sprintf("%d", invitee.ID))
+	invites, err := suite.repo.GetPendingInvites(suite.ctx, fmt.Sprintf("%d", invitee.ID))
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), invites, 1)
 	assert.Equal(suite.T(), invitee.ID, invites[0].User.ID)
@@ -237,7 +237,7 @@ func (suite *RoomRepositoryTestSuite) TestGetPendingInvites_Success() {
 
 func (suite *RoomRepositoryTestSuite) TestUpdateInviteStatus_Success() {
 	room := model.Room{Name: "UpdateStatus", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	invitee := model.User{Username: "invitee4", Email: "invitee4@example.com", Password: "pass"}
@@ -250,10 +250,10 @@ func (suite *RoomRepositoryTestSuite) TestUpdateInviteStatus_Success() {
 		InviterID: suite.testUser.ID,
 		Status:    "pending",
 	}
-	err = suite.repo.CreateInvites([]model.RoomInvite{invite})
+	err = suite.repo.CreateInvites(suite.ctx, []model.RoomInvite{invite})
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.UpdateInviteStatus(room.ID, fmt.Sprintf("%d", invitee.ID), "accepted")
+	err = suite.repo.UpdateInviteStatus(suite.ctx, room.ID, fmt.Sprintf("%d", invitee.ID), "accepted")
 	assert.NoError(suite.T(), err)
 
 	var updated model.RoomInvite
@@ -264,7 +264,7 @@ func (suite *RoomRepositoryTestSuite) TestUpdateInviteStatus_Success() {
 
 func (suite *RoomRepositoryTestSuite) TestDeletePendingInvites_Success() {
 	room := model.Room{Name: "DeletePending", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	invitee1 := model.User{Username: "invitee5", Email: "invitee5@example.com", Password: "pass"}
@@ -278,10 +278,10 @@ func (suite *RoomRepositoryTestSuite) TestDeletePendingInvites_Success() {
 		{RoomID: room.ID, UserID: invitee1.ID, InviterID: suite.testUser.ID, Status: "pending"},
 		{RoomID: room.ID, UserID: invitee2.ID, InviterID: suite.testUser.ID, Status: "accepted"},
 	}
-	err = suite.repo.CreateInvites(invites)
+	err = suite.repo.CreateInvites(suite.ctx, invites)
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.DeletePendingInvites(room.ID)
+	err = suite.repo.DeletePendingInvites(suite.ctx, room.ID)
 	assert.NoError(suite.T(), err)
 
 	var remaining []model.RoomInvite
@@ -301,10 +301,10 @@ func (suite *RoomRepositoryTestSuite) TestGetUnjoinedRoomsByIsPrivate_Success() 
 		IsPrivate: true,
 		HostID:    otherUser.ID,
 	}
-	err = suite.repo.Create(&unjoinedRoom)
+	err = suite.repo.Create(suite.ctx, &unjoinedRoom)
 	assert.NoError(suite.T(), err)
 
-	rooms, err := suite.repo.GetUnjoinedRoomsByIsPrivate(fmt.Sprintf("%d", suite.testUser.ID), true)
+	rooms, err := suite.repo.GetUnjoinedRoomsByIsPrivate(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID), true)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), rooms, 1)
 	assert.Equal(suite.T(), "PrivateUnjoined", rooms[0].Name)
@@ -320,13 +320,13 @@ func (suite *RoomRepositoryTestSuite) TestGetUnjoinedRoomsByIsPrivate_ExcludesJo
 		IsPrivate: true,
 		HostID:    otherUser.ID,
 	}
-	err = suite.repo.Create(&room)
+	err = suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
-	err = suite.repo.AddUserToRoom(room.ID, suite.testUser)
+	err = suite.repo.AddUserToRoom(suite.ctx, room.ID, suite.testUser)
 	assert.NoError(suite.T(), err)
 
-	rooms, err := suite.repo.GetUnjoinedRoomsByIsPrivate(fmt.Sprintf("%d", suite.testUser.ID), true)
+	rooms, err := suite.repo.GetUnjoinedRoomsByIsPrivate(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID), true)
 	assert.NoError(suite.T(), err)
 	assert.Empty(suite.T(), rooms)
 }
@@ -341,7 +341,7 @@ func (suite *RoomRepositoryTestSuite) TestGetUnjoinedRoomsByIsPrivate_ExcludesIn
 		IsPrivate: true,
 		HostID:    otherUser.ID,
 	}
-	err = suite.repo.Create(&room)
+	err = suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	invite := model.RoomInvite{
@@ -350,10 +350,10 @@ func (suite *RoomRepositoryTestSuite) TestGetUnjoinedRoomsByIsPrivate_ExcludesIn
 		InviterID: otherUser.ID,
 		Status:    "pending",
 	}
-	err = suite.repo.CreateInvites([]model.RoomInvite{invite})
+	err = suite.repo.CreateInvites(suite.ctx, []model.RoomInvite{invite})
 	assert.NoError(suite.T(), err)
 
-	rooms, err := suite.repo.GetUnjoinedRoomsByIsPrivate(fmt.Sprintf("%d", suite.testUser.ID), true)
+	rooms, err := suite.repo.GetUnjoinedRoomsByIsPrivate(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID), true)
 	assert.NoError(suite.T(), err)
 	assert.Empty(suite.T(), rooms)
 }
@@ -368,10 +368,10 @@ func (suite *RoomRepositoryTestSuite) TestGetUserRooms_WithPagination() {
 			Name:   fmt.Sprintf("Room%d", i),
 			HostID: suite.testUser.ID,
 		}
-		err := suite.repo.Create(&room)
+		err := suite.repo.Create(suite.ctx, &room)
 		assert.NoError(suite.T(), err)
 
-		err = suite.repo.AddUserToRoom(room.ID, suite.testUser)
+		err = suite.repo.AddUserToRoom(suite.ctx, room.ID, suite.testUser)
 		assert.NoError(suite.T(), err)
 
 		// Update counter
@@ -382,23 +382,23 @@ func (suite *RoomRepositoryTestSuite) TestGetUserRooms_WithPagination() {
 	}
 
 	// Test page 1 with page size 2
-	page1, err := suite.repo.GetUserRooms(fmt.Sprintf("%d", suite.testUser.ID), 1, 2)
+	page1, err := suite.repo.GetUserRooms(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID), 1, 2)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), page1, 2)
 
 	// Test page 2
-	page2, err := suite.repo.GetUserRooms(fmt.Sprintf("%d", suite.testUser.ID), 2, 2)
+	page2, err := suite.repo.GetUserRooms(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID), 2, 2)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), page2, 2)
 
 	// Test page 3 (last page)
-	page3, err := suite.repo.GetUserRooms(fmt.Sprintf("%d", suite.testUser.ID), 3, 2)
+	page3, err := suite.repo.GetUserRooms(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID), 3, 2)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), page3, 1)
 }
 
 func (suite *RoomRepositoryTestSuite) TestGetUserRooms_NoRooms() {
-	rooms, err := suite.repo.GetUserRooms(fmt.Sprintf("%d", suite.testUser.ID), 1, 10)
+	rooms, err := suite.repo.GetUserRooms(suite.ctx, fmt.Sprintf("%d", suite.testUser.ID), 1, 10)
 	assert.NoError(suite.T(), err)
 	assert.Empty(suite.T(), rooms)
 }
@@ -409,7 +409,7 @@ func (suite *RoomRepositoryTestSuite) TestGetByIDWithAttendees_Success() {
 		Name:   "RoomWithAttendees",
 		HostID: suite.testUser.ID,
 	}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	// Add 2 attendees
@@ -418,13 +418,13 @@ func (suite *RoomRepositoryTestSuite) TestGetByIDWithAttendees_Success() {
 	suite.db.Create(&user2)
 	suite.db.Create(&user3)
 
-	err = suite.repo.AddUserToRoom(room.ID, &user2)
+	err = suite.repo.AddUserToRoom(suite.ctx, room.ID, &user2)
 	assert.NoError(suite.T(), err)
-	err = suite.repo.AddUserToRoom(room.ID, &user3)
+	err = suite.repo.AddUserToRoom(suite.ctx, room.ID, &user3)
 	assert.NoError(suite.T(), err)
 
 	// Get with attendees
-	found, err := suite.repo.GetByIDWithAttendees(room.ID)
+	found, err := suite.repo.GetByIDWithAttendees(suite.ctx, room.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), room.ID, found.ID)
 	assert.Len(suite.T(), found.Users, 2)
@@ -439,10 +439,10 @@ func (suite *RoomRepositoryTestSuite) TestGetByIDWithAttendees_NoAttendees() {
 		Name:   "EmptyRoom",
 		HostID: suite.testUser.ID,
 	}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
-	found, err := suite.repo.GetByIDWithAttendees(room.ID)
+	found, err := suite.repo.GetByIDWithAttendees(suite.ctx, room.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), room.ID, found.ID)
 	assert.Empty(suite.T(), found.Users)
@@ -455,17 +455,17 @@ func (suite *RoomRepositoryTestSuite) TestUpdate_Success() {
 		HostID:    suite.testUser.ID,
 		IsPrivate: false,
 	}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	// Update room
 	room.Name = "UpdatedName"
 	room.IsPrivate = true
-	err = suite.repo.Update(&room)
+	err = suite.repo.Update(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	// Verify update
-	found, err := suite.repo.GetByID(room.ID)
+	found, err := suite.repo.GetByID(suite.ctx, room.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "UpdatedName", found.Name)
 	assert.True(suite.T(), found.IsPrivate)
@@ -474,7 +474,7 @@ func (suite *RoomRepositoryTestSuite) TestUpdate_Success() {
 // GetPendingInviteUsers test
 func (suite *RoomRepositoryTestSuite) TestGetPendingInviteUsers_Success() {
 	room := model.Room{Name: "InviteRoom", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	// Create 2 users and invite them
@@ -497,21 +497,21 @@ func (suite *RoomRepositoryTestSuite) TestGetPendingInviteUsers_Success() {
 			Status:    "pending",
 		},
 	}
-	err = suite.repo.CreateInvites(invites)
+	err = suite.repo.CreateInvites(suite.ctx, invites)
 	assert.NoError(suite.T(), err)
 
 	// Get pending invite users
-	userIDs, err := suite.repo.GetPendingInviteUsers(room.ID)
+	userIDs, err := suite.repo.GetPendingInviteUsers(suite.ctx, room.ID)
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), userIDs, 2)
 }
 
 func (suite *RoomRepositoryTestSuite) TestGetPendingInviteUsers_NoInvites() {
 	room := model.Room{Name: "NoInvites", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
-	userIDs, err := suite.repo.GetPendingInviteUsers(room.ID)
+	userIDs, err := suite.repo.GetPendingInviteUsers(suite.ctx, room.ID)
 	assert.NoError(suite.T(), err)
 	assert.Empty(suite.T(), userIDs)
 }
@@ -519,7 +519,7 @@ func (suite *RoomRepositoryTestSuite) TestGetPendingInviteUsers_NoInvites() {
 // Error handling tests
 func (suite *RoomRepositoryTestSuite) TestGetByID_NotFound() {
 	// Use a valid UUID format that doesn't exist
-	room, err := suite.repo.GetByID("00000000-0000-0000-0000-000000000000")
+	room, err := suite.repo.GetByID(suite.ctx, "00000000-0000-0000-0000-000000000000")
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
 	assert.NotNil(suite.T(), room)       // Repository returns &model.Room{} even on error
@@ -528,15 +528,15 @@ func (suite *RoomRepositoryTestSuite) TestGetByID_NotFound() {
 
 func (suite *RoomRepositoryTestSuite) TestAddUserToRoom_Duplicate() {
 	room := model.Room{Name: "DupTest", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	// Add user first time
-	err = suite.repo.AddUserToRoom(room.ID, suite.testUser)
+	err = suite.repo.AddUserToRoom(suite.ctx, room.ID, suite.testUser)
 	assert.NoError(suite.T(), err)
 
 	// Try to add same user again - should handle gracefully
-	err = suite.repo.AddUserToRoom(room.ID, suite.testUser)
+	err = suite.repo.AddUserToRoom(suite.ctx, room.ID, suite.testUser)
 	// Depending on implementation, this might error or be idempotent
 	// For now, just verify it doesn't panic
 	_ = err
@@ -544,10 +544,10 @@ func (suite *RoomRepositoryTestSuite) TestAddUserToRoom_Duplicate() {
 
 func (suite *RoomRepositoryTestSuite) TestRemoveUserFromRoom_NotInRoom() {
 	room := model.Room{Name: "RemoveTest", HostID: suite.testUser.ID}
-	err := suite.repo.Create(&room)
+	err := suite.repo.Create(suite.ctx, &room)
 	assert.NoError(suite.T(), err)
 
 	// Try to remove user who isn't in room - should handle gracefully
-	err = suite.repo.RemoveUserFromRoom(room.ID, fmt.Sprintf("%d", suite.testUser.ID))
+	err = suite.repo.RemoveUserFromRoom(suite.ctx, room.ID, fmt.Sprintf("%d", suite.testUser.ID))
 	assert.NoError(suite.T(), err) // Should not error
 }

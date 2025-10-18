@@ -376,7 +376,7 @@ func (suite *UserHandlerTestSuite) TestSendFriendRequest_PendingRequest() {
 
 func (suite *UserHandlerTestSuite) TestRemoveFriend_Success() {
 	// First make the users friends
-	err := suite.userService.AcceptFriendRequest(suite.testRequestID)
+	err := suite.userService.AcceptFriendRequest(context.Background(), suite.testRequestID)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodDelete,
@@ -431,7 +431,7 @@ func (suite *UserHandlerTestSuite) TestRemoveFriend_UserNotFound() {
 
 func (suite *UserHandlerTestSuite) TestGetFriends_Success() {
 	// First make the users friends
-	err := suite.userService.AcceptFriendRequest(suite.testRequestID)
+	err := suite.userService.AcceptFriendRequest(context.Background(), suite.testRequestID)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodGet,
@@ -452,7 +452,7 @@ func (suite *UserHandlerTestSuite) TestGetFriends_Success() {
 func (suite *UserHandlerTestSuite) TestIsFriend_True() {
 	suite.T().Skip("IsFriend handler not implemented yet")
 	// First make the users friends
-	err := suite.userService.AcceptFriendRequest(suite.testRequestID)
+	err := suite.userService.AcceptFriendRequest(context.Background(), suite.testRequestID)
 	assert.NoError(suite.T(), err)
 
 	requestBody := request.ModifyFriendRequest{
@@ -477,7 +477,7 @@ func (suite *UserHandlerTestSuite) TestIsFriend_True() {
 
 func (suite *UserHandlerTestSuite) TestGetNumFriends_Success() {
 	// First make the users friends
-	err := suite.userService.AcceptFriendRequest(suite.testRequestID)
+	err := suite.userService.AcceptFriendRequest(context.Background(), suite.testRequestID)
 	assert.NoError(suite.T(), err)
 
 	req := httptest.NewRequest(http.MethodGet,
@@ -660,7 +660,7 @@ func (suite *UserHandlerTestSuite) TestRespondToFriendRequest_NotFound() {
 
 func (suite *UserHandlerTestSuite) TestRespondToFriendRequest_AlreadyResponded() {
 	// First accept the request
-	err := suite.userService.AcceptFriendRequest(suite.testRequestID)
+	err := suite.userService.AcceptFriendRequest(context.Background(), suite.testRequestID)
 	assert.NoError(suite.T(), err)
 
 	// Try to accept the same request again

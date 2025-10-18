@@ -48,6 +48,7 @@ func NewAuthHandler(
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /auth/signup [post]
 func (h *AuthHandler) SignUp(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	signUpReq := middleware.GetValidatedRequest[request.SignUpRequest](c)
 	h.logger.Info("Received sign up request for user: ", signUpReq.Username)
 
@@ -58,7 +59,7 @@ func (h *AuthHandler) SignUp(c *fiber.Ctx) error {
 		Password: signUpReq.Password,
 	}
 
-	createdUser, err := h.authService.SignUp(user, &h.ClientOtpMap)
+	createdUser, err := h.authService.SignUp(ctx, user, &h.ClientOtpMap)
 	if err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return utils.HandleError(
@@ -91,9 +92,10 @@ func (h *AuthHandler) SignUp(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /auth [post]
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	input := middleware.GetValidatedRequest[request.LoginRequest](c)
 
-	token, user, err := h.authService.Login(input.Username, input.Password)
+	token, user, err := h.authService.Login(ctx, input.Username, input.Password)
 	if err != nil {
 		if errors.Is(err, services.ErrPasswordDoesNotMatch) {
 			return utils.HandleError(c, fiber.StatusUnauthorized, "Invalid username or password", err)
@@ -125,11 +127,12 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /auth/otp [post]
 func (h *AuthHandler) SendOTPEmail(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.SendOTPEmailRequest](c)
 
 	if err := h.
 		authService.
-		GenerateAndSendOTPEmail(req.Email, req.Purpose, &h.ClientOtpMap); err != nil {
+		GenerateAndSendOTPEmail(ctx, req.Email, req.Purpose, &h.ClientOtpMap); err != nil {
 		if errors.Is(err, services.ErrInvalidPurpose) {
 			return utils.HandleError(c, fiber.StatusBadRequest, "Invalid purpose", err)
 		} else if errors.Is(err, services.ErrEmailAlreadyVerified) {
@@ -155,9 +158,10 @@ func (h *AuthHandler) SendOTPEmail(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /auth/verify [post]
 func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.VerifyOTPRequest](c)
 
-	if err := h.authService.VerifyOTP(req.Email, req.OTP, &h.ClientOtpMap); err != nil {
+	if err := h.authService.VerifyOTP(ctx, req.Email, req.OTP, &h.ClientOtpMap); err != nil {
 		if errors.Is(err, services.ErrInvalidOTP) {
 			return utils.HandleError(c, fiber.StatusBadRequest, "Invalid OTP", err)
 		} else if errors.Is(err, services.ErrOTPNotFound) {
@@ -183,11 +187,12 @@ func (h *AuthHandler) VerifyOTP(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /auth/reset [post]
 func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.ResetPasswordRequest](c)
 
 	if err := h.
 		authService.
-		ResetPassword(req.Email, req.Password); err != nil {
+		ResetPassword(ctx, req.Email, req.Password); err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "User not found")
 	}
 
@@ -206,9 +211,10 @@ func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /auth/google [post]
 func (h *AuthHandler) GoogleLogin(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.GoogleAuthRequest](c)
 
-	token, user, err := h.authService.GoogleLogin(req.Code)
+	token, user, err := h.authService.GoogleLogin(ctx, req.Code)
 	if err != nil {
 		return utils.HandleInternalServerError(c, err)
 	}

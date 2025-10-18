@@ -46,11 +46,13 @@ func NewBillHandler(
 // @Security BearerAuth
 // @Router /bills [post]
 func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.CreateBillRequest](c)
 
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
 	bill, err := h.billService.CreateBill(
+		ctx,
 		req.RoomID,
 		userId,
 		req.Payers,
@@ -85,12 +87,13 @@ func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /bills [get]
 func (h *BillHandler) GetBillsByRoom(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	roomId := c.Query("roomId")
 	if roomId == "" {
 		return utils.HandleInvalidInputError(c, errors.New("missing roomId in query param"))
 	}
 
-	bills, err := h.billService.GetBillsForRoom(roomId)
+	bills, err := h.billService.GetBillsForRoom(ctx, roomId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, RoomNotFoundErrorMsg)
 	}
@@ -113,11 +116,12 @@ func (h *BillHandler) GetBillsByRoom(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /bills/consolidate [post]
 func (h *BillHandler) ConsolidateBills(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	req := middleware.GetValidatedRequest[request.ConsolidateBillsRequest](c)
 
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
-	if err := h.billService.ConsolidateBills(req.RoomID, userId); err != nil {
+	if err := h.billService.ConsolidateBills(ctx, req.RoomID, userId); err != nil {
 		if errors.Is(err, services.ErrAlreadyConsolidated) {
 			return utils.HandleError(c, fiber.StatusBadRequest, err.Error(), nil)
 		} else if errors.Is(err, services.ErrOnlyHostCanConsolidate) {

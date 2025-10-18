@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"math"
 	"testing"
 
@@ -156,7 +157,7 @@ func (s *TransactionServiceTestSuite) TestGetTransactionsByUser_Success() {
 	s.mockTransactionRepo.On("FindByUser", isPaid, userId).Return(expectedTransactions, nil)
 
 	// Execute
-	transactions, err := s.transactionService.GetTransactionsByUser(isPaid, userId)
+	transactions, err := s.transactionService.GetTransactionsByUser(context.Background(), isPaid, userId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -181,7 +182,7 @@ func (s *TransactionServiceTestSuite) TestSettleTransaction_Success() {
 	s.mockTransactionRepo.On("Update", transaction).Return(nil)
 
 	// Execute
-	result, err := s.transactionService.SettleTransaction(transactionId, userId)
+	result, err := s.transactionService.SettleTransaction(context.Background(), transactionId, userId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -203,7 +204,7 @@ func (s *TransactionServiceTestSuite) TestSettleTransaction_AlreadySettled() {
 	s.mockTransactionRepo.On("FindByID", transactionId).Return(transaction, nil)
 
 	// Execute
-	result, err := s.transactionService.SettleTransaction(transactionId, userId)
+	result, err := s.transactionService.SettleTransaction(context.Background(), transactionId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -227,7 +228,7 @@ func (s *TransactionServiceTestSuite) TestSettleTransaction_InvalidPayer() {
 	s.mockTransactionRepo.On("FindByID", transactionId).Return(transaction, nil)
 
 	// Execute
-	result, err := s.transactionService.SettleTransaction(transactionId, userId)
+	result, err := s.transactionService.SettleTransaction(context.Background(), transactionId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)

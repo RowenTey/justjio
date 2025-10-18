@@ -43,10 +43,11 @@ func NewTransactionHandler(
 // @Security BearerAuth
 // @Router /transactions [get]
 func (h *TransactionHandler) GetTransactionsByUser(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 	isPaid := c.QueryBool("isPaid", false)
 
-	transactions, err := h.transactionService.GetTransactionsByUser(isPaid, userId)
+	transactions, err := h.transactionService.GetTransactionsByUser(ctx, isPaid, userId)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No transactions found")
 	}
@@ -69,12 +70,13 @@ func (h *TransactionHandler) GetTransactionsByUser(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /transactions/{txId}/settle [patch]
 func (h *TransactionHandler) SettleTransaction(c *fiber.Ctx) error {
+	ctx := utils.GetOtelContext(c)
 	txId := c.Params("txId")
 	token := c.Locals("user").(*jwt.Token)
 	userId := utils.GetUserInfoFromToken(token, "user_id")
 	username := utils.GetUserInfoFromToken(token, "username")
 
-	transaction, err := h.transactionService.SettleTransaction(txId, userId)
+	transaction, err := h.transactionService.SettleTransaction(ctx, txId, userId)
 	if err != nil {
 		if errors.Is(err, services.ErrTransactionAlreadySettled) {
 			return utils.HandleError(c, fiber.StatusConflict, err.Error(), nil)
@@ -91,7 +93,7 @@ func (h *TransactionHandler) SettleTransaction(c *fiber.Ctx) error {
 		message := fmt.Sprintf("%s paid you $%.2f!", username, transaction.Amount)
 		if err := h.
 			notificationService.
-			SendNotification(utils.UIntToString(transaction.PayeeID), title, message); err != nil {
+			SendNotification(ctx, utils.UIntToString(transaction.PayeeID), title, message); err != nil {
 			h.logger.Errorf("Failed to send notification: %v", err)
 		}
 	}()

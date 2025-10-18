@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"bytes"
 	"errors"
 	"fmt"
@@ -116,7 +117,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	resultRoomId, err := s.roomService.CreateRoomWithInvites(
+	resultRoomId, err := s.roomService.CreateRoomWithInvites(context.Background(), 
 		room, "1", inviteesStr,
 	)
 
@@ -150,7 +151,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_HostNotFound() {
 	inviteesStr := []string{"2", "3"}
 
 	// Execute
-	_, err := s.roomService.CreateRoomWithInvites(
+	_, err := s.roomService.CreateRoomWithInvites(context.Background(), 
 		room, "1", inviteesStr,
 	)
 
@@ -175,7 +176,7 @@ func (s *RoomServiceTestSuite) TestGetRooms_Success() {
 	s.mockRoomRepo.On("GetUserRooms", userId, page, ROOM_PAGE_SIZE).Return(mockRooms, nil)
 
 	// Execute
-	rooms, err := s.roomService.GetRooms(userId, page)
+	rooms, err := s.roomService.GetRooms(context.Background(), userId, page)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -199,7 +200,7 @@ func (s *RoomServiceTestSuite) TestGetUnjoinedPublicRooms_Success() {
 	s.mockRoomRepo.On("GetUnjoinedRoomsByIsPrivate", userId, false).Return(mockRooms, nil)
 
 	// Execute
-	rooms, err := s.roomService.GetUnjoinedPublicRooms(userId)
+	rooms, err := s.roomService.GetUnjoinedPublicRooms(context.Background(), userId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -257,7 +258,7 @@ func (s *RoomServiceTestSuite) TestUpdateRoom_VenueChanged_Success() {
 	})
 
 	// Execute
-	err := s.roomService.UpdateRoom(updateReq, roomId, userId)
+	err := s.roomService.UpdateRoom(context.Background(), updateReq, roomId, userId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -292,7 +293,7 @@ func (s *RoomServiceTestSuite) TestUpdateRoom_VenueNotChanged_Success() {
 	s.mockRoomRepo.On("Update", mock.AnythingOfType("*model.Room")).Return(nil)
 
 	// Execute
-	err := s.roomService.UpdateRoom(updateReq, roomId, userId)
+	err := s.roomService.UpdateRoom(context.Background(), updateReq, roomId, userId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -316,7 +317,7 @@ func (s *RoomServiceTestSuite) TestUpdateRoom_NotHost() {
 	s.mockRoomRepo.On("GetByID", roomId).Return(room, nil)
 
 	// Execute
-	err := s.roomService.UpdateRoom(updateReq, roomId, userId)
+	err := s.roomService.UpdateRoom(context.Background(), updateReq, roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -348,7 +349,7 @@ func (s *RoomServiceTestSuite) TestUpdateRoom_FetchGoogleMapsUriFails() {
 	s.mockHTTPClient.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{}, errors.New("network error"))
 
 	// Execute
-	err := s.roomService.UpdateRoom(updateReq, roomId, userId)
+	err := s.roomService.UpdateRoom(context.Background(), updateReq, roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -383,7 +384,7 @@ func (s *RoomServiceTestSuite) TestCloseRoom_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	err := s.roomService.CloseRoom(roomId, userId)
+	err := s.roomService.CloseRoom(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -413,7 +414,7 @@ func (s *RoomServiceTestSuite) TestCloseRoom_NotHost() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.roomService.CloseRoom(roomId, userId)
+	err := s.roomService.CloseRoom(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -443,7 +444,7 @@ func (s *RoomServiceTestSuite) TestCloseRoom_UnconsolidatedBills() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.roomService.CloseRoom(roomId, userId)
+	err := s.roomService.CloseRoom(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -476,7 +477,7 @@ func (s *RoomServiceTestSuite) TestRespondToRoomInvite_Rejected() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	room, err := s.roomService.RespondToRoomInvite(roomId, userId, false)
+	room, err := s.roomService.RespondToRoomInvite(context.Background(), roomId, userId, false)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -510,7 +511,7 @@ func (s *RoomServiceTestSuite) TestJoinRoom_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	resultRoom, err := s.roomService.JoinRoom(roomId, userId)
+	resultRoom, err := s.roomService.JoinRoom(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -531,7 +532,7 @@ func (s *RoomServiceTestSuite) TestJoinRoom_AlreadyInRoom() {
 	s.mockRoomRepo.On("IsUserInRoom", roomId, userId).Return(true, nil)
 
 	// Execute
-	_, err := s.roomService.JoinRoom(roomId, userId)
+	_, err := s.roomService.JoinRoom(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -565,7 +566,7 @@ func (s *RoomServiceTestSuite) TestLeaveRoom_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	err := s.roomService.LeaveRoom(roomId, userId)
+	err := s.roomService.LeaveRoom(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -596,7 +597,7 @@ func (s *RoomServiceTestSuite) TestLeaveRoom_AsHost() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.roomService.LeaveRoom(roomId, userId)
+	err := s.roomService.LeaveRoom(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -635,7 +636,7 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	invites, err := s.roomService.InviteUsersToRoom(roomId, inviterId, inviteesIds)
+	invites, err := s.roomService.InviteUsersToRoom(context.Background(), roomId, inviterId, inviteesIds)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -666,7 +667,7 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_NotHost() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	invites, err := s.roomService.InviteUsersToRoom(roomId, inviterId, invitees)
+	invites, err := s.roomService.InviteUsersToRoom(context.Background(), roomId, inviterId, invitees)
 
 	// Assertions
 	assert.Equal(s.T(), ErrInvalidHost, err)
@@ -784,7 +785,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_EmptyRoomName() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	roomId, err := s.roomService.CreateRoomWithInvites(room, hostId, inviteUserIds)
+	roomId, err := s.roomService.CreateRoomWithInvites(context.Background(), room, hostId, inviteUserIds)
 
 	// Note: Currently the service doesn't validate empty names
 	// This test documents that behavior - consider adding validation
@@ -817,7 +818,7 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_UserNotFound() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	_, err := s.roomService.InviteUsersToRoom(roomId, inviterId, inviteUserIds)
+	_, err := s.roomService.InviteUsersToRoom(context.Background(), roomId, inviterId, inviteUserIds)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -843,7 +844,7 @@ func (s *RoomServiceTestSuite) TestJoinRoom_RoomNotFound() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	_, err := s.roomService.JoinRoom(roomId, userId)
+	_, err := s.roomService.JoinRoom(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -883,7 +884,7 @@ func (s *RoomServiceTestSuite) TestJoinRoom_PrivateRoomWithoutInvite() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	dto, err := s.roomService.JoinRoom(roomId, userId)
+	dto, err := s.roomService.JoinRoom(context.Background(), roomId, userId)
 
 	// Assertions
 	// NOTE: Currently the service has a TODO to check for invite for private rooms
@@ -918,7 +919,7 @@ func (s *RoomServiceTestSuite) TestLeaveRoom_UserNotInRoom() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.roomService.LeaveRoom(roomId, userId)
+	err := s.roomService.LeaveRoom(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -947,7 +948,7 @@ func (s *RoomServiceTestSuite) TestCloseRoom_RoomNotFound() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	err := s.roomService.CloseRoom(roomId, userId)
+	err := s.roomService.CloseRoom(context.Background(), roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -971,7 +972,7 @@ func (s *RoomServiceTestSuite) TestUpdateRoom_InvalidRoomId() {
 	s.mockRoomRepo.On("GetByID", roomId).Return(nil, gorm.ErrRecordNotFound)
 
 	// Execute
-	err := s.roomService.UpdateRoom(updateReq, roomId, userId)
+	err := s.roomService.UpdateRoom(context.Background(), updateReq, roomId, userId)
 
 	// Assertions
 	assert.Error(s.T(), err)

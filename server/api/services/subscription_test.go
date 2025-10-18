@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -66,7 +67,7 @@ func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Success() {
 	}).Return(subscription, nil)
 
 	// Execute
-	result, err := s.subscriptionService.CreateSubscription(subscription)
+	result, err := s.subscriptionService.CreateSubscription(context.Background(), subscription)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -98,7 +99,7 @@ func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Failure() {
 	s.mockSubscriptionRepo.On("Create", subscription).Return((*model.Subscription)(nil), expectedErr)
 
 	// Execute
-	result, err := s.subscriptionService.CreateSubscription(subscription)
+	result, err := s.subscriptionService.CreateSubscription(context.Background(), subscription)
 
 	// Assertions
 	assert.Error(s.T(), err)
@@ -132,7 +133,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_Success() {
 	s.mockSubscriptionRepo.On("FindByUserID", userID).Return(expectedSubscriptions, nil)
 
 	// Execute
-	result, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
+	result, err := s.subscriptionService.GetSubscriptionsByUserID(context.Background(), userID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -148,7 +149,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_NotFound() {
 	s.mockSubscriptionRepo.On("FindByUserID", userID).Return([]model.Subscription{}, nil)
 
 	// Execute
-	result, err := s.subscriptionService.GetSubscriptionsByUserID(userID)
+	result, err := s.subscriptionService.GetSubscriptionsByUserID(context.Background(), userID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -169,7 +170,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionByEndpoint_Success() {
 	s.mockSubscriptionRepo.On("FindByEndpoint", endpoint).Return(expectedSubscription, nil)
 
 	// Execute
-	result, err := s.subscriptionService.GetSubscriptionsByEndpoint(endpoint)
+	result, err := s.subscriptionService.GetSubscriptionsByEndpoint(context.Background(), endpoint)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -185,7 +186,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionByEndpoint_NotFound() 
 	s.mockSubscriptionRepo.On("FindByEndpoint", endpoint).Return((*model.Subscription)(nil), nil)
 
 	// Execute
-	result, err := s.subscriptionService.GetSubscriptionsByEndpoint(endpoint)
+	result, err := s.subscriptionService.GetSubscriptionsByEndpoint(context.Background(), endpoint)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -202,7 +203,7 @@ func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_Success() {
 	s.mockSubscriptionRepo.On("Delete", subID).Return(nil)
 
 	// Execute
-	err := s.subscriptionService.DeleteSubscription(subID)
+	err := s.subscriptionService.DeleteSubscription(context.Background(), subID)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -219,7 +220,7 @@ func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_Failure() {
 	s.mockSubscriptionRepo.On("Delete", subID).Return(expectedErr)
 
 	// Execute
-	err := s.subscriptionService.DeleteSubscription(subID)
+	err := s.subscriptionService.DeleteSubscription(context.Background(), subID)
 
 	// Assertions
 	assert.Error(s.T(), err)

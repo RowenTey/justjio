@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
@@ -15,32 +16,32 @@ func (m *MockBillRepository) WithTx(tx *gorm.DB) BillRepository {
 	return args.Get(0).(BillRepository)
 }
 
-func (m *MockBillRepository) Create(bill *model.Bill) error {
-	args := m.Called(bill)
+func (m *MockBillRepository) Create(ctx context.Context, bill *model.Bill) error {
+	args := m.Called(ctx, bill)
 	return args.Error(0)
 }
 
-func (m *MockBillRepository) FindByID(billID uint) (*model.Bill, error) {
-	args := m.Called(billID)
+func (m *MockBillRepository) FindByID(ctx context.Context, billID uint) (*model.Bill, error) {
+	args := m.Called(ctx, billID)
 	return args.Get(0).(*model.Bill), args.Error(1)
 }
 
-func (m *MockBillRepository) FindByRoom(roomID string) ([]model.Bill, error) {
-	args := m.Called(roomID)
+func (m *MockBillRepository) FindByRoom(ctx context.Context, roomID string) ([]model.Bill, error) {
+	args := m.Called(ctx, roomID)
 	return args.Get(0).([]model.Bill), args.Error(1)
 }
 
-func (m *MockBillRepository) DeleteByRoom(roomID string) error {
-	args := m.Called(roomID)
+func (m *MockBillRepository) DeleteByRoom(ctx context.Context, roomID string) error {
+	args := m.Called(ctx, roomID)
 	return args.Error(0)
 }
 
-func (m *MockBillRepository) FindByConsolidation(consolidationID uint) ([]model.Bill, error) {
-	args := m.Called(consolidationID)
+func (m *MockBillRepository) FindByConsolidation(ctx context.Context, consolidationID uint) ([]model.Bill, error) {
+	args := m.Called(ctx, consolidationID)
 	return args.Get(0).([]model.Bill), args.Error(1)
 }
 
-func (m *MockBillRepository) ConsolidateBills(roomID string) (*model.Consolidation, error) {
-	args := m.Called(roomID)
+func (m *MockBillRepository) ConsolidateBills(ctx context.Context, roomID string) (*model.Consolidation, error) {
+	args := m.Called(ctx, roomID)
 	return args.Get(0).(*model.Consolidation), args.Error(1)
 }

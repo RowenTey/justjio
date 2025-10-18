@@ -61,6 +61,7 @@ services:
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       SMTP2GO_API_KEY: ${SMTP2GO_API_KEY}
       ALLOWED_ORIGINS: http://localhost:80
+      VERSION: dev
     entrypoint: ["/api-server", "staging"]
     depends_on:
       kafka:
