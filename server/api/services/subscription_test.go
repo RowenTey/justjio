@@ -61,8 +61,8 @@ func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Success() {
 	}
 
 	// Mock expectations
-	s.mockSubscriptionRepo.On("Create", subscription).Run(func(args mock.Arguments) {
-		sub := args.Get(0).(*model.Subscription)
+	s.mockSubscriptionRepo.On("Create", mock.Anything, subscription).Run(func(args mock.Arguments) {
+		sub := args.Get(1).(*model.Subscription) // Get second argument (index 1) since first is context
 		sub.ID = "1"
 	}).Return(subscription, nil)
 
@@ -96,7 +96,7 @@ func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Failure() {
 	expectedErr := errors.New("database error")
 
 	// Mock expectations
-	s.mockSubscriptionRepo.On("Create", subscription).Return((*model.Subscription)(nil), expectedErr)
+	s.mockSubscriptionRepo.On("Create", mock.Anything, subscription).Return((*model.Subscription)(nil), expectedErr)
 
 	// Execute
 	result, err := s.subscriptionService.CreateSubscription(context.Background(), subscription)
@@ -130,7 +130,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_Success() {
 	}
 
 	// Mock expectations
-	s.mockSubscriptionRepo.On("FindByUserID", userID).Return(expectedSubscriptions, nil)
+	s.mockSubscriptionRepo.On("FindByUserID", mock.Anything, userID).Return(expectedSubscriptions, nil)
 
 	// Execute
 	result, err := s.subscriptionService.GetSubscriptionsByUserID(context.Background(), userID)
@@ -146,7 +146,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_NotFound() {
 	userID := "999"
 
 	// Mock expectations
-	s.mockSubscriptionRepo.On("FindByUserID", userID).Return([]model.Subscription{}, nil)
+	s.mockSubscriptionRepo.On("FindByUserID", mock.Anything, userID).Return([]model.Subscription{}, nil)
 
 	// Execute
 	result, err := s.subscriptionService.GetSubscriptionsByUserID(context.Background(), userID)
@@ -167,7 +167,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionByEndpoint_Success() {
 	}
 
 	// Mock expectations
-	s.mockSubscriptionRepo.On("FindByEndpoint", endpoint).Return(expectedSubscription, nil)
+	s.mockSubscriptionRepo.On("FindByEndpoint", mock.Anything, endpoint).Return(expectedSubscription, nil)
 
 	// Execute
 	result, err := s.subscriptionService.GetSubscriptionsByEndpoint(context.Background(), endpoint)
@@ -183,7 +183,7 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionByEndpoint_NotFound() 
 	endpoint := "https://nonexistent.com"
 
 	// Mock expectations
-	s.mockSubscriptionRepo.On("FindByEndpoint", endpoint).Return((*model.Subscription)(nil), nil)
+	s.mockSubscriptionRepo.On("FindByEndpoint", mock.Anything, endpoint).Return((*model.Subscription)(nil), nil)
 
 	// Execute
 	result, err := s.subscriptionService.GetSubscriptionsByEndpoint(context.Background(), endpoint)
@@ -199,8 +199,8 @@ func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_Success() {
 	subID := "1"
 
 	// Mock expectations
-	s.mockSubscriptionRepo.On("FindByID", subID).Return(&model.Subscription{ID: subID}, nil)
-	s.mockSubscriptionRepo.On("Delete", subID).Return(nil)
+	s.mockSubscriptionRepo.On("FindByID", mock.Anything, subID).Return(&model.Subscription{ID: subID}, nil)
+	s.mockSubscriptionRepo.On("Delete", mock.Anything, subID).Return(nil)
 
 	// Execute
 	err := s.subscriptionService.DeleteSubscription(context.Background(), subID)
@@ -216,8 +216,8 @@ func (s *SubscriptionServiceTestSuite) TestDeleteSubscription_Failure() {
 	expectedErr := errors.New("delete failed")
 
 	// Mock expectations
-	s.mockSubscriptionRepo.On("FindByID", subID).Return(&model.Subscription{ID: subID}, nil)
-	s.mockSubscriptionRepo.On("Delete", subID).Return(expectedErr)
+	s.mockSubscriptionRepo.On("FindByID", mock.Anything, subID).Return(&model.Subscription{ID: subID}, nil)
+	s.mockSubscriptionRepo.On("Delete", mock.Anything, subID).Return(expectedErr)
 
 	// Execute
 	err := s.subscriptionService.DeleteSubscription(context.Background(), subID)

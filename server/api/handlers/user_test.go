@@ -136,6 +136,10 @@ func (suite *UserHandlerTestSuite) SetupTest() {
 	assert.NoError(suite.T(), result.Error)
 	suite.testRequestID = friendRequest.ID
 
+	// Update the pending friend requests count
+	result = suite.db.Model(&user).Update("no_of_pending_friend_requests", 1)
+	assert.NoError(suite.T(), result.Error)
+
 	suite.logger.Infof("SetupTest complete: User ID=%d, Friend ID=%d, Request ID=%d",
 		suite.testUserID, suite.testFriendID, suite.testRequestID)
 }
