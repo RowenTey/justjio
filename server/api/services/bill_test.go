@@ -93,7 +93,7 @@ func (s *BillServiceTestSuite) TestCreateBill_Success() {
 	s.mockUserRepo.On("FindByIDs", mock.Anything, payersId).Return(payers, nil)
 	s.mockBillRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Bill")).Run(func(args mock.Arguments) {
 		bill := args.Get(1).(*model.Bill) // Get second argument (index 1) since first is context
-		bill.ID = 1 // Set ID for the created bill
+		bill.ID = 1                       // Set ID for the created bill
 	}).Return(nil)
 	s.mockRoomRepo.On("Update", mock.Anything, room).Return(nil)
 	s.mockRoomRepo.On("Update", mock.Anything, room).Return(nil)
