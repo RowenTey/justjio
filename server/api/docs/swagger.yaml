@@ -485,9 +485,9 @@ definitions:
         type: string
       purpose:
         enum:
-        - registration
-        - reset_password
-        example: registration
+        - verify-email
+        - reset-password
+        example: verify-email
         type: string
     required:
     - email
@@ -2454,6 +2454,10 @@ paths:
             $ref: '#/definitions/utils.EmptyApiResponse'
         "404":
           description: No user found with ID
+          schema:
+            $ref: '#/definitions/utils.EmptyApiResponse'
+        "409":
+          description: Username already taken
           schema:
             $ref: '#/definitions/utils.EmptyApiResponse'
         "500":
