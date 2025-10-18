@@ -75,12 +75,12 @@ func (rs *RoomService) CreateRoomWithInvites(
 		userRepoTx := rs.userRepo.WithTx(tx)
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 
-		host, err := userRepoTx.FindByID(nil, userId)
+		host, err := userRepoTx.FindByID(ctx, userId)
 		if err != nil {
 			return err
 		}
 
-		invitees, err := userRepoTx.FindByIDs(nil, inviteesIds)
+		invitees, err := userRepoTx.FindByIDs(ctx, inviteesIds)
 		if err != nil {
 			return err
 		}
@@ -113,11 +113,11 @@ func (rs *RoomService) CreateRoomWithInvites(
 		}
 
 		host.NoOfRooms++
-		if err := userRepoTx.Update(nil, host); err != nil {
+		if err := userRepoTx.Update(ctx, host); err != nil {
 			return err
 		}
 
-		if err := userRepoTx.UpdateNoOfPendingRoomInvites(nil, inviteesIds, 1); err != nil {
+		if err := userRepoTx.UpdateNoOfPendingRoomInvites(ctx, inviteesIds, 1); err != nil {
 			return err
 		}
 
@@ -360,7 +360,7 @@ func (rs *RoomService) CloseRoom(ctx context.Context, roomId string, userId stri
 		}
 
 		// Decrement number of pending invites for each invitee who haven't responded
-		if err := userRepoTx.UpdateNoOfPendingRoomInvites(nil, inviteesId, -1); err != nil {
+		if err := userRepoTx.UpdateNoOfPendingRoomInvites(ctx, inviteesId, -1); err != nil {
 			return err
 		}
 
@@ -386,13 +386,13 @@ func (rs *RoomService) JoinRoom(ctx context.Context, roomId, userId string) (*re
 			return err
 		}
 
-		user, err := rs.userRepo.FindByID(nil, userId)
+		user, err := rs.userRepo.FindByID(ctx, userId)
 		if err != nil {
 			return err
 		}
 
 		user.NoOfRooms++
-		if err := rs.userRepo.Update(nil, user); err != nil {
+		if err := rs.userRepo.Update(ctx, user); err != nil {
 			return err
 		}
 
@@ -502,12 +502,12 @@ func (rs *RoomService) InviteUsersToRoom(
 			return ErrInvalidHost
 		}
 
-		inviter, err := userRepoTx.FindByID(nil, inviterId)
+		inviter, err := userRepoTx.FindByID(ctx, inviterId)
 		if err != nil {
 			return err
 		}
 
-		invitees, err := userRepoTx.FindByIDs(nil, inviteesIds)
+		invitees, err := userRepoTx.FindByIDs(ctx, inviteesIds)
 		if err != nil {
 			return err
 		}
@@ -516,7 +516,7 @@ func (rs *RoomService) InviteUsersToRoom(
 			return err
 		}
 
-		if err := userRepoTx.UpdateNoOfPendingRoomInvites(nil, inviteesIds, 1); err != nil {
+		if err := userRepoTx.UpdateNoOfPendingRoomInvites(ctx, inviteesIds, 1); err != nil {
 			return err
 		}
 
@@ -551,7 +551,7 @@ func (rs *RoomService) LeaveRoom(ctx context.Context, roomId string, userId stri
 			return ErrRoomHasUnconsolidatedBills
 		}
 
-		user, err := userRepoTx.FindByID(nil, userId)
+		user, err := userRepoTx.FindByID(ctx, userId)
 		if err != nil {
 			return err
 		}
@@ -561,7 +561,7 @@ func (rs *RoomService) LeaveRoom(ctx context.Context, roomId string, userId stri
 		}
 
 		user.NoOfRooms--
-		if err := userRepoTx.Update(nil, user); err != nil {
+		if err := userRepoTx.Update(ctx, user); err != nil {
 			return err
 		}
 
@@ -575,7 +575,7 @@ func (rs *RoomService) LeaveRoom(ctx context.Context, roomId string, userId stri
 }
 
 func (rs *RoomService) GetUninvitedFriendsForRoom(ctx context.Context, roomId string, userId string) ([]response.AttendeesDto, error) {
-	friends, err := rs.userRepo.GetUninvitedFriends(nil, roomId, userId)
+	friends, err := rs.userRepo.GetUninvitedFriends(ctx, roomId, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -699,13 +699,13 @@ func (rs *RoomService) updateRoomInviteStatus(
 			return err
 		}
 
-		user, err := userRepoTx.FindByID(nil, userId)
+		user, err := userRepoTx.FindByID(ctx, userId)
 		if err != nil {
 			return err
 		}
 
 		user.NoOfPendingRoomInvites--
-		if err := userRepoTx.Update(nil, user); err != nil {
+		if err := userRepoTx.Update(ctx, user); err != nil {
 			return err
 		}
 
@@ -720,7 +720,7 @@ func (rs *RoomService) updateRoomInviteStatus(
 		}
 
 		user.NoOfRooms++
-		if err = userRepoTx.Update(nil, user); err != nil {
+		if err = userRepoTx.Update(ctx, user); err != nil {
 			return err
 		}
 
