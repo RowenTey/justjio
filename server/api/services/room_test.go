@@ -1,8 +1,8 @@
 package services
 
 import (
-	"context"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -117,7 +117,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	resultRoomId, err := s.roomService.CreateRoomWithInvites(context.Background(), 
+	resultRoomId, err := s.roomService.CreateRoomWithInvites(context.Background(),
 		room, "1", inviteesStr,
 	)
 
@@ -151,7 +151,7 @@ func (s *RoomServiceTestSuite) TestCreateRoomWithInvites_HostNotFound() {
 	inviteesStr := []string{"2", "3"}
 
 	// Execute
-	_, err := s.roomService.CreateRoomWithInvites(context.Background(), 
+	_, err := s.roomService.CreateRoomWithInvites(context.Background(),
 		room, "1", inviteesStr,
 	)
 
