@@ -80,9 +80,8 @@ func (s *TransactionServiceTestSuite) TestGenerateTransactions_Success() {
 
 	// Mock expectations
 	s.mockTransactionRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Transaction")).
-	s.mockTransactionRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Transaction")).
 		Run(func(args mock.Arguments) {
-			tx := args.Get(1).(*model.Transaction) // Get second argument (index 1) since first is context
+			tx := args.Get(1).(*model.Transaction)          // Get second argument (index 1) since first is context
 			tx.ID = uint(len(bills) * len(bills[0].Payers)) // Simulate ID generation
 		}).
 		Return(nil)
@@ -130,7 +129,6 @@ func (s *TransactionServiceTestSuite) TestGenerateTransactions_Consolidation() {
 	consolidation := &model.Consolidation{ID: 1}
 
 	// Mock expectations
-	s.mockTransactionRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Transaction")).
 	s.mockTransactionRepo.On("Create", mock.Anything, mock.AnythingOfType("*model.Transaction")).
 		Return(nil)
 
