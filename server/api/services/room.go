@@ -627,7 +627,11 @@ func (rs *RoomService) QueryVenue(query string) ([]modelLocation.Venue, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			rs.logger.Error("Failed to close response body: ", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -788,7 +792,11 @@ func (rs *RoomService) fetchGoogleMapsUri(placeId string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if closeErr := resp.Body.Close(); closeErr != nil {
+			rs.logger.Error("Failed to close response body: ", closeErr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
