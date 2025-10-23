@@ -8,12 +8,15 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/RowenTey/JustJio/server/api/dto/request"
-	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/services"
 	"github.com/RowenTey/JustJio/server/api/utils"
 
 	"github.com/gofiber/fiber/v2"
+)
+
+var (
+	validStatuses = map[string]bool{"pending": true, "accepted": true, "rejected": true}
 )
 
 type UserHandler struct {
@@ -59,7 +62,7 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 // @Produce json
 // @Param userId path string true "User ID" example("123")
 // @Param request body request.UpdateUsernameRequest true "Username update request" example({"username":"new_username"})
-// @Success 200 {object} object{status=string,message=string,data=request.UpdateUsernameRequest} "User successfully updated"
+// @Success 200 {object} utils.EmptyApiResponse "User successfully updated"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
 // @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
 // @Failure 409 {object} utils.EmptyApiResponse "Username already taken"
@@ -80,7 +83,7 @@ func (h *UserHandler) UpdateUsername(c *fiber.Ctx) error {
 	}
 
 	h.logger.Infof("User %s updated username to %s", id, req.Username)
-	return utils.HandleSuccess(c, "User successfully updated", req)
+	return utils.HandleSuccess[any](c, "User successfully updated", nil)
 }
 
 // GetNumFriends gets the number of friends for a user
@@ -90,7 +93,7 @@ func (h *UserHandler) UpdateUsername(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param userId path string true "User ID" example("123")
-// @Success 200 {object} object{status=string,message=string,data=response.GetNumFriendsResponse} "Number of friends retrieved successfully"
+// @Success 200 {object} object{status=string,message=string,data=int} "Number of friends retrieved successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friends/count [get]
@@ -103,10 +106,7 @@ func (h *UserHandler) GetNumFriends(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %s", userID))
 	}
 
-	response := response.GetNumFriendsResponse{
-		NumFriends: numFriends,
-	}
-	return utils.HandleSuccess(c, "Number of friends retrieved successfully", response)
+	return utils.HandleSuccess(c, "Number of friends retrieved successfully", numFriends)
 }
 
 // RemoveFriend removes a friend
@@ -148,7 +148,7 @@ func (h *UserHandler) RemoveFriend(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param userId path string true "User ID"
-// @Success 200 {object} object{status=string,message=string,data=[]model.User} "Friends retrieved successfully"
+// @Success 200 {object} object{status=string,message=string,data=[]response.MinimalUserDto} "Friends retrieved successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friends [get]
@@ -172,7 +172,7 @@ func (h *UserHandler) GetFriends(c *fiber.Ctx) error {
 // @Produce json
 // @Param userId path string true "User ID"
 // @Param query query string true "Search query"
-// @Success 200 {object} object{status=string,message=string,data=[]model.User} "Non-friend users retrieved successfully"
+// @Success 200 {object} object{status=string,message=string,data=[]response.MinimalUserDto} "Non-friend users retrieved successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friends/search [get]
@@ -233,14 +233,19 @@ func (h *UserHandler) SendFriendRequest(c *fiber.Ctx) error {
 // @Produce json
 // @Param userId path int true "User ID"
 // @Param status query string true "Status of friend requests (e.g., pending, accepted)"
-// @Success 200 {object} object{status=string,message=string,data=[]model.FriendRequest} "Friend requests retrieved successfully"
+// @Success 200 {object} object{status=string,message=string,data=[]response.FriendRequestDto} "Friend requests retrieved successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid status"
 // @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friendRequests [get]
 func (h *UserHandler) GetFriendRequestsByStatus(c *fiber.Ctx) error {
 	ctx := utils.GetOtelContext(c)
+
 	status := c.Query("status")
+	if !validStatuses[status] {
+		return utils.HandleInvalidInputError(c, errors.New("invalid status"))
+	}
+
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
@@ -248,9 +253,6 @@ func (h *UserHandler) GetFriendRequestsByStatus(c *fiber.Ctx) error {
 
 	requests, err := h.userService.GetFriendRequestsByStatus(ctx, uint(userID), status)
 	if err != nil {
-		if errors.Is(err, services.ErrInvalidFriendRequestStatus) {
-			return utils.HandleInvalidInputError(c, err)
-		}
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
 
@@ -264,13 +266,14 @@ func (h *UserHandler) GetFriendRequestsByStatus(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param userId path int true "User ID"
-// @Success 200 {object} object{status=string,message=string,data=response.CountPendingRequestsResponse} "Pending friend requests counted successfully"
+// @Success 200 {object} object{status=string,message=string,data=int} "Pending friend requests counted successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
 // @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friendRequests/count [get]
 func (h *UserHandler) CountPendingFriendRequests(c *fiber.Ctx) error {
 	ctx := utils.GetOtelContext(c)
+
 	userID, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
@@ -281,9 +284,7 @@ func (h *UserHandler) CountPendingFriendRequests(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
 	}
 
-	return utils.HandleSuccess(c, "Pending friend requests counted successfully", response.CountPendingRequestsResponse{
-		Count: count,
-	})
+	return utils.HandleSuccess(c, "Pending friend requests counted successfully", count)
 }
 
 // RespondToFriendRequest responds to a friend request

@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { consolidateBillApi, fetchBillApi } from "../api/bill";
-import { api } from "../api";
+import { billService } from "../services/bill.service";
 import useMandatoryParam from "../hooks/useMandatoryParam";
 import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
-import { IBill } from "../types/bill";
 import { formatDate } from "../utils/date";
 import { useLocation, useNavigate } from "react-router-dom";
+import { BillDto } from "../types/models";
 
 const SplitBillPage: React.FC = () => {
   const roomId = useMandatoryParam("roomId");
-  const [bills, setBills] = useState<IBill[]>([]);
+  const [bills, setBills] = useState<BillDto[]>([]);
   const [expandedOwners, setExpandedOwners] = useState<Set<number>>(new Set());
   const { state } = useLocation();
   const { roomName } = state as { roomName: string };
@@ -22,7 +21,7 @@ const SplitBillPage: React.FC = () => {
 
   // Group bills by owner
   const groupedBills = useMemo(() => {
-    const grouped = new Map<number, IBill[]>();
+    const grouped = new Map<number, BillDto[]>();
 
     bills.forEach((bill) => {
       const ownerId = bill.owner.id;
@@ -53,31 +52,25 @@ const SplitBillPage: React.FC = () => {
 
   useEffect(() => {
     const fetchBill = async (roomId: string) => {
-      const res = await fetchBillApi(api, roomId);
-
-      if (res.status !== 200) {
+      try {
+        const res = await billService.getBillsByRoom(roomId);
+        console.log("[SplitBillPage] Bill data", res.data);
+        setBills(res.data as BillDto[]);
+      } catch (error) {
         alert("Failed to fetch bill");
-        return;
       }
-
-      const { data } = res.data;
-      console.log("[SplitBillPage] Bill data", data);
-
-      setBills(data);
     };
     fetchBill(roomId);
   }, [roomId]);
 
   const onSubmit = async () => {
-    const res = await consolidateBillApi(api, roomId);
-
-    if (res.status !== 200) {
+    try {
+      await billService.consolidateBills({ roomId });
+      alert("Bill consolidated successfully");
+      navigate(-1);
+    } catch (error) {
       alert("Failed to consolidate bill");
-      return;
     }
-
-    alert("Bill consolidated successfully");
-    navigate(-1);
   };
 
   return (

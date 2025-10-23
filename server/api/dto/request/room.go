@@ -10,9 +10,8 @@ type CreateRoomRequest struct {
 	Time         string    `json:"time" validate:"required" example:"7:00 PM"`
 	Venue        string    `json:"venue" validate:"required" example:"Marina Bay Sands"`
 	VenuePlaceId string    `json:"venuePlaceId" validate:"required" example:"ChIJkxHPFjMZ2jERPRhLUvKGfFk"`
-	VenueUrl     string    `json:"venueUrl" validate:"required,url" example:"https://maps.google.com/?cid=123456"`
 	Date         time.Time `json:"date" validate:"required" example:"2025-12-25T19:00:00Z"`
-	Description  string    `json:"description" validate:"required,max=500" example:"Let's celebrate John's birthday!"`
+	Description  string    `json:"description" validate:"max=500" example:"Let's celebrate John's birthday!"`
 	IsPrivate    bool      `json:"isPrivate" example:"false"`
 	ImageUrl     string    `json:"imageUrl" validate:"required,url" example:"https://example.com/party.jpg"`
 	Invitees     []string  `json:"invitees" swaggertype:"array,string" example:"1,2,3"` // Array of user IDs

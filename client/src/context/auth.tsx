@@ -1,21 +1,37 @@
 import React, { createContext, useState } from "react";
-import { AuthContextType, AuthState, BaseContextResponse } from "../types";
-import { googleLoginApi, loginApi, LoginResponse } from "../api/auth";
-import { api } from "../api";
+import {
+  AuthContextType,
+  AuthState,
+  BaseContextResponse,
+  Optional,
+} from "../types";
+import { authService } from "../services/auth.service";
 import { useUserCtx } from "./user";
 import useContextWrapper from "../hooks/useContextWrapper";
 import { AxiosError } from "axios";
 import { DecodedJWTToken, jwtDecode } from "../utils/jwt";
 
+interface LoginResponse {
+  data: {
+    id: number;
+    username: string;
+    email: string;
+    pictureUrl: string;
+  };
+  token: string;
+  message: string;
+  status: string;
+}
+
 export const LOGOUT = "LOGOUT";
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<Optional<AuthContextType>>(null);
 
 const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [authState, setAuthState] = useState<AuthState>({
-    accessToken: undefined,
+    accessToken: null,
     authenticated: false,
   });
   const { setUser } = useUserCtx();
@@ -68,8 +84,8 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     password: string,
   ): Promise<BaseContextResponse> => {
     try {
-      const { data: res } = await loginApi(api, username, password, false);
-      handleLoginResponse(res);
+      const res = await authService.login({ username, password });
+      handleLoginResponse(res as LoginResponse);
       return { isSuccessResponse: true, error: null };
     } catch (error) {
       console.error("Error logging in: ", error);
@@ -82,9 +98,9 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const googleLogin = async (code: string): Promise<BaseContextResponse> => {
     try {
-      const { data: res } = await googleLoginApi(api, code);
+      const res = await authService.googleAuth({ code });
       console.log("Google login response: ", res);
-      handleLoginResponse(res);
+      handleLoginResponse(res as LoginResponse);
       return { isSuccessResponse: true, error: null };
     } catch (error) {
       console.error("Error logging in: ", error);
@@ -99,7 +115,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return new Promise<boolean>((resolve) => {
       setTimeout(() => {
         setAuthState({
-          accessToken: undefined,
+          accessToken: null,
           authenticated: false,
         });
         localStorage.removeItem("accessToken");

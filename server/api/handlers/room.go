@@ -6,7 +6,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/dto/request"
-	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/middleware"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/services"
@@ -85,7 +84,7 @@ func (h *RoomHandler) GetRooms(c *fiber.Ctx) error {
 // @Tags Rooms
 // @Accept json
 // @Produce json
-// @Success 200 {object} object{status=string,message=string,data=response.CountResponse} "Retrieved number of rooms successfully"
+// @Success 200 {object} object{status=string,message=string,data=int} "Retrieved number of rooms successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "No rooms found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Security BearerAuth
@@ -99,8 +98,7 @@ func (h *RoomHandler) GetNumRooms(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, "No rooms found")
 	}
 
-	response := response.CountResponse{Count: int(numRooms)}
-	return utils.HandleSuccess(c, "Retrieved number of rooms successfully", response)
+	return utils.HandleSuccess(c, "Retrieved number of rooms successfully", numRooms)
 }
 
 // GetUnjoinedPublicRooms retrieves public rooms the user hasn't joined
@@ -109,7 +107,7 @@ func (h *RoomHandler) GetNumRooms(c *fiber.Ctx) error {
 // @Tags Rooms
 // @Accept json
 // @Produce json
-// @Success 200 {object} object{status=string,message=string,data=[]model.Room} "Retrieved public rooms successfully"
+// @Success 200 {object} object{status=string,message=string,data=[]response.SimplifiedRoomDto} "Retrieved public rooms successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "No public rooms found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Security BearerAuth
@@ -132,7 +130,7 @@ func (h *RoomHandler) GetUnjoinedPublicRooms(c *fiber.Ctx) error {
 // @Tags Room Invites
 // @Accept json
 // @Produce json
-// @Success 200 {object} object{status=string,message=string,data=[]model.RoomInvite} "Retrieved room invites successfully"
+// @Success 200 {object} object{status=string,message=string,data=[]response.RoomInviteDto} "Retrieved room invites successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "No room invites found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Security BearerAuth
@@ -155,7 +153,7 @@ func (h *RoomHandler) GetRoomInvites(c *fiber.Ctx) error {
 // @Tags Room Invites
 // @Accept json
 // @Produce json
-// @Success 200 {object} object{status=string,message=string,data=response.CountResponse} "Retrieved number of invites successfully"
+// @Success 200 {object} object{status=string,message=string,data=int} "Retrieved number of invites successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "No room invites found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Security BearerAuth
@@ -169,8 +167,7 @@ func (h *RoomHandler) GetNumRoomInvites(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, "No room invites found")
 	}
 
-	response := response.CountResponse{Count: int(numInvites)}
-	return utils.HandleSuccess(c, "Retrieved number of invites successfully", response)
+	return utils.HandleSuccess(c, "Retrieved number of invites successfully", numInvites)
 }
 
 // GetUninvitedFriendsForRoom retrieves friends not invited to a room
@@ -180,7 +177,7 @@ func (h *RoomHandler) GetNumRoomInvites(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param roomId path string true "Room ID"
-// @Success 200 {object} object{status=string,message=string,data=[]model.User} "Retrieved uninvited friends successfully"
+// @Success 200 {object} object{status=string,message=string,data=[]response.MinimalUserDto} "Retrieved uninvited friends successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "No uninvited friends found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Security BearerAuth
@@ -205,7 +202,7 @@ func (h *RoomHandler) GetUninvitedFriendsForRoom(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param room body request.CreateRoomRequest true "Room creation details"
-// @Success 200 {object} utils.EmptyApiResponse "Created room successfully"
+// @Success 200 {object} object{status=string,message=string,data=string} "Created room successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
 // @Failure 500 {object} utils.EmptyApiResponse "Failed to create room and invites"
 // @Security BearerAuth
@@ -221,18 +218,18 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 		Time:         req.Time,
 		Venue:        req.Venue,
 		VenuePlaceId: req.VenuePlaceId,
-		VenueUrl:     req.VenueUrl,
 		Date:         req.Date,
 		Description:  req.Description,
 		IsPrivate:    req.IsPrivate,
 		ImageUrl:     req.ImageUrl,
 	}
 
-	if _, err := h.roomService.CreateRoomWithInvites(ctx, room, userId, req.Invitees); err != nil {
+	roomId, err := h.roomService.CreateRoomWithInvites(ctx, room, userId, req.Invitees)
+	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "Failed to create room and invites")
 	}
 
-	return utils.HandleSuccess[any](c, "Created room successfully", nil)
+	return utils.HandleSuccess(c, "Created room successfully", roomId)
 }
 
 // EditRoom updates room details
@@ -243,7 +240,7 @@ func (h *RoomHandler) CreateRoom(c *fiber.Ctx) error {
 // @Produce json
 // @Param roomId path string true "Room ID"
 // @Param room body request.EditRoomRequest true "Room update details"
-// @Success 200 {object} object{status=string,message=string,data=model.Room} "Edited room successfully"
+// @Success 200 {object} utils.EmptyApiResponse "Edited room successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
 // @Failure 401 {object} utils.EmptyApiResponse "Only hosts can edit rooms"
 // @Failure 404 {object} utils.EmptyApiResponse "Room not found"
@@ -340,7 +337,6 @@ func (h *RoomHandler) JoinRoom(c *fiber.Ctx) error {
 // @Param roomId path string true "Room ID"
 // @Param response body request.RespondToRoomInviteRequest true "Invitation response"
 // @Success 200 {object} object{status=string,message=string,data=response.RoomDto} "Joined room successfully"
-// @Success 200 {object} utils.EmptyApiResponse "Rejected room invitation successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
 // @Failure 404 {object} utils.EmptyApiResponse "Room not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
@@ -376,9 +372,9 @@ func (h *RoomHandler) RespondToRoomInvite(c *fiber.Ctx) error {
 // @Produce json
 // @Param roomId path string true "Room ID"
 // @Param invites body request.InviteUserRequest true "User invites details"
-// @Success 200 {object} object{status=string,message=string,data=[]model.RoomInvite} "Invited users successfully"
+// @Success 200 {object} utils.EmptyApiResponse "Invited users successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
-// @Failure 401 {object} utils.EmptyApiResponse "Only hosts are allowed to invite users"
+// @Failure 403 {object} utils.EmptyApiResponse "Only hosts are allowed to invite users"
 // @Failure 404 {object} utils.EmptyApiResponse "Room / User not found"
 // @Failure 409 {object} utils.EmptyApiResponse "User is already in the room or already has pending invite"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
@@ -391,10 +387,10 @@ func (h *RoomHandler) InviteUser(c *fiber.Ctx) error {
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 	roomId := c.Params("roomId")
 
-	roomInvites, err := h.roomService.InviteUsersToRoom(ctx, roomId, userId, req.Invitees)
+	err := h.roomService.InviteUsersToRoom(ctx, roomId, userId, req.Invitees)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidHost) {
-			return utils.HandleError(c, fiber.StatusUnauthorized, "Only hosts are allowed to invite users", err)
+			return utils.HandleError(c, fiber.StatusForbidden, "Only hosts are allowed to invite users", err)
 		} else if errors.Is(err, services.ErrAlreadyInRoom) {
 			return utils.HandleError(c, fiber.StatusConflict, "User is already in the room", err)
 		} else if errors.Is(err, services.ErrAlreadyInvited) {
@@ -403,7 +399,7 @@ func (h *RoomHandler) InviteUser(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, "Room / User not found")
 	}
 
-	return utils.HandleSuccess(c, "Invited users successfully", roomInvites)
+	return utils.HandleSuccess[any](c, "Invited users successfully", nil)
 }
 
 // LeaveRoom leaves a room

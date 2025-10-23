@@ -10,11 +10,11 @@ import { EnvelopeIcon, PlusIcon } from "@heroicons/react/24/outline";
 import TransactionContainer from "../components/TransactionContainer";
 import { useRoomCtx } from "../context/room";
 import { useEffect, useState } from "react";
-import { IRoom } from "../types/room";
 import Spinner from "../components/Spinner";
 import { useTransactionCtx } from "../context/transaction";
 import { useSubscription } from "../context/subscriptions";
 import { clearRedirectPath } from "../utils/redirect";
+import { RoomListDto } from "../types/models";
 
 const HomePage = () => {
   const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
@@ -36,18 +36,20 @@ const HomePage = () => {
   };
 
   useEffect(() => {
-    async function fetchData() {
+    const fetchData = async () => {
       const roomPromise = fetchRooms();
       const transactionPromise = fetchTransactions();
       return await Promise.all([roomPromise, transactionPromise]);
-    }
+    };
 
     console.log("[HomePage] Fetching data...");
     startLoading(0);
     fetchData()
-      .then(() => stopLoading(0))
       .then(() => console.log("[HomePage] Data fetched"))
-      .catch(() => stopLoading(0));
+      .catch(() =>
+        console.error("[HomePage] An error occurred while fetching data"),
+      )
+      .finally(() => stopLoading(0));
   }, []);
 
   if (loadingStates[0]) {
@@ -114,7 +116,7 @@ const RoomActionWidgets: React.FC = () => {
   );
 };
 
-const RecentRoomsWidget: React.FC<{ rooms: IRoom[] }> = ({ rooms }) => {
+const RecentRoomsWidget: React.FC<{ rooms: RoomListDto[] }> = ({ rooms }) => {
   return (
     <div className="w-full h-[60%] mt-1 flex flex-col items-center">
       <h1 className="text-secondary text-[2.5rem] font-bold">Recent Rooms</h1>

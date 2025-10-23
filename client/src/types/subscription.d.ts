@@ -1,7 +1,12 @@
-export interface ISubscription {
-  id: string;
-  userId: number;
-  endpoint: string;
-  auth: string;
-  p256dh: string;
+import { SubscriptionDto } from "./models";
+
+export interface SubscriptionState {
+  subscription: Optional<SubscriptionDto>;
+  isSubscribed: boolean;
+}
+
+export interface SubscriptionContextType {
+  subscribe: () => Promise<boolean>;
+  unsubscribe: () => Promise<boolean>;
+  subscriptionState: SubscriptionState;
 }

@@ -7,21 +7,23 @@ import TopBarWithBackArrow from "../components/top-bar/TopBarWithBackArrow";
 import { useRoomCtx } from "../context/room";
 import IMAGES from "../assets/images/Images";
 import { Link } from "react-router-dom";
-import { IRoom } from "../types/room";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import { RoomListDto } from "../types/models";
 
 const RoomsPage = () => {
   const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
   const [searchTerm, setSearchTerm] = useState("");
   const { user } = useUserCtx();
   const { rooms, fetchRooms } = useRoomCtx();
-  const [filteredRooms, setFilteredRooms] = useState<IRoom[]>([]);
+  const [filteredRooms, setFilteredRooms] = useState<RoomListDto[]>([]);
 
   useEffect(() => {
     startLoading();
     fetchRooms()
-      .then(() => stopLoading())
-      .catch(() => stopLoading());
+      .catch(() =>
+        console.error("[RoomsPage] An error occurred while fetching rooms"),
+      )
+      .finally(() => stopLoading());
 
     setFilteredRooms(rooms);
   }, [user.id]);

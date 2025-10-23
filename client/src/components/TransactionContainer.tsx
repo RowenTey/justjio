@@ -1,17 +1,16 @@
 import React from "react";
-import { ITransaction } from "../types/transaction";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import { BellIcon } from "@heroicons/react/24/outline";
 import { useTransactionCtx } from "../context/transaction";
 import { useToast } from "../context/toast";
-import { createNotificationApi } from "../api/notifications";
-import { api } from "../api";
 import { AxiosError } from "axios";
+import { CreateNotificationRequest, TransactionDto } from "../types/models";
+import { notificationService } from "../services";
 
 type TransactionContainerProps = {
   title: string;
   emptyText: string;
-  transactions: ITransaction[];
+  transactions: TransactionDto[];
   isPayer: boolean;
 };
 
@@ -49,7 +48,7 @@ const TransactionBox = ({
   transaction,
   isPayer,
 }: {
-  transaction: ITransaction;
+  transaction: TransactionDto;
   isPayer: boolean;
 }) => {
   const { settleTransaction } = useTransactionCtx();
@@ -67,24 +66,23 @@ const TransactionBox = ({
     showToast(`Transaction settled successfully!`, false);
   };
 
-  const handleCreateReminder = async (transaction: ITransaction) => {
+  const handleCreateReminder = async (transaction: TransactionDto) => {
     try {
-      await createNotificationApi(
-        api,
-        transaction.payerId,
-        "Reminder",
-        `Pay $${transaction.amount.toFixed(2)} to ${
+      await notificationService.createNotification({
+        content: `Pay $${transaction.amount.toFixed(2)} to ${
           transaction.payee.username
         }!`,
-      );
-      showToast("Reminder created successfully!", false);
+        title: "Reminder",
+        userId: transaction.payer.id,
+      } as CreateNotificationRequest);
+      showToast("Reminder sent successfully!", false);
     } catch (error) {
       switch ((error as AxiosError).response?.status) {
         case 400:
           showToast("Bad request, please check request body.", true);
           break;
         default:
-          showToast("Failed to create reminder", true);
+          showToast("Failed to send reminder", true);
           break;
       }
     }

@@ -6,6 +6,7 @@ import (
 	"math"
 	"sync"
 
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/utils"
@@ -19,7 +20,7 @@ var (
 
 type TransactionService interface {
 	GenerateTransactions(bills []model.Bill, consolidatedBill *model.Consolidation) ([]model.Transaction, error)
-	GetTransactionsByUser(ctx context.Context, isPaid bool, userId string) ([]model.Transaction, error)
+	GetTransactionsByUser(ctx context.Context, isPaid bool, userId string) ([]response.TransactionDto, error)
 	SettleTransaction(ctx context.Context, transactionId string, userId string) (*model.Transaction, error)
 }
 
@@ -101,8 +102,35 @@ func (ts *transactionService) GenerateTransactions(bills []model.Bill, consolida
 	return consolidatedTransactions, nil
 }
 
-func (ts *transactionService) GetTransactionsByUser(ctx context.Context, isPaid bool, userId string) ([]model.Transaction, error) {
-	return ts.transactionRepo.FindByUser(ctx, isPaid, userId)
+func (ts *transactionService) GetTransactionsByUser(ctx context.Context, isPaid bool, userId string) ([]response.TransactionDto, error) {
+	txs, err := ts.transactionRepo.FindByUser(ctx, isPaid, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	txDtos := make([]response.TransactionDto, len(txs))
+	for i, tx := range txs {
+		txDtos[i] = response.TransactionDto{
+			ID:              tx.ID,
+			ConsolidationID: tx.ConsolidationID,
+			Amount:          tx.Amount,
+			IsPaid:          tx.IsPaid,
+			PaidOn:          tx.PaidOn,
+			Payer: response.MinimalUserDto{
+				ID:         tx.Payer.ID,
+				Username:   tx.Payer.Username,
+				PictureUrl: tx.Payer.PictureUrl,
+			},
+			Payee: response.MinimalUserDto{
+				ID:         tx.Payee.ID,
+				Username:   tx.Payee.Username,
+				PictureUrl: tx.Payee.PictureUrl,
+			},
+		}
+	}
+
+	return txDtos, nil
+
 }
 
 func (ts *transactionService) SettleTransaction(ctx context.Context, transactionId string, userId string) (*model.Transaction, error) {

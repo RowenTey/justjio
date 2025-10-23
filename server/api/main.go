@@ -24,8 +24,8 @@ import (
 // @version 1.0
 // @description API server for JustJio.
 // @host localhost:8080
+// @schemes http
 // @BasePath /v1
-// @schemes http https
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization

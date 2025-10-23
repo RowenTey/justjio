@@ -8,6 +8,7 @@ import (
 
 	"github.com/RowenTey/JustJio/server/api/database"
 	kafkaModel "github.com/RowenTey/JustJio/server/api/dto/kafka"
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"gorm.io/gorm"
 
 	"github.com/RowenTey/JustJio/server/api/model"
@@ -120,10 +121,25 @@ func (ms *MessageService) CountNumMessagesPages(ctx context.Context, roomId stri
 	return int(math.Ceil(float64(count) / float64(MESSAGE_PAGE_SIZE))), nil
 }
 
-func (ms *MessageService) GetMessagesByRoomId(ctx context.Context, roomId string, page int, asc bool) ([]model.Message, int, error) {
+func (ms *MessageService) GetMessagesByRoomId(ctx context.Context, roomId string, page int, asc bool) ([]response.MessageDto, int, error) {
 	messages, err := ms.messageRepo.FindByRoom(ctx, roomId, page, MESSAGE_PAGE_SIZE, asc)
 	if err != nil {
 		return nil, 0, err
+	}
+
+	msgDtos := make([]response.MessageDto, len(messages))
+	for i, msg := range messages {
+		msgDtos[i] = response.MessageDto{
+			ID:      msg.ID,
+			RoomID:  msg.RoomID,
+			Content: msg.Content,
+			SentAt:  msg.SentAt,
+			Sender: response.MinimalUserDto{
+				ID:         msg.Sender.ID,
+				Username:   msg.Sender.Username,
+				PictureUrl: msg.Sender.PictureUrl,
+			},
+		}
 	}
 
 	pageCount, err := ms.CountNumMessagesPages(ctx, roomId)
@@ -131,5 +147,5 @@ func (ms *MessageService) GetMessagesByRoomId(ctx context.Context, roomId string
 		return nil, 0, err
 	}
 
-	return messages, pageCount, nil
+	return msgDtos, pageCount, nil
 }

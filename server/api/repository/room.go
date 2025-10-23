@@ -22,7 +22,6 @@ type RoomRepository interface {
 	Update(ctx context.Context, room *model.Room) error
 	AddUserToRoom(ctx context.Context, roomID string, user *model.User) error
 	RemoveUserFromRoom(ctx context.Context, roomID, userID string) error
-	IsUserInRoom(ctx context.Context, roomID, userID string) (bool, error)
 
 	// Invite related methods
 	GetPendingInvites(ctx context.Context, userID string) ([]model.RoomInvite, error)
@@ -161,16 +160,6 @@ func (r *roomRepository) RemoveUserFromRoom(ctx context.Context, roomID, userID 
 		Error
 }
 
-func (r *roomRepository) IsUserInRoom(ctx context.Context, roomID, userID string) (bool, error) {
-	var count int64
-	err := r.db.
-		WithContext(ctx).
-		Table("room_users").
-		Where("room_id = ? AND user_id = ?", roomID, userID).
-		Count(&count).Error
-	return count > 0, err
-}
-
 func (r *roomRepository) DeletePendingInvites(ctx context.Context, roomID string) error {
 	return r.db.
 		WithContext(ctx).
@@ -193,6 +182,7 @@ func (r *roomRepository) GetPendingInvites(ctx context.Context, userID string) (
 	var invites []model.RoomInvite
 	err := r.db.
 		WithContext(ctx).
+		Preload("Room").
 		Preload("Room.Host", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).

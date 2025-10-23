@@ -4,13 +4,20 @@ import TopBarWithBackArrow from "../components/top-bar/TopBarWithBackArrow";
 import { AxiosError } from "axios";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import InputField from "../components/InputField";
-import { api } from "../api";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "../context/toast";
 import { useState } from "react";
 import { IVenue } from "../types/room";
 import QueryVenueDropdown from "../components/room/QueryVenueDropdown";
-import { updateRoomApi, UpdateRoomRequest } from "../api/room";
+import { roomService } from "../services/room.service";
+
+type UpdateRoomRequest = {
+  venue: string;
+  placeId: string;
+  date: string;
+  time: string;
+  description: string;
+};
 
 type EditRoomformData = {
   date: string;
@@ -53,7 +60,7 @@ const EditRoomPage = () => {
         time: data.time,
         description: data.description,
       };
-      await updateRoomApi(api, state.room.id, payload);
+      await roomService.editRoom(state.room.id, payload as any);
       showToast(`Updated room successfully!`, false);
       setTimeout(() => navigate(-1), 1000);
     } catch (error) {

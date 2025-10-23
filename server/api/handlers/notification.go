@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"strconv"
 
 	log "github.com/sirupsen/logrus"
@@ -48,9 +47,6 @@ func (h *NotificationHandler) CreateNotification(c *fiber.Ctx) error {
 	userId := utils.UIntToString(req.UserId)
 
 	if err := h.notificationService.SendNotification(ctx, userId, req.Title, req.Content); err != nil {
-		if errors.Is(err, services.ErrEmptyContent) {
-			return utils.HandleInvalidInputError(c, err)
-		}
 		return utils.HandleInternalServerError(c, err)
 	}
 
@@ -94,7 +90,7 @@ func (h *NotificationHandler) MarkNotificationAsRead(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param id path string true "Notification ID"
-// @Success 200 {object} object{status=string,message=string,data=model.Notification} "Retrieved notification successfully"
+// @Success 200 {object} object{status=string,message=string,data=response.NotificationDto} "Retrieved notification successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid notification ID"
 // @Failure 404 {object} utils.EmptyApiResponse "Notification not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
@@ -123,7 +119,7 @@ func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
 // @Tags Notifications
 // @Accept json
 // @Produce json
-// @Success 200 {object} object{status=string,message=string,data=[]model.Notification} "Retrieved notifications successfully"
+// @Success 200 {object} object{status=string,message=string,data=[]response.NotificationDto} "Retrieved notifications successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "User not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Security BearerAuth

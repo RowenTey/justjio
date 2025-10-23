@@ -1,7 +1,6 @@
 import { useForm } from "react-hook-form";
 import ModalWrapper, { ModalWrapperProps } from "../ModalWrapper";
 import SearchableDropdown from "../SearchableDropdown";
-import { IUser } from "../../types/user";
 import { useEffect, useState } from "react";
 import {
   getUninvitedFriendsForRoomApi,
@@ -12,6 +11,7 @@ import { useToast } from "../../context/toast";
 import { AxiosError } from "axios";
 import { QrCodeIcon } from "@heroicons/react/24/solid";
 import { LinkIcon } from "@heroicons/react/24/outline";
+import { MinimalUserDto } from "../../types/models";
 
 interface InviteAttendeesFormData {
   invitees: string;
@@ -31,7 +31,9 @@ const InviteAttendeesModalContent: React.FC<
     setValue,
     formState: { errors },
   } = useForm<InviteAttendeesFormData>();
-  const [uninvitedFriends, SetUninvitedFriends] = useState<IUser[]>([]);
+  const [uninvitedFriends, SetUninvitedFriends] = useState<MinimalUserDto[]>(
+    [],
+  );
   const { showToast } = useToast();
 
   useEffect(() => {

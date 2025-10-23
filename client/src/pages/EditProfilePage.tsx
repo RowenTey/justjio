@@ -5,10 +5,10 @@ import { AxiosError } from "axios";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import InputField from "../components/InputField";
 import { useUserCtx } from "../context/user";
-import { updateUsernameApi } from "../api/user";
-import { api } from "../api";
+import { userService } from "../services/user.service";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../context/toast";
+import { UpdateUsernameRequest } from "../types/models";
 
 const EditProfilePage = () => {
   const {
@@ -25,7 +25,9 @@ const EditProfilePage = () => {
   const onSubmit: SubmitHandler<{ username: string }> = async (data) => {
     startLoading();
     try {
-      await updateUsernameApi(api, user.id, "username", data.username);
+      await userService.updateUsername(user.id.toString(), {
+        username: data.username,
+      } as UpdateUsernameRequest);
       setUser({ ...user, username: data.username });
       showToast(`Updated username successfully!`, false);
       stopLoading();

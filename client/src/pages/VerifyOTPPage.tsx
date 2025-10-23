@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import Spinner from "../components/Spinner";
 import { useLocation, useNavigate } from "react-router-dom";
-import { sendOtpEmailApi, verifyOtpApi } from "../api/auth";
-import { api } from "../api";
+import { authService } from "../services/auth.service";
 import { useToast } from "../context/toast";
 import { AxiosError } from "axios";
 
@@ -46,7 +45,7 @@ const VerifyOTPPage = () => {
     setCountdown(30);
 
     try {
-      await sendOtpEmailApi(api, email, "verify-email");
+      await authService.sendOTP({ email, purpose: "verify-email" });
       showToast("OTP sent successfully!", false);
     } catch (error) {
       console.error(error);
@@ -80,7 +79,7 @@ const VerifyOTPPage = () => {
     startLoading(0);
     try {
       console.log("[VerifyOTPPage] Verifying OTP:", otp, email);
-      await verifyOtpApi(api, email, otp);
+      await authService.verifyOTP({ email, otp });
       showToast("Email verified successfully!", false);
       setTimeout(() => {
         if (from === "/password/forgot")

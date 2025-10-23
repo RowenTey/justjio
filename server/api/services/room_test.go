@@ -636,11 +636,10 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	invites, err := s.roomService.InviteUsersToRoom(context.Background(), roomId, inviterId, inviteesIds)
+	err := s.roomService.InviteUsersToRoom(context.Background(), roomId, inviterId, inviteesIds)
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Len(s.T(), invites, 2)
 
 	// Verify mock calls
 	s.mockRoomRepo.AssertExpectations(s.T())
@@ -667,11 +666,10 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_NotHost() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	invites, err := s.roomService.InviteUsersToRoom(context.Background(), roomId, inviterId, invitees)
+	err := s.roomService.InviteUsersToRoom(context.Background(), roomId, inviterId, invitees)
 
 	// Assertions
 	assert.Equal(s.T(), ErrInvalidHost, err)
-	assert.Len(s.T(), invites, 0)
 
 	// Verify mock calls
 	s.mockRoomRepo.AssertExpectations(s.T())
@@ -818,7 +816,7 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_UserNotFound() {
 	s.sqlMock.ExpectRollback()
 
 	// Execute
-	_, err := s.roomService.InviteUsersToRoom(context.Background(), roomId, inviterId, inviteUserIds)
+	err := s.roomService.InviteUsersToRoom(context.Background(), roomId, inviterId, inviteUserIds)
 
 	// Assertions
 	assert.Error(s.T(), err)

@@ -1,10 +1,10 @@
 import { ArrowLeftIcon, PencilIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { IRoom } from "../../types/room";
+import { RoomDto } from "../../types/models";
 
 type RoomTopBarProps = {
-  room: IRoom;
+  room: RoomDto;
   showEditBtn: boolean;
 };
 

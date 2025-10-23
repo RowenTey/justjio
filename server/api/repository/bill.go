@@ -40,7 +40,16 @@ func (r *billRepository) Create(ctx context.Context, bill *model.Bill) error {
 
 func (r *billRepository) FindByID(ctx context.Context, billID uint) (*model.Bill, error) {
 	var bill model.Bill
-	err := r.db.WithContext(ctx).Where("id = ?", billID).First(&bill).Error
+	err := r.db.
+		WithContext(ctx).
+		Where("id = ?", billID).
+		Preload("Owner", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "username", "picture_url")
+		}).
+		Preload("Payers", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "username", "picture_url")
+		}).
+		First(&bill).Error
 	return &bill, err
 }
 
@@ -49,8 +58,12 @@ func (r *billRepository) FindByRoom(ctx context.Context, roomID string) ([]model
 	err := r.db.
 		WithContext(ctx).
 		Where("room_id = ?", roomID).
-		Preload("Owner").
-		Preload("Payers").
+		Preload("Owner", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "username", "picture_url")
+		}).
+		Preload("Payers", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "username", "picture_url")
+		}).
 		Find(&bills).Error
 	return bills, err
 }
@@ -90,7 +103,9 @@ func (r *billRepository) FindByConsolidation(ctx context.Context, consolidationI
 	err := r.db.
 		WithContext(ctx).
 		Model(&model.Bill{}).
-		Preload("Payers").
+		Preload("Payers", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "username", "picture_url")
+		}).
 		Where("consolidation_id = ?", consolidationID).
 		Find(&bills).Error
 	return bills, err

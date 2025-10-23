@@ -408,7 +408,7 @@ const docTemplate = `{
                                 "data": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/model.Bill"
+                                        "$ref": "#/definitions/response.BillDto"
                                     }
                                 },
                                 "message": {
@@ -475,7 +475,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/model.Bill"
+                                    "type": "string"
                                 },
                                 "message": {
                                     "type": "string"
@@ -655,7 +655,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/model.Notification"
+                                    "$ref": "#/definitions/response.NotificationDto"
                                 },
                                 "message": {
                                     "type": "string"
@@ -781,7 +781,18 @@ const docTemplate = `{
                     "200": {
                         "description": "Created room successfully",
                         "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "type": "string"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
                         }
                     },
                     "400": {
@@ -824,7 +835,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/response.CountResponse"
+                                    "type": "integer"
                                 },
                                 "message": {
                                     "type": "string"
@@ -877,7 +888,7 @@ const docTemplate = `{
                                 "data": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/model.RoomInvite"
+                                        "$ref": "#/definitions/response.RoomInviteDto"
                                     }
                                 },
                                 "message": {
@@ -929,7 +940,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/response.CountResponse"
+                                    "type": "integer"
                                 },
                                 "message": {
                                     "type": "string"
@@ -982,7 +993,7 @@ const docTemplate = `{
                                 "data": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/model.Room"
+                                        "$ref": "#/definitions/response.SimplifiedRoomDto"
                                     }
                                 },
                                 "message": {
@@ -1107,21 +1118,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Invited users successfully",
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/model.RoomInvite"
-                                    }
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
                         }
                     },
                     "400": {
@@ -1130,7 +1127,7 @@ const docTemplate = `{
                             "$ref": "#/definitions/utils.EmptyApiResponse"
                         }
                     },
-                    "401": {
+                    "403": {
                         "description": "Only hosts are allowed to invite users",
                         "schema": {
                             "$ref": "#/definitions/utils.EmptyApiResponse"
@@ -1193,9 +1190,20 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Rejected room invitation successfully",
+                        "description": "Joined room successfully",
                         "schema": {
-                            "$ref": "#/definitions/utils.EmptyApiResponse"
+                            "type": "object",
+                            "properties": {
+                                "data": {
+                                    "$ref": "#/definitions/response.RoomDto"
+                                },
+                                "message": {
+                                    "type": "string"
+                                },
+                                "status": {
+                                    "type": "string"
+                                }
+                            }
                         }
                     },
                     "400": {
@@ -1320,18 +1328,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Edited room successfully",
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "$ref": "#/definitions/model.Room"
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
                         }
                     },
                     "400": {
@@ -1530,10 +1527,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/definitions/model.Message"
-                                    }
+                                    "$ref": "#/definitions/response.GetMessagesResponse"
                                 },
                                 "message": {
                                     "type": "string"
@@ -1717,7 +1711,7 @@ const docTemplate = `{
                                 "data": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/model.User"
+                                        "$ref": "#/definitions/response.MinimalUserDto"
                                     }
                                 },
                                 "message": {
@@ -1843,7 +1837,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/model.Subscription"
+                                    "type": "string"
                                 },
                                 "message": {
                                     "type": "string"
@@ -1903,7 +1897,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/model.Subscription"
+                                    "$ref": "#/definitions/response.SubscriptionDto"
                                 },
                                 "message": {
                                     "type": "string"
@@ -2020,7 +2014,7 @@ const docTemplate = `{
                                 "data": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/model.Transaction"
+                                        "$ref": "#/definitions/response.TransactionDto"
                                     }
                                 },
                                 "message": {
@@ -2201,7 +2195,7 @@ const docTemplate = `{
                                 "data": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/model.FriendRequest"
+                                        "$ref": "#/definitions/response.FriendRequestDto"
                                     }
                                 },
                                 "message": {
@@ -2389,7 +2383,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/response.CountPendingRequestsResponse"
+                                    "type": "integer"
                                 },
                                 "message": {
                                     "type": "string"
@@ -2452,7 +2446,7 @@ const docTemplate = `{
                                 "data": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/model.User"
+                                        "$ref": "#/definitions/response.MinimalUserDto"
                                     }
                                 },
                                 "message": {
@@ -2509,7 +2503,7 @@ const docTemplate = `{
                             "type": "object",
                             "properties": {
                                 "data": {
-                                    "$ref": "#/definitions/response.GetNumFriendsResponse"
+                                    "type": "integer"
                                 },
                                 "message": {
                                     "type": "string"
@@ -2573,7 +2567,7 @@ const docTemplate = `{
                                 "data": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/model.User"
+                                        "$ref": "#/definitions/response.MinimalUserDto"
                                     }
                                 },
                                 "message": {
@@ -2684,7 +2678,7 @@ const docTemplate = `{
                                 "data": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/definitions/model.Notification"
+                                        "$ref": "#/definitions/response.NotificationDto"
                                     }
                                 },
                                 "message": {
@@ -2802,18 +2796,7 @@ const docTemplate = `{
                     "200": {
                         "description": "User successfully updated",
                         "schema": {
-                            "type": "object",
-                            "properties": {
-                                "data": {
-                                    "$ref": "#/definitions/request.UpdateUsernameRequest"
-                                },
-                                "message": {
-                                    "type": "string"
-                                },
-                                "status": {
-                                    "type": "string"
-                                }
-                            }
+                            "$ref": "#/definitions/utils.EmptyApiResponse"
                         }
                     },
                     "400": {
@@ -2845,100 +2828,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "model.Bill": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "consolidation": {
-                    "$ref": "#/definitions/model.Consolidation"
-                },
-                "consolidationId": {
-                    "type": "integer"
-                },
-                "date": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "includeOwner": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "owner": {
-                    "description": "Associations",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.User"
-                        }
-                    ]
-                },
-                "ownerId": {
-                    "type": "integer"
-                },
-                "payers": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.User"
-                    }
-                },
-                "room": {
-                    "$ref": "#/definitions/model.Room"
-                },
-                "roomId": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.Consolidation": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "model.FriendRequest": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "receiver": {
-                    "$ref": "#/definitions/model.User"
-                },
-                "receiverId": {
-                    "type": "integer"
-                },
-                "respondedAt": {
-                    "type": "string"
-                },
-                "sender": {
-                    "description": "Associations",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.User"
-                        }
-                    ]
-                },
-                "senderId": {
-                    "type": "integer"
-                },
-                "sentAt": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                }
-            }
-        },
         "model.Message": {
             "type": "object",
             "properties": {
@@ -2967,32 +2856,6 @@ const docTemplate = `{
                 },
                 "sentAt": {
                     "type": "string"
-                }
-            }
-        },
-        "model.Notification": {
-            "type": "object",
-            "properties": {
-                "content": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "isRead": {
-                    "type": "boolean"
-                },
-                "title": {
-                    "type": "string"
-                },
-                "updatedAt": {
-                    "type": "string"
-                },
-                "userId": {
-                    "type": "integer"
                 }
             }
         },
@@ -3060,104 +2923,6 @@ const docTemplate = `{
                 },
                 "venueUrl": {
                     "type": "string"
-                }
-            }
-        },
-        "model.RoomInvite": {
-            "type": "object",
-            "properties": {
-                "createdAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "inviter": {
-                    "$ref": "#/definitions/model.User"
-                },
-                "inviterId": {
-                    "type": "integer"
-                },
-                "room": {
-                    "$ref": "#/definitions/model.Room"
-                },
-                "roomId": {
-                    "type": "string"
-                },
-                "status": {
-                    "description": "Invite status (pending, accepted, rejected)",
-                    "type": "string"
-                },
-                "user": {
-                    "description": "Associations",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.User"
-                        }
-                    ]
-                },
-                "userId": {
-                    "type": "integer"
-                }
-            }
-        },
-        "model.Subscription": {
-            "type": "object",
-            "properties": {
-                "auth": {
-                    "type": "string"
-                },
-                "endpoint": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "p256dh": {
-                    "type": "string"
-                },
-                "userId": {
-                    "type": "integer"
-                }
-            }
-        },
-        "model.Transaction": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "consolidation": {
-                    "$ref": "#/definitions/model.Consolidation"
-                },
-                "consolidationId": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "isPaid": {
-                    "type": "boolean"
-                },
-                "paidOn": {
-                    "type": "string"
-                },
-                "payee": {
-                    "$ref": "#/definitions/model.User"
-                },
-                "payeeId": {
-                    "type": "integer"
-                },
-                "payer": {
-                    "description": "Associations",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.User"
-                        }
-                    ]
-                },
-                "payerId": {
-                    "type": "integer"
                 }
             }
         },
@@ -3318,13 +3083,11 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "date",
-                "description",
                 "imageUrl",
                 "name",
                 "time",
                 "venue",
-                "venuePlaceId",
-                "venueUrl"
+                "venuePlaceId"
             ],
             "properties": {
                 "date": {
@@ -3373,10 +3136,6 @@ const docTemplate = `{
                 "venuePlaceId": {
                     "type": "string",
                     "example": "ChIJkxHPFjMZ2jERPRhLUvKGfFk"
-                },
-                "venueUrl": {
-                    "type": "string",
-                    "example": "https://maps.google.com/?cid=123456"
                 }
             }
         },
@@ -3627,22 +3386,14 @@ const docTemplate = `{
                 }
             }
         },
-        "response.AttendeesDto": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "pictureUrl": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
         "response.AuthResponse": {
             "type": "object",
+            "required": [
+                "email",
+                "id",
+                "pictureUrl",
+                "username"
+            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -3658,37 +3409,195 @@ const docTemplate = `{
                 }
             }
         },
-        "response.CountPendingRequestsResponse": {
+        "response.BillDto": {
             "type": "object",
+            "required": [
+                "amount",
+                "date",
+                "id",
+                "includeOwner",
+                "name",
+                "owner",
+                "payers"
+            ],
             "properties": {
-                "count": {
+                "amount": {
+                    "type": "number"
+                },
+                "consolidationId": {
+                    "type": "integer"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "includeOwner": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "owner": {
+                    "$ref": "#/definitions/response.MinimalUserDto"
+                },
+                "payers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.MinimalUserDto"
+                    }
+                }
+            }
+        },
+        "response.FriendRequestDto": {
+            "type": "object",
+            "required": [
+                "id",
+                "receiver",
+                "sender",
+                "sentAt",
+                "status"
+            ],
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "receiver": {
+                    "$ref": "#/definitions/response.MinimalUserDto"
+                },
+                "respondedAt": {
+                    "type": "string"
+                },
+                "sender": {
+                    "$ref": "#/definitions/response.MinimalUserDto"
+                },
+                "sentAt": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.GetMessagesResponse": {
+            "type": "object",
+            "required": [
+                "messages",
+                "page",
+                "pageCount"
+            ],
+            "properties": {
+                "messages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/response.MessageDto"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "pageCount": {
                     "type": "integer"
                 }
             }
         },
-        "response.CountResponse": {
+        "response.MessageDto": {
             "type": "object",
+            "required": [
+                "content",
+                "id",
+                "roomId",
+                "sender",
+                "sentAt"
+            ],
             "properties": {
-                "count": {
+                "content": {
+                    "type": "string"
+                },
+                "id": {
                     "type": "integer"
+                },
+                "roomId": {
+                    "type": "string"
+                },
+                "sender": {
+                    "$ref": "#/definitions/response.MinimalUserDto"
+                },
+                "sentAt": {
+                    "type": "string"
                 }
             }
         },
-        "response.GetNumFriendsResponse": {
+        "response.MinimalUserDto": {
             "type": "object",
+            "required": [
+                "id",
+                "pictureUrl",
+                "username"
+            ],
             "properties": {
-                "numFriends": {
+                "id": {
                     "type": "integer"
+                },
+                "pictureUrl": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.NotificationDto": {
+            "type": "object",
+            "required": [
+                "content",
+                "createdAt",
+                "id",
+                "isRead",
+                "title"
+            ],
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isRead": {
+                    "type": "boolean"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },
         "response.RoomDto": {
             "type": "object",
+            "required": [
+                "attendees",
+                "consolidated",
+                "date",
+                "description",
+                "host",
+                "id",
+                "imageUrl",
+                "isClosed",
+                "isPrivate",
+                "name",
+                "noOfAttendees",
+                "time",
+                "venue",
+                "venueUrl"
+            ],
             "properties": {
                 "attendees": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/response.AttendeesDto"
+                        "$ref": "#/definitions/response.MinimalUserDto"
                     }
                 },
                 "consolidated": {
@@ -3701,7 +3610,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "host": {
-                    "$ref": "#/definitions/response.AttendeesDto"
+                    "$ref": "#/definitions/response.MinimalUserDto"
                 },
                 "id": {
                     "type": "string"
@@ -3732,11 +3641,51 @@ const docTemplate = `{
                 }
             }
         },
+        "response.RoomInviteDto": {
+            "type": "object",
+            "required": [
+                "createdAt",
+                "id",
+                "inviter",
+                "room",
+                "status",
+                "user"
+            ],
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "inviter": {
+                    "$ref": "#/definitions/response.MinimalUserDto"
+                },
+                "room": {
+                    "$ref": "#/definitions/response.SimplifiedRoomDto"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/response.MinimalUserDto"
+                }
+            }
+        },
         "response.RoomListDto": {
             "type": "object",
+            "required": [
+                "host",
+                "id",
+                "imageUrl",
+                "isClosed",
+                "isPrivate",
+                "name",
+                "noOfAttendees"
+            ],
             "properties": {
                 "host": {
-                    "$ref": "#/definitions/response.AttendeesDto"
+                    "$ref": "#/definitions/response.MinimalUserDto"
                 },
                 "id": {
                     "type": "string"
@@ -3755,6 +3704,118 @@ const docTemplate = `{
                 },
                 "noOfAttendees": {
                     "type": "integer"
+                }
+            }
+        },
+        "response.SimplifiedRoomDto": {
+            "type": "object",
+            "required": [
+                "date",
+                "description",
+                "host",
+                "id",
+                "imageUrl",
+                "isPrivate",
+                "name",
+                "noOfAttendees",
+                "time",
+                "venue",
+                "venueUrl"
+            ],
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "host": {
+                    "$ref": "#/definitions/response.MinimalUserDto"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "imageUrl": {
+                    "type": "string"
+                },
+                "isPrivate": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "noOfAttendees": {
+                    "type": "integer"
+                },
+                "time": {
+                    "type": "string"
+                },
+                "venue": {
+                    "type": "string"
+                },
+                "venueUrl": {
+                    "type": "string"
+                }
+            }
+        },
+        "response.SubscriptionDto": {
+            "type": "object",
+            "required": [
+                "auth",
+                "endpoint",
+                "id",
+                "p256dh",
+                "userId"
+            ],
+            "properties": {
+                "auth": {
+                    "type": "string"
+                },
+                "endpoint": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "p256dh": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "response.TransactionDto": {
+            "type": "object",
+            "required": [
+                "amount",
+                "consolidationId",
+                "id",
+                "isPaid",
+                "payee",
+                "payer"
+            ],
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "consolidationId": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isPaid": {
+                    "type": "boolean"
+                },
+                "paidOn": {
+                    "type": "string"
+                },
+                "payee": {
+                    "$ref": "#/definitions/response.MinimalUserDto"
+                },
+                "payer": {
+                    "$ref": "#/definitions/response.MinimalUserDto"
                 }
             }
         },
@@ -3790,7 +3851,7 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
 	BasePath:         "/v1",
-	Schemes:          []string{"http", "https"},
+	Schemes:          []string{"http"},
 	Title:            "JustJio API",
 	Description:      "API server for JustJio.",
 	InfoInstanceName: "swagger",

@@ -61,7 +61,7 @@ func (h *MessageHandler) GetMessage(c *fiber.Ctx) error {
 // @Param roomId path string true "Room ID"
 // @Param page query int false "Page number" default(1)
 // @Param asc query bool false "Sort order (ascending if true)" default(true)
-// @Success 200 {object} object{status=string,message=string,data=[]model.Message} "Retrieved messages successfully"
+// @Success 200 {object} object{status=string,message=string,data=response.GetMessagesResponse} "Retrieved messages successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "No messages found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Security BearerAuth

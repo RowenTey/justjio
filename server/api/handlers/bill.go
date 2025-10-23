@@ -39,7 +39,7 @@ func NewBillHandler(
 // @Accept json
 // @Produce json
 // @Param bill body request.CreateBillRequest true "Bill creation details"
-// @Success 200 {object} object{status=string,message=string,data=model.Bill} "Created bill successfully"
+// @Success 200 {object} object{status=string,message=string,data=string} "Created bill successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input, empty payers, or room already consolidated"
 // @Failure 404 {object} utils.EmptyApiResponse "Room not found or payers not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
@@ -51,7 +51,7 @@ func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
 
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 
-	bill, err := h.billService.CreateBill(
+	createdBillId, err := h.billService.CreateBill(
 		ctx,
 		req.RoomID,
 		userId,
@@ -69,8 +69,8 @@ func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
 		return utils.HandleNotFoundOrInternalError(c, err, RoomNotFoundErrorMsg)
 	}
 
-	h.logger.Info("Created bill successfully: ", bill.ID)
-	return utils.HandleSuccess(c, "Created bill successfully", bill)
+	h.logger.Info("Created bill successfully: ", createdBillId)
+	return utils.HandleSuccess(c, "Created bill successfully", createdBillId)
 }
 
 // GetBillsByRoom retrieves bills for a specific room
@@ -80,7 +80,7 @@ func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param roomId query string true "Room ID"
-// @Success 200 {object} object{status=string,message=string,data=[]model.Bill} "Retrieved bills successfully"
+// @Success 200 {object} object{status=string,message=string,data=[]response.BillDto} "Retrieved bills successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Missing roomId in query parameter"
 // @Failure 404 {object} utils.EmptyApiResponse "Room not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"

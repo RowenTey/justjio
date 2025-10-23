@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
-import { IUser } from "../../types/user";
 import ModalWrapper, { ModalWrapperProps } from "../ModalWrapper";
 import { searchFriendsApi } from "../../api/user";
 import { api } from "../../api";
 import { UserPlusIcon } from "@heroicons/react/24/outline";
+import { MinimalUserDto } from "../../types/models";
 
 type SearchUserModalProps = {
   userId: number;
-  sendFriendRequest: (user: IUser) => void;
+  sendFriendRequest: (user: MinimalUserDto) => void;
 };
 
 const SearchUserModalContent: React.FC<
   SearchUserModalProps & ModalWrapperProps
 > = ({ userId, sendFriendRequest, closeModal }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<IUser[]>([]);
+  const [searchResults, setSearchResults] = useState<MinimalUserDto[]>([]);
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
@@ -53,7 +53,6 @@ const SearchUserModalContent: React.FC<
             >
               <div className="flex items-center gap-2">
                 <img
-                  // src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
                   src={user.pictureUrl}
                   alt="Profile Image"
                   className="w-7 h-7 rounded-full"
