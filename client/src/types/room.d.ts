@@ -11,7 +11,7 @@ export type RoomCtxState = {
   rooms: RoomListDto[];
 };
 
-export interface RoomContextType {
+export type RoomContextType = {
   rooms: RoomListDto[];
   fetchRooms: () => Promise<BaseContextResponse>;
   createRoom: (data: CreateRoomRequest) => Promise<BaseContextResponse>;
@@ -21,7 +21,7 @@ export interface RoomContextType {
   ) => Promise<BaseContextResponse>;
   closeRoom: (roomId: string) => Promise<BaseContextResponse>;
   leaveRoom: (roomId: string) => Promise<BaseContextResponse>;
-}
+};
 
 export type RoomActionTypes =
   | {
