@@ -114,10 +114,10 @@ func (r *roomRepository) GetUnjoinedRoomsByIsPrivate(ctx context.Context, userID
 		Joins("Host", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
-		Where("is_private = ?", isPrivate).
-		Where("id NOT IN (SELECT room_id FROM room_users WHERE user_id = ?)", userID).
-		Where("id NOT IN (SELECT room_id FROM room_invites WHERE user_id = ?)", userID).
-		Order("updated_at DESC").
+		Where("rooms.is_private = ?", isPrivate).
+		Where("rooms.id NOT IN (SELECT room_id FROM room_users WHERE user_id = ?)", userID).
+		Where("rooms.id NOT IN (SELECT room_id FROM room_invites WHERE user_id = ?)", userID).
+		Order("rooms.updated_at DESC").
 		Find(&rooms).Error
 	return rooms, err
 }
