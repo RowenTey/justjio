@@ -5,8 +5,8 @@ export interface SubscriptionState {
   isSubscribed: boolean;
 }
 
-export interface SubscriptionContextType {
+export type SubscriptionContextType = {
   subscribe: () => Promise<boolean>;
   unsubscribe: () => Promise<boolean>;
   subscriptionState: SubscriptionState;
-}
+};

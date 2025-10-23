@@ -17,7 +17,7 @@ export type UserContextType = {
   ) => Promise<BaseContextResponse>;
 };
 
-type UserActionTypes =
+export type UserActionTypes =
   | {
       type: "FETCH_FRIENDS" | "ADD_FRIEND" | "REMOVE_FRIEND";
       payload: MinimalUserDto[];
