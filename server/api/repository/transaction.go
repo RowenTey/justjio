@@ -11,8 +11,8 @@ type TransactionRepository interface {
 	WithTx(tx *gorm.DB) TransactionRepository
 
 	Create(ctx context.Context, transactions []model.Transaction) error
-	FindByUser(ctx context.Context, isPaid bool, userID string) ([]model.Transaction, error)
 	FindByID(ctx context.Context, transactionID string) (*model.Transaction, error)
+	FindByUser(ctx context.Context, isPaid bool, userID string) ([]model.Transaction, error)
 	Update(ctx context.Context, transaction *model.Transaction) error
 }
 
@@ -37,7 +37,6 @@ func (r *transactionRepository) Create(ctx context.Context, transactions []model
 		return nil
 	}
 
-	// return r.db.Omit("Consolidation").Create(&transactions).Error
 	return r.db.WithContext(ctx).Create(&transactions).Error
 }
 

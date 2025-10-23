@@ -271,7 +271,7 @@ func setupUserRoutes(v1 fiber.Router, handlers *Handlers) {
 
 	friends := users.Group("/:userId/friends")
 	friends.Get("/", handlers.UserHandler.GetFriends)
-	friends.Get("/count", handlers.UserHandler.GetNumFriends)
+	friends.Get("/count", handlers.UserHandler.CountFriends)
 	friends.Get("/search", handlers.UserHandler.SearchNonFriends)
 	friends.Delete("/:friendId", handlers.UserHandler.RemoveFriend)
 
@@ -279,7 +279,7 @@ func setupUserRoutes(v1 fiber.Router, handlers *Handlers) {
 	friendRequests.Get("/", handlers.UserHandler.GetFriendRequestsByStatus)
 	friendRequests.Get("/count", handlers.UserHandler.CountPendingFriendRequests)
 	friendRequests.Post("/",
-		middleware.ParseAndValidate[request.ModifyFriendRequest](),
+		middleware.ParseAndValidate[request.SendFriendRequest](),
 		handlers.UserHandler.SendFriendRequest,
 	)
 	friendRequests.Patch("/",

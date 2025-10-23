@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/tests"
@@ -162,7 +163,27 @@ func (s *TransactionServiceTestSuite) TestGetTransactionsByUser_Success() {
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedTransactions, transactions)
+	expectedDto := make([]response.TransactionDto, len(expectedTransactions))
+	for i, tx := range expectedTransactions {
+		expectedDto[i] = response.TransactionDto{
+			ID:              tx.ID,
+			ConsolidationID: tx.ConsolidationID,
+			Amount:          tx.Amount,
+			IsPaid:          tx.IsPaid,
+			PaidOn:          tx.PaidOn,
+			Payer: response.MinimalUserDto{
+				ID:         tx.Payer.ID,
+				Username:   tx.Payer.Username,
+				PictureUrl: tx.Payer.PictureUrl,
+			},
+			Payee: response.MinimalUserDto{
+				ID:         tx.Payee.ID,
+				Username:   tx.Payee.Username,
+				PictureUrl: tx.Payee.PictureUrl,
+			},
+		}
+	}
+	assert.Equal(s.T(), expectedDto, transactions)
 	s.mockTransactionRepo.AssertExpectations(s.T())
 }
 

@@ -4,7 +4,7 @@ type UpdateUsernameRequest struct {
 	Username string `json:"username" validate:"required,min=3,max=50,alphanum"`
 }
 
-type ModifyFriendRequest struct {
+type SendFriendRequest struct {
 	FriendID uint `json:"friendId" validate:"required"`
 }
 

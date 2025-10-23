@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	pushNotificationModel "github.com/RowenTey/JustJio/server/api/dto/push_notifications"
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 )
@@ -100,7 +101,7 @@ func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Failure() {
 	// Assertions
 	assert.Error(s.T(), err)
 	assert.Equal(s.T(), expectedErr, err)
-	assert.Nil(s.T(), result)
+	assert.Equal(s.T(), "", result)
 
 	// Verify no notification was sent
 	assert.Equal(s.T(), 0, len(s.mockNotificationsChan))
@@ -133,7 +134,16 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionsByUserID_Success() {
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedSubscriptions, result)
+	expectedDto := make([]response.SubscriptionDto, len(expectedSubscriptions))
+	for i, sub := range expectedSubscriptions {
+		expectedDto[i] = response.SubscriptionDto{
+			ID:       sub.ID,
+			Endpoint: sub.Endpoint,
+			Auth:     sub.Auth,
+			P256dh:   sub.P256dh,
+		}
+	}
+	assert.Equal(s.T(), expectedDto, result)
 	s.mockSubscriptionRepo.AssertExpectations(s.T())
 }
 
@@ -170,7 +180,13 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionByEndpoint_Success() {
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedSubscription, result)
+	expectedDto := &response.SubscriptionDto{
+		ID:       expectedSubscription.ID,
+		Endpoint: expectedSubscription.Endpoint,
+		Auth:     expectedSubscription.Auth,
+		P256dh:   expectedSubscription.P256dh,
+	}
+	assert.Equal(s.T(), expectedDto, result)
 	s.mockSubscriptionRepo.AssertExpectations(s.T())
 }
 
@@ -179,13 +195,14 @@ func (s *SubscriptionServiceTestSuite) TestGetSubscriptionByEndpoint_NotFound() 
 	endpoint := "https://nonexistent.com"
 
 	// Mock expectations
-	s.mockSubscriptionRepo.On("FindByEndpoint", mock.Anything, endpoint).Return((*model.Subscription)(nil), nil)
+	expectedErr := errors.New("not found")
+	s.mockSubscriptionRepo.On("FindByEndpoint", mock.Anything, endpoint).Return((*model.Subscription)(nil), expectedErr)
 
 	// Execute
 	result, err := s.subscriptionService.GetSubscriptionsByEndpoint(context.Background(), endpoint)
 
 	// Assertions
-	assert.NoError(s.T(), err)
+	assert.Error(s.T(), err)
 	assert.Nil(s.T(), result)
 	s.mockSubscriptionRepo.AssertExpectations(s.T())
 }

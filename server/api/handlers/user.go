@@ -97,7 +97,7 @@ func (h *UserHandler) UpdateUsername(c *fiber.Ctx) error {
 // @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Router /users/{userId}/friends/count [get]
-func (h *UserHandler) GetNumFriends(c *fiber.Ctx) error {
+func (h *UserHandler) CountFriends(c *fiber.Ctx) error {
 	ctx := utils.GetOtelContext(c)
 	userID := c.Params("userId")
 
@@ -196,7 +196,7 @@ func (h *UserHandler) SearchNonFriends(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param userId path int true "User ID of the sender"
-// @Param request body request.ModifyFriendRequest true "Friend request details"
+// @Param request body request.SendFriendRequest true "Friend request details"
 // @Success 200 {object} utils.EmptyApiResponse "Friend request sent"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
 // @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
@@ -210,7 +210,7 @@ func (h *UserHandler) SendFriendRequest(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	req := middleware.GetValidatedRequest[request.ModifyFriendRequest](c)
+	req := middleware.GetValidatedRequest[request.SendFriendRequest](c)
 
 	if err := h.userService.SendFriendRequest(ctx, uint(userID), req.FriendID); err != nil {
 		if errors.Is(err, services.ErrNoSelfFriendRequest) ||

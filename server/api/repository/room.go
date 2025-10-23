@@ -111,7 +111,7 @@ func (r *roomRepository) GetUnjoinedRoomsByIsPrivate(ctx context.Context, userID
 	err := r.db.
 		WithContext(ctx).
 		Table("rooms").
-		Preload("Host", func(db *gorm.DB) *gorm.DB {
+		Joins("Host", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
 		Where("is_private = ?", isPrivate).
@@ -142,7 +142,7 @@ func (r *roomRepository) CloseRoom(ctx context.Context, roomID string) error {
 }
 
 func (r *roomRepository) Update(ctx context.Context, room *model.Room) error {
-	return r.db.WithContext(ctx).Save(room).Error
+	return r.db.WithContext(ctx).Updates(room).Error
 }
 
 func (r *roomRepository) AddUserToRoom(ctx context.Context, roomID string, user *model.User) error {
@@ -182,14 +182,16 @@ func (r *roomRepository) GetPendingInvites(ctx context.Context, userID string) (
 	var invites []model.RoomInvite
 	err := r.db.
 		WithContext(ctx).
-		Preload("Room").
-		Preload("Room.Host", func(db *gorm.DB) *gorm.DB {
+		Joins("Room", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, name, time, venue, venue_url, date, description, image_url, is_private, no_of_attendees, host_id")
+		}).
+		Joins("Room.Host", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
-		Preload("User", func(db *gorm.DB) *gorm.DB {
+		Joins("User", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
-		Preload("Inviter", func(db *gorm.DB) *gorm.DB {
+		Joins("Inviter", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
 		Where("user_id = ? AND status = ?", userID, "pending").

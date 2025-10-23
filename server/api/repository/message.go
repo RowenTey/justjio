@@ -13,10 +13,10 @@ type MessageRepository interface {
 
 	Create(ctx context.Context, message *model.Message) error
 	FindByID(ctx context.Context, msgID string) (*model.Message, error)
+	FindByRoom(ctx context.Context, roomId string, page int, pageSize int, asc bool) ([]model.Message, error)
 	Delete(ctx context.Context, msgID string) error
 	DeleteByRoom(ctx context.Context, roomID string) error
 	CountByRoom(ctx context.Context, roomID string) (int64, error)
-	FindByRoom(ctx context.Context, roomId string, page int, pageSize int, asc bool) ([]model.Message, error)
 }
 
 type messageRepository struct {

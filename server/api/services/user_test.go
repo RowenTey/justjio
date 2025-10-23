@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/tests"
@@ -232,7 +233,15 @@ func (s *UserServiceTestSuite) TestSearchUsers_Success() {
 	result, err := s.userService.SearchNonFriendUsers(context.Background(), currentUserID, query)
 
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expected, result)
+	expectedDto := make([]response.MinimalUserDto, len(expected))
+	for i, user := range expected {
+		expectedDto[i] = response.MinimalUserDto{
+			ID:         user.ID,
+			Username:   user.Username,
+			PictureUrl: user.PictureUrl,
+		}
+	}
+	assert.Equal(s.T(), expectedDto, result)
 }
 
 func (s *UserServiceTestSuite) TestGetFriendRequestsByStatus_ValidStatus() {
@@ -251,7 +260,26 @@ func (s *UserServiceTestSuite) TestGetFriendRequestsByStatus_ValidStatus() {
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), requests, result)
+	expectedDto := make([]response.FriendRequestDto, len(requests))
+	for i, fr := range requests {
+		expectedDto[i] = response.FriendRequestDto{
+			ID:          fr.ID,
+			Status:      fr.Status,
+			SentAt:      fr.SentAt,
+			RespondedAt: fr.RespondedAt,
+			Sender: response.MinimalUserDto{
+				ID:         fr.Sender.ID,
+				Username:   fr.Sender.Username,
+				PictureUrl: fr.Sender.PictureUrl,
+			},
+			Receiver: response.MinimalUserDto{
+				ID:         fr.Receiver.ID,
+				Username:   fr.Receiver.Username,
+				PictureUrl: fr.Receiver.PictureUrl,
+			},
+		}
+	}
+	assert.Equal(s.T(), expectedDto, result)
 
 	// Verify mock calls
 	s.mockUserRepo.AssertExpectations(s.T())
@@ -519,7 +547,15 @@ func (s *UserServiceTestSuite) TestGetFriends_Success() {
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedFriends, result)
+	expectedDto := make([]response.MinimalUserDto, len(expectedFriends))
+	for i, friend := range expectedFriends {
+		expectedDto[i] = response.MinimalUserDto{
+			ID:         friend.ID,
+			Username:   friend.Username,
+			PictureUrl: friend.PictureUrl,
+		}
+	}
+	assert.Equal(s.T(), expectedDto, result)
 
 	// Verify mock calls
 	s.mockUserRepo.AssertExpectations(s.T())

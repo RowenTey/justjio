@@ -188,13 +188,12 @@ func (suite *BillHandlerTestSuite) TestCreateBill_Success_WithOwner() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Created bill successfully", responseBody["message"])
 	assert.NotNil(suite.T(), responseBody["data"])
-	billData := responseBody["data"].(map[string]any)
-	assert.NotEmpty(suite.T(), billData["id"])
-	assert.Equal(suite.T(), createReq.Name, billData["name"])
+	billID := uint(responseBody["data"].(float64))
+	assert.NotZero(suite.T(), billID)
 
 	// Verify database
 	var bill model.Bill
-	err = suite.db.Preload("Payers").First(&bill, "id = ?", billData["id"]).Error
+	err = suite.db.Preload("Payers").First(&bill, "id = ?", billID).Error
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), createReq.Amount, bill.Amount)
 	assert.Equal(suite.T(), suite.testUser1ID, bill.OwnerID)
@@ -232,11 +231,11 @@ func (suite *BillHandlerTestSuite) TestCreateBill_Success_WithoutOwner() {
 	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	billData := responseBody["data"].(map[string]any)
+	billID := uint(responseBody["data"].(float64))
 
 	// Verify database
 	var bill model.Bill
-	err = suite.db.Preload("Payers").First(&bill, "id = ?", billData["id"]).Error
+	err = suite.db.Preload("Payers").First(&bill, "id = ?", billID).Error
 	assert.NoError(suite.T(), err)
 	assert.Len(suite.T(), bill.Payers, 1)
 	assert.Equal(suite.T(), suite.testUser2ID, bill.Payers[0].ID) // Only User2 should be a payer

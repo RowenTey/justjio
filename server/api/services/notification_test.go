@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	pushNotificationModel "github.com/RowenTey/JustJio/server/api/dto/push_notifications"
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 )
@@ -76,7 +77,7 @@ func (s *NotificationServiceTestSuite) TestCreateNotification_Success() {
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedNotification, result)
+	assert.Equal(s.T(), expectedNotification.ID, result)
 	s.mockNotificationRepo.AssertExpectations(s.T())
 }
 
@@ -91,7 +92,7 @@ func (s *NotificationServiceTestSuite) TestCreateNotification_InvalidUserID() {
 
 	// Assertions
 	assert.Error(s.T(), err)
-	assert.Nil(s.T(), result)
+	assert.Equal(s.T(), uint(0), result)
 	s.mockNotificationRepo.AssertNotCalled(s.T(), "Create")
 }
 
@@ -135,7 +136,14 @@ func (s *NotificationServiceTestSuite) TestGetNotification_Success() {
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedNotification, result)
+	expectedDto := &response.NotificationDto{
+		ID:        expectedNotification.ID,
+		Title:     expectedNotification.Title,
+		Content:   expectedNotification.Content,
+		IsRead:    expectedNotification.IsRead,
+		CreatedAt: expectedNotification.CreatedAt,
+	}
+	assert.Equal(s.T(), expectedDto, result)
 	s.mockNotificationRepo.AssertExpectations(s.T())
 }
 
@@ -168,7 +176,17 @@ func (s *NotificationServiceTestSuite) TestGetNotifications_Success() {
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedNotifications, result)
+	expectedDto := make([]response.NotificationDto, len(expectedNotifications))
+	for i, notif := range expectedNotifications {
+		expectedDto[i] = response.NotificationDto{
+			ID:        notif.ID,
+			Title:     notif.Title,
+			Content:   notif.Content,
+			IsRead:    notif.IsRead,
+			CreatedAt: notif.CreatedAt,
+		}
+	}
+	assert.Equal(s.T(), expectedDto, result)
 	s.mockNotificationRepo.AssertExpectations(s.T())
 }
 

@@ -70,7 +70,7 @@ func (h *RoomHandler) GetRooms(c *fiber.Ctx) error {
 	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
 	page := c.QueryInt("page", 1)
 
-	rooms, err := h.roomService.GetRooms(ctx, userId, page)
+	rooms, err := h.roomService.GetRoomsByUserId(ctx, userId, page)
 	if err != nil {
 		return utils.HandleNotFoundOrInternalError(c, err, "No rooms found")
 	}

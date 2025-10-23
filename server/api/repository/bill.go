@@ -13,8 +13,8 @@ type BillRepository interface {
 	Create(ctx context.Context, bill *model.Bill) error
 	FindByID(ctx context.Context, billID uint) (*model.Bill, error)
 	FindByRoom(ctx context.Context, roomID string) ([]model.Bill, error)
-	DeleteByRoom(ctx context.Context, roomID string) error
 	FindByConsolidation(ctx context.Context, consolidationID uint) ([]model.Bill, error)
+	DeleteByRoom(ctx context.Context, roomID string) error
 	ConsolidateBills(ctx context.Context, roomID string) (*model.Consolidation, error)
 }
 

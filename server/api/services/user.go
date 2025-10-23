@@ -266,7 +266,6 @@ func (s *UserService) GetFriendRequestsByStatus(ctx context.Context, userID uint
 		return nil, err
 	}
 
-	s.logger.Infof("Fetched %d friend requests for user %d with status %s", len(friendRequests), userID, status)
 	friendRequestsDto := make([]response.FriendRequestDto, len(friendRequests))
 	for i, fr := range friendRequests {
 		friendRequestsDto[i] = response.FriendRequestDto{

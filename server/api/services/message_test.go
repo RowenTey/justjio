@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/tests"
@@ -243,7 +244,21 @@ func (s *MessageServiceTestSuite) TestGetMessagesByRoomId_Success() {
 	messages, pages, err := s.messageService.GetMessagesByRoomId(context.Background(), roomID, page, false)
 
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedMessages, messages)
+	expectedDto := make([]response.MessageDto, len(expectedMessages))
+	for i, msg := range expectedMessages {
+		expectedDto[i] = response.MessageDto{
+			ID:      msg.ID,
+			RoomID:  msg.RoomID,
+			Content: msg.Content,
+			SentAt:  msg.SentAt,
+			Sender: response.MinimalUserDto{
+				ID:         msg.Sender.ID,
+				Username:   msg.Sender.Username,
+				PictureUrl: msg.Sender.PictureUrl,
+			},
+		}
+	}
+	assert.Equal(s.T(), expectedDto, messages)
 	assert.Equal(s.T(), totalPages, pages)
 	s.mockMessageRepo.AssertExpectations(s.T())
 }

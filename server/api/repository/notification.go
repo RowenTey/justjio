@@ -57,7 +57,9 @@ func (r *notificationRepository) FindByUser(ctx context.Context, userID string) 
 }
 
 func (r *notificationRepository) MarkAsRead(ctx context.Context, notificationID uint) error {
-	return r.db.WithContext(ctx).Model(&model.Notification{}).
+	return r.db.
+		WithContext(ctx).
+		Model(&model.Notification{}).
 		Where("id = ?", notificationID).
 		Update("is_read", true).Error
 }
