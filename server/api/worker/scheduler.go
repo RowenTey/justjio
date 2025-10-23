@@ -17,9 +17,8 @@ func startMaterializedViewRefresher(db *gorm.DB, logger *logrus.Logger, viewName
 		logger.Infof("Refreshing materialized view: %s", viewName)
 		if err := db.Exec(fmt.Sprintf("REFRESH MATERIALIZED VIEW CONCURRENTLY %s", viewName)).Error; err != nil {
 			logger.Errorf("Error refreshing materialized view %s: %v", viewName, err)
-		} else {
-			logger.Infof("Successfully refreshed materialized view: %s", viewName)
 		}
+		logger.Infof("Successfully refreshed materialized view: %s", viewName)
 	}); err != nil {
 		logger.Fatalf("Failed to schedule materialized view refresher: %v", err)
 	}
