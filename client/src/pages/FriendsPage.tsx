@@ -1,9 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
-import { IUser } from "../types/user";
-import { sendFriendRequestApi } from "../api/user";
+import { userService } from "../services/user.service";
 import { useUserCtx } from "../context/user";
-import { api } from "../api";
 import { TrashIcon } from "@heroicons/react/24/outline";
 import SearchUserModal from "../components/modals/SearchUserModal";
 import { useToast } from "../context/toast";
@@ -11,6 +9,7 @@ import useLoadingAndError from "../hooks/useLoadingAndError";
 import Spinner from "../components/Spinner";
 import { AxiosError } from "axios";
 import FriendsTopBar from "../components/top-bar/FriendsTopBar";
+import { MinimalUserDto, ModifyFriendRequest } from "../types/models";
 
 const FriendsPage = () => {
   const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
@@ -23,10 +22,12 @@ const FriendsPage = () => {
     fetchFriends(user.id).then(() => stopLoading());
   }, [user.id]);
 
-  const handleSendFriendRequest = async (newFriend: IUser) => {
+  const handleSendFriendRequest = async (newFriend: MinimalUserDto) => {
     startLoading();
     try {
-      await sendFriendRequestApi(api, user.id, newFriend.id);
+      await userService.sendFriendRequest(user.id.toString(), {
+        friendId: newFriend.id,
+      } as ModifyFriendRequest);
       showToast("Friend request sent!", false);
     } catch (error) {
       console.error("An error occurred while sending friend request: ", error);
@@ -101,7 +102,6 @@ const FriendsPage = () => {
               >
                 <div className="flex items-center gap-2">
                   <img
-                    // src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
                     src={friend.pictureUrl}
                     alt="Profile Image"
                     className="w-7 h-7 rounded-full"

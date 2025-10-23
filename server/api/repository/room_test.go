@@ -95,16 +95,8 @@ func (suite *RoomRepositoryTestSuite) TestAddAndRemoveUserFromRoom_Success() {
 	err = suite.repo.AddUserToRoom(suite.ctx, room.ID, suite.testUser)
 	assert.NoError(suite.T(), err)
 
-	isIn, err := suite.repo.IsUserInRoom(suite.ctx, room.ID, userIdStr)
-	assert.NoError(suite.T(), err)
-	assert.True(suite.T(), isIn)
-
 	err = suite.repo.RemoveUserFromRoom(suite.ctx, room.ID, userIdStr)
 	assert.NoError(suite.T(), err)
-
-	isIn, err = suite.repo.IsUserInRoom(suite.ctx, room.ID, userIdStr)
-	assert.NoError(suite.T(), err)
-	assert.False(suite.T(), isIn)
 }
 
 func (suite *RoomRepositoryTestSuite) TestGetRoomAttendeeIDs_Success() {

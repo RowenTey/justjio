@@ -1,7 +1,4 @@
 CREATE INDEX IF NOT EXISTS idx_users_search_vector ON users USING GIN(search_vector);
-
-CREATE INDEX IF NOT EXISTS idx_friend_requests_receiver_status
-    ON friend_requests(receiver_id, status);
     
 CREATE INDEX IF NOT EXISTS idx_user_friends_user ON user_friends(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_friends_friend ON user_friends(friend_id);

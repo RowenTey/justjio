@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { countPendingFriendRequestsApi } from "../../api/user";
-import { api } from "../../api";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeftIcon, UserGroupIcon } from "@heroicons/react/24/solid";
+import { userService } from "../../services";
 
 type FriendsTopBarProps = {
   title: string;
@@ -15,8 +14,8 @@ const FriendsTopBar: React.FC<FriendsTopBarProps> = ({ userId, title }) => {
 
   useEffect(() => {
     const fetchNumFriendRequests = async () => {
-      const res = await countPendingFriendRequestsApi(api, userId);
-      setNumFriendRequests(res.data.data.count);
+      const res = await userService.getFriendRequestsCount(userId.toString());
+      setNumFriendRequests(res.data!);
     };
 
     fetchNumFriendRequests();

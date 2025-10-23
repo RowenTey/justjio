@@ -1,15 +1,11 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
 import { useUserCtx } from "../context/user";
-import { api } from "../api";
 import { useToast } from "../context/toast";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import { CheckIcon } from "@heroicons/react/24/solid";
 import Spinner from "../components/Spinner";
-import {
-  getNotificationsApi,
-  markNotificationAsReadApi,
-} from "../api/notifications";
+import { userService } from "../services/user.service";
 import { INotification } from "../types/notifications";
 
 const NotificationsTopBar: React.FC = () => {
@@ -28,8 +24,8 @@ const NotificationsPage = () => {
 
   useEffect(() => {
     const fetchNotifications = async () => {
-      const res = await getNotificationsApi(api);
-      setNotifications(res.data.data);
+      const res = await userService.getUserNotifications(user.id.toString());
+      setNotifications((res.data || []) as INotification[]);
     };
 
     startLoading();
@@ -38,7 +34,10 @@ const NotificationsPage = () => {
 
   const handleReadNotification = async (notificationId: number) => {
     try {
-      await markNotificationAsReadApi(api, user.id, notificationId);
+      await userService.updateNotification(
+        user.id.toString(),
+        notificationId.toString(),
+      );
       const updatedNotifications = notifications.map((notification) => {
         if (notification.id === notificationId) {
           return { ...notification, isRead: true };

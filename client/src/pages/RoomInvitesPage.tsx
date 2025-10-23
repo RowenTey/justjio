@@ -1,13 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState } from "react";
 import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
-import {
-  fetchExploreMoreRoomsApi,
-  fetchRoomInvitesApi,
-  joinRoomApi,
-} from "../api/room";
-import { api } from "../api";
-import { IRoom, IRoomInvite } from "../types/room";
+import { roomService } from "../services/room.service";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import Spinner from "../components/Spinner";
 import { useRoomCtx } from "../context/room";
@@ -22,11 +16,14 @@ import {
 import { useToast } from "../context/toast";
 import { CalendarIcon } from "@heroicons/react/24/outline";
 import { AxiosError } from "axios";
+import { RoomInviteDto, SimplifiedRoomDto } from "../types/models";
 
 const RoomInvitesPage: React.FC = () => {
   const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
-  const [invites, setInvites] = useState<IRoomInvite[]>([]);
-  const [exploreMoreRooms, setExploreMoreRooms] = useState<IRoom[]>([]);
+  const [invites, setInvites] = useState<RoomInviteDto[]>([]);
+  const [exploreMoreRooms, setExploreMoreRooms] = useState<SimplifiedRoomDto[]>(
+    [],
+  );
   const { showToast } = useToast();
 
   const { respondToInvite } = useRoomCtx();
@@ -52,7 +49,7 @@ const RoomInvitesPage: React.FC = () => {
     }
 
     setInvites((prevInvites) =>
-      prevInvites.filter((invite) => invite.roomId !== roomId),
+      prevInvites.filter((invite) => invite.room.id !== roomId),
     );
     showToast("Invite responded successfully!", false);
   };
@@ -60,7 +57,7 @@ const RoomInvitesPage: React.FC = () => {
   const onJoinRoom = async (roomId: string) => {
     startLoading();
     try {
-      await joinRoomApi(api, roomId);
+      await roomService.joinRoom(roomId);
       setExploreMoreRooms((prevRooms) =>
         prevRooms.filter((room) => room.id !== roomId),
       );
@@ -85,23 +82,23 @@ const RoomInvitesPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      startLoading();
-      try {
-        const [invitesResponse, exploreRoomsResponse] = await Promise.all([
-          fetchRoomInvitesApi(api),
-          fetchExploreMoreRoomsApi(api),
-        ]);
+      const [invitesResponse, exploreRoomsResponse] = await Promise.all([
+        roomService.getRoomInvites(),
+        roomService.getPublicRooms(),
+      ]);
 
-        setInvites(invitesResponse.data.data);
-        setExploreMoreRooms(exploreRoomsResponse.data.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        stopLoading();
-      }
+      setInvites(invitesResponse.data as RoomInviteDto[]);
+      setExploreMoreRooms(exploreRoomsResponse.data as SimplifiedRoomDto[]);
     };
 
-    fetchData();
+    startLoading();
+    fetchData()
+      .catch(() =>
+        console.error(
+          "[RoomInvitesPage] Failed to fetch room invites and public rooms",
+        ),
+      )
+      .finally(() => stopLoading());
   }, []);
 
   return (
@@ -132,7 +129,7 @@ const RoomInvitesPage: React.FC = () => {
 };
 
 const RoomInvites: React.FC<{
-  invites: IRoomInvite[];
+  invites: RoomInviteDto[];
   handleInvite: (roomId: string, accept: boolean) => void;
 }> = ({ invites, handleInvite }) => {
   return (
@@ -155,7 +152,7 @@ const RoomInvites: React.FC<{
         invites.map((invite) => (
           <RoomInviteCard
             key={invite.id}
-            invite={invite}
+            room={invite.room}
             isPrivate={invite.room.isPrivate}
             handleAction={handleInvite}
             isExploreMore={false}
@@ -167,7 +164,7 @@ const RoomInvites: React.FC<{
 };
 
 const ExploreMoreSection: React.FC<{
-  rooms: IRoom[];
+  rooms: SimplifiedRoomDto[];
   handleJoin: (roomId: string) => void;
 }> = ({ rooms, handleJoin }) => {
   return (
@@ -188,16 +185,10 @@ const ExploreMoreSection: React.FC<{
         </div>
       ) : (
         rooms.map((room, idx) => {
-          const invite: IRoomInvite = {
-            id: -1,
-            roomId: room.id,
-            room,
-          };
-
           return (
             <RoomInviteCard
               key={idx}
-              invite={invite}
+              room={room}
               isPrivate={false}
               handleAction={handleJoin}
               isExploreMore={true}
@@ -210,16 +201,16 @@ const ExploreMoreSection: React.FC<{
 };
 
 const RoomInviteCard: React.FC<{
-  invite: IRoomInvite;
+  room: SimplifiedRoomDto;
   isPrivate: boolean;
   handleAction: (roomId: string, accept: boolean) => void;
   isExploreMore: boolean;
-}> = ({ invite, isPrivate, handleAction, isExploreMore }) => {
+}> = ({ room, isPrivate, handleAction, isExploreMore }) => {
   return (
     <div className="flex flex-col w-[85%] h-48 bg-white rounded-2xl shadow-md text-black overflow-hidden">
       <div className="relative h-[60%]">
         <img
-          src={invite.room.imageUrl}
+          src={room.imageUrl}
           alt=""
           className="h-full w-full object-cover"
         />
@@ -230,22 +221,22 @@ const RoomInviteCard: React.FC<{
           </div>
         )}
         <div className="absolute bottom-2 left-3 text-primary flex flex-col z-10">
-          <h3 className="text-2xl font-bold ">{invite.room.name}</h3>
+          <h3 className="text-2xl font-bold ">{room.name}</h3>
           <div className="flex gap-2 items-center">
             <div className="flex gap-[0.3rem] items-center">
               <img
-                src={invite.room.host.pictureUrl}
+                src={room.host.pictureUrl}
                 alt="Host Profile Image"
                 className="w-5 h-5 rounded-full border-none"
               />
               <p className="text-xs font-semibold">
-                Hosted by {invite.room.host.username}
+                Hosted by {room.host.username}
               </p>
             </div>
             <div className="flex gap-1 items-center">
               <UserCircleIcon className="w-6 h-6" />
               <p className="text-xs font-semibold">
-                {invite.room.attendeesCount} attendee(s)
+                {room.noOfAttendees} attendee(s)
               </p>
             </div>
           </div>
@@ -255,25 +246,25 @@ const RoomInviteCard: React.FC<{
         <div className="flex flex-col gap-1 justify-center font-semibold">
           <div className="flex items-center gap-1">
             <ClockIcon className="w-4 h-4" />
-            <p>{invite.room.time}</p>
+            <p>{room.time}</p>
           </div>
           <div className="flex items-center gap-1">
             <CalendarIcon className="w-4 h-4" />
-            <p>{formatDate(invite.room.date)}</p>
+            <p>{formatDate(room.date)}</p>
           </div>
           <a
-            href={invite.room.venueUrl}
+            href={room.venueUrl}
             target="_blank"
             className="flex items-center gap-1 text-[#8A38F5]"
           >
             <MapPinIcon className="w-4 h-4" />
-            <span className="hover:underline">{invite.room.venue}</span>
+            <span className="hover:underline">{room.venue}</span>
           </a>
         </div>
         {isExploreMore ? (
           <div className="flex items-center justify-center gap-2 mr-2 font-bold">
             <button
-              onClick={() => handleAction(invite.roomId, true)}
+              onClick={() => handleAction(room.id, true)}
               className="rounded-3xl p-1 px-3 bg-[#8A38F5] text-white"
             >
               Join
@@ -282,13 +273,13 @@ const RoomInviteCard: React.FC<{
         ) : (
           <div className="flex flex-col justify-center gap-2 mr-2 font-bold">
             <button
-              onClick={() => handleAction(invite.roomId, true)}
+              onClick={() => handleAction(room.id, true)}
               className="rounded-3xl p-1 px-3 bg-[#8A38F5] text-white"
             >
               Accept
             </button>
             <button
-              onClick={() => handleAction(invite.roomId, false)}
+              onClick={() => handleAction(room.id, false)}
               className="rounded-3xl p-1 px-3 bg-[#D9D9D9] text-black"
             >
               Decline

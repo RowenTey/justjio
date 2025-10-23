@@ -3,8 +3,7 @@ import useLoadingAndError from "../hooks/useLoadingAndError";
 import InputField from "../components/InputField";
 import Spinner from "../components/Spinner";
 import { useLocation, useNavigate } from "react-router-dom";
-import { resetPasswordApi } from "../api/auth";
-import { api } from "../api";
+import { authService } from "../services/auth.service";
 import { useToast } from "../context/toast";
 import { AxiosError } from "axios";
 
@@ -29,7 +28,7 @@ const ResetPasswordPage = () => {
   }> = async (data) => {
     startLoading();
     try {
-      await resetPasswordApi(api, email, data.password);
+      await authService.resetPassword({ email, password: data.password });
       showToast("Password reset successfully!", false);
       stopLoading();
       setTimeout(

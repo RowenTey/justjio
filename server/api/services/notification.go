@@ -2,18 +2,14 @@ package services
 
 import (
 	"context"
-	"errors"
 
 	"github.com/sirupsen/logrus"
 
 	pushNotificationModel "github.com/RowenTey/JustJio/server/api/dto/push_notifications"
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/utils"
-)
-
-var (
-	ErrEmptyContent = errors.New("content cannot be empty")
 )
 
 type NotificationService struct {
@@ -38,14 +34,10 @@ func NewNotificationService(
 }
 
 // CreateNotification creates a new notification for a user
-func (s *NotificationService) CreateNotification(ctx context.Context, userId, title, content string) (*model.Notification, error) {
-	if content == "" {
-		return nil, ErrEmptyContent
-	}
-
+func (s *NotificationService) CreateNotification(ctx context.Context, userId, title, content string) (uint, error) {
 	userIdUint, err := utils.StringToUint(userId)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	notification := &model.Notification{
@@ -54,7 +46,13 @@ func (s *NotificationService) CreateNotification(ctx context.Context, userId, ti
 		Content: content,
 		IsRead:  false,
 	}
-	return s.notificationRepo.Create(ctx, notification)
+
+	createdNotification, err := s.notificationRepo.Create(ctx, notification)
+	if err != nil {
+		return 0, err
+	}
+
+	return createdNotification.ID, nil
 }
 
 // MarkNotificationAsRead updates a notification's read status
@@ -66,21 +64,50 @@ func (s *NotificationService) MarkNotificationAsRead(ctx context.Context, notifi
 }
 
 // GetNotification retrieves a notification by ID
-func (s *NotificationService) GetNotification(ctx context.Context, notificationId uint) (*model.Notification, error) {
-	return s.notificationRepo.FindByID(ctx, notificationId)
+func (s *NotificationService) GetNotification(ctx context.Context, notificationId uint) (*response.NotificationDto, error) {
+	notification, err := s.notificationRepo.FindByID(ctx, notificationId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.NotificationDto{
+		ID:        notification.ID,
+		Title:     notification.Title,
+		Content:   notification.Content,
+		IsRead:    notification.IsRead,
+		CreatedAt: notification.CreatedAt,
+	}, nil
 }
 
 // GetNotifications retrieves all notifications for a user
-func (s *NotificationService) GetNotifications(ctx context.Context, userId string) ([]model.Notification, error) {
-	return s.notificationRepo.FindByUser(ctx, userId)
+func (s *NotificationService) GetNotifications(ctx context.Context, userId string) ([]response.NotificationDto, error) {
+	notifications, err := s.notificationRepo.FindByUser(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	notificationsDto := make([]response.NotificationDto, len(notifications))
+	for i, notification := range notifications {
+		notificationsDto[i] = response.NotificationDto{
+			ID:        notification.ID,
+			Title:     notification.Title,
+			Content:   notification.Content,
+			IsRead:    notification.IsRead,
+			CreatedAt: notification.CreatedAt,
+		}
+	}
+
+	return notificationsDto, nil
 }
 
 // SendNotification sends a notification to a user and their subscriptions
 func (s *NotificationService) SendNotification(ctx context.Context, userId, title, message string) error {
-	if _, err := s.CreateNotification(ctx, userId, title, message); err != nil {
+	notificationId, err := s.CreateNotification(ctx, userId, title, message)
+	if err != nil {
 		s.logger.Error("Error creating notification: ", err)
 		return err
 	}
+	s.logger.Info("Notification created with ID: ", notificationId)
 
 	subscriptions, err := s.subscriptionRepo.FindByUserID(ctx, userId)
 	if err != nil {

@@ -3,13 +3,13 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import RoomTopBar from "../components/top-bar/TopBarWithBackArrow";
 import { channelTypes, useWs } from "../context/ws";
 import { useUserCtx } from "../context/user";
-import { fetchRoomMessageApi, sendMessageApi } from "../api/message";
-import { api } from "../api";
+import { messageService } from "../services/message.service";
 import useMandatoryParam from "../hooks/useMandatoryParam";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import Spinner from "../components/Spinner";
 import { useToast } from "../context/toast";
 import { AxiosError } from "axios";
+import { CreateMessageRequest, MessageDto } from "../types/models";
 
 type Message = {
   id: number;
@@ -57,12 +57,9 @@ const RoomChatPage: React.FC = () => {
 
   useEffect(() => {
     const fetchMessages = async () => {
-      const res = await fetchRoomMessageApi(api, roomId, page);
-
-      const { data } = res.data;
-
-      console.log("[RoomChatPage] Messages fetched: ", data);
-      const newMsgs = data.messages.map((msg) => ({
+      const res = await messageService.getRoomMessages(roomId);
+      console.log("[RoomChatPage] Messages fetched: ", res.data);
+      const newMsgs = (res.data?.messages || []).map((msg: MessageDto) => ({
         id: msg.id,
         userId: msg.sender.id,
         username: msg.sender.username,
@@ -81,16 +78,15 @@ const RoomChatPage: React.FC = () => {
           (a, b) => a.time.getTime() - b.time.getTime(),
         );
       });
-      setPageCount(data.pageCount);
+      setPageCount(res.data?.pageCount);
     };
 
     startLoading();
     fetchMessages()
-      .then(() => stopLoading())
       .catch(() => {
-        stopLoading();
         showToast("Failed to fetch messages", true);
-      });
+      })
+      .finally(() => stopLoading());
   }, [roomId, page]);
 
   const fetchMoreMessages = () => {
@@ -102,7 +98,9 @@ const RoomChatPage: React.FC = () => {
 
   const handleSend = async (text: string) => {
     try {
-      await sendMessageApi(api, roomId, text);
+      await messageService.createMessage(roomId, {
+        content: text,
+      } as CreateMessageRequest);
     } catch (error) {
       console.error("[RoomChatPage] Failed to send message", error);
       switch ((error as AxiosError).response?.status) {

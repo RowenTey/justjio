@@ -37,7 +37,7 @@ func NewTransactionHandler(
 // @Accept json
 // @Produce json
 // @Param isPaid query bool false "Filter by payment status" default(false)
-// @Success 200 {object} object{status=string,message=string,data=[]model.Transaction} "Retrieved transactions successfully"
+// @Success 200 {object} object{status=string,message=string,data=[]response.TransactionDto} "Retrieved transactions successfully"
 // @Failure 404 {object} utils.EmptyApiResponse "No transactions found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Security BearerAuth

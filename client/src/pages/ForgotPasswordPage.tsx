@@ -2,8 +2,7 @@ import { SubmitHandler, useForm } from "react-hook-form";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import InputField from "../components/InputField";
 import Spinner from "../components/Spinner";
-import { sendOtpEmailApi } from "../api/auth";
-import { api } from "../api";
+import { authService } from "../services/auth.service";
 import { Link, useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
 
@@ -20,7 +19,10 @@ const ForgotPasswordPage = () => {
   const onSubmit: SubmitHandler<{ email: string }> = async (data) => {
     startLoading();
     try {
-      await sendOtpEmailApi(api, data.email, "reset-password");
+      await authService.sendOTP({
+        email: data.email,
+        purpose: "reset-password",
+      });
       navigate("/otp", {
         state: {
           email: data.email,

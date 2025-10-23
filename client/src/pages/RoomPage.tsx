@@ -17,12 +17,9 @@ import PeopleBox from "../components/PeopleBox";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import { useEffect, useState } from "react";
 import Spinner from "../components/Spinner";
-import { fetchRoomApi, fetchRoomAttendeesApi, joinRoomApi } from "../api/room";
-import { api } from "../api";
+import { roomService } from "../services/room.service";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { IRoom } from "../types/room";
 import { useUserCtx } from "../context/user";
-import { IUser } from "../types/user";
 import { formatDate } from "../utils/date";
 import { useRoomCtx } from "../context/room";
 import { channelTypes, useWs } from "../context/ws";
@@ -32,42 +29,16 @@ import { getRedirectPath, setRedirectPath } from "../utils/redirect";
 import ConfirmJoinModal from "../components/modals/ConfirmJoinModal";
 import { useToast } from "../context/toast";
 import { AxiosError } from "axios";
-import { isRoomBillConsolidatedApi } from "../api/bill";
 import QRCodeModal from "../components/modals/QRCodeModal";
-
-const initialRoom: IRoom = {
-  id: "0",
-  name: "Room",
-  date: "",
-  time: "",
-  venue: "",
-  venuePlaceId: "",
-  venueUrl: "",
-  imageUrl: "",
-  attendeesCount: 1,
-  hostId: 0,
-  host: {
-    id: 0,
-    username: "",
-    email: "",
-    pictureUrl: "",
-  },
-  createdAt: "",
-  updatedAt: "",
-  isClosed: false,
-  isPrivate: false,
-  url: "",
-  description: "",
-};
+import { MinimalUserDto, RoomDto } from "../types/models";
+import { Optional } from "../types";
 
 const RoomPage = () => {
   const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
-  const [room, setRoom] = useState<IRoom>(initialRoom);
-  const [attendees, setAttendees] = useState<IUser[]>([]);
+  const [room, setRoom] = useState<Optional<RoomDto>>(null);
   const [numNewMessages, setNumNewMessages] = useState<number>(0);
   const [isConfirmJoinModalVisible, setConfirmJoinModalVisible] =
     useState(false);
-  const [isRoomBillConsolidated, setIsRoomBillConsolidated] = useState(false);
   const roomId = useMandatoryParam("roomId");
   const [subscribe, unsubscribe] = useWs();
   const { closeRoom, leaveRoom } = useRoomCtx();
@@ -79,9 +50,9 @@ const RoomPage = () => {
   const handleConfirmJoin = async () => {
     startLoading();
     try {
-      const res = await joinRoomApi(api, roomId);
+      const res = await roomService.joinRoom(roomId);
       showToast("Successfully joined room!", false);
-      console.log("[RoomPage] Joined room", res.data.data);
+      console.log("[RoomPage] Joined room", res);
 
       searchParams.delete("join");
       setSearchParams(searchParams);
@@ -160,28 +131,14 @@ const RoomPage = () => {
 
   const fetchData = async () => {
     const fetchRoom = async (roomId: string) => {
-      const res = await fetchRoomApi(api, roomId);
-      setRoom(res.data.data);
-    };
-
-    const fetchAttendees = async (roomId: string) => {
-      const res = await fetchRoomAttendeesApi(api, roomId);
-      setAttendees(res.data.data);
-    };
-
-    const getBillConsolidationStatus = async (roomId: string) => {
-      const res = await isRoomBillConsolidatedApi(api, roomId);
-      setIsRoomBillConsolidated(res.data.data.isConsolidated);
+      const res = await roomService.getRoomById(roomId);
+      setRoom(res.data as RoomDto);
     };
 
     startLoading();
-    Promise.all([
-      fetchRoom(roomId),
-      fetchAttendees(roomId),
-      getBillConsolidationStatus(roomId),
-    ])
-      .then(() => stopLoading())
-      .catch(() => stopLoading());
+    fetchRoom(roomId)
+      .catch((e) => console.error("An error occurred while fetching room: ", e))
+      .finally(() => stopLoading());
   };
 
   useEffect(() => {
@@ -208,25 +165,25 @@ const RoomPage = () => {
     };
   }, [roomId, subscribe, unsubscribe]);
 
-  if (loadingStates[0]) {
+  if (loadingStates[0] || room === null || user === null) {
     return <Spinner bgClass="bg-primary" />;
   }
 
   return (
     <div className="h-full flex flex-col items-center gap-1 bg-gray-200">
-      <RoomTopBar room={room} showEditBtn={user.id === room.hostId} />
+      <RoomTopBar room={room} showEditBtn={user.id === room.host.id} />
 
       <RoomDetails room={room} />
 
-      <RoomAttendees attendees={attendees} hostId={room.hostId} />
+      <RoomAttendees attendees={room.attendees} hostId={room.host.id} />
 
       <RoomActionWidgets
         userId={user.id}
         roomId={roomId}
         room={room}
-        attendees={attendees}
-        isHost={user.id === room.hostId}
-        isRoomBillConsolidated={isRoomBillConsolidated}
+        attendees={room.attendees}
+        isHost={user.id === room.host.id}
+        isRoomBillConsolidated={room.consolidated === "CONSOLIDATED"}
         numNewMessages={numNewMessages}
         onCloseRoom={handleCloseRoom}
         onLeaveRoom={handleLeaveRoom}
@@ -245,7 +202,7 @@ const RoomPage = () => {
   );
 };
 
-const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
+const RoomDetails: React.FC<{ room: RoomDto }> = ({ room }) => {
   return (
     <div className="h-[41%] w-full px-5 flex flex-col gap-2">
       <h3 className="text-secondary font-bold">
@@ -297,7 +254,7 @@ const RoomDetails: React.FC<{ room: IRoom }> = ({ room }) => {
 
 type RoomAttendeesProps = {
   hostId: number;
-  attendees: IUser[];
+  attendees: MinimalUserDto[];
 };
 
 const RoomAttendees: React.FC<RoomAttendeesProps> = ({ hostId, attendees }) => {
@@ -326,10 +283,10 @@ const RoomAttendees: React.FC<RoomAttendeesProps> = ({ hostId, attendees }) => {
 type RoomActionWidgetsProps = {
   userId: number;
   roomId: string;
-  room: IRoom;
+  room: RoomDto;
   isHost: boolean;
   isRoomBillConsolidated: boolean;
-  attendees: IUser[];
+  attendees: MinimalUserDto[];
   numNewMessages: number;
   onCloseRoom: () => void;
   onLeaveRoom: () => void;

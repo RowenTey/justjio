@@ -35,7 +35,7 @@ func NewSubscriptionHandler(
 // @Accept json
 // @Produce json
 // @Param subscriptionRequest body request.CreateSubscriptionRequest true "Subscription details"
-// @Success 200 {object} object{status=string,message=string,data=model.Subscription} "Subscription created successfully"
+// @Success 200 {object} object{status=string,message=string,data=string} "Subscription created successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input or missing required fields"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Security BearerAuth
@@ -51,13 +51,13 @@ func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 		P256dh:   req.P256dh,
 	}
 
-	createdSubscription, err := h.subscriptionService.CreateSubscription(ctx, subscription)
+	createdSubscriptionID, err := h.subscriptionService.CreateSubscription(ctx, subscription)
 	if err != nil {
 		return utils.HandleInternalServerError(c, err)
 	}
 
-	h.logger.Info("Subscription created successfully: ", createdSubscription.ID)
-	return utils.HandleSuccess(c, "Subscription created successfully", createdSubscription)
+	h.logger.Info("Subscription created successfully: ", createdSubscriptionID)
+	return utils.HandleSuccess(c, "Subscription created successfully", createdSubscriptionID)
 }
 
 // GetSubscriptionByEndpoint retrieves a subscription by endpoint
@@ -67,7 +67,7 @@ func (h *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 // @Accept json
 // @Produce json
 // @Param endpoint path string true "URL-encoded subscription endpoint"
-// @Success 200 {object} object{status=string,message=string,data=model.Subscription} "Subscription retrieved successfully"
+// @Success 200 {object} object{status=string,message=string,data=response.SubscriptionDto} "Subscription retrieved successfully"
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid endpoint URL"
 // @Failure 404 {object} utils.EmptyApiResponse "Subscription not found"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"

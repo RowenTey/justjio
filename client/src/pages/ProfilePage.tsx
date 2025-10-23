@@ -1,26 +1,25 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useMemo, useState } from "react";
 import { useUserCtx } from "../context/user";
-import { getNumFriendsApi } from "../api/user";
-import { api } from "../api";
-import { fetchNumRoomsApi } from "../api/room";
+import { userService } from "../services/user.service";
+import { roomService } from "../services/room.service";
+import { transactionService } from "../services/transaction.service";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import Spinner from "../components/Spinner";
-import { fetchTransactionsApi } from "../api/transaction";
-import { ITransaction } from "../types/transaction";
 import { Link } from "react-router-dom";
+import { TransactionDto } from "../types/models";
 
 const ProfilePage: React.FC = () => {
   const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
   const { user } = useUserCtx();
   const [numFriends, setNumFriends] = useState<number | undefined>(undefined);
   const [numRooms, setNumRooms] = useState<number | undefined>(undefined);
-  const [transactions, setTransactions] = useState<ITransaction[]>([]);
+  const [transactions, setTransactions] = useState<TransactionDto[]>([]);
 
   const groupedTransactions = useMemo(() => {
     return transactions.reduce(
       (acc, tx) => {
-        const date = new Date(tx.paidOn);
+        const date = new Date(tx.paidOn!);
         const key = `${date.getDate()} ${date.toLocaleString("default", {
           month: "short",
         })}`;
@@ -31,15 +30,17 @@ const ProfilePage: React.FC = () => {
         acc[key].push(tx);
         return acc;
       },
-      {} as Record<string, ITransaction[]>,
+      {} as Record<string, TransactionDto[]>,
     );
   }, [transactions]);
 
   useEffect(() => {
     const fetchData = async () => {
-      const numFriendsPromise = getNumFriendsApi(api, user.id);
-      const numRooomsPromise = fetchNumRoomsApi(api);
-      const fetchTransactionsPromise = fetchTransactionsApi(api, true);
+      const numFriendsPromise = userService.getFriendsCount(user.id.toString());
+      const numRooomsPromise = roomService.getRoomsCount();
+      const fetchTransactionsPromise = transactionService.getTransactions({
+        isPaid: true,
+      });
       return Promise.all([
         numFriendsPromise,
         numRooomsPromise,
@@ -50,11 +51,14 @@ const ProfilePage: React.FC = () => {
     startLoading();
     fetchData()
       .then((res) => {
-        setNumFriends(res[0].data.data.numFriends);
-        setNumRooms(res[1].data.data.count);
-        setTransactions(res[2].data.data);
+        setNumFriends(res[0].data || 0);
+        setNumRooms(res[1].data || 0);
+        setTransactions((res[2].data as TransactionDto[]) || []);
       })
-      .then(() => stopLoading());
+      .catch(() => {
+        console.error("[ProfilePage] Failed to fetch profile data");
+      })
+      .finally(() => stopLoading());
   }, [user.id]);
 
   if (loadingStates[0]) {
@@ -149,7 +153,7 @@ const ProfileContainer: React.FC<ProfileContainerProps> = ({
 
 type TransactionHistoryProps = {
   username: string;
-  transactions: Record<string, ITransaction[]>;
+  transactions: Record<string, TransactionDto[]>;
 };
 
 const TransactionHistory: React.FC<TransactionHistoryProps> = ({
@@ -174,8 +178,8 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
         ) : (
           Object.entries(transactions)
             .sort((a, b) => {
-              const dateA = new Date(a[1][0].paidOn);
-              const dateB = new Date(b[1][0].paidOn);
+              const dateA = new Date(a[1][0].paidOn!);
+              const dateB = new Date(b[1][0].paidOn!);
               return dateB.getTime() - dateA.getTime();
             })
             .map(([date, transactionsForDate]) => (

@@ -134,9 +134,13 @@ func (r *userRepository) UpdateFriendRequest(ctx context.Context, requestID uint
 func (r *userRepository) FindFriendRequestsByReceiver(ctx context.Context, receiverID uint, status string) ([]model.FriendRequest, error) {
 	var requests []model.FriendRequest
 	err := r.db.WithContext(ctx).
+		Preload("Sender", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, username, picture_url")
+		}).
+		Preload("Receiver", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, username, picture_url")
+		}).
 		Where("receiver_id = ? AND status = ?", receiverID, status).
-		Joins("Sender").
-		Joins("Receiver").
 		Find(&requests).Error
 	return requests, err
 }
@@ -168,6 +172,7 @@ func (r *userRepository) CheckFriendRequestExists(ctx context.Context, senderID,
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, nil
 	}
+
 	return false, err
 }
 

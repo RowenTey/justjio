@@ -9,10 +9,10 @@ import { IUser } from "../types/user";
 import PeopleBox from "../components/PeopleBox";
 import Checkbox from "../components/Checkbox";
 import useMandatoryParam from "../hooks/useMandatoryParam";
-import { createBillApi } from "../api/bill";
-import { api } from "../api";
+import { billService } from "../services/bill.service";
 import { useToast } from "../context/toast";
 import { AxiosError } from "axios";
+import { CreateBillRequest, MinimalUserDto } from "../types/models";
 
 type CreateBillFormData = {
   name: string;
@@ -23,12 +23,6 @@ type CreateBillPageProps = {
   attendees: IUser[];
   roomName: string;
   currentUserId: number;
-};
-
-type SimplifiedUser = {
-  id: number;
-  username: string;
-  pictureUrl: string;
 };
 
 const CreateBillPage = () => {
@@ -44,13 +38,13 @@ const CreateBillPage = () => {
   const { state } = useLocation();
   const { attendees, roomName, currentUserId } = state as CreateBillPageProps;
   const simplifiedAttendees = attendees
-    .map<SimplifiedUser>((attendee) => ({
+    .map<MinimalUserDto>((attendee) => ({
       id: attendee.id,
       username: attendee.username,
       pictureUrl: attendee.pictureUrl,
     }))
     .filter((attendee) => attendee.id !== currentUserId);
-  const [payers, setPayers] = useState<SimplifiedUser[]>(simplifiedAttendees);
+  const [payers, setPayers] = useState<MinimalUserDto[]>(simplifiedAttendees);
   const [includeOwner, setIncludeOwner] = useState(true);
   const { showToast } = useToast();
 
@@ -62,12 +56,12 @@ const CreateBillPage = () => {
       amount: Number(data.amount),
       includeOwner: includeOwner,
       roomId,
-      payers: payers.map((payer) => payer.id),
+      payers: payers.map((payer) => payer.id.toString()),
     };
     console.log("[CreateBillPage] Submitted data: ", billData);
 
     try {
-      createBillApi(api, billData);
+      await billService.createBill(billData as CreateBillRequest);
       stopLoading();
       showToast("Bill created successfully", false);
       navigate(-1);
@@ -168,9 +162,9 @@ const CreateBillPage = () => {
 };
 
 const SelectMembersInput: React.FC<{
-  initialPayers: SimplifiedUser[];
-  payers: SimplifiedUser[];
-  onPayersChange: React.Dispatch<React.SetStateAction<SimplifiedUser[]>>;
+  initialPayers: MinimalUserDto[];
+  payers: MinimalUserDto[];
+  onPayersChange: React.Dispatch<React.SetStateAction<MinimalUserDto[]>>;
 }> = ({ initialPayers, payers, onPayersChange }) => {
   const [allSelected, setAllSelected] = useState(true);
 
@@ -178,7 +172,7 @@ const SelectMembersInput: React.FC<{
     setAllSelected(payers.length === initialPayers.length);
   }, [payers, initialPayers]);
 
-  const handleCheckChange = (user: SimplifiedUser, shouldRemove: boolean) => {
+  const handleCheckChange = (user: MinimalUserDto, shouldRemove: boolean) => {
     onPayersChange((prevPayers) =>
       shouldRemove
         ? prevPayers.filter((payer) => payer.id !== user.id)
@@ -218,8 +212,8 @@ const SelectMembersInput: React.FC<{
 };
 
 const SelectBox: React.FC<{
-  user: SimplifiedUser;
-  onCheckChange: (user: SimplifiedUser, shouldRemove: boolean) => void;
+  user: MinimalUserDto;
+  onCheckChange: (user: MinimalUserDto, shouldRemove: boolean) => void;
   isChecked: boolean;
 }> = ({ user, onCheckChange, isChecked }) => {
   const [check, setCheck] = useState(isChecked);

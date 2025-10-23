@@ -38,7 +38,6 @@ func (r *messageRepository) WithTx(tx *gorm.DB) MessageRepository {
 func (r *messageRepository) Create(ctx context.Context, message *model.Message) error {
 	return r.db.
 		WithContext(ctx).
-		// Omit("Room", "Sender").
 		Create(message).Error
 }
 
@@ -86,8 +85,9 @@ func (r *messageRepository) FindByRoom(ctx context.Context, roomId string, page 
 		Where("room_id = ?", roomId).
 		Order(order).
 		Scopes(database.Paginate(page, pageSize)).
-		Preload("Room").
-		Preload("Sender").
+		Preload("Sender", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id, username, picture_url")
+		}).
 		Find(&messages).Error
 
 	return messages, err

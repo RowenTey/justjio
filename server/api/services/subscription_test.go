@@ -67,15 +67,11 @@ func (s *SubscriptionServiceTestSuite) TestCreateSubscription_Success() {
 	}).Return(subscription, nil)
 
 	// Execute
-	result, err := s.subscriptionService.CreateSubscription(context.Background(), subscription)
+	createdSubscriptionID, err := s.subscriptionService.CreateSubscription(context.Background(), subscription)
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), "1", result.ID)
-	assert.Equal(s.T(), subscription.UserID, result.UserID)
-	assert.Equal(s.T(), subscription.Endpoint, result.Endpoint)
-	assert.Equal(s.T(), subscription.P256dh, result.P256dh)
-	assert.Equal(s.T(), subscription.Auth, result.Auth)
+	assert.Equal(s.T(), "1", createdSubscriptionID)
 
 	// Verify notification was sent
 	require.Equal(s.T(), 1, len(s.mockNotificationsChan))

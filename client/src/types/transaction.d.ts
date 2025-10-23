@@ -1,32 +1,20 @@
-import { BaseUserInfo } from "./user";
-
-export interface ITransaction {
-  id: number;
-  consolidationId: number;
-  payerId: number;
-  payer: BaseUserInfo;
-  payeeId: number;
-  payee: BaseUserInfo;
-  amount: number;
-  isPaid: boolean;
-  paidOn: string;
-}
+import { TransactionDto } from "./models";
 
 export interface TransactionState {
-  toPay: ITransaction[];
-  toReceive: ITransaction[];
+  toPay: TransactionDto[];
+  toReceive: TransactionDto[];
 }
 
 export type TransactionContextType = {
-  toPay: ITransaction[];
-  toReceive: ITransaction[];
+  toPay: TransactionDto[];
+  toReceive: TransactionDto[];
   fetchTransactions: () => Promise<BaseContextResponse>;
   settleTransaction: (transactionId: number) => Promise<BaseContextResponse>;
 };
 
-type TransactionActionTypes =
+export type TransactionActionTypes =
   | {
       type: "FETCH_TRANSACTIONS";
-      payload: { toPay: ITransaction[]; toReceive: ITransaction[] };
+      payload: { toPay: TransactionDto[]; toReceive: TransactionDto[] };
     }
   | { type: "SETTLE_TRANSACTION"; payload: number };

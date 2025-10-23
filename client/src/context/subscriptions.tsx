@@ -2,26 +2,16 @@
 import React, { createContext, useEffect, useState } from "react";
 import { useUserCtx } from "./user";
 import useContextWrapper from "../hooks/useContextWrapper";
-import { api } from "../api";
+import { subscriptionService } from "../services/subscription.service";
+import { CreateSubscriptionRequest, SubscriptionDto } from "../types/models";
+import { Optional } from "../types";
 import {
-  createSubscriptionApi,
-  getSubscriptionByEndpointApi,
-  removeSubscriptionApi,
-} from "../api/subscription";
-import { ISubscription } from "../types/subscription";
+  SubscriptionContextType,
+  SubscriptionState,
+} from "../types/subscription";
 
-interface SubscriptionState {
-  subscription: ISubscription | null;
-  isSubscribed: boolean;
-}
-
-interface SubscriptionContextType {
-  subscribe: () => Promise<boolean>;
-  unsubscribe: () => Promise<boolean>;
-  subscriptionState: SubscriptionState;
-}
-
-const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
+const SubscriptionContext =
+  createContext<Optional<SubscriptionContextType>>(null);
 
 const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
@@ -62,12 +52,11 @@ const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
           "[Push] Subscription already exists:",
           existingSubscription,
         );
-        const { data: res } = await getSubscriptionByEndpointApi(
-          api,
+        const res = await subscriptionService.getSubscriptionByEndpoint(
           existingSubscription.endpoint,
         );
         setSubscriptionState({
-          subscription: res.data,
+          subscription: res.data as SubscriptionDto,
           isSubscribed: true,
         });
         return true;
@@ -85,16 +74,22 @@ const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
       console.log("[Push] Subscription object:", subJson);
 
       // Send subscription to backend
-      const { data: res } = await createSubscriptionApi(api, {
+      const res = await subscriptionService.createSubscription({
         userId: user.id,
         endpoint: subJson.endpoint,
         auth: subJson.keys?.auth,
         p256dh: subJson.keys?.p256dh,
-      });
+      } as CreateSubscriptionRequest);
       console.log("[Push] Subscription created: ", res.data);
 
       setSubscriptionState({
-        subscription: res.data,
+        subscription: {
+          id: res.data,
+          userId: user.id,
+          endpoint: subJson.endpoint,
+          auth: subJson.keys?.auth,
+          p256dh: subJson.keys?.p256dh,
+        } as SubscriptionDto,
         isSubscribed: true,
       });
       console.log("[Push] Subscription object:", subscriptionState);
@@ -117,7 +112,9 @@ const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({
         // Notify backend about unsubscription
         console.log("[Push] Subscription object:", subscriptionState);
         subscriptionState.subscription &&
-          (await removeSubscriptionApi(api, subscriptionState.subscription.id));
+          (await subscriptionService.deleteSubscription(
+            subscriptionState.subscription.id,
+          ));
 
         setSubscriptionState({
           subscription: null,

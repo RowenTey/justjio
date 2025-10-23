@@ -1,7 +1,7 @@
 import { FETCH_TRANSACTIONS, SETTLE_TRANSACTION } from "../context/transaction";
 import { TransactionActionTypes, TransactionState } from "../types/transaction";
 
-export const initialTransactionState: TransactionState = {
+export const INITIAL_TRANSACTION_CTX_STATE: TransactionState = {
   toPay: [],
   toReceive: [],
 };

@@ -3,13 +3,11 @@ import Spinner from "../components/Spinner";
 import { Link, useNavigate } from "react-router-dom";
 import useLoadingAndError from "../hooks/useLoadingAndError";
 import InputField from "../components/InputField";
-import { signUpApi } from "../api/auth";
-import { api } from "../api";
+import { authService } from "../services/auth.service";
 import { AxiosError } from "axios";
 
 type SignUpFormData = {
   username: string;
-  // phoneNumber: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -31,13 +29,11 @@ const SignUpPage = () => {
     startLoading();
     try {
       console.log("[SignUpPage] Form data: ", data);
-      const res = await signUpApi(
-        api,
-        data.username,
-        // data.phoneNumber,
-        data.email,
-        data.password,
-      );
+      const res = await authService.signup({
+        username: data.username,
+        email: data.email,
+        password: data.password,
+      });
       console.log("[SignUpPage] Response: ", res);
 
       navigate("/otp", { state: { email: data.email, from: "/signup" } });

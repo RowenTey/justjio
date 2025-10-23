@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import Toast from "../components/Toast";
+import { Optional } from "../types";
 
 type ToastContextType = {
   showToast: (message: string, isError: boolean, className?: string) => void;
@@ -12,7 +13,7 @@ type ToastType = {
   visible: boolean;
 };
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
+const ToastContext = createContext<Optional<ToastContextType>>(null);
 
 const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastType[]>([]);

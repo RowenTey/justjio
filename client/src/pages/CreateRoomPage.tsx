@@ -9,9 +9,10 @@ import SearchableDropdown from "../components/SearchableDropdown";
 import { useUserCtx } from "../context/user";
 import { useToast } from "../context/toast";
 import { useEffect, useState } from "react";
-import { IRoom, IVenue } from "../types/room";
+import { IVenue } from "../types/room";
 import QueryVenueDropdown from "../components/room/QueryVenueDropdown";
 import ToggleSwitch from "../components/ToggleSwitch";
+import { CreateRoomRequest } from "../types/models";
 
 enum Image {
   BIRTHDAY = "/imgs/birthday.png",
@@ -75,20 +76,18 @@ const CreateRoomPage = () => {
     startLoading();
 
     console.log("[CreateRoomPage] Submitted data: ", data);
-    const roomData: Partial<IRoom> = {
+    const roomData: CreateRoomRequest = {
       name: data.name,
       date: new Date(data.date).toISOString(),
       venue: data.venue,
       venuePlaceId: selectedVenue.googleMapsPlaceId,
       time: data.time,
-      imageUrl: data.image,
+      imageUrl: window.location.origin + data.image,
       isPrivate: data.isPrivate,
       description: data.description,
+      invitees: data.invitees ? data.invitees.split(",") : [],
     };
-    const res = await createRoom(
-      roomData,
-      data.invitees ? data.invitees.split(",") : [],
-    );
+    const res = await createRoom(roomData);
 
     if (!res.isSuccessResponse) {
       switch (res.error?.response?.status) {

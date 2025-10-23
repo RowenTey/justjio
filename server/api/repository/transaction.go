@@ -47,8 +47,12 @@ func (r *transactionRepository) FindByUser(ctx context.Context, isPaid bool, use
 	err := r.db.
 		WithContext(ctx).
 		Where("is_paid = ? AND (payee_id = ? OR payer_id = ?)", isPaid, userID, userID).
-		Preload("Payee").
-		Preload("Payer").
+		Preload("Payee", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "username", "picture_url")
+		}).
+		Preload("Payer", func(db *gorm.DB) *gorm.DB {
+			return db.Select("id", "username", "picture_url")
+		}).
 		Find(&transactions).Error
 	return transactions, err
 }

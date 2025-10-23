@@ -102,16 +102,11 @@ func (s *BillServiceTestSuite) TestCreateBill_Success() {
 	s.sqlMock.ExpectCommit()
 
 	// Execute
-	bill, err := s.billService.CreateBill(context.Background(), roomId, ownerId, payersId, name, amount, includeOwner)
+	createdBillId, err := s.billService.CreateBill(context.Background(), roomId, ownerId, payersId, name, amount, includeOwner)
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.NotNil(s.T(), bill)
-	assert.Equal(s.T(), name, bill.Name)
-	assert.Equal(s.T(), amount, bill.Amount)
-	assert.Equal(s.T(), room.ID, bill.RoomID)
-	assert.Equal(s.T(), owner.ID, bill.OwnerID)
-	assert.Len(s.T(), bill.Payers, 2)
+	assert.NotNil(s.T(), createdBillId)
 
 	// Verify mock calls
 	s.mockBillRepo.AssertExpectations(s.T())

@@ -257,20 +257,6 @@ func (s *UserServiceTestSuite) TestGetFriendRequestsByStatus_ValidStatus() {
 	s.mockUserRepo.AssertExpectations(s.T())
 }
 
-func (s *UserServiceTestSuite) TestGetFriendRequestsByStatus_InvalidStatus() {
-	// Setup test data
-	userID := uint(1)
-	status := "invalid"
-
-	// Execute
-	result, err := s.userService.GetFriendRequestsByStatus(context.Background(), userID, status)
-
-	// Assertions
-	assert.Error(s.T(), err)
-	assert.Equal(s.T(), ErrInvalidFriendRequestStatus, err)
-	assert.Nil(s.T(), result)
-}
-
 func (s *UserServiceTestSuite) TestGetUserByID_Success() {
 	// Setup test data
 	userID := "1"

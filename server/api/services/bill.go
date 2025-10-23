@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/RowenTey/JustJio/server/api/database"
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/utils"
@@ -58,7 +59,7 @@ func (bs *BillService) CreateBill(
 	name string,
 	amount float32,
 	includeOwner bool,
-) (*model.Bill, error) {
+) (uint, error) {
 	var bill model.Bill
 
 	if err := database.RunInTransaction(bs.db, sql.LevelDefault, func(tx *gorm.DB) error {
@@ -108,19 +109,77 @@ func (bs *BillService) CreateBill(
 
 		return nil
 	}); err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	bs.logger.Info("Bill created in room: ", bill.RoomID)
-	return &bill, nil
+	return bill.ID, nil
 }
 
-func (bs *BillService) GetBillById(ctx context.Context, billId uint) (*model.Bill, error) {
-	return bs.billRepo.FindByID(ctx, billId)
+func (bs *BillService) GetBillById(ctx context.Context, billId uint) (*response.BillDto, error) {
+	bill, err := bs.billRepo.FindByID(ctx, billId)
+	if err != nil {
+		return nil, err
+	}
+
+	payersDto := make([]response.MinimalUserDto, len(bill.Payers))
+	for j, payer := range bill.Payers {
+		payersDto[j] = response.MinimalUserDto{
+			ID:         payer.ID,
+			Username:   payer.Username,
+			PictureUrl: payer.PictureUrl,
+		}
+	}
+	return &response.BillDto{
+		ID:              bill.ID,
+		Name:            bill.Name,
+		Amount:          bill.Amount,
+		Date:            bill.Date,
+		IncludeOwner:    bill.IncludeOwner,
+		ConsolidationID: bill.ConsolidationID,
+		Owner: response.MinimalUserDto{
+			ID:         bill.Owner.ID,
+			Username:   bill.Owner.Username,
+			PictureUrl: bill.Owner.PictureUrl,
+		},
+		Payers: payersDto,
+	}, nil
 }
 
-func (bs *BillService) GetBillsForRoom(ctx context.Context, roomId string) ([]model.Bill, error) {
-	return bs.billRepo.FindByRoom(ctx, roomId)
+func (bs *BillService) GetBillsForRoom(ctx context.Context, roomId string) ([]response.BillDto, error) {
+	bill, err := bs.billRepo.FindByRoom(ctx, roomId)
+	if err != nil {
+		return nil, err
+	}
+
+	billsDto := make([]response.BillDto, len(bill))
+	for i, b := range bill {
+		payersDto := make([]response.MinimalUserDto, len(b.Payers))
+		for j, payer := range b.Payers {
+			payersDto[j] = response.MinimalUserDto{
+				ID:         payer.ID,
+				Username:   payer.Username,
+				PictureUrl: payer.PictureUrl,
+			}
+		}
+
+		billsDto[i] = response.BillDto{
+			ID:              b.ID,
+			Name:            b.Name,
+			Amount:          b.Amount,
+			Date:            b.Date,
+			IncludeOwner:    b.IncludeOwner,
+			ConsolidationID: b.ConsolidationID,
+			Owner: response.MinimalUserDto{
+				ID:         b.Owner.ID,
+				Username:   b.Owner.Username,
+				PictureUrl: b.Owner.PictureUrl,
+			},
+			Payers: payersDto,
+		}
+	}
+
+	return billsDto, nil
 }
 
 func (bs *BillService) DeleteRoomBills(ctx context.Context, roomId string) error {

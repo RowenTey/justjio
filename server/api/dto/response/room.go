@@ -4,61 +4,52 @@ import (
 	"time"
 )
 
-type AttendeesDto struct {
-	ID       uint   `json:"id"`
-	Username string `json:"username"`
-	Picture  string `json:"pictureUrl"`
-}
-
 type RoomDto struct {
-	ID            string         `json:"id"`
-	Name          string         `json:"name"`
-	Time          string         `json:"time"`
-	Venue         string         `json:"venue"`
-	VenueUrl      string         `json:"venueUrl"`
-	Date          time.Time      `json:"date"`
-	Description   string         `json:"description"`
-	Consolidated  string         `json:"consolidated"`
-	IsClosed      bool           `json:"isClosed"`
-	IsPrivate     bool           `json:"isPrivate"`
-	ImageUrl      string         `json:"imageUrl"`
-	Host          AttendeesDto   `json:"host"`
-	NoOfAttendees int            `json:"noOfAttendees"`
-	Attendees     []AttendeesDto `json:"attendees"`
+	ID            string           `json:"id" binding:"required"`
+	Name          string           `json:"name" binding:"required"`
+	Time          string           `json:"time" binding:"required"`
+	Venue         string           `json:"venue" binding:"required"`
+	VenueUrl      string           `json:"venueUrl" binding:"required"`
+	Date          time.Time        `json:"date" binding:"required"`
+	Description   string           `json:"description" binding:"required"`
+	Consolidated  string           `json:"consolidated" binding:"required"`
+	IsClosed      bool             `json:"isClosed" binding:"required"`
+	IsPrivate     bool             `json:"isPrivate" binding:"required"`
+	ImageUrl      string           `json:"imageUrl" binding:"required"`
+	Host          MinimalUserDto   `json:"host" binding:"required"`
+	NoOfAttendees int              `json:"noOfAttendees" binding:"required"`
+	Attendees     []MinimalUserDto `json:"attendees" binding:"required"`
 }
 
 type RoomListDto struct {
-	ID            string       `json:"id"`
-	Name          string       `json:"name"`
-	IsClosed      bool         `json:"isClosed"`
-	IsPrivate     bool         `json:"isPrivate"`
-	ImageUrl      string       `json:"imageUrl"`
-	Host          AttendeesDto `json:"host"`
-	NoOfAttendees int          `json:"noOfAttendees"`
+	ID            string         `json:"id" binding:"required"`
+	Name          string         `json:"name" binding:"required"`
+	IsClosed      bool           `json:"isClosed" binding:"required"`
+	IsPrivate     bool           `json:"isPrivate" binding:"required"`
+	ImageUrl      string         `json:"imageUrl" binding:"required"`
+	Host          MinimalUserDto `json:"host" binding:"required"`
+	NoOfAttendees int            `json:"noOfAttendees" binding:"required"`
 }
 
 type SimplifiedRoomDto struct {
-	ID            string    `json:"id"`
-	Name          string    `json:"name"`
-	Time          string    `json:"time"`
-	Venue         string    `json:"venue"`
-	VenueUrl      string    `json:"venueUrl"`
-	Date          time.Time `json:"date"`
-	Description   string    `json:"description"`
-	ImageUrl      string    `json:"imageUrl"`
-	IsPrivate     bool      `json:"isPrivate"`
-	NoOfAttendees int       `json:"noOfAttendees"`
+	ID            string         `json:"id" binding:"required"`
+	Name          string         `json:"name" binding:"required"`
+	Time          string         `json:"time" binding:"required"`
+	Venue         string         `json:"venue" binding:"required"`
+	VenueUrl      string         `json:"venueUrl" binding:"required"`
+	Date          time.Time      `json:"date" binding:"required"`
+	Description   string         `json:"description" binding:"required"`
+	ImageUrl      string         `json:"imageUrl" binding:"required"`
+	IsPrivate     bool           `json:"isPrivate" binding:"required"`
+	NoOfAttendees int            `json:"noOfAttendees" binding:"required"`
+	Host          MinimalUserDto `json:"host" binding:"required"`
 }
 
 type RoomInviteDto struct {
-	ID        uint              `json:"id"`
-	Status    string            `json:"status"`
-	CreatedAt time.Time         `json:"createdAt"`
-	User      AttendeesDto      `json:"user"`
-	Inviter   AttendeesDto      `json:"inviter"`
-	Room      SimplifiedRoomDto `json:"room"`
-}
-
-type CountResponse struct {
-	Count int `json:"count"`
+	ID        uint              `json:"id" binding:"required"`
+	Status    string            `json:"status" binding:"required"`
+	CreatedAt time.Time         `json:"createdAt" binding:"required"`
+	User      MinimalUserDto    `json:"user" binding:"required"`
+	Inviter   MinimalUserDto    `json:"inviter" binding:"required"`
+	Room      SimplifiedRoomDto `json:"room" binding:"required"`
 }

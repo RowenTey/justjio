@@ -80,22 +80,6 @@ func (s *NotificationServiceTestSuite) TestCreateNotification_Success() {
 	s.mockNotificationRepo.AssertExpectations(s.T())
 }
 
-func (s *NotificationServiceTestSuite) TestCreateNotification_EmptyContent() {
-	// Setup test data
-	userId := "1"
-	title := "Test Title"
-	content := ""
-
-	// Execute
-	result, err := s.notificationService.CreateNotification(context.Background(), userId, title, content)
-
-	// Assertions
-	assert.Error(s.T(), err)
-	assert.Equal(s.T(), ErrEmptyContent, err)
-	assert.Nil(s.T(), result)
-	s.mockNotificationRepo.AssertNotCalled(s.T(), "Create")
-}
-
 func (s *NotificationServiceTestSuite) TestCreateNotification_InvalidUserID() {
 	// Setup test data
 	userId := "invalid"

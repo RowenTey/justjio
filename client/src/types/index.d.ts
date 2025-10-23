@@ -3,21 +3,23 @@ import { AxiosError } from "axios";
 declare module "*.jpg";
 declare module "*.png";
 
+export type Optional<T> = T | null;
+
 // general
 export interface BaseContextResponse<T = never> {
   isSuccessResponse: boolean;
   data?: T;
-  error: AxiosError | null;
+  error: Optional<AxiosError>;
 }
 
 // auth
 export interface AuthState {
-  accessToken: string | undefined;
+  accessToken: Optional<string>;
   authenticated: boolean;
 }
 
 export type AuthContextType = {
-  getAccessToken: () => string | undefined;
+  getAccessToken: () => Optional<string>;
   isAuthenticated: () => boolean;
   logout: () => Promise<boolean>;
   login: (username: string, password: string) => Promise<BaseContextResponse>;

@@ -1,10 +1,14 @@
-import { FETCH_FRIENDS, FETCH_USER, REMOVE_FRIEND } from "../context/user";
+import {
+  ADD_FRIEND,
+  FETCH_FRIENDS,
+  FETCH_USER,
+  REMOVE_FRIEND,
+} from "../context/user";
 import { UserActionTypes, UserState } from "../types/user";
 
-export const initialUserState: UserState = {
+export const INITIAL_USER_CTX_STATE: UserState = {
   user: {
     id: -1,
-    email: "",
     username: "",
     pictureUrl: "",
   },
@@ -20,15 +24,12 @@ const UserReducer = (state: UserState, action: UserActionTypes): UserState => {
         ...state,
         user: payload,
       };
+    case ADD_FRIEND:
+    case REMOVE_FRIEND:
     case FETCH_FRIENDS:
       return {
         ...state,
-        friends: payload.data,
-      };
-    case REMOVE_FRIEND:
-      return {
-        ...state,
-        friends: payload.data,
+        friends: payload,
       };
     default:
       throw new Error(`No case for type ${type} found in UserReducer.`);

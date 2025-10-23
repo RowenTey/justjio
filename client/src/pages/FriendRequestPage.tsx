@@ -1,9 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
-import { IFriendRequests } from "../types/user";
-import { fetchFriendRequestsApi, respondToFriendRequestApi } from "../api/user";
+import { userService } from "../services/user.service";
 import { useUserCtx } from "../context/user";
-import { api } from "../api";
 import { useToast } from "../context/toast";
 import TopBarWithBackArrow from "../components/top-bar/TopBarWithBackArrow";
 import useLoadingAndError from "../hooks/useLoadingAndError";
@@ -11,17 +9,23 @@ import { CheckIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import Spinner from "../components/Spinner";
 import { formatDate } from "../utils/date";
 import { AxiosError } from "axios";
+import {
+  FriendRequestDto,
+  RespondToFriendRequestRequest,
+} from "../types/models";
 
 const FriendRequestsPage = () => {
   const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
-  const [friendRequests, setFriendRequests] = useState<IFriendRequests[]>([]);
+  const [friendRequests, setFriendRequests] = useState<FriendRequestDto[]>([]);
   const { user } = useUserCtx();
   const { showToast } = useToast();
 
   useEffect(() => {
     const fetchFriends = async () => {
-      const res = await fetchFriendRequestsApi(api, user.id, "pending");
-      setFriendRequests(res.data.data);
+      const res = await userService.getFriendRequests(user.id.toString(), {
+        status: "pending",
+      });
+      setFriendRequests(res.data as FriendRequestDto[]);
     };
 
     startLoading();
@@ -33,12 +37,10 @@ const FriendRequestsPage = () => {
     accept: boolean,
   ) => {
     try {
-      await respondToFriendRequestApi(
-        api,
-        user.id,
+      await userService.respondToFriendRequest(user.id.toString(), {
         requestId,
-        accept ? "accept" : "reject",
-      );
+        action: accept ? "accept" : "reject",
+      } as RespondToFriendRequestRequest);
 
       showToast("Friend request responded to successfully!", false);
       setFriendRequests((prev) =>
@@ -92,7 +94,7 @@ const FriendRequestsPage = () => {
                 >
                   <div className="flex items-center gap-2">
                     <img
-                      src="https://i.pinimg.com/736x/a8/57/00/a85700f3c614f6313750b9d8196c08f5.jpg"
+                      src={friendRequest.sender.pictureUrl}
                       alt="Profile Image"
                       className="w-7 h-7 rounded-full"
                     />

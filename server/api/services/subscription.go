@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	pushNotificationModel "github.com/RowenTey/JustJio/server/api/dto/push_notifications"
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 )
 
 type SubscriptionService struct {
@@ -30,10 +31,10 @@ func NewSubscriptionService(
 	}
 }
 
-func (s *SubscriptionService) CreateSubscription(ctx context.Context, subscription *model.Subscription) (*model.Subscription, error) {
+func (s *SubscriptionService) CreateSubscription(ctx context.Context, subscription *model.Subscription) (string, error) {
 	subscription, err := s.subscriptionRepo.Create(ctx, subscription)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	s.notificationsChan <- pushNotificationModel.NotificationData{
@@ -42,15 +43,40 @@ func (s *SubscriptionService) CreateSubscription(ctx context.Context, subscripti
 		Message:      "Subscribed to JustJio! You will now receive notifications for app events.",
 	}
 
-	return subscription, nil
+	return subscription.ID, nil
 }
 
-func (s *SubscriptionService) GetSubscriptionsByUserID(ctx context.Context, userID string) ([]model.Subscription, error) {
-	return s.subscriptionRepo.FindByUserID(ctx, userID)
+func (s *SubscriptionService) GetSubscriptionsByUserID(ctx context.Context, userID string) ([]response.SubscriptionDto, error) {
+	subs, err := s.subscriptionRepo.FindByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	subsDto := make([]response.SubscriptionDto, len(subs))
+	for i, sub := range subs {
+		subsDto[i] = response.SubscriptionDto{
+			ID:       sub.ID,
+			Endpoint: sub.Endpoint,
+			Auth:     sub.Auth,
+			P256dh:   sub.P256dh,
+		}
+	}
+
+	return subsDto, nil
 }
 
-func (s *SubscriptionService) GetSubscriptionsByEndpoint(ctx context.Context, endpoint string) (*model.Subscription, error) {
-	return s.subscriptionRepo.FindByEndpoint(ctx, endpoint)
+func (s *SubscriptionService) GetSubscriptionsByEndpoint(ctx context.Context, endpoint string) (*response.SubscriptionDto, error) {
+	sub, err := s.subscriptionRepo.FindByEndpoint(ctx, endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.SubscriptionDto{
+		ID:       sub.ID,
+		Endpoint: sub.Endpoint,
+		Auth:     sub.Auth,
+		P256dh:   sub.P256dh,
+	}, nil
 }
 
 func (s *SubscriptionService) DeleteSubscription(ctx context.Context, subId string) error {

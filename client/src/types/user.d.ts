@@ -1,45 +1,15 @@
 import { BaseContextResponse } from ".";
-
-export interface BaseUserInfo {
-  id: number;
-  email: string;
-  username: string;
-  pictureUrl: string;
-}
-
-export interface IUser {
-  id: number;
-  username: string;
-  email: string;
-  password: string;
-  pictureUrl: string;
-  isEmailValid: boolean;
-  isOnline: boolean;
-  lastSeen: string;
-  registeredAt: string;
-  updatedAt: string;
-}
-
-export interface IFriendRequests {
-  id: number;
-  senderId: number;
-  receiverId: number;
-  status: string;
-  sentAt: string;
-  respondedAt: string | null;
-  sender: IUser;
-  receiver: IUser;
-}
+import { MinimalUserDto } from "./models";
 
 export interface UserState {
-  user: BaseUserInfo;
-  friends: IUser[];
+  user: MinimalUserDto;
+  friends: MinimalUserDto[];
 }
 
 export type UserContextType = {
-  user: BaseUserInfo;
-  setUser: (user: BaseUserInfo) => void;
-  friends: IUser[];
+  user: MinimalUserDto;
+  setUser: (user: MinimalUserDto) => void;
+  friends: MinimalUserDto[];
   fetchFriends: (userId: number) => Promise<BaseContextResponse>;
   removeFriend: (
     userId: number,
@@ -47,13 +17,9 @@ export type UserContextType = {
   ) => Promise<BaseContextResponse>;
 };
 
-interface FriendsPayload {
-  data: IUser[];
-}
-
 type UserActionTypes =
   | {
       type: "FETCH_FRIENDS" | "ADD_FRIEND" | "REMOVE_FRIEND";
-      payload: FriendsPayload;
+      payload: MinimalUserDto[];
     }
-  | { type: "FETCH_USER"; payload: BaseUserInfo };
+  | { type: "FETCH_USER"; payload: MinimalUserDto };

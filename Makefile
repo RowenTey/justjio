@@ -19,7 +19,7 @@ lgtm-up:
 	
 # Stop containers with observability tools
 lgtm-down:
-	cd infra/docker && docker compose -f docker-compose.yml -f docker-compose-tempo.yml up -d
+	cd infra/docker && docker compose -f docker-compose.yml -f docker-compose-tempo.yml down -v
 
 # Rebuild everything and start containers
 rebuild:
@@ -43,7 +43,7 @@ reset-db:
 	
 # Generate API documentation
 swagger:
-	cd server/api && swag init -g main.go
+	cd server/api && swag init -g main.go --output docs --outputTypes go,yaml
 	
 # Start API server 
 api:

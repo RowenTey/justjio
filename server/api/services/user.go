@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/RowenTey/JustJio/server/api/database"
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/utils"
@@ -22,7 +23,6 @@ var (
 	ErrAlreadyFriends                = errors.New("already friends")
 	ErrFriendRequestExists           = errors.New("friend request already sent")
 	ErrFriendRequestAlreadyProcessed = errors.New("friend request already processed")
-	ErrInvalidFriendRequestStatus    = errors.New("invalid status")
 )
 
 type UserService struct {
@@ -109,8 +109,22 @@ func (s *UserService) MarkOffline(ctx context.Context, userId string) error {
 	return s.userRepo.Update(ctx, user)
 }
 
-func (s *UserService) SearchNonFriendUsers(ctx context.Context, currentUserID, query string) ([]model.User, error) {
-	return s.userRepo.SearchNonFriendUsers(ctx, currentUserID, query, 10)
+func (s *UserService) SearchNonFriendUsers(ctx context.Context, currentUserID, query string) ([]response.MinimalUserDto, error) {
+	strangers, err := s.userRepo.SearchNonFriendUsers(ctx, currentUserID, query, 10)
+	if err != nil {
+		return nil, err
+	}
+
+	strangerDtos := make([]response.MinimalUserDto, len(strangers))
+	for i, stranger := range strangers {
+		strangerDtos[i] = response.MinimalUserDto{
+			ID:         stranger.ID,
+			Username:   stranger.Username,
+			PictureUrl: stranger.PictureUrl,
+		}
+	}
+
+	return strangerDtos, nil
 }
 
 func (s *UserService) SendFriendRequest(ctx context.Context, senderID, receiverID uint) error {
@@ -119,14 +133,16 @@ func (s *UserService) SendFriendRequest(ctx context.Context, senderID, receiverI
 	}
 
 	// Check if they are already friends
-	if isFriend, err := s.userRepo.CheckFriendship(ctx, senderID, receiverID); err != nil {
+	isFriend, err := s.userRepo.CheckFriendship(ctx, senderID, receiverID)
+	if err != nil {
 		return err
 	} else if isFriend {
 		return ErrAlreadyFriends
 	}
 
 	// Check if a friend request already exists
-	if exists, err := s.userRepo.CheckFriendRequestExists(ctx, senderID, receiverID); err != nil {
+	exists, err := s.userRepo.CheckFriendRequestExists(ctx, senderID, receiverID)
+	if err != nil {
 		return err
 	} else if exists {
 		return ErrFriendRequestExists
@@ -224,21 +240,54 @@ func (s *UserService) RemoveFriend(ctx context.Context, userID, friendID uint) e
 	})
 }
 
-func (s *UserService) GetFriends(ctx context.Context, userID string) ([]model.User, error) {
+func (s *UserService) GetFriends(ctx context.Context, userID string) ([]response.MinimalUserDto, error) {
 	userIDUint, err := strconv.ParseUint(userID, 10, 32)
 	if err != nil {
 		return nil, err
 	}
-	return s.userRepo.GetFriends(ctx, uint(userIDUint))
+
+	friends, err := s.userRepo.GetFriends(ctx, uint(userIDUint))
+
+	friendDtos := make([]response.MinimalUserDto, len(friends))
+	for i, friend := range friends {
+		friendDtos[i] = response.MinimalUserDto{
+			ID:         friend.ID,
+			Username:   friend.Username,
+			PictureUrl: friend.PictureUrl,
+		}
+	}
+
+	return friendDtos, err
 }
 
-func (s *UserService) GetFriendRequestsByStatus(ctx context.Context, userID uint, status string) ([]model.FriendRequest, error) {
-	// Validate status
-	validStatuses := map[string]bool{"pending": true, "accepted": true, "rejected": true}
-	if !validStatuses[status] {
-		return nil, ErrInvalidFriendRequestStatus
+func (s *UserService) GetFriendRequestsByStatus(ctx context.Context, userID uint, status string) ([]response.FriendRequestDto, error) {
+	friendRequests, err := s.userRepo.FindFriendRequestsByReceiver(ctx, userID, status)
+	if err != nil {
+		return nil, err
 	}
-	return s.userRepo.FindFriendRequestsByReceiver(ctx, userID, status)
+
+	s.logger.Infof("Fetched %d friend requests for user %d with status %s", len(friendRequests), userID, status)
+	friendRequestsDto := make([]response.FriendRequestDto, len(friendRequests))
+	for i, fr := range friendRequests {
+		friendRequestsDto[i] = response.FriendRequestDto{
+			ID:          fr.ID,
+			Status:      fr.Status,
+			SentAt:      fr.SentAt,
+			RespondedAt: fr.RespondedAt,
+			Sender: response.MinimalUserDto{
+				ID:         fr.Sender.ID,
+				Username:   fr.Sender.Username,
+				PictureUrl: fr.Sender.PictureUrl,
+			},
+			Receiver: response.MinimalUserDto{
+				ID:         fr.Receiver.ID,
+				Username:   fr.Receiver.Username,
+				PictureUrl: fr.Receiver.PictureUrl,
+			},
+		}
+	}
+
+	return friendRequestsDto, nil
 }
 
 func (s *UserService) CountPendingFriendRequests(ctx context.Context, userID uint) (int64, error) {

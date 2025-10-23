@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/stretchr/testify/mock"
 	"gorm.io/gorm"
@@ -75,11 +76,6 @@ func (m *MockRoomRepository) AddUserToRoom(ctx context.Context, roomID string, u
 func (m *MockRoomRepository) RemoveUserFromRoom(ctx context.Context, roomID, userID string) error {
 	args := m.Called(ctx, roomID, userID)
 	return args.Error(0)
-}
-
-func (m *MockRoomRepository) IsUserInRoom(ctx context.Context, roomID, userID string) (bool, error) {
-	args := m.Called(ctx, roomID, userID)
-	return args.Bool(0), args.Error(1)
 }
 
 // Invite related methods
