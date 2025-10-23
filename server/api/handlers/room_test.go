@@ -308,8 +308,7 @@ func (suite *RoomHandlerTestSuite) TestGetNumRooms_Success() {
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Retrieved number of rooms successfully", responseBody["message"])
-	dataMap := responseBody["data"].(map[string]any)
-	assert.Equal(suite.T(), float64(1), dataMap["count"].(float64))
+	assert.Equal(suite.T(), float64(1), responseBody["data"].(float64))
 }
 
 func (suite *RoomHandlerTestSuite) TestGetRoomInvitations_Success() {
@@ -342,8 +341,7 @@ func (suite *RoomHandlerTestSuite) TestGetNumRoomInvitations_Success() {
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Retrieved number of invites successfully", responseBody["message"])
-	dataMap := responseBody["data"].(map[string]any)
-	assert.Equal(suite.T(), float64(1), dataMap["count"].(float64))
+	assert.Equal(suite.T(), float64(1), responseBody["data"].(float64))
 }
 
 func (suite *RoomHandlerTestSuite) TestGetUninvitedFriendsForRoom_Success() {
@@ -559,7 +557,8 @@ func (suite *RoomHandlerTestSuite) TestInviteUser_Success() {
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Invited users successfully", responseBody["message"])
-	assert.Len(suite.T(), responseBody["data"].([]any), 1)
+	// The handler returns nil for data on successful invite
+	assert.Nil(suite.T(), responseBody["data"])
 }
 
 func (suite *RoomHandlerTestSuite) TestInviteUser_AlreadyInRoom() {
@@ -611,9 +610,8 @@ func (suite *RoomHandlerTestSuite) TestInviteUser_NotHost() {
 
 	resp, err := suite.app.Test(req, -1)
 	assert.NoError(suite.T(), err)
-	// Handler returns 401 (Unauthorized) when user is not authorized to invite
-	// rather than 403 (Forbidden)
-	assert.Equal(suite.T(), fiber.StatusUnauthorized, resp.StatusCode)
+	// Handler returns 403 (Forbidden) when user is not authorized to invite
+	assert.Equal(suite.T(), fiber.StatusForbidden, resp.StatusCode)
 }
 
 func (suite *RoomHandlerTestSuite) TestInviteUser_UserNotFound() {

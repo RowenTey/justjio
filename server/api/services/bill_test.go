@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 
+	"github.com/RowenTey/JustJio/server/api/dto/response"
 	"github.com/RowenTey/JustJio/server/api/model"
 	"github.com/RowenTey/JustJio/server/api/repository"
 	"github.com/RowenTey/JustJio/server/api/tests"
@@ -141,7 +142,7 @@ func (s *BillServiceTestSuite) TestCreateBill_AlreadyConsolidated() {
 	// Assertions
 	assert.Error(s.T(), err)
 	assert.Equal(s.T(), ErrAlreadyConsolidated, err)
-	assert.Nil(s.T(), bill)
+	assert.Equal(s.T(), uint(0), bill)
 
 	// Verify mock calls
 	s.mockRoomRepo.AssertExpectations(s.T())
@@ -180,7 +181,7 @@ func (s *BillServiceTestSuite) TestCreateBill_EmptyPayers() {
 	// Assertions
 	assert.Error(s.T(), err)
 	assert.Equal(s.T(), ErrPayersNotFound, err)
-	assert.Nil(s.T(), bill)
+	assert.Equal(s.T(), uint(0), bill)
 
 	// Verify mock calls
 	s.mockRoomRepo.AssertExpectations(s.T())
@@ -204,7 +205,21 @@ func (s *BillServiceTestSuite) TestGetBillById_Success() {
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedBill, bill)
+	expectedDto := &response.BillDto{
+		ID:              expectedBill.ID,
+		Name:            expectedBill.Name,
+		Amount:          expectedBill.Amount,
+		Date:            expectedBill.Date,
+		IncludeOwner:    expectedBill.IncludeOwner,
+		ConsolidationID: expectedBill.ConsolidationID,
+		Owner: response.MinimalUserDto{
+			ID:         expectedBill.Owner.ID,
+			Username:   expectedBill.Owner.Username,
+			PictureUrl: expectedBill.Owner.PictureUrl,
+		},
+		Payers: []response.MinimalUserDto{},
+	}
+	assert.Equal(s.T(), expectedDto, bill)
 	s.mockBillRepo.AssertExpectations(s.T())
 }
 
@@ -224,7 +239,24 @@ func (s *BillServiceTestSuite) TestGetBillsForRoom_Success() {
 
 	// Assertions
 	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), expectedBills, bills)
+	expectedDto := make([]response.BillDto, len(expectedBills))
+	for i, b := range expectedBills {
+		expectedDto[i] = response.BillDto{
+			ID:              b.ID,
+			Name:            b.Name,
+			Amount:          b.Amount,
+			Date:            b.Date,
+			IncludeOwner:    b.IncludeOwner,
+			ConsolidationID: b.ConsolidationID,
+			Owner: response.MinimalUserDto{
+				ID:         b.Owner.ID,
+				Username:   b.Owner.Username,
+				PictureUrl: b.Owner.PictureUrl,
+			},
+			Payers: []response.MinimalUserDto{},
+		}
+	}
+	assert.Equal(s.T(), expectedDto, bills)
 	s.mockBillRepo.AssertExpectations(s.T())
 }
 

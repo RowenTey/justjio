@@ -69,8 +69,6 @@ func (rs *RoomService) CreateRoomWithInvites(
 	var createdRoomId string
 
 	if err := database.RunInTransaction(rs.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
-		var invites []model.RoomInvite
-
 		userRepoTx := rs.userRepo.WithTx(tx)
 		roomRepoTx := rs.roomRepo.WithTx(tx)
 
@@ -98,14 +96,14 @@ func (rs *RoomService) CreateRoomWithInvites(
 			return err
 		}
 
-		for _, user := range invitees {
-			invite := model.RoomInvite{
+		invites := make([]model.RoomInvite, len(invitees))
+		for i, user := range invitees {
+			invites[i] = model.RoomInvite{
 				RoomID:    room.ID,
 				UserID:    user.ID,
 				InviterID: host.ID,
 				Status:    "pending",
 			}
-			invites = append(invites, invite)
 		}
 		if err := roomRepoTx.CreateInvites(ctx, invites); err != nil {
 			return err
@@ -131,7 +129,7 @@ func (rs *RoomService) CreateRoomWithInvites(
 	return createdRoomId, nil
 }
 
-func (rs *RoomService) GetRooms(ctx context.Context, userId string, page int) ([]response.RoomListDto, error) {
+func (rs *RoomService) GetRoomsByUserId(ctx context.Context, userId string, page int) ([]response.RoomListDto, error) {
 	rooms, err := rs.roomRepo.GetUserRooms(ctx, userId, page, ROOM_PAGE_SIZE)
 	if err != nil {
 		return nil, err
@@ -201,7 +199,15 @@ func (rs *RoomService) GetRoomById(ctx context.Context, roomId string) (*respons
 		return nil, err
 	}
 
-	dto := &response.RoomDto{
+	attendeeDtos := make([]response.MinimalUserDto, len(room.Users))
+	for i, u := range room.Users {
+		attendeeDtos[i] = response.MinimalUserDto{
+			ID:         u.ID,
+			Username:   u.Username,
+			PictureUrl: u.PictureUrl,
+		}
+	}
+	return &response.RoomDto{
 		ID:           room.ID,
 		Name:         room.Name,
 		Time:         room.Time,
@@ -219,18 +225,8 @@ func (rs *RoomService) GetRoomById(ctx context.Context, roomId string) (*respons
 			PictureUrl: room.Host.PictureUrl,
 		},
 		NoOfAttendees: room.NoOfAttendees,
-		Attendees:     make([]response.MinimalUserDto, len(room.Users)),
-	}
-
-	for i, u := range room.Users {
-		dto.Attendees[i] = response.MinimalUserDto{
-			ID:         u.ID,
-			Username:   u.Username,
-			PictureUrl: u.PictureUrl,
-		}
-	}
-
-	return dto, nil
+		Attendees:     attendeeDtos,
+	}, nil
 }
 
 func (rs *RoomService) GetRoomInvites(ctx context.Context, userId string) ([]response.RoomInviteDto, error) {
@@ -317,7 +313,6 @@ func (rs *RoomService) UpdateRoom(
 		room.ImageUrl = *updateReq.ImageUrl
 	}
 
-	// TODO: Check if this is the desired logic
 	if updateReq.VenuePlaceId != nil && room.VenuePlaceId != *updateReq.VenuePlaceId {
 		room.VenuePlaceId = *updateReq.VenuePlaceId
 
@@ -381,6 +376,7 @@ func (rs *RoomService) JoinRoom(ctx context.Context, roomId, userId string) (*re
 
 	if err := database.RunInTransaction(rs.db, sql.LevelRepeatableRead, func(tx *gorm.DB) error {
 		// TODO: check if user is invited if room is private
+
 		var err error
 		room, err = rs.roomRepo.GetByIDWithAttendees(ctx, roomId)
 		if err != nil {
@@ -415,7 +411,15 @@ func (rs *RoomService) JoinRoom(ctx context.Context, roomId, userId string) (*re
 		return nil, err
 	}
 
-	dto := &response.RoomDto{
+	attendeeDtos := make([]response.MinimalUserDto, len(room.Users))
+	for i, u := range room.Users {
+		attendeeDtos[i] = response.MinimalUserDto{
+			ID:         u.ID,
+			Username:   u.Username,
+			PictureUrl: u.PictureUrl,
+		}
+	}
+	return &response.RoomDto{
 		ID:           room.ID,
 		Name:         room.Name,
 		Time:         room.Time,
@@ -433,18 +437,8 @@ func (rs *RoomService) JoinRoom(ctx context.Context, roomId, userId string) (*re
 			PictureUrl: room.Host.PictureUrl,
 		},
 		NoOfAttendees: room.NoOfAttendees,
-		Attendees:     make([]response.MinimalUserDto, len(room.Users)),
-	}
-
-	for i, u := range room.Users {
-		dto.Attendees[i] = response.MinimalUserDto{
-			ID:         u.ID,
-			Username:   u.Username,
-			PictureUrl: u.PictureUrl,
-		}
-	}
-
-	return dto, nil
+		Attendees:     attendeeDtos,
+	}, nil
 }
 
 func (rs *RoomService) RespondToRoomInvite(
@@ -505,7 +499,7 @@ func (rs *RoomService) RespondToRoomInvite(
 		return nil, nil
 	}
 
-	dto := &response.RoomDto{
+	return &response.RoomDto{
 		ID:           room.ID,
 		Name:         room.Name,
 		Time:         room.Time,
@@ -524,9 +518,7 @@ func (rs *RoomService) RespondToRoomInvite(
 		},
 		NoOfAttendees: room.NoOfAttendees,
 		Attendees:     []response.MinimalUserDto{},
-	}
-
-	return dto, nil
+	}, nil
 }
 
 func (rs *RoomService) InviteUsersToRoom(
@@ -548,6 +540,10 @@ func (rs *RoomService) InviteUsersToRoom(
 			return ErrInvalidHost
 		}
 
+		if err := rs.validateInvites(ctx, room, inviteesIds); err != nil {
+			return err
+		}
+
 		inviter, err := userRepoTx.FindByID(ctx, inviterId)
 		if err != nil {
 			return err
@@ -555,10 +551,6 @@ func (rs *RoomService) InviteUsersToRoom(
 
 		invitees, err := userRepoTx.FindByIDs(ctx, inviteesIds)
 		if err != nil {
-			return err
-		}
-
-		if err := rs.validateInvites(ctx, room, inviteesIds); err != nil {
 			return err
 		}
 
@@ -590,7 +582,6 @@ func (rs *RoomService) LeaveRoom(ctx context.Context, roomId string, userId stri
 			return err
 		}
 
-		// TODO: check if user is involved in any bills first
 		if room.Consolidated == "UNCONSOLIDATED" {
 			return ErrRoomHasUnconsolidatedBills
 		}

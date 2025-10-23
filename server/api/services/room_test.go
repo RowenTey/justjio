@@ -176,7 +176,7 @@ func (s *RoomServiceTestSuite) TestGetRooms_Success() {
 	s.mockRoomRepo.On("GetUserRooms", mock.Anything, userId, page, ROOM_PAGE_SIZE).Return(mockRooms, nil)
 
 	// Execute
-	rooms, err := s.roomService.GetRooms(context.Background(), userId, page)
+	rooms, err := s.roomService.GetRoomsByUserId(context.Background(), userId, page)
 
 	// Assertions
 	assert.NoError(s.T(), err)
@@ -494,14 +494,13 @@ func (s *RoomServiceTestSuite) TestJoinRoom_Success() {
 	// Setup test data
 	roomId := "1"
 	userId := "2"
-	room := &model.Room{ID: "1", NoOfAttendees: 1}
+	room := &model.Room{ID: "1", NoOfAttendees: 1, Users: []model.User{}}
 	user := &model.User{ID: 2}
 
 	// Expect transaction begin
 	s.sqlMock.ExpectBegin()
 
 	// Mock expectations
-	s.mockRoomRepo.On("IsUserInRoom", mock.Anything, roomId, userId).Return(false, nil)
 	s.mockRoomRepo.On("GetByIDWithAttendees", mock.Anything, roomId).Return(room, nil)
 	s.mockUserRepo.On("FindByID", mock.Anything, userId).Return(user, nil)
 	s.mockUserRepo.On("Update", mock.Anything, user).Return(nil)
@@ -527,9 +526,18 @@ func (s *RoomServiceTestSuite) TestJoinRoom_AlreadyInRoom() {
 	// Setup test data
 	roomId := "1"
 	userId := "2"
+	// User with ID 2 is already in the room
+	existingUser := model.User{ID: 2, Username: "user2"}
+	room := &model.Room{ID: "1", NoOfAttendees: 1, Users: []model.User{existingUser}}
+
+	// Expect transaction begin
+	s.sqlMock.ExpectBegin()
 
 	// Mock expectations
-	s.mockRoomRepo.On("IsUserInRoom", mock.Anything, roomId, userId).Return(true, nil)
+	s.mockRoomRepo.On("GetByIDWithAttendees", mock.Anything, roomId).Return(room, nil)
+
+	// Expect transaction rollback (since user is already in room)
+	s.sqlMock.ExpectRollback()
 
 	// Execute
 	_, err := s.roomService.JoinRoom(context.Background(), roomId, userId)
@@ -809,6 +817,12 @@ func (s *RoomServiceTestSuite) TestInviteUsersToRoom_UserNotFound() {
 	inviter := &model.User{ID: 1, Username: "host"}
 	s.mockUserRepo.On("FindByID", mock.Anything, inviterId).Return(inviter, nil)
 
+	// Mock GetRoomAttendeeIDs to return existing attendees (as []string)
+	s.mockRoomRepo.On("GetRoomAttendeeIDs", mock.Anything, roomId).Return([]string{"1"}, nil)
+
+	// Mock GetPendingInviteUsers to return no pending invites
+	s.mockRoomRepo.On("GetPendingInviteUsers", mock.Anything, roomId).Return([]string{}, nil)
+
 	// User not found
 	s.mockUserRepo.On("FindByIDs", mock.Anything, inviteUserIds).Return([]model.User{}, gorm.ErrRecordNotFound)
 
@@ -835,8 +849,8 @@ func (s *RoomServiceTestSuite) TestJoinRoom_RoomNotFound() {
 	// Expect transaction begin
 	s.sqlMock.ExpectBegin()
 
-	// First check is IsUserInRoom - user not in non-existent room
-	s.mockRoomRepo.On("IsUserInRoom", mock.Anything, roomId, userId).Return(false, gorm.ErrRecordNotFound)
+	// Mock expectations
+	s.mockRoomRepo.On("GetByIDWithAttendees", mock.Anything, roomId).Return((*model.Room)(nil), gorm.ErrRecordNotFound)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
@@ -860,15 +874,13 @@ func (s *RoomServiceTestSuite) TestJoinRoom_PrivateRoomWithoutInvite() {
 	// Expect transaction begin
 	s.sqlMock.ExpectBegin()
 
-	// First check is IsUserInRoom
-	s.mockRoomRepo.On("IsUserInRoom", mock.Anything, roomId, userId).Return(false, nil)
-
-	// Private room
+	// Private room without user in it
 	room := &model.Room{
 		ID:        roomId,
 		Name:      "Private Room",
 		HostID:    1,
 		IsPrivate: true,
+		Users:     []model.User{}, // User not in room yet
 	}
 	s.mockRoomRepo.On("GetByIDWithAttendees", mock.Anything, roomId).Return(room, nil)
 

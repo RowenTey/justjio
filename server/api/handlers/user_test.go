@@ -74,10 +74,10 @@ func (suite *UserHandlerTestSuite) SetupSuite() {
 		middleware.ParseAndValidate[request.UpdateUsernameRequest](),
 		userHandler.UpdateUsername)
 	userRoutes.Get("/friends", userHandler.GetFriends)
-	userRoutes.Get("/friends/count", userHandler.GetNumFriends)
+	userRoutes.Get("/friends/count", userHandler.CountFriends)
 	userRoutes.Get("/friends/search", userHandler.SearchNonFriends)
 	userRoutes.Post("/friends",
-		middleware.ParseAndValidate[request.ModifyFriendRequest](),
+		middleware.ParseAndValidate[request.SendFriendRequest](),
 		userHandler.SendFriendRequest)
 	userRoutes.Delete("/friends/:friendId", userHandler.RemoveFriend)
 	userRoutes.Get("/friends/requests", userHandler.GetFriendRequestsByStatus)
@@ -273,7 +273,7 @@ func (suite *UserHandlerTestSuite) TestSendFriendRequest_Success() {
 	result := suite.db.Create(&newUser)
 	assert.NoError(suite.T(), result.Error)
 
-	requestBody := request.ModifyFriendRequest{
+	requestBody := request.SendFriendRequest{
 		FriendID: newUser.ID,
 	}
 	reqBody, _ := json.Marshal(requestBody)
@@ -296,7 +296,7 @@ func (suite *UserHandlerTestSuite) TestSendFriendRequest_Success() {
 }
 
 func (suite *UserHandlerTestSuite) TestSendFriendRequest_ToSelf() {
-	requestBody := request.ModifyFriendRequest{
+	requestBody := request.SendFriendRequest{
 		FriendID: suite.testUserID,
 	}
 	reqBody, _ := json.Marshal(requestBody)
@@ -329,7 +329,7 @@ func (suite *UserHandlerTestSuite) TestSendFriendRequest_AlreadyFriends() {
 	assert.NoError(suite.T(), err)
 
 	// Try to send friend request to existing friend
-	requestBody := request.ModifyFriendRequest{
+	requestBody := request.SendFriendRequest{
 		FriendID: friendUser.ID,
 	}
 	reqBody, _ := json.Marshal(requestBody)
@@ -364,7 +364,7 @@ func (suite *UserHandlerTestSuite) TestSendFriendRequest_PendingRequest() {
 	assert.NoError(suite.T(), err)
 
 	// Try to send another friend request to the same user
-	requestBody := request.ModifyFriendRequest{
+	requestBody := request.SendFriendRequest{
 		FriendID: otherUser.ID,
 	}
 	reqBody, _ := json.Marshal(requestBody)
@@ -459,7 +459,7 @@ func (suite *UserHandlerTestSuite) TestIsFriend_True() {
 	err := suite.userService.AcceptFriendRequest(context.Background(), suite.testRequestID)
 	assert.NoError(suite.T(), err)
 
-	requestBody := request.ModifyFriendRequest{
+	requestBody := request.SendFriendRequest{
 		FriendID: suite.testFriendID,
 	}
 	reqBody, _ := json.Marshal(requestBody)
@@ -495,7 +495,7 @@ func (suite *UserHandlerTestSuite) TestGetNumFriends_Success() {
 	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), float64(1), responseBody["data"].(map[string]any)["numFriends"].(float64))
+	assert.Equal(suite.T(), float64(1), responseBody["data"].(float64))
 }
 
 func (suite *UserHandlerTestSuite) TestSearchFriends_Success() {
@@ -594,7 +594,7 @@ func (suite *UserHandlerTestSuite) TestCountPendingFriendRequests_Success() {
 	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), float64(1), responseBody["data"].(map[string]any)["count"].(float64))
+	assert.Equal(suite.T(), float64(1), responseBody["data"].(float64))
 }
 
 func (suite *UserHandlerTestSuite) TestRespondToFriendRequest_Accept() {
