@@ -10,6 +10,7 @@ import { useState } from "react";
 import { IVenue } from "../types/room";
 import QueryVenueDropdown from "../components/room/QueryVenueDropdown";
 import { roomService } from "../services/room.service";
+import { EditRoomRequest } from "../types/models";
 
 type UpdateRoomRequest = {
   venue: string;
@@ -60,7 +61,7 @@ const EditRoomPage = () => {
         time: data.time,
         description: data.description,
       };
-      await roomService.editRoom(state.room.id, payload as any);
+      await roomService.editRoom(state.room.id, payload as EditRoomRequest);
       showToast(`Updated room successfully!`, false);
       setTimeout(() => navigate(-1), 1000);
     } catch (error) {
