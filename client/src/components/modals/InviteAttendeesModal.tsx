@@ -2,16 +2,12 @@ import { useForm } from "react-hook-form";
 import ModalWrapper, { ModalWrapperProps } from "../ModalWrapper";
 import SearchableDropdown from "../SearchableDropdown";
 import { useEffect, useState } from "react";
-import {
-  getUninvitedFriendsForRoomApi,
-  inviteUsersToRoomApi,
-} from "../../api/room";
-import { api } from "../../api";
 import { useToast } from "../../context/toast";
 import { AxiosError } from "axios";
 import { QrCodeIcon } from "@heroicons/react/24/solid";
 import { LinkIcon } from "@heroicons/react/24/outline";
 import { MinimalUserDto } from "../../types/models";
+import { roomService } from "../../services";
 
 interface InviteAttendeesFormData {
   invitees: string;
@@ -38,12 +34,16 @@ const InviteAttendeesModalContent: React.FC<
 
   useEffect(() => {
     const fetchUninvitedFriends = async (roomId: string) => {
-      return await getUninvitedFriendsForRoomApi(api, roomId);
+      return await roomService.getUninvitedUsers(roomId);
     };
 
-    fetchUninvitedFriends(roomId).then((res) => {
-      SetUninvitedFriends(res.data.data);
-    });
+    fetchUninvitedFriends(roomId)
+      .then((res) => {
+        SetUninvitedFriends(res.data!);
+      })
+      .catch((error) => {
+        console.error("Error fetching uninvited friends", error);
+      });
   }, [roomId]);
 
   const copyToClipboard = () => {
@@ -65,8 +65,7 @@ const InviteAttendeesModalContent: React.FC<
   const handleInviteUsers = async (data: InviteAttendeesFormData) => {
     const invitees = data.invitees.split(",");
     try {
-      await inviteUsersToRoomApi(api, roomId, invitees);
-
+      await roomService.inviteUsers(roomId, { invitees });
       showToast("Users invited successfully!", false);
       SetUninvitedFriends((prev) =>
         prev.filter((friend) => !invitees.includes(friend.id.toString())),

@@ -6,7 +6,7 @@ import useLoadingAndError from "../hooks/useLoadingAndError";
 import { CheckIcon } from "@heroicons/react/24/solid";
 import Spinner from "../components/Spinner";
 import { userService } from "../services/user.service";
-import { INotification } from "../types/notifications";
+import { NotificationDto } from "../types/models";
 
 const NotificationsTopBar: React.FC = () => {
   return (
@@ -18,18 +18,20 @@ const NotificationsTopBar: React.FC = () => {
 
 const NotificationsPage = () => {
   const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
-  const [notifications, setNotifications] = useState<INotification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationDto[]>([]);
   const { user } = useUserCtx();
   const { showToast } = useToast();
 
   useEffect(() => {
     const fetchNotifications = async () => {
       const res = await userService.getUserNotifications(user.id.toString());
-      setNotifications((res.data || []) as INotification[]);
+      setNotifications(res.data!);
     };
 
     startLoading();
-    fetchNotifications().then(() => stopLoading());
+    fetchNotifications()
+      .catch((e) => console.error("Error fetching notifications: ", e))
+      .finally(() => stopLoading());
   }, [user.id]);
 
   const handleReadNotification = async (notificationId: number) => {

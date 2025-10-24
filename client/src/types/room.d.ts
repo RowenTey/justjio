@@ -1,12 +1,6 @@
 import { BaseContextResponse } from ".";
 import type { CreateRoomRequest, RoomListDto } from "./models";
 
-export interface IVenue {
-  name: string;
-  address: string;
-  googleMapsPlaceId: string;
-}
-
 export type RoomCtxState = {
   rooms: RoomListDto[];
 };

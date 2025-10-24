@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import ModalWrapper, { ModalWrapperProps } from "../ModalWrapper";
-import { searchFriendsApi } from "../../api/user";
-import { api } from "../../api";
 import { UserPlusIcon } from "@heroicons/react/24/outline";
 import { MinimalUserDto } from "../../types/models";
+import { userService } from "../../services";
 
 type SearchUserModalProps = {
   userId: number;
@@ -23,8 +22,11 @@ const SearchUserModalContent: React.FC<
     }
 
     const fetchUsers = async () => {
-      const res = await searchFriendsApi(api, userId, searchTerm);
-      setSearchResults(res.data.data);
+      const res = await userService.searchFriends(
+        userId.toString(),
+        searchTerm,
+      );
+      setSearchResults(res.data!);
     };
 
     // Debounce search input

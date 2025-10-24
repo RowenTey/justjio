@@ -5,7 +5,6 @@ import InputField from "../components/InputField";
 import Spinner from "../components/Spinner";
 import { useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
-import { IUser } from "../types/user";
 import PeopleBox from "../components/PeopleBox";
 import Checkbox from "../components/Checkbox";
 import useMandatoryParam from "../hooks/useMandatoryParam";
@@ -20,7 +19,7 @@ type CreateBillFormData = {
 };
 
 type CreateBillPageProps = {
-  attendees: IUser[];
+  attendees: MinimalUserDto[];
   roomName: string;
   currentUserId: number;
 };
