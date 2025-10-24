@@ -1,13 +1,8 @@
-import axios, { type AxiosInstance } from "axios";
+import axios from "axios";
 import type { paths } from "../types/api";
 
 // Create a typed axios instance
-const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/v1",
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+const apiClient = axios.create({ baseURL: import.meta.env.VITE_API_URL });
 
 // Add auth token to requests
 apiClient.interceptors.request.use((req) => {
