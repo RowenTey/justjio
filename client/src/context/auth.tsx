@@ -51,7 +51,6 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setUser({
       id: decodedToken.user_id,
-      email: decodedToken.user_email,
       username: decodedToken.username,
       pictureUrl: decodedToken.picture_url,
     });
@@ -73,7 +72,6 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     });
     setUser({
       id: data.id,
-      email: data.email,
       username: data.username,
       pictureUrl: data.pictureUrl,
     });
@@ -121,7 +119,6 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         localStorage.removeItem("accessToken");
         setUser({
           id: -1,
-          email: "",
           username: "",
           pictureUrl: "",
         });

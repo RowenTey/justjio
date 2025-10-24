@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
-import { queryVenueApi } from "../../api/room";
-import { api } from "../../api";
 import { useDebounce } from "../../hooks/useDebounce";
-import { IVenue } from "../../types/room";
 import Spinner from "../Spinner";
+import { roomService } from "../../services";
+import { Venue } from "../../types/models";
 
 interface SearchableVenueDropdownProps {
   value: string;
-  onChange: (venue: IVenue) => void;
+  onChange: (venue: Venue) => void;
   errors: any;
   register: any;
   validation?: Record<string, any>;
@@ -21,7 +20,7 @@ const QueryVenueDropdown = ({
   register,
   validation = {},
 }: SearchableVenueDropdownProps) => {
-  const [venues, setVenues] = useState<IVenue[]>([]);
+  const [venues, setVenues] = useState<Venue[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState(value || "");
   const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms debounce
@@ -38,8 +37,8 @@ const QueryVenueDropdown = ({
   const fetchVenues = async (query: string) => {
     setIsLoading(true);
     try {
-      const { data: response } = await queryVenueApi(api, query);
-      setVenues(response.data);
+      const { data: response } = await roomService.searchVenues(query);
+      setVenues(response!);
     } catch (error) {
       console.error("Error fetching venues:", error);
       setVenues([]);
