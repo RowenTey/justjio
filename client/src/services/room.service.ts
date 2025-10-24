@@ -111,7 +111,7 @@ export const roomService = {
 
   searchVenues: async (query?: string) => {
     const { data } = await apiClient.get<
-      ApiResponse<"/roooms/venues/search", "get">
+      ApiResponse<"/rooms/venues/search", "get">
     >("/roooms/venues/search", { params: { query } });
     return data;
   },
