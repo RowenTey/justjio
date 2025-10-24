@@ -112,7 +112,7 @@ export const roomService = {
   searchVenues: async (query?: string) => {
     const { data } = await apiClient.get<
       ApiResponse<"/rooms/venues/search", "get">
-    >("/roooms/venues/search", { params: { query } });
+    >("/rooms/venues/search", { params: { query } });
     return data;
   },
 };
