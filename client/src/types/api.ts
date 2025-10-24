@@ -1918,7 +1918,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/roooms/venues/search": {
+  "/rooms/venues/search": {
     parameters: {
       query?: never;
       header?: never;
