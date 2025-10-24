@@ -1,5 +1,5 @@
 # Build the application from source
-FROM golang:1.23-alpine AS build-stage
+FROM golang:1.24-alpine AS build-stage
 
 ARG GOARCH=amd64
 
