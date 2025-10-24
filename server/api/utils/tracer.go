@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/RowenTey/JustJio/server/api/config"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
@@ -16,19 +17,18 @@ import (
 
 // InitTracer initializes OpenTelemetry tracer with OTLP HTTP exporter for Grafana Tempo
 // Returns the TracerProvider which must be shut down gracefully on application exit
-func InitTracer(environment string) (*sdktrace.TracerProvider, error) {
+func InitTracer(conf *config.Config, environment string) (*sdktrace.TracerProvider, error) {
 	ctx := context.Background()
 
-	// Get OTLP endpoint from environment (defaults to Grafana Tempo's default port)
-	otlpEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	otlpEndpoint := conf.TracingEndpoint
 	if otlpEndpoint == "" {
-		otlpEndpoint = "localhost:4318" // Default Grafana Tempo OTLP HTTP endpoint
+		otlpEndpoint = "localhost:4318"
 	}
 
 	// Create OTLP HTTP exporter
 	exporter, err := otlptracehttp.New(ctx,
 		otlptracehttp.WithEndpoint(otlpEndpoint),
-		otlptracehttp.WithInsecure(), // Use WithTLSCredentials() for production with TLS
+		otlptracehttp.WithInsecure(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTLP trace exporter: %w", err)

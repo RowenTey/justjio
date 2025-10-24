@@ -25,6 +25,7 @@ WORKDIR /
 # Download cURL for healthcheck
 RUN apk add --no-cache curl
 
+COPY --from=build-stage /app/migrations ./migrations
 COPY --from=build-stage /api-server /api-server
 
 EXPOSE 8080
