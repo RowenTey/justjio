@@ -444,7 +444,7 @@ func (h *RoomHandler) LeaveRoom(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.EmptyApiResponse "Query parameter is required"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
 // @Security BearerAuth
-// @Router /roooms/venues/search [get]
+// @Router /rooms/venues/search [get]
 func (h *RoomHandler) QueryVenue(c *fiber.Ctx) error {
 	query := c.Query("query")
 	if query == "" {

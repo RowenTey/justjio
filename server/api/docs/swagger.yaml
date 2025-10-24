@@ -1260,7 +1260,7 @@ paths:
                 $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
         - BearerAuth: []
-  /roooms/venues/search:
+  /rooms/venues/search:
     get:
       tags:
         - Venues

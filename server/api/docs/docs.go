@@ -1738,7 +1738,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/roooms/venues/search": {
+        "/rooms/venues/search": {
             "get": {
                 "security": [
                     {
