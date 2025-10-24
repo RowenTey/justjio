@@ -11,7 +11,7 @@ services:
       - full
     image: ghcr.io/rowentey/justjio/web:latest
     build:
-      context: ../client
+      context: ../../client
       dockerfile: Dockerfile
     ports:
       - "80:80"
@@ -62,7 +62,8 @@ services:
       SMTP2GO_API_KEY: ${SMTP2GO_API_KEY}
       ALLOWED_ORIGINS: http://localhost:80
       VERSION: dev
-    entrypoint: ["/api-server", "staging"]
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${TEMPO_ENDPOINT}
+    entrypoint: ["/api-server", "dev"]
     depends_on:
       kafka:
         condition: service_started
@@ -88,6 +89,7 @@ services:
       KAFKA_HOST: kafka
       KAFKA_PORT: 29092
       ALLOWED_ORIGINS: http://localhost:80
+    entrypoint: ["/ws-server", "dev"]
     depends_on:
       kafka:
         condition: service_started

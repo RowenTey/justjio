@@ -36,16 +36,15 @@ func main() {
 		env = os.Args[1]
 	}
 
-	logger := utils.InitLogger(env)
-
 	conf, err := config.LoadConfig()
 	if err != nil {
-		logger.Fatal("Failed to load configuration!")
+		panic("Failed to load configuration!")
 	}
 
+	logger := utils.InitLogger(env)
 	logger.Info("Starting API server...")
 
-	tp, err := utils.InitTracer(env)
+	tp, err := utils.InitTracer(conf, env)
 	if err != nil {
 		logger.Warn("Failed to initialize tracer: ", err)
 	}
