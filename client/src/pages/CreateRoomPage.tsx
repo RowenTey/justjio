@@ -9,10 +9,10 @@ import SearchableDropdown from "../components/SearchableDropdown";
 import { useUserCtx } from "../context/user";
 import { useToast } from "../context/toast";
 import { useEffect, useState } from "react";
-import { IVenue } from "../types/room";
 import QueryVenueDropdown from "../components/room/QueryVenueDropdown";
 import ToggleSwitch from "../components/ToggleSwitch";
-import { CreateRoomRequest } from "../types/models";
+import { CreateRoomRequest, Venue } from "../types/models";
+import { Optional } from "../types";
 
 enum Image {
   BIRTHDAY = "/imgs/birthday.png",
@@ -57,9 +57,7 @@ const CreateRoomPage = () => {
   const { user, friends, fetchFriends } = useUserCtx();
   const { createRoom } = useRoomCtx();
   const { showToast } = useToast();
-  const [selectedVenue, setSelectedVenue] = useState<IVenue | undefined>(
-    undefined,
-  );
+  const [selectedVenue, setSelectedVenue] = useState<Optional<Venue>>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -80,7 +78,7 @@ const CreateRoomPage = () => {
       name: data.name,
       date: new Date(data.date).toISOString(),
       venue: data.venue,
-      venuePlaceId: selectedVenue.googleMapsPlaceId,
+      venuePlaceId: selectedVenue.googleMapsPlaceId!,
       time: data.time,
       imageUrl: window.location.origin + data.image,
       isPrivate: data.isPrivate,
@@ -174,7 +172,7 @@ const CreateRoomPage = () => {
           value={watch("venue", "")}
           onChange={(value) => {
             setSelectedVenue(value);
-            setValue("venue", value.name);
+            setValue("venue", value.name!);
           }}
           errors={errors}
           register={register}

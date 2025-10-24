@@ -7,10 +7,9 @@ import InputField from "../components/InputField";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useToast } from "../context/toast";
 import { useState } from "react";
-import { IVenue } from "../types/room";
 import QueryVenueDropdown from "../components/room/QueryVenueDropdown";
 import { roomService } from "../services/room.service";
-import { EditRoomRequest } from "../types/models";
+import { EditRoomRequest, Venue } from "../types/models";
 
 type UpdateRoomRequest = {
   venue: string;
@@ -45,7 +44,7 @@ const EditRoomPage = () => {
   const { loadingStates, startLoading, stopLoading, errorStates, setErrorMsg } =
     useLoadingAndError();
   const { showToast } = useToast();
-  const [selectedVenue, setSelectedVenue] = useState<IVenue>({
+  const [selectedVenue, setSelectedVenue] = useState<Venue>({
     name: state.room.venue,
     googleMapsPlaceId: state.room.venuePlaceId,
     address: "",
@@ -56,7 +55,7 @@ const EditRoomPage = () => {
     try {
       const payload: UpdateRoomRequest = {
         venue: data.venue,
-        placeId: selectedVenue.googleMapsPlaceId,
+        placeId: selectedVenue.googleMapsPlaceId!,
         date: new Date(data.date).toISOString(),
         time: data.time,
         description: data.description,
@@ -101,7 +100,7 @@ const EditRoomPage = () => {
           value={watch("venue") || ""}
           onChange={(value) => {
             setSelectedVenue(value);
-            setValue("venue", value.name);
+            setValue("venue", value.name!);
           }}
           errors={errors}
           register={register}
