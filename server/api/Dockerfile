@@ -15,7 +15,7 @@ COPY go.* ./
 RUN go mod download
 
 COPY . .
-RUN GOOS=linux GOARCH=${GOARCH} go build -v -tags musl -o /api-server
+RUN GOOS=linux GOARCH=${GOARCH} go build -v -tags musl -o /api-server ./cmd/server/main.go
 
 # Deploy the application binary into a lean image
 FROM alpine:latest AS build-release-stage

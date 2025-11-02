@@ -1,0 +1,139 @@
+package handlers
+
+import (
+	"strconv"
+
+	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/RowenTey/JustJio/server/api/internal/middlewares"
+	"github.com/RowenTey/JustJio/server/api/internal/services"
+	"github.com/RowenTey/JustJio/server/api/pkg/dto/request"
+	"github.com/RowenTey/JustJio/server/api/pkg/otel"
+	"github.com/RowenTey/JustJio/server/api/pkg/utils"
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v4"
+)
+
+type NotificationHandler struct {
+	notificationService *services.NotificationService
+	logger              *log.Entry
+}
+
+func NewNotificationHandler(
+	notificationService *services.NotificationService,
+	logger *log.Logger,
+) *NotificationHandler {
+	return &NotificationHandler{
+		notificationService: notificationService,
+		logger:              logger.WithFields(logrus.Fields{"handler": "NotificationHandler"}),
+	}
+}
+
+// CreateNotification creates a new notification
+// @Summary Create notification
+// @Description Creates and sends a new notification to a user
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Param notification body request.CreateNotificationRequest true "Notification details"
+// @Success 200 {object} utils.EmptyApiResponse "Notification created successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid input or empty content"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
+// @Router /notifications [post]
+func (h *NotificationHandler) CreateNotification(c *fiber.Ctx) error {
+	ctx := otel.GetOtelContext(c)
+	req := middlewares.GetValidatedRequest[request.CreateNotificationRequest](c)
+
+	userId := utils.UIntToString(req.UserId)
+
+	if err := h.notificationService.SendNotification(ctx, userId, req.Title, req.Content); err != nil {
+		return utils.HandleInternalServerError(c, err)
+	}
+
+	return utils.HandleSuccess[any](c, "Notification created successfully", nil)
+}
+
+// MarkNotificationAsRead marks a notification as read
+// @Summary Mark notification as read
+// @Description Marks a specific notification as read by its ID
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Param id path string true "Notification ID"
+// @Success 200 {object} utils.EmptyApiResponse "Notification marked as read successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid notification ID"
+// @Failure 404 {object} utils.EmptyApiResponse "Notification not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
+// @Router /users/{userId}/notifications/{notificationId} [patch]
+func (h *NotificationHandler) MarkNotificationAsRead(c *fiber.Ctx) error {
+	ctx := otel.GetOtelContext(c)
+	notificationId, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		return utils.HandleInvalidInputError(c, err)
+	}
+
+	h.logger.Infof("Marking notification %d as read", notificationId)
+	if err := h.
+		notificationService.
+		MarkNotificationAsRead(ctx, uint(notificationId)); err != nil {
+		return utils.HandleNotFoundOrInternalError(c, err, "Notification not found")
+	}
+
+	return utils.HandleSuccess[any](c, "Notification marked as read successfully", nil)
+}
+
+// GetNotification retrieves a specific notification
+// @Summary Get notification by ID
+// @Description Retrieves a specific notification by its ID
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Param id path string true "Notification ID"
+// @Success 200 {object} object{status=string,message=string,data=response.NotificationDto} "Retrieved notification successfully"
+// @Failure 400 {object} utils.EmptyApiResponse "Invalid notification ID"
+// @Failure 404 {object} utils.EmptyApiResponse "Notification not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
+// @Router /notifications/{id} [get]
+func (h *NotificationHandler) GetNotification(c *fiber.Ctx) error {
+	ctx := otel.GetOtelContext(c)
+	notificationId, err := strconv.ParseUint(c.Params("id"), 10, 32)
+	if err != nil {
+		return utils.HandleInvalidInputError(c, err)
+	}
+
+	notification, err := h.
+		notificationService.
+		GetNotification(ctx, uint(notificationId))
+	if err != nil {
+		return utils.HandleNotFoundOrInternalError(c, err, "Notification not found")
+	}
+
+	return utils.HandleSuccess(c, "Retrieved notification successfully", notification)
+}
+
+// GetNotifications retrieves all notifications for a user
+// @Summary Get user notifications
+// @Description Retrieves all notifications for the authenticated user
+// @Tags Notifications
+// @Accept json
+// @Produce json
+// @Success 200 {object} object{status=string,message=string,data=[]response.NotificationDto} "Retrieved notifications successfully"
+// @Failure 404 {object} utils.EmptyApiResponse "User not found"
+// @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
+// @Security BearerAuth
+// @Router /users/{userId}/notifications [get]
+func (h *NotificationHandler) GetNotifications(c *fiber.Ctx) error {
+	ctx := otel.GetOtelContext(c)
+	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
+
+	notifications, err := h.notificationService.GetNotifications(ctx, userId)
+	if err != nil {
+		return utils.HandleNotFoundOrInternalError(c, err, "User not found")
+	}
+
+	return utils.HandleSuccess(c, "Retrieved notifications successfully", notifications)
+}
