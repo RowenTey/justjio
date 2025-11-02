@@ -1,0 +1,729 @@
+package handlers
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/RowenTey/JustJio/server/api/internal/middlewares"
+	"github.com/RowenTey/JustJio/server/api/internal/models"
+	"github.com/RowenTey/JustJio/server/api/internal/repositories"
+	"github.com/RowenTey/JustJio/server/api/internal/services"
+	"github.com/RowenTey/JustJio/server/api/pkg/config"
+	"github.com/RowenTey/JustJio/server/api/pkg/dto/request"
+	"github.com/RowenTey/JustJio/server/api/pkg/kafka"
+	"github.com/RowenTey/JustJio/server/api/pkg/tests"
+	"github.com/RowenTey/JustJio/server/api/pkg/utils"
+	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
+)
+
+type AuthHandlerTestSuite struct {
+	suite.Suite
+	app          *fiber.App
+	db           *gorm.DB
+	ctx          context.Context
+	logger       *logrus.Logger
+	dependencies *tests.TestDependencies
+
+	mockJWTSecret string
+	config        *config.Config
+
+	kafkaClient kafka.KafkaClient
+	userService *services.UserService
+	authService *services.AuthService
+
+	authHandler *AuthHandler
+}
+
+func (suite *AuthHandlerTestSuite) SetupSuite() {
+	suite.ctx = context.Background()
+	var err error
+	suite.logger = logrus.New()
+
+	// Setup test containers
+	suite.dependencies = &tests.TestDependencies{}
+	suite.dependencies, err = tests.SetupTestDependencies(suite.ctx, suite.dependencies, suite.logger)
+	assert.NoError(suite.T(), err)
+
+	// Setup DB Conn
+	suite.db, err = tests.CreateAndConnectToTestDb(suite.ctx, suite.dependencies.PostgresContainer, "auth_test", "file://../../migrations")
+	assert.NoError(suite.T(), err)
+
+	// Get Kafka broker address
+	kafkaBrokers, err := suite.dependencies.KafkaContainer.Brokers(suite.ctx)
+	assert.NoError(suite.T(), err)
+
+	// Initialize Kafka service
+	config := &config.Config{
+		Kafka: config.KafkaConfig{
+			Host:        strings.Split(kafkaBrokers[0], ":")[0],
+			Port:        strings.Split(kafkaBrokers[0], ":")[1],
+			TopicPrefix: "test-",
+		},
+	}
+	suite.kafkaClient, err = kafka.NewKafkaClient(config, suite.logger, "test")
+	assert.NoError(suite.T(), err)
+}
+
+func (suite *AuthHandlerTestSuite) TearDownSuite() {
+	// Clean up containers
+	if !IsPackageTest && suite.dependencies != nil {
+		suite.dependencies.Teardown(suite.ctx)
+	}
+	suite.logger.Info("Tore down test suite dependencies")
+}
+
+func (suite *AuthHandlerTestSuite) SetupTest() {
+	// Initialize deps
+	suite.mockJWTSecret = "test-secret"
+	suite.config = &config.Config{
+		JwtSecret:   suite.mockJWTSecret,
+		AdminEmail:  "test@test.com",
+		GoogleOauth: config.GoogleOauthConfig{},
+	}
+	userRepository := repositories.NewUserRepository(suite.db)
+	suite.userService = services.NewUserService(suite.db, userRepository, suite.logger)
+	suite.authService = services.NewAuthService(
+		suite.userService,
+		suite.kafkaClient,
+		func(password string) (string, error) {
+			return utils.HashPassword(password)
+		},
+		func(from, to, subject, textBody string) error {
+			return nil
+		},
+		suite.config,
+		suite.logger,
+	)
+	suite.authHandler = NewAuthHandler(suite.authService, suite.logger)
+
+	// Setup Fiber app
+	suite.app = fiber.New()
+	suite.app.Post("/signup",
+		middlewares.ParseAndValidate[request.SignUpRequest](),
+		suite.authHandler.SignUp)
+	suite.app.Post("/login",
+		middlewares.ParseAndValidate[request.LoginRequest](),
+		suite.authHandler.Login)
+	suite.app.Post("/verify",
+		middlewares.ParseAndValidate[request.VerifyOTPRequest](),
+		suite.authHandler.VerifyOTP)
+	suite.app.Post("/otp",
+		middlewares.ParseAndValidate[request.SendOTPEmailRequest](),
+		suite.authHandler.SendOTPEmail)
+	suite.app.Patch("/reset",
+		middlewares.ParseAndValidate[request.ResetPasswordRequest](),
+		suite.authHandler.ResetPassword)
+	suite.app.Post("/google",
+		middlewares.ParseAndValidate[request.GoogleAuthRequest](),
+		suite.authHandler.GoogleLogin)
+}
+
+func (suite *AuthHandlerTestSuite) TearDownTest() {
+	// Clear database after each test
+	suite.db.Exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE")
+}
+
+func TestAuthHandlerSuite(t *testing.T) {
+	t.Parallel()
+	suite.Run(t, new(AuthHandlerTestSuite))
+}
+
+func (suite *AuthHandlerTestSuite) TestSignUp_Success() {
+	// Prepare request
+	newUser := models.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+		Password: "password123",
+	}
+
+	reqBody, err := json.Marshal(newUser)
+	assert.NoError(suite.T(), err)
+
+	req := httptest.NewRequest("POST", "/signup", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "User signed up successfully", response["message"])
+	assert.NotEmpty(suite.T(), response["data"].(map[string]any)["id"])
+
+	// Verify database
+	var dbUser models.User
+	err = suite.db.Where("username = ?", "testuser").First(&dbUser).Error
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test@example.com", dbUser.Email)
+}
+
+func (suite *AuthHandlerTestSuite) TestSignUp_DuplicateEmail() {
+	// Create existing user
+	existingUser := models.User{
+		Username: "existinguser",
+		Email:    "existing@example.com",
+		Password: "password123",
+	}
+	err := suite.db.Create(&existingUser).Error
+	assert.NoError(suite.T(), err)
+
+	// Prepare request with duplicate email
+	newUser := models.User{
+		Username: "testuser",
+		Email:    "existing@example.com", // duplicate email
+		Password: "password123",
+	}
+
+	reqBody, err := json.Marshal(newUser)
+	assert.NoError(suite.T(), err)
+
+	req := httptest.NewRequest("POST", "/signup", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusConflict, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Username or email already exists", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestSignUp_InvalidInput() {
+	// Prepare request with invalid data
+	reqBody := bytes.NewBuffer([]byte(`{"random", "password": "password123"}`))
+
+	req := httptest.NewRequest("POST", "/signup", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Review your input", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestSignUp_InternalServerError() {
+	// Mock the hash function to return an error
+	mockHash := func(password string) (string, error) {
+		return "", errors.New("hashing error")
+	}
+
+	// Re-initialize deps
+	suite.authService = services.NewAuthService(
+		suite.userService,
+		suite.kafkaClient,
+		mockHash,
+		func(from, to, subject, textBody string) error {
+			return nil
+		},
+		suite.config,
+		suite.logger,
+	)
+	suite.authHandler = NewAuthHandler(suite.authService, suite.logger)
+
+	// Re-setup Fiber app
+	suite.app = fiber.New()
+	suite.app.Post("/signup",
+		middlewares.ParseAndValidate[request.SignUpRequest](),
+		suite.authHandler.SignUp)
+
+	// Prepare request
+	newUser := models.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+		Password: "password123",
+	}
+
+	reqBody, err := json.Marshal(newUser)
+	assert.NoError(suite.T(), err)
+
+	req := httptest.NewRequest("POST", "/signup", bytes.NewBuffer(reqBody))
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusInternalServerError, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Error occured in server", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestLogin_Success() {
+	// Create a user
+	hashedPassword, err := utils.HashPassword("password123")
+	assert.NoError(suite.T(), err)
+
+	user := models.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+		Password: hashedPassword,
+	}
+	err = suite.db.Create(&user).Error
+	assert.NoError(suite.T(), err)
+
+	// Prepare request
+	reqBody := bytes.NewBuffer([]byte(`{"username": "testuser", "password": "password123"}`))
+
+	req := httptest.NewRequest("POST", "/login", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req, -1)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Login successfully", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestLogin_InvalidInput() {
+	// Prepare request with invalid data
+	reqBody := bytes.NewBuffer([]byte(`{"random", "password": "password123"}`))
+
+	req := httptest.NewRequest("POST", "/login", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Review your input", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestLogin_UserNotFound() {
+	// Prepare request with non-existent username
+	reqBody := bytes.NewBuffer([]byte(`{"username": "nonexistentuser", "password": "password123"}`))
+
+	req := httptest.NewRequest("POST", "/login", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "User not found", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestLogin_IncorrectPassword() {
+	// Create a user
+	user := models.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+		Password: utils.GenerateRandomString(32),
+	}
+	err := suite.db.Create(&user).Error
+	assert.NoError(suite.T(), err)
+
+	// Prepare request with incorrect password
+	reqBody := bytes.NewBuffer([]byte(`{"username": "testuser", "password": "wrongpassword"}`))
+
+	req := httptest.NewRequest("POST", "/login", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusUnauthorized, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Invalid username or password", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestSendOTPEmail_InvalidInput() {
+	// Prepare request with invalid data
+	reqBody := bytes.NewBuffer([]byte(`{"random", "purpose": "verify-email"}`))
+
+	req := httptest.NewRequest("POST", "/otp", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Review your input", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestSendOTPEmail_UserNotFound() {
+	// Prepare request with non-existent email
+	reqBody := bytes.NewBuffer([]byte(`{"email": "nonexistent@example.com", "purpose": "verify-email"}`))
+
+	req := httptest.NewRequest("POST", "/otp", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "User not found", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestSendOTPEmail_EmailAlreadyVerified() {
+	// Create a user with verified email
+	user := models.User{
+		Username:     "testuser",
+		Email:        "test@example.com",
+		Password:     utils.GenerateRandomString(32),
+		IsEmailValid: true,
+	}
+	err := suite.db.Create(&user).Error
+	assert.NoError(suite.T(), err)
+
+	// Prepare request with verified email
+	reqBody := bytes.NewBuffer([]byte(`{"email": "test@example.com", "purpose": "verify-email"}`))
+
+	req := httptest.NewRequest("POST", "/otp", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusConflict, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Email already verified", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestSendOTPEmail_Success() {
+	// Create a user with unverified email
+	hashedPassword, err := utils.HashPassword("password123")
+	assert.NoError(suite.T(), err)
+	user := models.User{
+		Username:     "testuser",
+		Email:        "test@example.com",
+		Password:     hashedPassword,
+		IsEmailValid: false,
+	}
+	err = suite.db.Create(&user).Error
+	assert.NoError(suite.T(), err)
+
+	// Prepare request to send OTP
+	reqBody := bytes.NewBuffer([]byte(`{"email": "test@example.com", "purpose": "verify-email"}`))
+
+	req := httptest.NewRequest("POST", "/otp", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "OTP sent successfully", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestVerifyOTP_InvalidInput() {
+	// Prepare request with invalid data
+	reqBody := bytes.NewBuffer([]byte(`{"test@email.com", "otp": "123456"}`))
+
+	req := httptest.NewRequest("POST", "/verify", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Review your input", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestVerifyOTP_UserNotFound() {
+	// Prepare request with non-existent email
+	reqBody := bytes.NewBuffer([]byte(`{"email": "nonexistent@example.com", "otp": "123456"}`))
+
+	req := httptest.NewRequest("POST", "/verify", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "User not found", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestVerifyOTP_OTPNotFound() {
+	// Create a user
+	user := models.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+		Password: utils.GenerateRandomString(32),
+	}
+	err := suite.db.Create(&user).Error
+	assert.NoError(suite.T(), err)
+
+	// Prepare request with valid email but no OTP stored
+	reqBody := bytes.NewBuffer([]byte(`{"email": "test@example.com", "otp": "123456"}`))
+
+	req := httptest.NewRequest("POST", "/verify", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "OTP not found", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestVerifyOTP_InvalidOTP() {
+	// Create a user
+	user := models.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+		Password: utils.GenerateRandomString(32),
+	}
+	err := suite.db.Create(&user).Error
+	assert.NoError(suite.T(), err)
+
+	// Store a valid OTP
+	suite.authHandler.ClientOtpMap.Store("test@example.com", "123456")
+	defer suite.authHandler.ClientOtpMap.Delete("test@example.com")
+
+	// Prepare request with invalid OTP
+	reqBody := bytes.NewBuffer([]byte(`{"email": "test@example.com", "otp": "654321"}`))
+
+	req := httptest.NewRequest("POST", "/verify", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Invalid OTP", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestVerifyOTP_Success() {
+	// Create a user
+	hashedPassword, err := utils.HashPassword("password123")
+	assert.NoError(suite.T(), err)
+	user := models.User{
+		Username:     "testuser",
+		Email:        "test@example.com",
+		Password:     hashedPassword,
+		IsEmailValid: false,
+	}
+	err = suite.db.Create(&user).Error
+	assert.NoError(suite.T(), err)
+
+	// Store a valid OTP
+	suite.authHandler.ClientOtpMap.Store("test@example.com", "123456")
+	defer suite.authHandler.ClientOtpMap.Delete("test@example.com")
+
+	// Prepare request with correct OTP
+	reqBody := bytes.NewBuffer([]byte(`{"email": "test@example.com", "otp": "123456"}`))
+
+	req := httptest.NewRequest("POST", "/verify", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "OTP verified successfully", response["message"])
+
+	// Verify user's email is now validated in database
+	var updatedUser models.User
+	err = suite.db.First(&updatedUser, user.ID).Error
+	assert.NoError(suite.T(), err)
+	assert.True(suite.T(), updatedUser.IsEmailValid)
+}
+
+func (suite *AuthHandlerTestSuite) TestResetPassword_InvalidInput() {
+	// Prepare request with invalid data
+	reqBody := bytes.NewBuffer([]byte(`{"random", "password": "password123"}`))
+
+	req := httptest.NewRequest("PATCH", "/reset", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Review your input", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestResetPassword_UserNotFound() {
+	// Prepare request with non-existent email
+	reqBody := bytes.NewBuffer([]byte(`{"email": "nonexistent@example.com", "password": "password123"}`))
+
+	req := httptest.NewRequest("PATCH", "/reset", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusNotFound, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "User not found", response["message"])
+}
+
+func (suite *AuthHandlerTestSuite) TestResetPassword_Success() {
+	// Create a user
+	oldHashedPassword, err := utils.HashPassword("oldpassword123")
+	assert.NoError(suite.T(), err)
+	user := models.User{
+		Username: "testuser",
+		Email:    "test@example.com",
+		Password: oldHashedPassword,
+	}
+	err = suite.db.Create(&user).Error
+	assert.NoError(suite.T(), err)
+
+	// Prepare request to reset password
+	newPassword := "newpassword123"
+	reqBody := bytes.NewBuffer([]byte(strings.Join([]string{`{"email": "test@example.com", "password": "`, newPassword, `"}`}, "")))
+
+	req := httptest.NewRequest("PATCH", "/reset", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusOK, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Password reset successfully", response["message"])
+
+	// Verify password was actually changed in database
+	var updatedUser models.User
+	err = suite.db.First(&updatedUser, user.ID).Error
+	assert.NoError(suite.T(), err)
+
+	// Verify old password no longer works
+	assert.False(suite.T(), utils.CheckPasswordHash("oldpassword123", updatedUser.Password))
+
+	// Verify new password works
+	assert.True(suite.T(), utils.CheckPasswordHash(newPassword, updatedUser.Password))
+}
+
+func (suite *AuthHandlerTestSuite) TestGoogleLogin_InvalidInput() {
+	// Prepare request with invalid data
+	reqBody := bytes.NewBuffer([]byte(`{"random"}`))
+
+	req := httptest.NewRequest("POST", "/google", reqBody)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute request
+	resp, err := suite.app.Test(req)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), fiber.StatusBadRequest, resp.StatusCode)
+
+	// Verify response
+	var response map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	assert.NoError(suite.T(), err)
+
+	assert.Equal(suite.T(), "Review your input", response["message"])
+}

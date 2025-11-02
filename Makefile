@@ -4,7 +4,7 @@ BACKEND_CONTAINER=backend
 # Start containers
 up:
 	cd infra/docker && docker compose up -d
-
+	
 # Stop containers
 down:
 	cd infra/docker && docker compose down -v
@@ -43,8 +43,18 @@ reset-db:
 	
 # Generate API documentation
 swagger:
-	cd server/api && swag init -g main.go --output docs --outputTypes go,yaml
+	cd server/api && swag init -g cmd/server/main.go --output pkg/docs --outputTypes go,yaml
+	
+# Run API tests
+test-api:
+	@echo "Running tests..."
+	cd server/api && go test -parallel 4 -p 1 -v ./...
 	
 # Start API server 
 api:
 	cd server/api && air dev
+
+# Build API Docker image
+build-api:
+	cd server/api && docker build -t justjio-api:latest .
+	
