@@ -7,7 +7,6 @@ import (
 	"github.com/RowenTey/JustJio/server/api/internal/services"
 	"github.com/RowenTey/JustJio/server/api/pkg/otel"
 	"github.com/RowenTey/JustJio/server/api/pkg/utils"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gofiber/fiber/v2"
@@ -28,7 +27,7 @@ func NewTransactionHandler(
 	return &TransactionHandler{
 		transactionService:  transactionService,
 		notificationService: notificationService,
-		logger:              logger.WithFields(logrus.Fields{"handler": "TransactionHandler"}),
+		logger:              logger.WithFields(log.Fields{"handler": "TransactionHandler"}),
 	}
 }
 

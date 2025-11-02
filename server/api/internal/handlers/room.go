@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/internal/middlewares"
@@ -28,7 +27,7 @@ func NewRoomHandler(
 ) *RoomHandler {
 	return &RoomHandler{
 		roomService: roomService,
-		logger:      logger.WithFields(logrus.Fields{"handler": "RoomHandler"}),
+		logger:      logger.WithFields(log.Fields{"handler": "RoomHandler"}),
 	}
 }
 

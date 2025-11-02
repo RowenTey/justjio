@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
@@ -29,7 +28,7 @@ type UserHandler struct {
 func NewUserHandler(userService *services.UserService, logger *log.Logger) *UserHandler {
 	return &UserHandler{
 		userService: userService,
-		logger:      logger.WithFields(logrus.Fields{"handler": "UserHandler"}),
+		logger:      logger.WithFields(log.Fields{"handler": "UserHandler"}),
 	}
 }
 

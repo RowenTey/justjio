@@ -3,7 +3,6 @@ package handlers
 import (
 	"strconv"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/internal/middlewares"
@@ -26,7 +25,7 @@ func NewNotificationHandler(
 ) *NotificationHandler {
 	return &NotificationHandler{
 		notificationService: notificationService,
-		logger:              logger.WithFields(logrus.Fields{"handler": "NotificationHandler"}),
+		logger:              logger.WithFields(log.Fields{"handler": "NotificationHandler"}),
 	}
 }
 
