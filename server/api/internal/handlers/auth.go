@@ -4,7 +4,6 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/internal/middlewares"
@@ -33,7 +32,7 @@ func NewAuthHandler(
 	return &AuthHandler{
 		authService:  authService,
 		ClientOtpMap: sync.Map{},
-		logger:       logger.WithFields(logrus.Fields{"handler": "AuthHandler"}),
+		logger:       logger.WithFields(log.Fields{"handler": "AuthHandler"}),
 	}
 }
 

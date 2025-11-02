@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/internal/middlewares"
@@ -26,7 +25,7 @@ func NewMessageHandler(
 ) *MessageHandler {
 	return &MessageHandler{
 		messageService: messageService,
-		logger:         logger.WithFields(logrus.Fields{"handler": "MessageHandler"}),
+		logger:         logger.WithFields(log.Fields{"handler": "MessageHandler"}),
 	}
 }
 
