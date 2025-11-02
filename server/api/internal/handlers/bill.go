@@ -8,7 +8,6 @@ import (
 	"github.com/RowenTey/JustJio/server/api/pkg/dto/request"
 	"github.com/RowenTey/JustJio/server/api/pkg/otel"
 	"github.com/RowenTey/JustJio/server/api/pkg/utils"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gofiber/fiber/v2"
@@ -30,7 +29,7 @@ func NewBillHandler(
 ) *BillHandler {
 	return &BillHandler{
 		billService: billService,
-		logger:      logger.WithFields(logrus.Fields{"handler": "BillHandler"}),
+		logger:      logger.WithFields(log.Fields{"handler": "BillHandler"}),
 	}
 }
 
