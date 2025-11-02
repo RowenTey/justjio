@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/url"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/RowenTey/JustJio/server/api/internal/middlewares"
@@ -26,7 +25,7 @@ func NewSubscriptionHandler(
 ) *SubscriptionHandler {
 	return &SubscriptionHandler{
 		subscriptionService: subscriptionService,
-		logger:              logger.WithFields(logrus.Fields{"handler": "SubscriptionHandler"}),
+		logger:              logger.WithFields(log.Fields{"handler": "SubscriptionHandler"}),
 	}
 }
 
