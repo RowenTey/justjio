@@ -298,3 +298,27 @@ func (s *TransactionServiceTestSuite) TestConsolidateTransactions() {
 	assert.Equal(s.T(), uint(1), result[0].PayerID)
 	assert.Equal(s.T(), uint(2), result[0].PayeeID)
 }
+
+func (s *TransactionServiceTestSuite) TestConsolidateTransactions_MultipleTransactions() {
+	// Setup test data
+	transactions := []models.Transaction{
+		{PayerID: 1, PayeeID: 2, Amount: 100.0},
+		{PayerID: 1, PayeeID: 2, Amount: 150.0},
+		{PayerID: 1, PayeeID: 2, Amount: 75.0},
+		{PayerID: 1, PayeeID: 2, Amount: 60.0},
+		{PayerID: 2, PayeeID: 1, Amount: 50.0},
+		{PayerID: 2, PayeeID: 1, Amount: 25.0},
+		{PayerID: 2, PayeeID: 1, Amount: 60.0},
+		{PayerID: 2, PayeeID: 1, Amount: 30.0},
+	}
+	consolidation := &models.Consolidation{ID: 1}
+
+	// Execute
+	result := s.transactionService.consolidateTransactions(transactions, consolidation)
+
+	// Assertions
+	assert.Len(s.T(), result, 1)
+	assert.Equal(s.T(), float32(220.0), result[0].Amount)
+	assert.Equal(s.T(), uint(1), result[0].PayerID)
+	assert.Equal(s.T(), uint(2), result[0].PayeeID)
+}
