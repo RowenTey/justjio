@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strings"
 	"sync"
 
 	"github.com/RowenTey/JustJio/server/api/internal/models"
@@ -198,16 +199,33 @@ func (ts *transactionService) consolidateTransactions(
 	}
 
 	var newTransactions []models.Transaction
+	paymentGraph := make(map[string]float32)
 	for startNode, edges := range graph {
 		for _, edge := range edges {
+			ts.logger.Debug("User ", startNode, " has to pay user", edge.userId, " amount ", edge.amount)
+			key := utils.UIntToString(startNode) + "->" + utils.UIntToString(edge.userId)
+			if val, exists := paymentGraph[key]; exists {
+				paymentGraph[key] = val + edge.amount
+			} else {
+				paymentGraph[key] = edge.amount
+			}
+		}
+
+		for key, amount := range paymentGraph {
+			ts.logger.Debug("Consolidated Payment: ", key, " Amount: ", amount)
+			parts := strings.Split(key, "->")
+			payerID, _ := utils.StringToUint(parts[0])
+			payeeID, _ := utils.StringToUint(parts[1])
 			transaction := models.Transaction{
 				ConsolidationID: consolidatedBill.ID,
-				PayerID:         startNode,
-				PayeeID:         edge.userId,
-				Amount:          edge.amount,
+				PayerID:         payerID,
+				PayeeID:         payeeID,
+				Amount:          amount,
 			}
 			newTransactions = append(newTransactions, transaction)
 		}
+
+		clear(paymentGraph)
 	}
 
 	return newTransactions
