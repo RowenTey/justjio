@@ -80,9 +80,9 @@ func (suite *UserHandlerTestSuite) SetupSuite() {
 		middlewares.ParseAndValidate[request.SendFriendRequest](),
 		userHandler.SendFriendRequest)
 	userRoutes.Delete("/friends/:friendId", userHandler.RemoveFriend)
-	userRoutes.Get("/friends/requests", userHandler.GetFriendRequestsByStatus)
-	userRoutes.Get("/friends/requests/count", userHandler.CountPendingFriendRequests)
-	userRoutes.Patch("/friends/requests/respond",
+	userRoutes.Get("/friend-requests", userHandler.GetFriendRequestsByStatus)
+	userRoutes.Get("/friend-requests/count", userHandler.CountPendingFriendRequests)
+	userRoutes.Patch("/friend-requests",
 		middlewares.ParseAndValidate[request.RespondToFriendRequestRequest](),
 		userHandler.RespondToFriendRequest)
 }
@@ -558,7 +558,7 @@ func (suite *UserHandlerTestSuite) TestSearchFriends_NoResults() {
 
 func (suite *UserHandlerTestSuite) TestGetFriendRequestsByStatus_Success() {
 	req := httptest.NewRequest(http.MethodGet,
-		fmt.Sprintf("/users/%d/friends/requests?status=pending", suite.testUserID), nil)
+		fmt.Sprintf("/users/%d/friend-requests?status=pending", suite.testUserID), nil)
 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
 	resp, err := suite.app.Test(req, -1)
@@ -574,7 +574,7 @@ func (suite *UserHandlerTestSuite) TestGetFriendRequestsByStatus_Success() {
 func (suite *UserHandlerTestSuite) TestGetFriendRequestsByStatus_InvalidStatus() {
 	// Test with invalid status value
 	req := httptest.NewRequest(http.MethodGet,
-		fmt.Sprintf("/users/%d/friends/requests?status=invalid_status", suite.testUserID), nil)
+		fmt.Sprintf("/users/%d/friend-requests?status=invalid_status", suite.testUserID), nil)
 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
 	resp, err := suite.app.Test(req, -1)
@@ -584,7 +584,7 @@ func (suite *UserHandlerTestSuite) TestGetFriendRequestsByStatus_InvalidStatus()
 
 func (suite *UserHandlerTestSuite) TestCountPendingFriendRequests_Success() {
 	req := httptest.NewRequest(http.MethodGet,
-		fmt.Sprintf("/users/%d/friends/requests/count", suite.testUserID), nil)
+		fmt.Sprintf("/users/%d/friend-requests/count", suite.testUserID), nil)
 	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
 	resp, err := suite.app.Test(req, -1)
@@ -605,9 +605,9 @@ func (suite *UserHandlerTestSuite) TestRespondToFriendRequest_Accept() {
 	reqBody, _ := json.Marshal(respondReq)
 
 	req := httptest.NewRequest(http.MethodPatch,
-		fmt.Sprintf("/users/%d/friends/requests/respond", suite.testUserID), bytes.NewBuffer(reqBody))
+		fmt.Sprintf("/users/%d/friend-requests", suite.testUserID), bytes.NewBuffer(reqBody))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+suite.testFriendToken)
+	req.Header.Set("Authorization", "Bearer "+suite.testUserToken)
 
 	resp, err := suite.app.Test(req, -1)
 	assert.NoError(suite.T(), err)
@@ -629,7 +629,7 @@ func (suite *UserHandlerTestSuite) TestRespondToFriendRequest_Reject() {
 	reqBody, _ := json.Marshal(respondReq)
 
 	req := httptest.NewRequest(http.MethodPatch,
-		fmt.Sprintf("/users/%d/friends/requests/respond", suite.testFriendID), bytes.NewBuffer(reqBody))
+		fmt.Sprintf("/users/%d/friend-requests", suite.testFriendID), bytes.NewBuffer(reqBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+suite.testFriendToken)
 
@@ -653,7 +653,7 @@ func (suite *UserHandlerTestSuite) TestRespondToFriendRequest_NotFound() {
 	reqBody, _ := json.Marshal(respondReq)
 
 	req := httptest.NewRequest(http.MethodPatch,
-		fmt.Sprintf("/users/%d/friends/requests/respond", suite.testFriendID), bytes.NewBuffer(reqBody))
+		fmt.Sprintf("/users/%d/friend-requests", suite.testFriendID), bytes.NewBuffer(reqBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+suite.testFriendToken)
 
@@ -675,7 +675,7 @@ func (suite *UserHandlerTestSuite) TestRespondToFriendRequest_AlreadyResponded()
 	reqBody, _ := json.Marshal(respondReq)
 
 	req := httptest.NewRequest(http.MethodPatch,
-		fmt.Sprintf("/users/%d/friends/requests/respond", suite.testFriendID), bytes.NewBuffer(reqBody))
+		fmt.Sprintf("/users/%d/friend-requests", suite.testFriendID), bytes.NewBuffer(reqBody))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+suite.testFriendToken)
 
