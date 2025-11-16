@@ -130,6 +130,7 @@ func (bs *BillService) GetBillById(ctx context.Context, billId uint) (*response.
 			PictureUrl: payer.PictureUrl,
 		}
 	}
+
 	return &response.BillDto{
 		ID:              bill.ID,
 		Name:            bill.Name,
