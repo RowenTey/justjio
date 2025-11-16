@@ -26,38 +26,38 @@ export const userService = {
   // Friend requests
   getFriendRequests: async (
     userId: string,
-    params?: ApiQueryParams<"/users/{userId}/friendRequests", "get">,
+    params?: ApiQueryParams<"/users/{userId}/friend-requests", "get">,
   ) => {
     const { data } = await apiClient.get<
-      ApiResponse<"/users/{userId}/friendRequests", "get">
-    >(`/users/${userId}/friendRequests`, { params });
+      ApiResponse<"/users/{userId}/friend-requests", "get">
+    >(`/users/${userId}/friend-requests`, { params });
     return data;
   },
 
   sendFriendRequest: async (
     userId: string,
-    requestData: ApiRequest<"/users/{userId}/friendRequests", "post">,
+    requestData: ApiRequest<"/users/{userId}/friend-requests", "post">,
   ) => {
     const { data } = await apiClient.post<
-      ApiResponse<"/users/{userId}/friendRequests", "post">
-    >(`/users/${userId}/friendRequests`, requestData);
+      ApiResponse<"/users/{userId}/friend-requests", "post">
+    >(`/users/${userId}/friend-requests`, requestData);
     return data;
   },
 
   respondToFriendRequest: async (
     userId: string,
-    responseData: ApiRequest<"/users/{userId}/friendRequests", "patch">,
+    responseData: ApiRequest<"/users/{userId}/friend-requests", "patch">,
   ) => {
     const { data } = await apiClient.patch<
-      ApiResponse<"/users/{userId}/friendRequests", "patch">
-    >(`/users/${userId}/friendRequests`, responseData);
+      ApiResponse<"/users/{userId}/friend-requests", "patch">
+    >(`/users/${userId}/friend-requests`, responseData);
     return data;
   },
 
   getFriendRequestsCount: async (userId: string) => {
     const { data } = await apiClient.get<
-      ApiResponse<"/users/{userId}/friendRequests/count", "get">
-    >(`/users/${userId}/friendRequests/count`);
+      ApiResponse<"/users/{userId}/friend-requests/count", "get">
+    >(`/users/${userId}/friend-requests/count`);
     return data;
   },
 
