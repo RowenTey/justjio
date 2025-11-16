@@ -1,2546 +1,2781 @@
-basePath: /v1
-definitions:
-  location.Venue:
-    properties:
-      address:
-        type: string
-      googleMapsPlaceId:
-        type: string
-      name:
-        type: string
-    type: object
-  models.Message:
-    properties:
-      content:
-        type: string
-      id:
-        type: integer
-      room:
-        $ref: '#/definitions/models.Room'
-      roomId:
-        type: string
-      sender:
-        allOf:
-        - $ref: '#/definitions/models.User'
-        description: Associations
-      senderId:
-        type: integer
-      sentAt:
-        type: string
-    type: object
-  models.Room:
-    properties:
-      attendees:
-        items:
-          $ref: '#/definitions/models.User'
-        type: array
-      consolidated:
-        type: string
-      createdAt:
-        type: string
-      date:
-        type: string
-      description:
-        type: string
-      host:
-        allOf:
-        - $ref: '#/definitions/models.User'
-        description: Associations
-      hostId:
-        type: integer
-      id:
-        type: string
-      imageUrl:
-        type: string
-      isClosed:
-        type: boolean
-      isPrivate:
-        type: boolean
-      name:
-        type: string
-      noOfAttendees:
-        type: integer
-      time:
-        type: string
-      updatedAt:
-        type: string
-      venue:
-        type: string
-      venuePlaceId:
-        type: string
-      venueUrl:
-        type: string
-    type: object
-  models.User:
-    properties:
-      email:
-        type: string
-      friends:
-        items:
-          $ref: '#/definitions/models.User'
-        type: array
-      id:
-        type: integer
-      isEmailValid:
-        type: boolean
-      isOnline:
-        type: boolean
-      lastSeen:
-        type: string
-      noOfFriends:
-        type: integer
-      noOfPendingFriendRequests:
-        type: integer
-      noOfPendingRoomInvites:
-        type: integer
-      noOfRooms:
-        type: integer
-      password:
-        type: string
-      pictureUrl:
-        type: string
-      registeredAt:
-        type: string
-      rooms:
-        description: Associations
-        items:
-          $ref: '#/definitions/models.Room'
-        type: array
-      updatedAt:
-        type: string
-      username:
-        type: string
-    type: object
-  request.ConsolidateBillsRequest:
-    properties:
-      roomId:
-        type: string
-    required:
-    - roomId
-    type: object
-  request.CreateBillRequest:
-    properties:
-      amount:
-        type: number
-      includeOwner:
-        type: boolean
-      name:
-        maxLength: 100
-        minLength: 1
-        type: string
-      payers:
-        items:
-          type: string
-        minItems: 1
-        type: array
-      roomId:
-        type: string
-    required:
-    - amount
-    - name
-    - payers
-    - roomId
-    type: object
-  request.CreateMessageRequest:
-    properties:
-      content:
-        maxLength: 2000
-        minLength: 1
-        type: string
-    required:
-    - content
-    type: object
-  request.CreateNotificationRequest:
-    properties:
-      content:
-        maxLength: 500
-        minLength: 1
-        type: string
-      title:
-        maxLength: 100
-        minLength: 1
-        type: string
-      userId:
-        type: integer
-    required:
-    - content
-    - title
-    - userId
-    type: object
-  request.CreateRoomRequest:
-    properties:
-      date:
-        example: "2025-12-25T19:00:00Z"
-        type: string
-      description:
-        example: Let's celebrate John's birthday!
-        maxLength: 500
-        type: string
-      imageUrl:
-        example: https://example.com/party.jpg
-        type: string
-      invitees:
-        description: Array of user IDs
-        example:
-        - "1"
-        - "2"
-        - "3"
-        items:
-          type: string
-        type: array
-      isPrivate:
-        example: false
-        type: boolean
-      name:
-        example: John's Birthday Party
-        maxLength: 100
-        minLength: 3
-        type: string
-      time:
-        example: 7:00 PM
-        type: string
-      venue:
-        example: Marina Bay Sands
-        type: string
-      venuePlaceId:
-        example: ChIJkxHPFjMZ2jERPRhLUvKGfFk
-        type: string
-    required:
-    - date
-    - imageUrl
-    - name
-    - time
-    - venue
-    - venuePlaceId
-    type: object
-  request.CreateSubscriptionRequest:
-    properties:
-      auth:
-        example: BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcx
-        type: string
-      endpoint:
-        example: https://fcm.googleapis.com/fcm/send/abc123
-        type: string
-      p256dh:
-        example: BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u
-        type: string
-      userId:
-        example: 1
-        type: integer
-    required:
-    - auth
-    - endpoint
-    - p256dh
-    - userId
-    type: object
-  request.EditRoomRequest:
-    properties:
-      date:
-        example: "2025-12-26T19:00:00Z"
-        type: string
-      description:
-        example: Updated description
-        maxLength: 500
-        type: string
-      imageUrl:
-        example: https://example.com/updated.jpg
-        type: string
-      name:
-        example: Updated Party Name
-        maxLength: 100
-        minLength: 3
-        type: string
-      time:
-        example: 8:00 PM
-        type: string
-      venue:
-        example: Sentosa Beach
-        type: string
-      venuePlaceId:
-        example: ChIJkxHPFjMZ2jERPRhLUvKGfFk
-        type: string
-    type: object
-  request.GoogleAuthRequest:
-    properties:
-      code:
-        example: 4/0AY0e-g7X...
-        type: string
-    required:
-    - code
-    type: object
-  request.InviteUserRequest:
-    properties:
-      invitees:
-        description: Array of user IDs
-        example:
-        - "4"
-        - "5"
-        - "6"
-        items:
-          type: string
-        minItems: 1
-        type: array
-    required:
-    - invitees
-    type: object
-  request.LoginRequest:
-    properties:
-      password:
-        example: SecurePass123!
-        minLength: 8
-        type: string
-      username:
-        example: johndoe123
-        type: string
-    required:
-    - password
-    - username
-    type: object
-  request.ResetPasswordRequest:
-    properties:
-      email:
-        example: john.doe@example.com
-        type: string
-      password:
-        example: NewSecurePass123!
-        minLength: 8
-        type: string
-    required:
-    - email
-    - password
-    type: object
-  request.RespondToFriendRequestRequest:
-    properties:
-      action:
-        enum:
-        - accept
-        - reject
-        type: string
-      requestId:
-        type: integer
-    required:
-    - action
-    - requestId
-    type: object
-  request.RespondToRoomInviteRequest:
-    properties:
-      accept:
-        example: true
-        type: boolean
-    type: object
-  request.SendFriendRequest:
-    properties:
-      friendId:
-        type: integer
-    required:
-    - friendId
-    type: object
-  request.SendOTPEmailRequest:
-    properties:
-      email:
-        example: john.doe@example.com
-        type: string
-      purpose:
-        enum:
-        - verify-email
-        - reset-password
-        example: verify-email
-        type: string
-    required:
-    - email
-    - purpose
-    type: object
-  request.SignUpRequest:
-    properties:
-      email:
-        example: john.doe@example.com
-        type: string
-      password:
-        example: SecurePass123!
-        minLength: 8
-        type: string
-      username:
-        example: johndoe123
-        maxLength: 50
-        minLength: 3
-        type: string
-    required:
-    - email
-    - password
-    - username
-    type: object
-  request.UpdateUsernameRequest:
-    properties:
-      username:
-        maxLength: 50
-        minLength: 3
-        type: string
-    required:
-    - username
-    type: object
-  request.VerifyOTPRequest:
-    properties:
-      email:
-        example: john.doe@example.com
-        type: string
-      otp:
-        example: "123456"
-        type: string
-    required:
-    - email
-    - otp
-    type: object
-  response.AuthResponse:
-    properties:
-      email:
-        type: string
-      id:
-        type: integer
-      pictureUrl:
-        type: string
-      username:
-        type: string
-    required:
-    - email
-    - id
-    - pictureUrl
-    - username
-    type: object
-  response.BillDto:
-    properties:
-      amount:
-        type: number
-      consolidationId:
-        type: integer
-      date:
-        type: string
-      id:
-        type: integer
-      includeOwner:
-        type: boolean
-      name:
-        type: string
-      owner:
-        $ref: '#/definitions/response.MinimalUserDto'
-      payers:
-        items:
-          $ref: '#/definitions/response.MinimalUserDto'
-        type: array
-    required:
-    - amount
-    - date
-    - id
-    - includeOwner
-    - name
-    - owner
-    - payers
-    type: object
-  response.FriendRequestDto:
-    properties:
-      id:
-        type: integer
-      receiver:
-        $ref: '#/definitions/response.MinimalUserDto'
-      respondedAt:
-        type: string
-      sender:
-        $ref: '#/definitions/response.MinimalUserDto'
-      sentAt:
-        type: string
-      status:
-        type: string
-    required:
-    - id
-    - receiver
-    - sender
-    - sentAt
-    - status
-    type: object
-  response.GetMessagesResponse:
-    properties:
-      messages:
-        items:
-          $ref: '#/definitions/response.MessageDto'
-        type: array
-      page:
-        type: integer
-      pageCount:
-        type: integer
-    required:
-    - messages
-    - page
-    - pageCount
-    type: object
-  response.MessageDto:
-    properties:
-      content:
-        type: string
-      id:
-        type: integer
-      roomId:
-        type: string
-      sender:
-        $ref: '#/definitions/response.MinimalUserDto'
-      sentAt:
-        type: string
-    required:
-    - content
-    - id
-    - roomId
-    - sender
-    - sentAt
-    type: object
-  response.MinimalUserDto:
-    properties:
-      id:
-        type: integer
-      pictureUrl:
-        type: string
-      username:
-        type: string
-    required:
-    - id
-    - pictureUrl
-    - username
-    type: object
-  response.NotificationDto:
-    properties:
-      content:
-        type: string
-      createdAt:
-        type: string
-      id:
-        type: integer
-      isRead:
-        type: boolean
-      title:
-        type: string
-    required:
-    - content
-    - createdAt
-    - id
-    - isRead
-    - title
-    type: object
-  response.RoomDto:
-    properties:
-      attendees:
-        items:
-          $ref: '#/definitions/response.MinimalUserDto'
-        type: array
-      consolidated:
-        type: string
-      date:
-        type: string
-      description:
-        type: string
-      host:
-        $ref: '#/definitions/response.MinimalUserDto'
-      id:
-        type: string
-      imageUrl:
-        type: string
-      isClosed:
-        type: boolean
-      isPrivate:
-        type: boolean
-      name:
-        type: string
-      noOfAttendees:
-        type: integer
-      time:
-        type: string
-      venue:
-        type: string
-      venueUrl:
-        type: string
-    required:
-    - attendees
-    - consolidated
-    - date
-    - description
-    - host
-    - id
-    - imageUrl
-    - isClosed
-    - isPrivate
-    - name
-    - noOfAttendees
-    - time
-    - venue
-    - venueUrl
-    type: object
-  response.RoomInviteDto:
-    properties:
-      createdAt:
-        type: string
-      id:
-        type: integer
-      inviter:
-        $ref: '#/definitions/response.MinimalUserDto'
-      room:
-        $ref: '#/definitions/response.SimplifiedRoomDto'
-      status:
-        type: string
-      user:
-        $ref: '#/definitions/response.MinimalUserDto'
-    required:
-    - createdAt
-    - id
-    - inviter
-    - room
-    - status
-    - user
-    type: object
-  response.RoomListDto:
-    properties:
-      host:
-        $ref: '#/definitions/response.MinimalUserDto'
-      id:
-        type: string
-      imageUrl:
-        type: string
-      isClosed:
-        type: boolean
-      isPrivate:
-        type: boolean
-      name:
-        type: string
-      noOfAttendees:
-        type: integer
-    required:
-    - host
-    - id
-    - imageUrl
-    - isClosed
-    - isPrivate
-    - name
-    - noOfAttendees
-    type: object
-  response.SimplifiedRoomDto:
-    properties:
-      date:
-        type: string
-      description:
-        type: string
-      host:
-        $ref: '#/definitions/response.MinimalUserDto'
-      id:
-        type: string
-      imageUrl:
-        type: string
-      isPrivate:
-        type: boolean
-      name:
-        type: string
-      noOfAttendees:
-        type: integer
-      time:
-        type: string
-      venue:
-        type: string
-      venueUrl:
-        type: string
-    required:
-    - date
-    - description
-    - host
-    - id
-    - imageUrl
-    - isPrivate
-    - name
-    - noOfAttendees
-    - time
-    - venue
-    - venueUrl
-    type: object
-  response.SubscriptionDto:
-    properties:
-      auth:
-        type: string
-      endpoint:
-        type: string
-      id:
-        type: string
-      p256dh:
-        type: string
-      userId:
-        type: integer
-    required:
-    - auth
-    - endpoint
-    - id
-    - p256dh
-    - userId
-    type: object
-  response.TransactionDto:
-    properties:
-      amount:
-        type: number
-      consolidationId:
-        type: integer
-      id:
-        type: integer
-      isPaid:
-        type: boolean
-      paidOn:
-        type: string
-      payee:
-        $ref: '#/definitions/response.MinimalUserDto'
-      payer:
-        $ref: '#/definitions/response.MinimalUserDto'
-    required:
-    - amount
-    - consolidationId
-    - id
-    - isPaid
-    - payee
-    - payer
-    type: object
-  utils.EmptyApiResponse:
-    properties:
-      data:
-        type: object
-      message:
-        example: Operation completed successfully
-        type: string
-      status:
-        example: success
-        type: string
-    type: object
-host: localhost:8080
+openapi: 3.0.1
 info:
-  contact: {}
-  description: API server for JustJio.
   title: JustJio API
+  description: API server for JustJio.
+  contact: {}
   version: "1.0"
+servers:
+  - url: http://localhost:8080/v1
 paths:
   /auth:
     post:
-      consumes:
-      - application/json
+      tags:
+        - Authentication
+      summary: Login
       description: Authenticates a user with username and password
-      parameters:
-      - description: Login credentials
-        in: body
-        name: credentials
+      requestBody:
+        description: Login credentials
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.LoginRequest"
         required: true
-        schema:
-          $ref: '#/definitions/request.LoginRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: Login successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/response.AuthResponse'
-              message:
-                type: string
-              status:
-                type: string
-              token:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/response.AuthResponse"
+                  message:
+                    type: string
+                  status:
+                    type: string
+                  token:
+                    type: string
         "400":
           description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "401":
           description: Invalid username or password
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: User not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Login
-      tags:
-      - Authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+      x-codegen-request-body-name: credentials
   /auth/google:
     post:
-      consumes:
-      - application/json
+      tags:
+        - Authentication
+      summary: Google OAuth login
       description: Authenticates a user using Google OAuth authorization code
-      parameters:
-      - description: Google OAuth request
-        in: body
-        name: google
+      requestBody:
+        description: Google OAuth request
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.GoogleAuthRequest"
         required: true
-        schema:
-          $ref: '#/definitions/request.GoogleAuthRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: Authenticated via Google successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/response.AuthResponse'
-              message:
-                type: string
-              status:
-                type: string
-              token:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/response.AuthResponse"
+                  message:
+                    type: string
+                  status:
+                    type: string
+                  token:
+                    type: string
         "400":
           description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Google OAuth login
-      tags:
-      - Authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+      x-codegen-request-body-name: google
   /auth/otp:
     post:
-      consumes:
-      - application/json
-      description: Sends a One-Time Password to the user's email for verification
+      tags:
+        - Authentication
+      summary: Send OTP email
+      description:
+        Sends a One-Time Password to the user's email for verification
         or password reset
-      parameters:
-      - description: OTP email request
-        in: body
-        name: otp
+      requestBody:
+        description: OTP email request
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.SendOTPEmailRequest"
         required: true
-        schema:
-          $ref: '#/definitions/request.SendOTPEmailRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: OTP sent successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "400":
           description: Invalid input or invalid purpose
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: User not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "409":
           description: Email already verified
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Send OTP email
-      tags:
-      - Authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+      x-codegen-request-body-name: otp
   /auth/reset:
     post:
-      consumes:
-      - application/json
+      tags:
+        - Authentication
+      summary: Reset password
       description: Resets the user's password after OTP verification
-      parameters:
-      - description: Password reset request
-        in: body
-        name: reset
+      requestBody:
+        description: Password reset request
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.ResetPasswordRequest"
         required: true
-        schema:
-          $ref: '#/definitions/request.ResetPasswordRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: Password reset successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "400":
           description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: User not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Reset password
-      tags:
-      - Authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+      x-codegen-request-body-name: reset
   /auth/signup:
     post:
-      consumes:
-      - application/json
+      tags:
+        - Authentication
+      summary: Sign up
       description: Creates a new user account with email verification
-      parameters:
-      - description: User registration details
-        in: body
-        name: signUpRequest
+      requestBody:
+        description: User registration details
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.SignUpRequest"
         required: true
-        schema:
-          $ref: '#/definitions/request.SignUpRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: User signed up successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/response.AuthResponse'
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/response.AuthResponse"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "400":
           description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "409":
           description: Username or email already exists
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Sign up
-      tags:
-      - Authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+      x-codegen-request-body-name: signUpRequest
   /auth/verify:
     post:
-      consumes:
-      - application/json
+      tags:
+        - Authentication
+      summary: Verify OTP
       description: Verifies the One-Time Password sent to the user's email
-      parameters:
-      - description: OTP verification request
-        in: body
-        name: otp
+      requestBody:
+        description: OTP verification request
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.VerifyOTPRequest"
         required: true
-        schema:
-          $ref: '#/definitions/request.VerifyOTPRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: OTP verified successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "400":
           description: Invalid input or invalid OTP
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: User not found or OTP not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Verify OTP
-      tags:
-      - Authentication
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+      x-codegen-request-body-name: otp
   /bills:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Bills
+      summary: Get bills by room
       description: Retrieves all bills for a specified room
       parameters:
-      - description: Room ID
-        in: query
-        name: roomId
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: roomId
+          in: query
+          description: Room ID
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Retrieved bills successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/response.BillDto'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/response.BillDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "400":
           description: Missing roomId in query parameter
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: Room not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get bills by room
-      tags:
-      - Bills
+        - BearerAuth: []
     post:
-      consumes:
-      - application/json
+      tags:
+        - Bills
+      summary: Create bill
       description: Creates a new bill for a room with specified payers and amount
-      parameters:
-      - description: Bill creation details
-        in: body
-        name: bill
+      requestBody:
+        description: Bill creation details
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.CreateBillRequest"
         required: true
-        schema:
-          $ref: '#/definitions/request.CreateBillRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: Created bill successfully
-          schema:
-            properties:
-              data:
-                type: string
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: string
+                  message:
+                    type: string
+                  status:
+                    type: string
         "400":
-          description: Invalid input, empty payers, or room already consolidated
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          description: "Invalid input, empty payers, or room already consolidated"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: Room not found or payers not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Create bill
-      tags:
-      - Bills
+        - BearerAuth: []
+      x-codegen-request-body-name: bill
   /bills/consolidate:
     post:
-      consumes:
-      - application/json
+      tags:
+        - Bills
+      summary: Consolidate bills
       description: Consolidates all bills for a room into transactions (host only)
-      parameters:
-      - description: Consolidation request
-        in: body
-        name: consolidation
+      requestBody:
+        description: Consolidation request
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.ConsolidateBillsRequest"
         required: true
-        schema:
-          $ref: '#/definitions/request.ConsolidateBillsRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: Bill consolidated successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "400":
           description: Invalid input or bills already consolidated
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "403":
           description: Only host can consolidate bills
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: Room not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Consolidate bills
-      tags:
-      - Bills
+        - BearerAuth: []
+      x-codegen-request-body-name: consolidation
   /notifications:
     post:
-      consumes:
-      - application/json
+      tags:
+        - Notifications
+      summary: Create notification
       description: Creates and sends a new notification to a user
-      parameters:
-      - description: Notification details
-        in: body
-        name: notification
+      requestBody:
+        description: Notification details
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.CreateNotificationRequest"
         required: true
-        schema:
-          $ref: '#/definitions/request.CreateNotificationRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: Notification created successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "400":
           description: Invalid input or empty content
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Create notification
-      tags:
-      - Notifications
+        - BearerAuth: []
+      x-codegen-request-body-name: notification
   /notifications/{id}:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Notifications
+      summary: Get notification by ID
       description: Retrieves a specific notification by its ID
       parameters:
-      - description: Notification ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: id
+          in: path
+          description: Notification ID
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Retrieved notification successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/response.NotificationDto'
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/response.NotificationDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "400":
           description: Invalid notification ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: Notification not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get notification by ID
-      tags:
-      - Notifications
+        - BearerAuth: []
   /rooms:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Rooms
+      summary: Get user's rooms
       description: Retrieves a paginated list of rooms for the authenticated user
       parameters:
-      - default: 1
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      produces:
-      - application/json
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            default: 1
       responses:
         "200":
           description: Retrieved rooms successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/response.RoomListDto'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/response.RoomListDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No rooms found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get user's rooms
-      tags:
-      - Rooms
+        - BearerAuth: []
     post:
-      consumes:
-      - application/json
+      tags:
+        - Rooms
+      summary: Create room
       description: Creates a new room and optionally sends invites to specified users
-      parameters:
-      - description: Room creation details
-        in: body
-        name: room
+      requestBody:
+        description: Room creation details
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.CreateRoomRequest"
         required: true
-        schema:
-          $ref: '#/definitions/request.CreateRoomRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: Created room successfully
-          schema:
-            properties:
-              data:
-                type: string
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: string
+                  message:
+                    type: string
+                  status:
+                    type: string
         "400":
           description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Failed to create room and invites
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Create room
-      tags:
-      - Rooms
+        - BearerAuth: []
+      x-codegen-request-body-name: room
   /rooms/{roomId}:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Rooms
+      summary: Get room details
       description: Retrieves details of a specific room by its ID
       parameters:
-      - description: Room ID
-        in: path
-        name: roomId
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: roomId
+          in: path
+          description: Room ID
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Retrieved room successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/response.RoomDto'
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/response.RoomDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: Room not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get room details
-      tags:
-      - Rooms
-    patch:
-      consumes:
-      - application/json
-      description: Accepts or rejects a room invitation
-      parameters:
-      - description: Room ID
-        in: path
-        name: roomId
-        required: true
-        type: string
-      - description: Invitation response
-        in: body
-        name: response
-        required: true
-        schema:
-          $ref: '#/definitions/request.RespondToRoomInviteRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Joined room successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/response.RoomDto'
-              message:
-                type: string
-              status:
-                type: string
-            type: object
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "404":
-          description: Room not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      security:
-      - BearerAuth: []
-      summary: Respond to room invitation
-      tags:
-      - Room Invites
+        - BearerAuth: []
     post:
-      consumes:
-      - application/json
+      tags:
+        - Room Invites
+      summary: Invite users to room
       description: Invites multiple users to a room (host only)
       parameters:
-      - description: Room ID
-        in: path
-        name: roomId
+        - name: roomId
+          in: path
+          description: Room ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: User invites details
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.InviteUserRequest"
         required: true
-        type: string
-      - description: User invites details
-        in: body
-        name: invites
-        required: true
-        schema:
-          $ref: '#/definitions/request.InviteUserRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: Invited users successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "400":
           description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "403":
           description: Only hosts are allowed to invite users
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: Room / User not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "409":
           description: User is already in the room or already has pending invite
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Invite users to room
-      tags:
-      - Room Invites
-  /rooms/{roomId}/close:
+        - BearerAuth: []
+      x-codegen-request-body-name: invites
     patch:
-      consumes:
-      - application/json
-      description: Closes a room (host only, no unconsolidated bills allowed)
-      parameters:
-      - description: Room ID
-        in: path
-        name: roomId
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Closed room successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "401":
-          description: Only hosts are allowed to close rooms
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "404":
-          description: Room not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "409":
-          description: Cannot close room with unconsolidated bills
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      security:
-      - BearerAuth: []
-      summary: Close room
       tags:
-      - Rooms
-  /rooms/{roomId}/edit:
-    patch:
-      consumes:
-      - application/json
-      description: Updates details of an existing room (host only)
+        - Room Invites
+      summary: Respond to room invitation
+      description: Accepts or rejects a room invitation
       parameters:
-      - description: Room ID
-        in: path
-        name: roomId
+        - name: roomId
+          in: path
+          description: Room ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Invitation response
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.RespondToRoomInviteRequest"
         required: true
-        type: string
-      - description: Room update details
-        in: body
-        name: room
-        required: true
-        schema:
-          $ref: '#/definitions/request.EditRoomRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Edited room successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "400":
-          description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "401":
-          description: Only hosts can edit rooms
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "404":
-          description: Room not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      security:
-      - BearerAuth: []
-      summary: Edit room
-      tags:
-      - Rooms
-  /rooms/{roomId}/join:
-    patch:
-      consumes:
-      - application/json
-      description: Allows a user to join a room
-      parameters:
-      - description: Room ID
-        in: path
-        name: roomId
-        required: true
-        type: string
-      produces:
-      - application/json
       responses:
         "200":
           description: Joined room successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/response.RoomDto'
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/response.RoomDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: Room not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "409":
-          description: User is already in room
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Join room
+        - BearerAuth: []
+      x-codegen-request-body-name: response
+  /rooms/{roomId}/close:
+    patch:
       tags:
-      - Rooms
+        - Rooms
+      summary: Close room
+      description: "Closes a room (host only, no unconsolidated bills allowed)"
+      parameters:
+        - name: roomId
+          in: path
+          description: Room ID
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Closed room successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "401":
+          description: Only hosts are allowed to close rooms
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "404":
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "409":
+          description: Cannot close room with unconsolidated bills
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+      security:
+        - BearerAuth: []
+  /rooms/{roomId}/edit:
+    patch:
+      tags:
+        - Rooms
+      summary: Edit room
+      description: Updates details of an existing room (host only)
+      parameters:
+        - name: roomId
+          in: path
+          description: Room ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Room update details
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.EditRoomRequest"
+        required: true
+      responses:
+        "200":
+          description: Edited room successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "401":
+          description: Only hosts can edit rooms
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "404":
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+      security:
+        - BearerAuth: []
+      x-codegen-request-body-name: room
+  /rooms/{roomId}/join:
+    patch:
+      tags:
+        - Rooms
+      summary: Join room
+      description: Allows a user to join a room
+      parameters:
+        - name: roomId
+          in: path
+          description: Room ID
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Joined room successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/response.RoomDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
+        "404":
+          description: Room not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "409":
+          description: User is already in room
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+      security:
+        - BearerAuth: []
   /rooms/{roomId}/leave:
     delete:
-      consumes:
-      - application/json
-      description: Allows a user to leave a room (not allowed for hosts or with unconsolidated
+      tags:
+        - Rooms
+      summary: Leave room
+      description:
+        Allows a user to leave a room (not allowed for hosts or with unconsolidated
         bills)
       parameters:
-      - description: Room ID
-        in: path
-        name: roomId
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: roomId
+          in: path
+          description: Room ID
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Left room successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: Room not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "409":
-          description: Cannot leave room with unconsolidated bills or host cannot
+          description:
+            Cannot leave room with unconsolidated bills or host cannot
             leave room
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Leave room
-      tags:
-      - Rooms
+        - BearerAuth: []
   /rooms/{roomId}/messages:
     get:
-      consumes:
-      - application/json
-      description: Retrieves paginated messages for a specific room with optional
+      tags:
+        - Messages
+      summary: Get room messages
+      description:
+        Retrieves paginated messages for a specific room with optional
         sorting
       parameters:
-      - description: Room ID
-        in: path
-        name: roomId
-        required: true
-        type: string
-      - default: 1
-        description: Page number
-        in: query
-        name: page
-        type: integer
-      - default: true
-        description: Sort order (ascending if true)
-        in: query
-        name: asc
-        type: boolean
-      produces:
-      - application/json
+        - name: roomId
+          in: path
+          description: Room ID
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            default: 1
+        - name: asc
+          in: query
+          description: Sort order (ascending if true)
+          schema:
+            type: boolean
+            default: true
       responses:
         "200":
           description: Retrieved messages successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/response.GetMessagesResponse'
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/response.GetMessagesResponse"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No messages found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get room messages
-      tags:
-      - Messages
+        - BearerAuth: []
     post:
-      consumes:
-      - application/json
+      tags:
+        - Messages
+      summary: Create message
       description: Creates and saves a new message in the specified room
       parameters:
-      - description: Room ID
-        in: path
-        name: roomId
+        - name: roomId
+          in: path
+          description: Room ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Message content
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.CreateMessageRequest"
         required: true
-        type: string
-      - description: Message content
-        in: body
-        name: message
-        required: true
-        schema:
-          $ref: '#/definitions/request.CreateMessageRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: Message saved successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "400":
           description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: Room or user not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Create message
-      tags:
-      - Messages
+        - BearerAuth: []
+      x-codegen-request-body-name: message
   /rooms/{roomId}/messages/{msgId}:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Messages
+      summary: Get message by ID
       description: Retrieves a specific message by its ID
       parameters:
-      - description: Message ID
-        in: path
-        name: msgId
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: msgId
+          in: path
+          description: Message ID
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Retrieved message successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/models.Message'
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/models.Message"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No message found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get message by ID
-      tags:
-      - Messages
+        - BearerAuth: []
   /rooms/{roomId}/uninvited:
     get:
-      consumes:
-      - application/json
-      description: Retrieves the list of friends who haven't been invited to the specified
+      tags:
+        - Rooms
+      summary: Get uninvited friends for room
+      description:
+        Retrieves the list of friends who haven't been invited to the specified
         room
       parameters:
-      - description: Room ID
-        in: path
-        name: roomId
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: roomId
+          in: path
+          description: Room ID
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Retrieved uninvited friends successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/response.MinimalUserDto'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/response.MinimalUserDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No uninvited friends found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get uninvited friends for room
-      tags:
-      - Rooms
+        - BearerAuth: []
   /rooms/count:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Rooms
+      summary: Get number of rooms
       description: Retrieves the total count of rooms for the authenticated user
-      produces:
-      - application/json
       responses:
         "200":
           description: Retrieved number of rooms successfully
-          schema:
-            properties:
-              data:
-                type: integer
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: integer
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No rooms found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get number of rooms
-      tags:
-      - Rooms
+        - BearerAuth: []
   /rooms/invites:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Room Invites
+      summary: Get room invites
       description: Retrieves pending room invites for the authenticated user
-      produces:
-      - application/json
       responses:
         "200":
           description: Retrieved room invites successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/response.RoomInviteDto'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/response.RoomInviteDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No room invites found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get room invites
-      tags:
-      - Room Invites
+        - BearerAuth: []
   /rooms/invites/count:
     get:
-      consumes:
-      - application/json
-      description: Retrieves the count of pending room invites for the authenticated
+      tags:
+        - Room Invites
+      summary: Get number of room invites
+      description:
+        Retrieves the count of pending room invites for the authenticated
         user
-      produces:
-      - application/json
       responses:
         "200":
           description: Retrieved number of invites successfully
-          schema:
-            properties:
-              data:
-                type: integer
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: integer
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No room invites found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get number of room invites
-      tags:
-      - Room Invites
+        - BearerAuth: []
   /rooms/public:
     get:
-      consumes:
-      - application/json
-      description: Retrieves public rooms that the authenticated user hasn't joined
+      tags:
+        - Rooms
+      summary: Get unjoined public rooms
+      description:
+        Retrieves public rooms that the authenticated user hasn't joined
         yet
-      produces:
-      - application/json
       responses:
         "200":
           description: Retrieved public rooms successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/response.SimplifiedRoomDto'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/response.SimplifiedRoomDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No public rooms found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get unjoined public rooms
-      tags:
-      - Rooms
+        - BearerAuth: []
   /rooms/venues/search:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Venues
+      summary: Query venues
       description: Searches for venues based on a query string
       parameters:
-      - description: Search query for venues
-        in: query
-        name: query
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: query
+          in: query
+          description: Search query for venues
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Queried venues successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/location.Venue'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/location.Venue"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "400":
           description: Query parameter is required
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Query venues
-      tags:
-      - Venues
+        - BearerAuth: []
   /subscriptions:
     post:
-      consumes:
-      - application/json
+      tags:
+        - Subscriptions
+      summary: Create subscription
       description: Creates a new push notification subscription for the user
-      parameters:
-      - description: Subscription details
-        in: body
-        name: subscriptionRequest
+      requestBody:
+        description: Subscription details
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.CreateSubscriptionRequest"
         required: true
-        schema:
-          $ref: '#/definitions/request.CreateSubscriptionRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: Subscription created successfully
-          schema:
-            properties:
-              data:
-                type: string
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: string
+                  message:
+                    type: string
+                  status:
+                    type: string
         "400":
           description: Invalid input or missing required fields
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Create subscription
-      tags:
-      - Subscriptions
+        - BearerAuth: []
+      x-codegen-request-body-name: subscriptionRequest
   /subscriptions/{endpoint}:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Subscriptions
+      summary: Get subscription by endpoint
       description: Retrieves a push notification subscription by its endpoint URL
       parameters:
-      - description: URL-encoded subscription endpoint
-        in: path
-        name: endpoint
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: endpoint
+          in: path
+          description: URL-encoded subscription endpoint
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Subscription retrieved successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/response.SubscriptionDto'
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/response.SubscriptionDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "400":
           description: Invalid endpoint URL
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: Subscription not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get subscription by endpoint
-      tags:
-      - Subscriptions
+        - BearerAuth: []
   /subscriptions/{subId}:
     delete:
-      consumes:
-      - application/json
+      tags:
+        - Subscriptions
+      summary: Delete subscription
       description: Deletes a push notification subscription by ID
       parameters:
-      - description: Subscription ID
-        in: path
-        name: subId
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: subId
+          in: path
+          description: Subscription ID
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Subscription deleted successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: Subscription not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Delete subscription
-      tags:
-      - Subscriptions
+        - BearerAuth: []
   /transactions:
     get:
-      consumes:
-      - application/json
-      description: Retrieves transactions for the authenticated user, optionally filtered
-        by payment status
+      tags:
+        - Transactions
+      summary: Get user transactions
+      description:
+        "Retrieves transactions for the authenticated user, optionally\
+        \ filtered by payment status"
       parameters:
-      - default: false
-        description: Filter by payment status
-        in: query
-        name: isPaid
-        type: boolean
-      produces:
-      - application/json
+        - name: isPaid
+          in: query
+          description: Filter by payment status
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: Retrieved transactions successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/response.TransactionDto'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/response.TransactionDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No transactions found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get user transactions
-      tags:
-      - Transactions
+        - BearerAuth: []
   /transactions/{txId}/settle:
     patch:
-      consumes:
-      - application/json
+      tags:
+        - Transactions
+      summary: Settle transaction
       description: Marks a transaction as paid by the authenticated user
       parameters:
-      - description: Transaction ID
-        in: path
-        name: txId
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: txId
+          in: path
+          description: Transaction ID
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Paid transactions successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "400":
           description: Invalid payer or bad request
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: Transaction not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "409":
           description: Transaction already settled
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Settle transaction
-      tags:
-      - Transactions
+        - BearerAuth: []
   /users/{userId}:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Users
+      summary: Get user details
       description: Retrieves a user's details based on the provided user ID
       parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: User found successfully
-          schema:
-            properties:
-              data:
-                $ref: '#/definitions/models.User'
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/models.User"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No user found with ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Get user details
-      tags:
-      - Users
-  /users/{userId}/friendRequests:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+  /users/{userId}/friend-requests:
     get:
-      consumes:
-      - application/json
-      description: Retrieves friend requests for a user filtered by status (e.g.,
-        pending, accepted)
+      tags:
+        - Friend Requests
+      summary: Get friend requests by status
+      description:
+        "Retrieves friend requests for a user filtered by status (e.g.,\
+        \ pending, accepted)"
       parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: integer
-      - description: Status of friend requests (e.g., pending, accepted)
-        in: query
-        name: status
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+        - name: status
+          in: query
+          description: "Status of friend requests (e.g., pending, accepted)"
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Friend requests retrieved successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/response.FriendRequestDto'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/response.FriendRequestDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "400":
           description: Invalid status
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: No user found with ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Get friend requests by status
-      tags:
-      - Friend Requests
-    patch:
-      consumes:
-      - application/json
-      description: Accepts or rejects a friend request based on the provided action
-      parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: integer
-      - description: Friend request response details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.RespondToFriendRequestRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Friend request processed successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "400":
-          description: Invalid input or action
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "404":
-          description: Error processing friend request
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "409":
-          description: Friend request already processed
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Respond to friend request
-      tags:
-      - Friend Requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
     post:
-      consumes:
-      - application/json
+      tags:
+        - Friends
+      summary: Send friend request
       description: Sends a friend request from one user to another
       parameters:
-      - description: User ID of the sender
-        in: path
-        name: userId
+        - name: userId
+          in: path
+          description: User ID of the sender
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: Friend request details
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.SendFriendRequest"
         required: true
-        type: integer
-      - description: Friend request details
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.SendFriendRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: Friend request sent
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "400":
           description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: No user found with ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "409":
-          description: 'Conflict: Self request, already friends, or request exists'
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          description: "Conflict: Self request, already friends, or request exists"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Send friend request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+      x-codegen-request-body-name: request
+    patch:
       tags:
-      - Friends
-  /users/{userId}/friendRequests/count:
+        - Friend Requests
+      summary: Respond to friend request
+      description: Accepts or rejects a friend request based on the provided action
+      parameters:
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        description: Friend request response details
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.RespondToFriendRequestRequest"
+        required: true
+      responses:
+        "200":
+          description: Friend request processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "400":
+          description: Invalid input or action
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "404":
+          description: Error processing friend request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "409":
+          description: Friend request already processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+      x-codegen-request-body-name: request
+  /users/{userId}/friend-requests/count:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Friend Requests
+      summary: Count pending friend requests
       description: Counts the number of pending friend requests for a user
       parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: integer
-      produces:
-      - application/json
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
       responses:
         "200":
           description: Pending friend requests counted successfully
-          schema:
-            properties:
-              data:
-                type: integer
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: integer
+                  message:
+                    type: string
+                  status:
+                    type: string
         "400":
           description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: No user found with ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Count pending friend requests
-      tags:
-      - Friend Requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
   /users/{userId}/friends:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Friends
+      summary: Get friends
       description: Retrieves the list of friends for a user
       parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Friends retrieved successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/response.MinimalUserDto'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/response.MinimalUserDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No user found with ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Get friends
-      tags:
-      - Friends
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
   /users/{userId}/friends/{friendId}:
     delete:
-      consumes:
-      - application/json
+      tags:
+        - Friends
+      summary: Remove friend
       description: Removes a friend relationship between two users
       parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: integer
-      - description: Friend ID to remove
-        in: path
-        name: friendId
-        required: true
-        type: integer
-      produces:
-      - application/json
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+        - name: friendId
+          in: path
+          description: Friend ID to remove
+          required: true
+          schema:
+            type: integer
       responses:
         "200":
           description: Friend successfully removed
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "400":
           description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: No user found with ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Remove friend
-      tags:
-      - Friends
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
   /users/{userId}/friends/count:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Friends
+      summary: Get number of friends
       description: Retrieves the total count of friends for a specific user
       parameters:
-      - description: User ID
-        example: '"123"'
-        in: path
-        name: userId
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Number of friends retrieved successfully
-          schema:
-            properties:
-              data:
-                type: integer
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: integer
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No user found with ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Get number of friends
-      tags:
-      - Friends
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
   /users/{userId}/friends/search:
     get:
-      consumes:
-      - application/json
-      description: Searches for users who are not friends with the specified user
+      tags:
+        - Friends
+      summary: Search non-friend users
+      description:
+        Searches for users who are not friends with the specified user
         based on a query
       parameters:
-      - description: User ID
-        in: path
-        name: userId
-        required: true
-        type: string
-      - description: Search query
-        in: query
-        name: query
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
+        - name: query
+          in: query
+          description: Search query
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Non-friend users retrieved successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/response.MinimalUserDto'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/response.MinimalUserDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: No user found with ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Search non-friend users
-      tags:
-      - Friends
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
   /users/{userId}/notifications:
     get:
-      consumes:
-      - application/json
+      tags:
+        - Notifications
+      summary: Get user notifications
       description: Retrieves all notifications for the authenticated user
-      produces:
-      - application/json
       responses:
         "200":
           description: Retrieved notifications successfully
-          schema:
-            properties:
-              data:
-                items:
-                  $ref: '#/definitions/response.NotificationDto'
-                type: array
-              message:
-                type: string
-              status:
-                type: string
-            type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/response.NotificationDto"
+                  message:
+                    type: string
+                  status:
+                    type: string
         "404":
           description: User not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Get user notifications
-      tags:
-      - Notifications
+        - BearerAuth: []
   /users/{userId}/notifications/{notificationId}:
     patch:
-      consumes:
-      - application/json
+      tags:
+        - Notifications
+      summary: Mark notification as read
       description: Marks a specific notification as read by its ID
       parameters:
-      - description: Notification ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: id
+          in: path
+          description: Notification ID
+          required: true
+          schema:
+            type: string
       responses:
         "200":
           description: Notification marked as read successfully
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "400":
           description: Invalid notification ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: Notification not found
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
       security:
-      - BearerAuth: []
-      summary: Mark notification as read
-      tags:
-      - Notifications
+        - BearerAuth: []
   /users/{userId}/username:
     patch:
-      consumes:
-      - application/json
+      tags:
+        - Users
+      summary: Update username
       description: Updates the username for a specific user
       parameters:
-      - description: User ID
-        example: '"123"'
-        in: path
-        name: userId
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        description: Username update request
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/request.UpdateUsernameRequest"
         required: true
-        type: string
-      - description: Username update request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.UpdateUsernameRequest'
-      produces:
-      - application/json
       responses:
         "200":
           description: User successfully updated
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "400":
           description: Invalid input
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "404":
           description: No user found with ID
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "409":
           description: Username already taken
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
         "500":
           description: Internal server error
-          schema:
-            $ref: '#/definitions/utils.EmptyApiResponse'
-      summary: Update username
-      tags:
-      - Users
-schemes:
-- http
-securityDefinitions:
-  BearerAuth:
-    description: Type "Bearer" followed by a space and JWT token.
-    in: header
-    name: Authorization
-    type: apiKey
-swagger: "2.0"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/utils.EmptyApiResponse"
+      x-codegen-request-body-name: request
+components:
+  schemas:
+    location.Venue:
+      type: object
+      properties:
+        address:
+          type: string
+        googleMapsPlaceId:
+          type: string
+        name:
+          type: string
+    models.Message:
+      type: object
+      properties:
+        content:
+          type: string
+        id:
+          type: integer
+        room:
+          $ref: "#/components/schemas/models.Room"
+        roomId:
+          type: string
+        sender:
+          type: object
+          description: Associations
+          allOf:
+            - $ref: "#/components/schemas/models.User"
+        senderId:
+          type: integer
+        sentAt:
+          type: string
+    models.Room:
+      type: object
+      properties:
+        attendees:
+          type: array
+          items:
+            $ref: "#/components/schemas/models.User"
+        consolidated:
+          type: string
+        createdAt:
+          type: string
+        date:
+          type: string
+        description:
+          type: string
+        host:
+          type: object
+          description: Associations
+          allOf:
+            - $ref: "#/components/schemas/models.User"
+        hostId:
+          type: integer
+        id:
+          type: string
+        imageUrl:
+          type: string
+        isClosed:
+          type: boolean
+        isPrivate:
+          type: boolean
+        name:
+          type: string
+        noOfAttendees:
+          type: integer
+        time:
+          type: string
+        updatedAt:
+          type: string
+        venue:
+          type: string
+        venuePlaceId:
+          type: string
+        venueUrl:
+          type: string
+    models.User:
+      type: object
+      properties:
+        email:
+          type: string
+        friends:
+          type: array
+          items:
+            $ref: "#/components/schemas/models.User"
+        id:
+          type: integer
+        isEmailValid:
+          type: boolean
+        isOnline:
+          type: boolean
+        lastSeen:
+          type: string
+        noOfFriends:
+          type: integer
+        noOfPendingFriendRequests:
+          type: integer
+        noOfPendingRoomInvites:
+          type: integer
+        noOfRooms:
+          type: integer
+        password:
+          type: string
+        pictureUrl:
+          type: string
+        registeredAt:
+          type: string
+        rooms:
+          type: array
+          description: Associations
+          items:
+            $ref: "#/components/schemas/models.Room"
+        updatedAt:
+          type: string
+        username:
+          type: string
+    request.ConsolidateBillsRequest:
+      required:
+        - roomId
+      type: object
+      properties:
+        roomId:
+          type: string
+    request.CreateBillRequest:
+      required:
+        - amount
+        - name
+        - payers
+        - roomId
+      type: object
+      properties:
+        amount:
+          type: number
+        includeOwner:
+          type: boolean
+        name:
+          maxLength: 100
+          minLength: 1
+          type: string
+        payers:
+          minItems: 1
+          type: array
+          items:
+            type: string
+        roomId:
+          type: string
+    request.CreateMessageRequest:
+      required:
+        - content
+      type: object
+      properties:
+        content:
+          maxLength: 2000
+          minLength: 1
+          type: string
+    request.CreateNotificationRequest:
+      required:
+        - content
+        - title
+        - userId
+      type: object
+      properties:
+        content:
+          maxLength: 500
+          minLength: 1
+          type: string
+        title:
+          maxLength: 100
+          minLength: 1
+          type: string
+        userId:
+          type: integer
+    request.CreateRoomRequest:
+      required:
+        - date
+        - imageUrl
+        - name
+        - time
+        - venue
+        - venuePlaceId
+      type: object
+      properties:
+        date:
+          type: string
+          example: 2025-12-25T19:00:00Z
+        description:
+          maxLength: 500
+          type: string
+          example: Let's celebrate John's birthday!
+        imageUrl:
+          type: string
+          example: https://example.com/party.jpg
+        invitees:
+          type: array
+          description: Array of user IDs
+          example:
+            - "1"
+            - "2"
+            - "3"
+          items:
+            type: string
+        isPrivate:
+          type: boolean
+          example: false
+        name:
+          maxLength: 100
+          minLength: 3
+          type: string
+          example: John's Birthday Party
+        time:
+          type: string
+          example: 7:00 PM
+        venue:
+          type: string
+          example: Marina Bay Sands
+        venuePlaceId:
+          type: string
+          example: ChIJkxHPFjMZ2jERPRhLUvKGfFk
+    request.CreateSubscriptionRequest:
+      required:
+        - auth
+        - endpoint
+        - p256dh
+        - userId
+      type: object
+      properties:
+        auth:
+          type: string
+          example: BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcx
+        endpoint:
+          type: string
+          example: https://fcm.googleapis.com/fcm/send/abc123
+        p256dh:
+          type: string
+          example: BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u
+        userId:
+          type: integer
+          example: 1
+    request.EditRoomRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          example: 2025-12-26T19:00:00Z
+        description:
+          maxLength: 500
+          type: string
+          example: Updated description
+        imageUrl:
+          type: string
+          example: https://example.com/updated.jpg
+        name:
+          maxLength: 100
+          minLength: 3
+          type: string
+          example: Updated Party Name
+        time:
+          type: string
+          example: 8:00 PM
+        venue:
+          type: string
+          example: Sentosa Beach
+        venuePlaceId:
+          type: string
+          example: ChIJkxHPFjMZ2jERPRhLUvKGfFk
+    request.GoogleAuthRequest:
+      required:
+        - code
+      type: object
+      properties:
+        code:
+          type: string
+          example: 4/0AY0e-g7X...
+    request.InviteUserRequest:
+      required:
+        - invitees
+      type: object
+      properties:
+        invitees:
+          minItems: 1
+          type: array
+          description: Array of user IDs
+          example:
+            - "4"
+            - "5"
+            - "6"
+          items:
+            type: string
+    request.LoginRequest:
+      required:
+        - password
+        - username
+      type: object
+      properties:
+        password:
+          minLength: 8
+          type: string
+          example: SecurePass123!
+        username:
+          type: string
+          example: johndoe123
+    request.ResetPasswordRequest:
+      required:
+        - email
+        - password
+      type: object
+      properties:
+        email:
+          type: string
+          example: john.doe@example.com
+        password:
+          minLength: 8
+          type: string
+          example: NewSecurePass123!
+    request.RespondToFriendRequestRequest:
+      required:
+        - action
+        - requestId
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+            - accept
+            - reject
+        requestId:
+          type: integer
+    request.RespondToRoomInviteRequest:
+      type: object
+      properties:
+        accept:
+          type: boolean
+          example: true
+    request.SendFriendRequest:
+      required:
+        - friendId
+      type: object
+      properties:
+        friendId:
+          type: integer
+    request.SendOTPEmailRequest:
+      required:
+        - email
+        - purpose
+      type: object
+      properties:
+        email:
+          type: string
+          example: john.doe@example.com
+        purpose:
+          type: string
+          example: verify-email
+          enum:
+            - verify-email
+            - reset-password
+    request.SignUpRequest:
+      required:
+        - email
+        - password
+        - username
+      type: object
+      properties:
+        email:
+          type: string
+          example: john.doe@example.com
+        password:
+          minLength: 8
+          type: string
+          example: SecurePass123!
+        username:
+          maxLength: 50
+          minLength: 3
+          type: string
+          example: johndoe123
+    request.UpdateUsernameRequest:
+      required:
+        - username
+      type: object
+      properties:
+        username:
+          maxLength: 50
+          minLength: 3
+          type: string
+    request.VerifyOTPRequest:
+      required:
+        - email
+        - otp
+      type: object
+      properties:
+        email:
+          type: string
+          example: john.doe@example.com
+        otp:
+          type: string
+          example: "123456"
+    response.AuthResponse:
+      required:
+        - email
+        - id
+        - pictureUrl
+        - username
+      type: object
+      properties:
+        email:
+          type: string
+        id:
+          type: integer
+        pictureUrl:
+          type: string
+        username:
+          type: string
+    response.BillDto:
+      required:
+        - amount
+        - date
+        - id
+        - includeOwner
+        - name
+        - owner
+        - payers
+      type: object
+      properties:
+        amount:
+          type: number
+        consolidationId:
+          type: integer
+        date:
+          type: string
+        id:
+          type: integer
+        includeOwner:
+          type: boolean
+        name:
+          type: string
+        owner:
+          $ref: "#/components/schemas/response.MinimalUserDto"
+        payers:
+          type: array
+          items:
+            $ref: "#/components/schemas/response.MinimalUserDto"
+    response.FriendRequestDto:
+      required:
+        - id
+        - receiver
+        - sender
+        - sentAt
+        - status
+      type: object
+      properties:
+        id:
+          type: integer
+        receiver:
+          $ref: "#/components/schemas/response.MinimalUserDto"
+        respondedAt:
+          type: string
+        sender:
+          $ref: "#/components/schemas/response.MinimalUserDto"
+        sentAt:
+          type: string
+        status:
+          type: string
+    response.GetMessagesResponse:
+      required:
+        - messages
+        - page
+        - pageCount
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/response.MessageDto"
+        page:
+          type: integer
+        pageCount:
+          type: integer
+    response.MessageDto:
+      required:
+        - content
+        - id
+        - roomId
+        - sender
+        - sentAt
+      type: object
+      properties:
+        content:
+          type: string
+        id:
+          type: integer
+        roomId:
+          type: string
+        sender:
+          $ref: "#/components/schemas/response.MinimalUserDto"
+        sentAt:
+          type: string
+    response.MinimalUserDto:
+      required:
+        - id
+        - pictureUrl
+        - username
+      type: object
+      properties:
+        id:
+          type: integer
+        pictureUrl:
+          type: string
+        username:
+          type: string
+    response.NotificationDto:
+      required:
+        - content
+        - createdAt
+        - id
+        - isRead
+        - title
+      type: object
+      properties:
+        content:
+          type: string
+        createdAt:
+          type: string
+        id:
+          type: integer
+        isRead:
+          type: boolean
+        title:
+          type: string
+    response.RoomDto:
+      required:
+        - attendees
+        - consolidated
+        - date
+        - description
+        - host
+        - id
+        - imageUrl
+        - isClosed
+        - isPrivate
+        - name
+        - noOfAttendees
+        - time
+        - venue
+        - venueUrl
+      type: object
+      properties:
+        attendees:
+          type: array
+          items:
+            $ref: "#/components/schemas/response.MinimalUserDto"
+        consolidated:
+          type: string
+        date:
+          type: string
+        description:
+          type: string
+        host:
+          $ref: "#/components/schemas/response.MinimalUserDto"
+        id:
+          type: string
+        imageUrl:
+          type: string
+        isClosed:
+          type: boolean
+        isPrivate:
+          type: boolean
+        name:
+          type: string
+        noOfAttendees:
+          type: integer
+        time:
+          type: string
+        venue:
+          type: string
+        venueUrl:
+          type: string
+    response.RoomInviteDto:
+      required:
+        - createdAt
+        - id
+        - inviter
+        - room
+        - status
+        - user
+      type: object
+      properties:
+        createdAt:
+          type: string
+        id:
+          type: integer
+        inviter:
+          $ref: "#/components/schemas/response.MinimalUserDto"
+        room:
+          $ref: "#/components/schemas/response.SimplifiedRoomDto"
+        status:
+          type: string
+        user:
+          $ref: "#/components/schemas/response.MinimalUserDto"
+    response.RoomListDto:
+      required:
+        - host
+        - id
+        - imageUrl
+        - isClosed
+        - isPrivate
+        - name
+        - noOfAttendees
+      type: object
+      properties:
+        host:
+          $ref: "#/components/schemas/response.MinimalUserDto"
+        id:
+          type: string
+        imageUrl:
+          type: string
+        isClosed:
+          type: boolean
+        isPrivate:
+          type: boolean
+        name:
+          type: string
+        noOfAttendees:
+          type: integer
+    response.SimplifiedRoomDto:
+      required:
+        - date
+        - description
+        - host
+        - id
+        - imageUrl
+        - isPrivate
+        - name
+        - noOfAttendees
+        - time
+        - venue
+        - venueUrl
+      type: object
+      properties:
+        date:
+          type: string
+        description:
+          type: string
+        host:
+          $ref: "#/components/schemas/response.MinimalUserDto"
+        id:
+          type: string
+        imageUrl:
+          type: string
+        isPrivate:
+          type: boolean
+        name:
+          type: string
+        noOfAttendees:
+          type: integer
+        time:
+          type: string
+        venue:
+          type: string
+        venueUrl:
+          type: string
+    response.SubscriptionDto:
+      required:
+        - auth
+        - endpoint
+        - id
+        - p256dh
+        - userId
+      type: object
+      properties:
+        auth:
+          type: string
+        endpoint:
+          type: string
+        id:
+          type: string
+        p256dh:
+          type: string
+        userId:
+          type: integer
+    response.TransactionDto:
+      required:
+        - amount
+        - consolidationId
+        - id
+        - isPaid
+        - payee
+        - payer
+      type: object
+      properties:
+        amount:
+          type: number
+        consolidationId:
+          type: integer
+        id:
+          type: integer
+        isPaid:
+          type: boolean
+        paidOn:
+          type: string
+        payee:
+          $ref: "#/components/schemas/response.MinimalUserDto"
+        payer:
+          $ref: "#/components/schemas/response.MinimalUserDto"
+    utils.EmptyApiResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties: {}
+        message:
+          type: string
+          example: Operation completed successfully
+        status:
+          type: string
+          example: success
+  securitySchemes:
+    BearerAuth:
+      type: apiKey
+      description: Type "Bearer" followed by a space and JWT token.
+      name: Authorization
+      in: header
+x-original-swagger-version: "2.0"

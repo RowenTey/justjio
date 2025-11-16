@@ -9,7 +9,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "format": "prettier --write .",
-    "generate-types": "openapi-typescript ../server/api/docs/swagger.yaml -o ./src/types/api.ts"
+    "generate-types": "openapi-typescript ../server/api/pkg/docs/swagger.yaml -o ./src/types/api.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.1.4",

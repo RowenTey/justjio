@@ -6,11 +6,11 @@
 import type { components } from "./api";
 
 // User types
-export type User = components["schemas"]["model.User"];
-export type UserFriend = components["schemas"]["model.User"];
+export type User = components["schemas"]["models.User"];
+export type UserFriend = components["schemas"]["models.User"];
 
 // Room types
-export type Room = components["schemas"]["model.Room"];
+export type Room = components["schemas"]["models.Room"];
 export type RoomInviteDto = components["schemas"]["response.RoomInviteDto"];
 export type RoomDto = components["schemas"]["response.RoomDto"];
 export type RoomListDto = components["schemas"]["response.RoomListDto"];
@@ -18,14 +18,14 @@ export type SimplifiedRoomDto =
   components["schemas"]["response.SimplifiedRoomDto"];
 
 // Message types
-export type Message = components["schemas"]["model.Message"];
+export type Message = components["schemas"]["models.Message"];
 
 // Friend Request types
 export type FriendRequestDto =
   components["schemas"]["response.FriendRequestDto"];
 
 // Venue types
-export type Venue = components["schemas"]["model_location.Venue"];
+export type Venue = components["schemas"]["location.Venue"];
 
 // Request types
 export type LoginRequest = components["schemas"]["request.LoginRequest"];
@@ -53,8 +53,8 @@ export type ResetPasswordRequest =
   components["schemas"]["request.ResetPasswordRequest"];
 export type UpdateUsernameRequest =
   components["schemas"]["request.UpdateUsernameRequest"];
-export type ModifyFriendRequest =
-  components["schemas"]["request.ModifyFriendRequest"];
+export type SendFriendRequest =
+  components["schemas"]["request.SendFriendRequest"];
 export type RespondToFriendRequestRequest =
   components["schemas"]["request.RespondToFriendRequestRequest"];
 export type CreateNotificationRequest =
