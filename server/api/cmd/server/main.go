@@ -50,21 +50,16 @@ func main() {
 	appCtx.Logger = logger.InitLogger(appCtx)
 	appCtx.Logger.Info("Starting API server...")
 
-	tp, err := otel.InitTracer(appCtx.Config)
+	tracer, err := otel.New(appCtx)
 	if err != nil {
 		appCtx.Logger.Warn("Failed to initialize tracer: ", err)
 	}
-	defer func() {
-		if err := otel.ShutdownTracer(context.Background(), tp); err != nil {
-			appCtx.Logger.Error("Failed to shutdown tracer: ", err)
-		}
-	}()
-	appCtx.Logger.Info("OpenTelemetry tracer initialized")
+	defer tracer.Shutdown(context.Background())
 
 	appCtx.DB = database.ConnectDB(appCtx)
 
-	workerDeps := workers.StartWorkers(appCtx)
-	appCtx.NotificationsChan = workerDeps.NotificationsChan
+	workerModule := workers.StartWorkers(appCtx)
+	appCtx.NotificationsChan = workerModule.NotificationsChan
 
 	appCtx.Kafka, err = kafka.NewKafkaClient(
 		appCtx.Config,
@@ -77,7 +72,6 @@ func main() {
 	defer appCtx.Kafka.Close()
 
 	appCtx.App = fiber.New()
-
 	middlewares.Fiber(appCtx)
 	router.Initalize(appCtx)
 
@@ -91,11 +85,10 @@ func main() {
 
 	stopCh := app.GracefulShutdown(
 		appCtx,
-		workerDeps.WorkersWg,
-		workerDeps.Scheduler,
+		workerModule.WorkersWg,
+		workerModule.Scheduler,
 		15*time.Second,
 	)
-
 	<-stopCh
 	appCtx.Logger.Info("Server exited gracefully")
 }

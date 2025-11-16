@@ -2157,7 +2157,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{userId}/friendRequests": {
+        "/users/{userId}/friend-requests": {
             "get": {
                 "description": "Retrieves friend requests for a user filtered by status (e.g., pending, accepted)",
                 "consumes": [
@@ -2354,7 +2354,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{userId}/friendRequests/count": {
+        "/users/{userId}/friend-requests/count": {
             "get": {
                 "description": "Counts the number of pending friend requests for a user",
                 "consumes": [

@@ -13,6 +13,7 @@ func GetOtelContext(c *fiber.Ctx) context.Context {
 	if ctx, ok := c.Locals("otel-context").(context.Context); ok {
 		return ctx
 	}
+
 	// Fallback to Fiber's context if OTEL context is not set
 	return c.Context()
 }
