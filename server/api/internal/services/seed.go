@@ -23,8 +23,7 @@ func SeedDB(
 
 	// Check if database is already seeded
 	var count int64
-	db.Model(&models.User{}).Count(&count)
-	if count > 0 {
+	if db.Model(&models.User{}).Count(&count); count > 0 {
 		log.Info("Database already seeded")
 		return nil
 	}

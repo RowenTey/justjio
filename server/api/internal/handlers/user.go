@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/golang-jwt/jwt/v4"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
@@ -72,18 +73,23 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 func (h *UserHandler) UpdateUsername(c *fiber.Ctx) error {
 	ctx := otel.GetOtelContext(c)
 	req := middlewares.GetValidatedRequest[request.UpdateUsernameRequest](c)
+	userIdParam := c.Params("userId")
 
-	id := c.Params("userId")
-	if err := h.userService.UpdateUsername(ctx, id, req.Username); err != nil {
+	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
+	if userIdParam != userId {
+		return utils.HandleError(c, fiber.StatusForbidden, "You can only update your own username", nil)
+	}
+
+	if err := h.userService.UpdateUsername(ctx, userIdParam, req.Username); err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return utils.HandleError(
 				c, fiber.StatusConflict, fmt.Sprintf("Username '%s' is already taken", req.Username), nil)
 		}
 		return utils.HandleNotFoundOrInternalError(c, err,
-			fmt.Sprintf("No user found with ID %s", id))
+			fmt.Sprintf("No user found with ID %s", userIdParam))
 	}
 
-	h.logger.Infof("User %s updated username to %s", id, req.Username)
+	h.logger.Infof("User %s updated username to %s", userIdParam, req.Username)
 	return utils.HandleSuccess[any](c, "User successfully updated", nil)
 }
 
@@ -125,9 +131,14 @@ func (h *UserHandler) CountFriends(c *fiber.Ctx) error {
 // @Router /users/{userId}/friends/{friendId} [delete]
 func (h *UserHandler) RemoveFriend(c *fiber.Ctx) error {
 	ctx := otel.GetOtelContext(c)
-	userID, err := c.ParamsInt("userId")
+	userIdParam, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
+	}
+
+	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
+	if fmt.Sprint(userIdParam) != userId {
+		return utils.HandleError(c, fiber.StatusForbidden, "You can only remove friends from your own account", nil)
 	}
 
 	friendID, err := c.ParamsInt("friendId")
@@ -135,8 +146,8 @@ func (h *UserHandler) RemoveFriend(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	if err := h.userService.RemoveFriend(ctx, uint(userID), uint(friendID)); err != nil {
-		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
+	if err := h.userService.RemoveFriend(ctx, uint(userIdParam), uint(friendID)); err != nil {
+		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userIdParam))
 	}
 
 	return utils.HandleSuccess[any](c, "Friend successfully removed", nil)
@@ -203,24 +214,29 @@ func (h *UserHandler) SearchNonFriends(c *fiber.Ctx) error {
 // @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
 // @Failure 409 {object} utils.EmptyApiResponse "Conflict: Self request, already friends, or request exists"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
-// @Router /users/{userId}/friendRequests [post]
+// @Router /users/{userId}/friend-requests [post]
 func (h *UserHandler) SendFriendRequest(c *fiber.Ctx) error {
 	ctx := otel.GetOtelContext(c)
-	userID, err := c.ParamsInt("userId")
+	userIdParam, err := c.ParamsInt("userId")
 	if err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
+	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
+	if fmt.Sprint(userIdParam) != userId {
+		return utils.HandleError(c, fiber.StatusForbidden, "You can only send friend requests from your own account", nil)
+	}
+
 	req := middlewares.GetValidatedRequest[request.SendFriendRequest](c)
 
-	if err := h.userService.SendFriendRequest(ctx, uint(userID), req.FriendID); err != nil {
+	if err := h.userService.SendFriendRequest(ctx, uint(userIdParam), req.FriendID); err != nil {
 		if errors.Is(err, services.ErrNoSelfFriendRequest) ||
 			errors.Is(err, services.ErrAlreadyFriends) ||
 			errors.Is(err, services.ErrFriendRequestExists) {
 			return utils.HandleError(
 				c, fiber.StatusConflict, err.Error(), err)
 		}
-		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userID))
+		return utils.HandleNotFoundOrInternalError(c, err, fmt.Sprintf("No user found with ID %d", userIdParam))
 	}
 
 	return utils.HandleSuccess[any](c, "Friend request sent", nil)
@@ -238,7 +254,7 @@ func (h *UserHandler) SendFriendRequest(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid status"
 // @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
-// @Router /users/{userId}/friendRequests [get]
+// @Router /users/{userId}/friend-requests [get]
 func (h *UserHandler) GetFriendRequestsByStatus(c *fiber.Ctx) error {
 	ctx := otel.GetOtelContext(c)
 
@@ -271,7 +287,7 @@ func (h *UserHandler) GetFriendRequestsByStatus(c *fiber.Ctx) error {
 // @Failure 400 {object} utils.EmptyApiResponse "Invalid input"
 // @Failure 404 {object} utils.EmptyApiResponse "No user found with ID"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
-// @Router /users/{userId}/friendRequests/count [get]
+// @Router /users/{userId}/friend-requests/count [get]
 func (h *UserHandler) CountPendingFriendRequests(c *fiber.Ctx) error {
 	ctx := otel.GetOtelContext(c)
 
@@ -301,10 +317,16 @@ func (h *UserHandler) CountPendingFriendRequests(c *fiber.Ctx) error {
 // @Failure 404 {object} utils.EmptyApiResponse "Error processing friend request"
 // @Failure 409 {object} utils.EmptyApiResponse "Friend request already processed"
 // @Failure 500 {object} utils.EmptyApiResponse "Internal server error"
-// @Router /users/{userId}/friendRequests [patch]
+// @Router /users/{userId}/friend-requests [patch]
 func (h *UserHandler) RespondToFriendRequest(c *fiber.Ctx) error {
 	ctx := otel.GetOtelContext(c)
 	req := middlewares.GetValidatedRequest[request.RespondToFriendRequestRequest](c)
+
+	userIdParam := c.Params("userId")
+	userId := utils.GetUserInfoFromToken(c.Locals("user").(*jwt.Token), "user_id")
+	if userIdParam != userId {
+		return utils.HandleError(c, fiber.StatusForbidden, "You can only respond to friend requests for your own account", nil)
+	}
 
 	requestIdUint := uint(req.RequestID)
 

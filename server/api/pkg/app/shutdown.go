@@ -8,7 +8,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-co-op/gocron"
+	"github.com/go-co-op/gocron/v2"
 )
 
 // GracefulShutdown coordinates everything that must stop.
@@ -33,12 +33,10 @@ func GracefulShutdown(
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 
-		// Stop accepting new HTTP requests
 		if err := appCtx.App.ShutdownWithContext(ctx); err != nil {
 			logger.Error("HTTP server forced shutdown: ", err)
 		}
 
-		// Close input channel → workers stop producing
 		close(appCtx.NotificationsChan)
 
 		// Wait for in-flight work
@@ -49,7 +47,7 @@ func GracefulShutdown(
 		}()
 
 		// Stop scheduler
-		scheduler.Stop()
+		(*scheduler).Shutdown()
 
 		// Wait for workers with timeout
 		select {

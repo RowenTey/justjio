@@ -265,7 +265,7 @@ func setupUserRoutes(v1 fiber.Router, handlers *Handlers) {
 	friends.Get("/search", handlers.UserHandler.SearchNonFriends)
 	friends.Delete("/:friendId", handlers.UserHandler.RemoveFriend)
 
-	friendRequests := users.Group("/:userId/friendRequests")
+	friendRequests := users.Group("/:userId/friend-requests")
 	friendRequests.Get("/", handlers.UserHandler.GetFriendRequestsByStatus)
 	friendRequests.Get("/count", handlers.UserHandler.CountPendingFriendRequests)
 	friendRequests.Post("/",
@@ -285,7 +285,7 @@ func setupUserRoutes(v1 fiber.Router, handlers *Handlers) {
 func setupRoomRoutes(
 	v1 fiber.Router,
 	handlers *Handlers,
-	roommiddlewares func(c *fiber.Ctx) error,
+	roomMiddleware func(c *fiber.Ctx) error,
 ) {
 	rooms := v1.Group("/rooms")
 	rooms.Get("/", handlers.RoomHandler.GetRooms)
@@ -294,14 +294,14 @@ func setupRoomRoutes(
 	rooms.Get("/invites", handlers.RoomHandler.GetRoomInvites)
 	rooms.Get("/invites/count", handlers.RoomHandler.GetNumRoomInvites)
 	rooms.Get("/venues/search", handlers.RoomHandler.QueryVenue)
-	rooms.Get("/:roomId", roommiddlewares, handlers.RoomHandler.GetRoom)
-	rooms.Get("/:roomId/uninvited", roommiddlewares, handlers.RoomHandler.GetUninvitedFriendsForRoom)
+	rooms.Get("/:roomId", roomMiddleware, handlers.RoomHandler.GetRoom)
+	rooms.Get("/:roomId/uninvited", roomMiddleware, handlers.RoomHandler.GetUninvitedFriendsForRoom)
 	rooms.Post("/",
 		middlewares.ParseAndValidate[request.CreateRoomRequest](),
 		handlers.RoomHandler.CreateRoom,
 	)
 	rooms.Post("/:roomId",
-		roommiddlewares,
+		roomMiddleware,
 		middlewares.ParseAndValidate[request.InviteUserRequest](),
 		handlers.RoomHandler.InviteUser,
 	)
@@ -314,11 +314,11 @@ func setupRoomRoutes(
 		handlers.RoomHandler.EditRoom,
 	)
 	rooms.Patch("/:roomId/join", handlers.RoomHandler.JoinRoom)
-	rooms.Patch("/:roomId/close", roommiddlewares, handlers.RoomHandler.CloseRoom)
-	rooms.Delete("/:roomId/leave", roommiddlewares, handlers.RoomHandler.LeaveRoom)
+	rooms.Patch("/:roomId/close", roomMiddleware, handlers.RoomHandler.CloseRoom)
+	rooms.Delete("/:roomId/leave", roomMiddleware, handlers.RoomHandler.LeaveRoom)
 
 	messages := rooms.Group("/:roomId/messages")
-	messages.Use(roommiddlewares)
+	messages.Use(roomMiddleware)
 	messages.Get("/", handlers.MessageHandler.GetMessages)
 	messages.Get("/:msgId", handlers.MessageHandler.GetMessage)
 	messages.Post("/",
