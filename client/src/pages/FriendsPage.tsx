@@ -9,7 +9,7 @@ import useLoadingAndError from "../hooks/useLoadingAndError";
 import Spinner from "../components/Spinner";
 import { AxiosError } from "axios";
 import FriendsTopBar from "../components/top-bar/FriendsTopBar";
-import { MinimalUserDto, ModifyFriendRequest } from "../types/models";
+import { MinimalUserDto, SendFriendRequest } from "../types/models";
 
 const FriendsPage = () => {
   const { loadingStates, startLoading, stopLoading } = useLoadingAndError();
@@ -27,7 +27,7 @@ const FriendsPage = () => {
     try {
       await userService.sendFriendRequest(user.id.toString(), {
         friendId: newFriend.id,
-      } as ModifyFriendRequest);
+      } as SendFriendRequest);
       showToast("Friend request sent!", false);
     } catch (error) {
       console.error("An error occurred while sending friend request: ", error);
