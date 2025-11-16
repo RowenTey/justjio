@@ -47,7 +47,9 @@ func GracefulShutdown(
 		}()
 
 		// Stop scheduler
-		(*scheduler).Shutdown()
+		if err := (*scheduler).Shutdown(); err != nil {
+			logger.Error("Scheduler forced shutdown: ", err)
+		}
 
 		// Wait for workers with timeout
 		select {
