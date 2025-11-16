@@ -4,3469 +4,3469 @@
  */
 
 export interface paths {
-    "/auth": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Login
-         * @description Authenticates a user with username and password
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Login credentials */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.LoginRequest"];
-                };
-            };
-            responses: {
-                /** @description Login successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.AuthResponse"];
-                            message?: string;
-                            status?: string;
-                            token?: string;
-                        };
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid username or password */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description User not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/auth": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/google": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Login
+     * @description Authenticates a user with username and password
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      /** @description Login credentials */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.LoginRequest"];
         };
-        get?: never;
-        put?: never;
-        /**
-         * Google OAuth login
-         * @description Authenticates a user using Google OAuth authorization code
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
+      };
+      responses: {
+        /** @description Login successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.AuthResponse"];
+              message?: string;
+              status?: string;
+              token?: string;
             };
-            /** @description Google OAuth request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.GoogleAuthRequest"];
-                };
-            };
-            responses: {
-                /** @description Authenticated via Google successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.AuthResponse"];
-                            message?: string;
-                            status?: string;
-                            token?: string;
-                        };
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+          };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Invalid username or password */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description User not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/auth/otp": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Send OTP email
-         * @description Sends a One-Time Password to the user's email for verification or password reset
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description OTP email request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.SendOTPEmailRequest"];
-                };
-            };
-            responses: {
-                /** @description OTP sent successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid input or invalid purpose */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description User not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Email already verified */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/google": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/reset": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Google OAuth login
+     * @description Authenticates a user using Google OAuth authorization code
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      /** @description Google OAuth request */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.GoogleAuthRequest"];
         };
-        get?: never;
-        put?: never;
-        /**
-         * Reset password
-         * @description Resets the user's password after OTP verification
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
+      };
+      responses: {
+        /** @description Authenticated via Google successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.AuthResponse"];
+              message?: string;
+              status?: string;
+              token?: string;
             };
-            /** @description Password reset request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.ResetPasswordRequest"];
-                };
-            };
-            responses: {
-                /** @description Password reset successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description User not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+          };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/auth/signup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Sign up
-         * @description Creates a new user account with email verification
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description User registration details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.SignUpRequest"];
-                };
-            };
-            responses: {
-                /** @description User signed up successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.AuthResponse"];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Username or email already exists */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/otp": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/auth/verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Send OTP email
+     * @description Sends a One-Time Password to the user's email for verification or password reset
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      /** @description OTP email request */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.SendOTPEmailRequest"];
         };
-        get?: never;
-        put?: never;
-        /**
-         * Verify OTP
-         * @description Verifies the One-Time Password sent to the user's email
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description OTP verification request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.VerifyOTPRequest"];
-                };
-            };
-            responses: {
-                /** @description OTP verified successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid input or invalid OTP */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description User not found or OTP not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+      };
+      responses: {
+        /** @description OTP sent successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Invalid input or invalid purpose */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description User not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Email already verified */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/bills": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get bills by room
-         * @description Retrieves all bills for a specified room
-         */
-        get: {
-            parameters: {
-                query: {
-                    /** @description Room ID */
-                    roomId: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved bills successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.BillDto"][];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Missing roomId in query parameter */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Room not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /**
-         * Create bill
-         * @description Creates a new bill for a room with specified payers and amount
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Bill creation details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.CreateBillRequest"];
-                };
-            };
-            responses: {
-                /** @description Created bill successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: string;
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Invalid input, empty payers, or room already consolidated */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Room not found or payers not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/reset": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/bills/consolidate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Reset password
+     * @description Resets the user's password after OTP verification
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      /** @description Password reset request */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.ResetPasswordRequest"];
         };
-        get?: never;
-        put?: never;
-        /**
-         * Consolidate bills
-         * @description Consolidates all bills for a room into transactions (host only)
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Consolidation request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.ConsolidateBillsRequest"];
-                };
-            };
-            responses: {
-                /** @description Bill consolidated successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid input or bills already consolidated */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Only host can consolidate bills */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Room not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+      };
+      responses: {
+        /** @description Password reset successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description User not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/notifications": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create notification
-         * @description Creates and sends a new notification to a user
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Notification details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.CreateNotificationRequest"];
-                };
-            };
-            responses: {
-                /** @description Notification created successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid input or empty content */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/signup": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/notifications/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Sign up
+     * @description Creates a new user account with email verification
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      /** @description User registration details */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.SignUpRequest"];
         };
-        /**
-         * Get notification by ID
-         * @description Retrieves a specific notification by its ID
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Notification ID */
-                    id: string;
-                };
-                cookie?: never;
+      };
+      responses: {
+        /** @description User signed up successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.AuthResponse"];
+              message?: string;
+              status?: string;
             };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved notification successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.NotificationDto"];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Invalid notification ID */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Notification not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+          };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Username or email already exists */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/rooms": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get user's rooms
-         * @description Retrieves a paginated list of rooms for the authenticated user
-         */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Page number */
-                    page?: number;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved rooms successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.RoomListDto"][];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No rooms found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /**
-         * Create room
-         * @description Creates a new room and optionally sends invites to specified users
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Room creation details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.CreateRoomRequest"];
-                };
-            };
-            responses: {
-                /** @description Created room successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: string;
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Failed to create room and invites */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/auth/verify": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/rooms/{roomId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Verify OTP
+     * @description Verifies the One-Time Password sent to the user's email
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      /** @description OTP verification request */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.VerifyOTPRequest"];
         };
-        /**
-         * Get room details
-         * @description Retrieves details of a specific room by its ID
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Room ID */
-                    roomId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved room successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.RoomDto"];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Room not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+      };
+      responses: {
+        /** @description OTP verified successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
         };
-        put?: never;
-        /**
-         * Invite users to room
-         * @description Invites multiple users to a room (host only)
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Room ID */
-                    roomId: string;
-                };
-                cookie?: never;
-            };
-            /** @description User invites details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.InviteUserRequest"];
-                };
-            };
-            responses: {
-                /** @description Invited users successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Only hosts are allowed to invite users */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Room / User not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description User is already in the room or already has pending invite */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+        /** @description Invalid input or invalid OTP */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Respond to room invitation
-         * @description Accepts or rejects a room invitation
-         */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Room ID */
-                    roomId: string;
-                };
-                cookie?: never;
-            };
-            /** @description Invitation response */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.RespondToRoomInviteRequest"];
-                };
-            };
-            responses: {
-                /** @description Joined room successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.RoomDto"];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Room not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+        /** @description User not found or OTP not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
         };
-        trace?: never;
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/rooms/{roomId}/close": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Close room
-         * @description Closes a room (host only, no unconsolidated bills allowed)
-         */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Room ID */
-                    roomId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Closed room successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Only hosts are allowed to close rooms */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Room not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Cannot close room with unconsolidated bills */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        trace?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/bills": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/rooms/{roomId}/edit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    /**
+     * Get bills by room
+     * @description Retrieves all bills for a specified room
+     */
+    get: {
+      parameters: {
+        query: {
+          /** @description Room ID */
+          roomId: string;
         };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Edit room
-         * @description Updates details of an existing room (host only)
-         */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Room ID */
-                    roomId: string;
-                };
-                cookie?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved bills successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.BillDto"][];
+              message?: string;
+              status?: string;
             };
-            /** @description Room update details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.EditRoomRequest"];
-                };
-            };
-            responses: {
-                /** @description Edited room successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Only hosts can edit rooms */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Room not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+          };
         };
-        trace?: never;
+        /** @description Missing roomId in query parameter */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Room not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/rooms/{roomId}/join": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    put?: never;
+    /**
+     * Create bill
+     * @description Creates a new bill for a room with specified payers and amount
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      /** @description Bill creation details */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.CreateBillRequest"];
         };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Join room
-         * @description Allows a user to join a room
-         */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Room ID */
-                    roomId: string;
-                };
-                cookie?: never;
+      };
+      responses: {
+        /** @description Created bill successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: string;
+              message?: string;
+              status?: string;
             };
-            requestBody?: never;
-            responses: {
-                /** @description Joined room successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.RoomDto"];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Room not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description User is already in room */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+          };
         };
-        trace?: never;
+        /** @description Invalid input, empty payers, or room already consolidated */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Room not found or payers not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/rooms/{roomId}/leave": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Leave room
-         * @description Allows a user to leave a room (not allowed for hosts or with unconsolidated bills)
-         */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Room ID */
-                    roomId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Left room successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Room not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Cannot leave room with unconsolidated bills or host cannot leave room */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/bills/consolidate": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/rooms/{roomId}/messages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Consolidate bills
+     * @description Consolidates all bills for a room into transactions (host only)
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      /** @description Consolidation request */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.ConsolidateBillsRequest"];
         };
-        /**
-         * Get room messages
-         * @description Retrieves paginated messages for a specific room with optional sorting
-         */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Page number */
-                    page?: number;
-                    /** @description Sort order (ascending if true) */
-                    asc?: boolean;
-                };
-                header?: never;
-                path: {
-                    /** @description Room ID */
-                    roomId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved messages successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.GetMessagesResponse"];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No messages found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+      };
+      responses: {
+        /** @description Bill consolidated successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
         };
-        put?: never;
-        /**
-         * Create message
-         * @description Creates and saves a new message in the specified room
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Room ID */
-                    roomId: string;
-                };
-                cookie?: never;
-            };
-            /** @description Message content */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.CreateMessageRequest"];
-                };
-            };
-            responses: {
-                /** @description Message saved successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Room or user not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+        /** @description Invalid input or bills already consolidated */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
         };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Only host can consolidate bills */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Room not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/rooms/{roomId}/messages/{msgId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get message by ID
-         * @description Retrieves a specific message by its ID
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Message ID */
-                    msgId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved message successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["models.Message"];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No message found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/notifications": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/rooms/{roomId}/uninvited": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    /**
+     * Create notification
+     * @description Creates and sends a new notification to a user
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      /** @description Notification details */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.CreateNotificationRequest"];
         };
-        /**
-         * Get uninvited friends for room
-         * @description Retrieves the list of friends who haven't been invited to the specified room
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Room ID */
-                    roomId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved uninvited friends successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.MinimalUserDto"][];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No uninvited friends found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+      };
+      responses: {
+        /** @description Notification created successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Invalid input or empty content */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/rooms/count": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get number of rooms
-         * @description Retrieves the total count of rooms for the authenticated user
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved number of rooms successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: number;
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No rooms found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/notifications/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/rooms/invites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    /**
+     * Get notification by ID
+     * @description Retrieves a specific notification by its ID
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Notification ID */
+          id: string;
         };
-        /**
-         * Get room invites
-         * @description Retrieves pending room invites for the authenticated user
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved notification successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.NotificationDto"];
+              message?: string;
+              status?: string;
             };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved room invites successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.RoomInviteDto"][];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No room invites found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+          };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Invalid notification ID */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Notification not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/rooms/invites/count": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get number of room invites
-         * @description Retrieves the count of pending room invites for the authenticated user
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved number of invites successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: number;
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No room invites found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/rooms": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/rooms/public": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    /**
+     * Get user's rooms
+     * @description Retrieves a paginated list of rooms for the authenticated user
+     */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Page number */
+          page?: number;
         };
-        /**
-         * Get unjoined public rooms
-         * @description Retrieves public rooms that the authenticated user hasn't joined yet
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved rooms successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.RoomListDto"][];
+              message?: string;
+              status?: string;
             };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved public rooms successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.SimplifiedRoomDto"][];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No public rooms found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+          };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description No rooms found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/rooms/venues/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    put?: never;
+    /**
+     * Create room
+     * @description Creates a new room and optionally sends invites to specified users
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      /** @description Room creation details */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.CreateRoomRequest"];
         };
-        /**
-         * Query venues
-         * @description Searches for venues based on a query string
-         */
-        get: {
-            parameters: {
-                query: {
-                    /** @description Search query for venues */
-                    query: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
+      };
+      responses: {
+        /** @description Created room successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: string;
+              message?: string;
+              status?: string;
             };
-            requestBody?: never;
-            responses: {
-                /** @description Queried venues successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["location.Venue"][];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Query parameter is required */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+          };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Failed to create room and invites */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/subscriptions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create subscription
-         * @description Creates a new push notification subscription for the user
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            /** @description Subscription details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.CreateSubscriptionRequest"];
-                };
-            };
-            responses: {
-                /** @description Subscription created successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: string;
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Invalid input or missing required fields */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/rooms/{roomId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/subscriptions/{endpoint}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    /**
+     * Get room details
+     * @description Retrieves details of a specific room by its ID
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Room ID */
+          roomId: string;
         };
-        /**
-         * Get subscription by endpoint
-         * @description Retrieves a push notification subscription by its endpoint URL
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description URL-encoded subscription endpoint */
-                    endpoint: string;
-                };
-                cookie?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved room successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.RoomDto"];
+              message?: string;
+              status?: string;
             };
-            requestBody?: never;
-            responses: {
-                /** @description Subscription retrieved successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.SubscriptionDto"];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Invalid endpoint URL */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Subscription not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+          };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Room not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/subscriptions/{subId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    put?: never;
+    /**
+     * Invite users to room
+     * @description Invites multiple users to a room (host only)
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Room ID */
+          roomId: string;
         };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete subscription
-         * @description Deletes a push notification subscription by ID
-         */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Subscription ID */
-                    subId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Subscription deleted successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Subscription not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+        cookie?: never;
+      };
+      /** @description User invites details */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.InviteUserRequest"];
         };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+      };
+      responses: {
+        /** @description Invited users successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Only hosts are allowed to invite users */
+        403: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Room / User not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description User is already in the room or already has pending invite */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/transactions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Respond to room invitation
+     * @description Accepts or rejects a room invitation
+     */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Room ID */
+          roomId: string;
         };
-        /**
-         * Get user transactions
-         * @description Retrieves transactions for the authenticated user, optionally filtered by payment status
-         */
-        get: {
-            parameters: {
-                query?: {
-                    /** @description Filter by payment status */
-                    isPaid?: boolean;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved transactions successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.TransactionDto"][];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No transactions found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+        cookie?: never;
+      };
+      /** @description Invitation response */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.RespondToRoomInviteRequest"];
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+      };
+      responses: {
+        /** @description Joined room successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.RoomDto"];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Room not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/transactions/{txId}/settle": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Settle transaction
-         * @description Marks a transaction as paid by the authenticated user
-         */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Transaction ID */
-                    txId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Paid transactions successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid payer or bad request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Transaction not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Transaction already settled */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        trace?: never;
+    trace?: never;
+  };
+  "/rooms/{roomId}/close": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/users/{userId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Close room
+     * @description Closes a room (host only, no unconsolidated bills allowed)
+     */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Room ID */
+          roomId: string;
         };
-        /**
-         * Get user details
-         * @description Retrieves a user's details based on the provided user ID
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    userId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description User found successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["models.User"];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No user found with ID */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Closed room successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Only hosts are allowed to close rooms */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Room not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Cannot close room with unconsolidated bills */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/users/{userId}/friend-requests": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get friend requests by status
-         * @description Retrieves friend requests for a user filtered by status (e.g., pending, accepted)
-         */
-        get: {
-            parameters: {
-                query: {
-                    /** @description Status of friend requests (e.g., pending, accepted) */
-                    status: string;
-                };
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    userId: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Friend requests retrieved successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.FriendRequestDto"][];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Invalid status */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description No user found with ID */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /**
-         * Send friend request
-         * @description Sends a friend request from one user to another
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID of the sender */
-                    userId: number;
-                };
-                cookie?: never;
-            };
-            /** @description Friend request details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.SendFriendRequest"];
-                };
-            };
-            responses: {
-                /** @description Friend request sent */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description No user found with ID */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Conflict: Self request, already friends, or request exists */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Respond to friend request
-         * @description Accepts or rejects a friend request based on the provided action
-         */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    userId: number;
-                };
-                cookie?: never;
-            };
-            /** @description Friend request response details */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.RespondToFriendRequestRequest"];
-                };
-            };
-            responses: {
-                /** @description Friend request processed successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid input or action */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Error processing friend request */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Friend request already processed */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        trace?: never;
+    trace?: never;
+  };
+  "/rooms/{roomId}/edit": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/users/{userId}/friend-requests/count": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Edit room
+     * @description Updates details of an existing room (host only)
+     */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Room ID */
+          roomId: string;
         };
-        /**
-         * Count pending friend requests
-         * @description Counts the number of pending friend requests for a user
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    userId: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Pending friend requests counted successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: number;
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description No user found with ID */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+        cookie?: never;
+      };
+      /** @description Room update details */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.EditRoomRequest"];
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+      };
+      responses: {
+        /** @description Edited room successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Only hosts can edit rooms */
+        401: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Room not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/users/{userId}/friends": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get friends
-         * @description Retrieves the list of friends for a user
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    userId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Friends retrieved successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.MinimalUserDto"][];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No user found with ID */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    trace?: never;
+  };
+  "/rooms/{roomId}/join": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/users/{userId}/friends/{friendId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Join room
+     * @description Allows a user to join a room
+     */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Room ID */
+          roomId: string;
         };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Remove friend
-         * @description Removes a friend relationship between two users
-         */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    userId: number;
-                    /** @description Friend ID to remove */
-                    friendId: number;
-                };
-                cookie?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Joined room successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.RoomDto"];
+              message?: string;
+              status?: string;
             };
-            requestBody?: never;
-            responses: {
-                /** @description Friend successfully removed */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description No user found with ID */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+          };
         };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Room not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description User is already in room */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/users/{userId}/friends/count": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get number of friends
-         * @description Retrieves the total count of friends for a specific user
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    userId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Number of friends retrieved successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: number;
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No user found with ID */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    trace?: never;
+  };
+  "/rooms/{roomId}/leave": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/users/{userId}/friends/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Leave room
+     * @description Allows a user to leave a room (not allowed for hosts or with unconsolidated bills)
+     */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Room ID */
+          roomId: string;
         };
-        /**
-         * Search non-friend users
-         * @description Searches for users who are not friends with the specified user based on a query
-         */
-        get: {
-            parameters: {
-                query: {
-                    /** @description Search query */
-                    query: string;
-                };
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    userId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Non-friend users retrieved successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.MinimalUserDto"][];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description No user found with ID */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Left room successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+        /** @description Room not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Cannot leave room with unconsolidated bills or host cannot leave room */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/users/{userId}/notifications": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get user notifications
-         * @description Retrieves all notifications for the authenticated user
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Retrieved notifications successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["response.NotificationDto"][];
-                            message?: string;
-                            status?: string;
-                        };
-                    };
-                };
-                /** @description User not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/rooms/{roomId}/messages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/users/{userId}/notifications/{notificationId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    /**
+     * Get room messages
+     * @description Retrieves paginated messages for a specific room with optional sorting
+     */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Page number */
+          page?: number;
+          /** @description Sort order (ascending if true) */
+          asc?: boolean;
         };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Mark notification as read
-         * @description Marks a specific notification as read by its ID
-         */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Notification ID */
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Notification marked as read successfully */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid notification ID */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Notification not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+        header?: never;
+        path: {
+          /** @description Room ID */
+          roomId: string;
         };
-        trace?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved messages successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.GetMessagesResponse"];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description No messages found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
-    "/users/{userId}/username": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    put?: never;
+    /**
+     * Create message
+     * @description Creates and saves a new message in the specified room
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Room ID */
+          roomId: string;
         };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /**
-         * Update username
-         * @description Updates the username for a specific user
-         */
-        patch: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description User ID */
-                    userId: string;
-                };
-                cookie?: never;
-            };
-            /** @description Username update request */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["request.UpdateUsernameRequest"];
-                };
-            };
-            responses: {
-                /** @description User successfully updated */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Invalid input */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description No user found with ID */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Username already taken */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-                /** @description Internal server error */
-                500: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["utils.EmptyApiResponse"];
-                    };
-                };
-            };
+        cookie?: never;
+      };
+      /** @description Message content */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.CreateMessageRequest"];
         };
-        trace?: never;
+      };
+      responses: {
+        /** @description Message saved successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Room or user not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
     };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/rooms/{roomId}/messages/{msgId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get message by ID
+     * @description Retrieves a specific message by its ID
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Message ID */
+          msgId: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved message successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["models.Message"];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description No message found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/rooms/{roomId}/uninvited": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get uninvited friends for room
+     * @description Retrieves the list of friends who haven't been invited to the specified room
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Room ID */
+          roomId: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved uninvited friends successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.MinimalUserDto"][];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description No uninvited friends found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/rooms/count": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get number of rooms
+     * @description Retrieves the total count of rooms for the authenticated user
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved number of rooms successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: number;
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description No rooms found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/rooms/invites": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get room invites
+     * @description Retrieves pending room invites for the authenticated user
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved room invites successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.RoomInviteDto"][];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description No room invites found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/rooms/invites/count": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get number of room invites
+     * @description Retrieves the count of pending room invites for the authenticated user
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved number of invites successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: number;
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description No room invites found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/rooms/public": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get unjoined public rooms
+     * @description Retrieves public rooms that the authenticated user hasn't joined yet
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved public rooms successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.SimplifiedRoomDto"][];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description No public rooms found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/rooms/venues/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Query venues
+     * @description Searches for venues based on a query string
+     */
+    get: {
+      parameters: {
+        query: {
+          /** @description Search query for venues */
+          query: string;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Queried venues successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["location.Venue"][];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description Query parameter is required */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/subscriptions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Create subscription
+     * @description Creates a new push notification subscription for the user
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      /** @description Subscription details */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.CreateSubscriptionRequest"];
+        };
+      };
+      responses: {
+        /** @description Subscription created successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: string;
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description Invalid input or missing required fields */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/subscriptions/{endpoint}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get subscription by endpoint
+     * @description Retrieves a push notification subscription by its endpoint URL
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description URL-encoded subscription endpoint */
+          endpoint: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Subscription retrieved successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.SubscriptionDto"];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description Invalid endpoint URL */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Subscription not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/subscriptions/{subId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete subscription
+     * @description Deletes a push notification subscription by ID
+     */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Subscription ID */
+          subId: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Subscription deleted successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Subscription not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/transactions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get user transactions
+     * @description Retrieves transactions for the authenticated user, optionally filtered by payment status
+     */
+    get: {
+      parameters: {
+        query?: {
+          /** @description Filter by payment status */
+          isPaid?: boolean;
+        };
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved transactions successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.TransactionDto"][];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description No transactions found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/transactions/{txId}/settle": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Settle transaction
+     * @description Marks a transaction as paid by the authenticated user
+     */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Transaction ID */
+          txId: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Paid transactions successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Invalid payer or bad request */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Transaction not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Transaction already settled */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    trace?: never;
+  };
+  "/users/{userId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get user details
+     * @description Retrieves a user's details based on the provided user ID
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description User ID */
+          userId: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description User found successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["models.User"];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description No user found with ID */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/users/{userId}/friend-requests": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get friend requests by status
+     * @description Retrieves friend requests for a user filtered by status (e.g., pending, accepted)
+     */
+    get: {
+      parameters: {
+        query: {
+          /** @description Status of friend requests (e.g., pending, accepted) */
+          status: string;
+        };
+        header?: never;
+        path: {
+          /** @description User ID */
+          userId: number;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Friend requests retrieved successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.FriendRequestDto"][];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description Invalid status */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description No user found with ID */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    /**
+     * Send friend request
+     * @description Sends a friend request from one user to another
+     */
+    post: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description User ID of the sender */
+          userId: number;
+        };
+        cookie?: never;
+      };
+      /** @description Friend request details */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.SendFriendRequest"];
+        };
+      };
+      responses: {
+        /** @description Friend request sent */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description No user found with ID */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Conflict: Self request, already friends, or request exists */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Respond to friend request
+     * @description Accepts or rejects a friend request based on the provided action
+     */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description User ID */
+          userId: number;
+        };
+        cookie?: never;
+      };
+      /** @description Friend request response details */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.RespondToFriendRequestRequest"];
+        };
+      };
+      responses: {
+        /** @description Friend request processed successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Invalid input or action */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Error processing friend request */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Friend request already processed */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    trace?: never;
+  };
+  "/users/{userId}/friend-requests/count": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Count pending friend requests
+     * @description Counts the number of pending friend requests for a user
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description User ID */
+          userId: number;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Pending friend requests counted successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: number;
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description No user found with ID */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/users/{userId}/friends": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get friends
+     * @description Retrieves the list of friends for a user
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description User ID */
+          userId: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Friends retrieved successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.MinimalUserDto"][];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description No user found with ID */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/users/{userId}/friends/{friendId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Remove friend
+     * @description Removes a friend relationship between two users
+     */
+    delete: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description User ID */
+          userId: number;
+          /** @description Friend ID to remove */
+          friendId: number;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Friend successfully removed */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description No user found with ID */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/users/{userId}/friends/count": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get number of friends
+     * @description Retrieves the total count of friends for a specific user
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description User ID */
+          userId: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Number of friends retrieved successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: number;
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description No user found with ID */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/users/{userId}/friends/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Search non-friend users
+     * @description Searches for users who are not friends with the specified user based on a query
+     */
+    get: {
+      parameters: {
+        query: {
+          /** @description Search query */
+          query: string;
+        };
+        header?: never;
+        path: {
+          /** @description User ID */
+          userId: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Non-friend users retrieved successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.MinimalUserDto"][];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description No user found with ID */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/users/{userId}/notifications": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get user notifications
+     * @description Retrieves all notifications for the authenticated user
+     */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path?: never;
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Retrieved notifications successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              data?: components["schemas"]["response.NotificationDto"][];
+              message?: string;
+              status?: string;
+            };
+          };
+        };
+        /** @description User not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/users/{userId}/notifications/{notificationId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Mark notification as read
+     * @description Marks a specific notification as read by its ID
+     */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description Notification ID */
+          id: string;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Notification marked as read successfully */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Invalid notification ID */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Notification not found */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    trace?: never;
+  };
+  "/users/{userId}/username": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Update username
+     * @description Updates the username for a specific user
+     */
+    patch: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          /** @description User ID */
+          userId: string;
+        };
+        cookie?: never;
+      };
+      /** @description Username update request */
+      requestBody: {
+        content: {
+          "application/json": components["schemas"]["request.UpdateUsernameRequest"];
+        };
+      };
+      responses: {
+        /** @description User successfully updated */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Invalid input */
+        400: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description No user found with ID */
+        404: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Username already taken */
+        409: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+        /** @description Internal server error */
+        500: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": components["schemas"]["utils.EmptyApiResponse"];
+          };
+        };
+      };
+    };
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        "location.Venue": {
-            address?: string;
-            googleMapsPlaceId?: string;
-            name?: string;
-        };
-        "models.Message": {
-            content?: string;
-            id?: number;
-            room?: components["schemas"]["models.Room"];
-            roomId?: string;
-            /** @description Associations */
-            sender?: components["schemas"]["models.User"];
-            senderId?: number;
-            sentAt?: string;
-        };
-        "models.Room": {
-            attendees?: components["schemas"]["models.User"][];
-            consolidated?: string;
-            createdAt?: string;
-            date?: string;
-            description?: string;
-            /** @description Associations */
-            host?: components["schemas"]["models.User"];
-            hostId?: number;
-            id?: string;
-            imageUrl?: string;
-            isClosed?: boolean;
-            isPrivate?: boolean;
-            name?: string;
-            noOfAttendees?: number;
-            time?: string;
-            updatedAt?: string;
-            venue?: string;
-            venuePlaceId?: string;
-            venueUrl?: string;
-        };
-        "models.User": {
-            email?: string;
-            friends?: components["schemas"]["models.User"][];
-            id?: number;
-            isEmailValid?: boolean;
-            isOnline?: boolean;
-            lastSeen?: string;
-            noOfFriends?: number;
-            noOfPendingFriendRequests?: number;
-            noOfPendingRoomInvites?: number;
-            noOfRooms?: number;
-            password?: string;
-            pictureUrl?: string;
-            registeredAt?: string;
-            /** @description Associations */
-            rooms?: components["schemas"]["models.Room"][];
-            updatedAt?: string;
-            username?: string;
-        };
-        "request.ConsolidateBillsRequest": {
-            roomId: string;
-        };
-        "request.CreateBillRequest": {
-            amount: number;
-            includeOwner?: boolean;
-            name: string;
-            payers: string[];
-            roomId: string;
-        };
-        "request.CreateMessageRequest": {
-            content: string;
-        };
-        "request.CreateNotificationRequest": {
-            content: string;
-            title: string;
-            userId: number;
-        };
-        "request.CreateRoomRequest": {
-            /** @example 2025-12-25T19:00:00Z */
-            date: string;
-            /** @example Let's celebrate John's birthday! */
-            description?: string;
-            /** @example https://example.com/party.jpg */
-            imageUrl: string;
-            /**
-             * @description Array of user IDs
-             * @example [
-             *       "1",
-             *       "2",
-             *       "3"
-             *     ]
-             */
-            invitees?: string[];
-            /** @example false */
-            isPrivate?: boolean;
-            /** @example John's Birthday Party */
-            name: string;
-            /** @example 7:00 PM */
-            time: string;
-            /** @example Marina Bay Sands */
-            venue: string;
-            /** @example ChIJkxHPFjMZ2jERPRhLUvKGfFk */
-            venuePlaceId: string;
-        };
-        "request.CreateSubscriptionRequest": {
-            /** @example BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcx */
-            auth: string;
-            /** @example https://fcm.googleapis.com/fcm/send/abc123 */
-            endpoint: string;
-            /** @example BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u */
-            p256dh: string;
-            /** @example 1 */
-            userId: number;
-        };
-        "request.EditRoomRequest": {
-            /** @example 2025-12-26T19:00:00Z */
-            date?: string;
-            /** @example Updated description */
-            description?: string;
-            /** @example https://example.com/updated.jpg */
-            imageUrl?: string;
-            /** @example Updated Party Name */
-            name?: string;
-            /** @example 8:00 PM */
-            time?: string;
-            /** @example Sentosa Beach */
-            venue?: string;
-            /** @example ChIJkxHPFjMZ2jERPRhLUvKGfFk */
-            venuePlaceId?: string;
-        };
-        "request.GoogleAuthRequest": {
-            /** @example 4/0AY0e-g7X... */
-            code: string;
-        };
-        "request.InviteUserRequest": {
-            /**
-             * @description Array of user IDs
-             * @example [
-             *       "4",
-             *       "5",
-             *       "6"
-             *     ]
-             */
-            invitees: string[];
-        };
-        "request.LoginRequest": {
-            /** @example SecurePass123! */
-            password: string;
-            /** @example johndoe123 */
-            username: string;
-        };
-        "request.ResetPasswordRequest": {
-            /** @example john.doe@example.com */
-            email: string;
-            /** @example NewSecurePass123! */
-            password: string;
-        };
-        "request.RespondToFriendRequestRequest": {
-            /** @enum {string} */
-            action: "accept" | "reject";
-            requestId: number;
-        };
-        "request.RespondToRoomInviteRequest": {
-            /** @example true */
-            accept?: boolean;
-        };
-        "request.SendFriendRequest": {
-            friendId: number;
-        };
-        "request.SendOTPEmailRequest": {
-            /** @example john.doe@example.com */
-            email: string;
-            /**
-             * @example verify-email
-             * @enum {string}
-             */
-            purpose: "verify-email" | "reset-password";
-        };
-        "request.SignUpRequest": {
-            /** @example john.doe@example.com */
-            email: string;
-            /** @example SecurePass123! */
-            password: string;
-            /** @example johndoe123 */
-            username: string;
-        };
-        "request.UpdateUsernameRequest": {
-            username: string;
-        };
-        "request.VerifyOTPRequest": {
-            /** @example john.doe@example.com */
-            email: string;
-            /** @example 123456 */
-            otp: string;
-        };
-        "response.AuthResponse": {
-            email: string;
-            id: number;
-            pictureUrl: string;
-            username: string;
-        };
-        "response.BillDto": {
-            amount: number;
-            consolidationId?: number;
-            date: string;
-            id: number;
-            includeOwner: boolean;
-            name: string;
-            owner: components["schemas"]["response.MinimalUserDto"];
-            payers: components["schemas"]["response.MinimalUserDto"][];
-        };
-        "response.FriendRequestDto": {
-            id: number;
-            receiver: components["schemas"]["response.MinimalUserDto"];
-            respondedAt?: string;
-            sender: components["schemas"]["response.MinimalUserDto"];
-            sentAt: string;
-            status: string;
-        };
-        "response.GetMessagesResponse": {
-            messages: components["schemas"]["response.MessageDto"][];
-            page: number;
-            pageCount: number;
-        };
-        "response.MessageDto": {
-            content: string;
-            id: number;
-            roomId: string;
-            sender: components["schemas"]["response.MinimalUserDto"];
-            sentAt: string;
-        };
-        "response.MinimalUserDto": {
-            id: number;
-            pictureUrl: string;
-            username: string;
-        };
-        "response.NotificationDto": {
-            content: string;
-            createdAt: string;
-            id: number;
-            isRead: boolean;
-            title: string;
-        };
-        "response.RoomDto": {
-            attendees: components["schemas"]["response.MinimalUserDto"][];
-            consolidated: string;
-            date: string;
-            description: string;
-            host: components["schemas"]["response.MinimalUserDto"];
-            id: string;
-            imageUrl: string;
-            isClosed: boolean;
-            isPrivate: boolean;
-            name: string;
-            noOfAttendees: number;
-            time: string;
-            venue: string;
-            venueUrl: string;
-        };
-        "response.RoomInviteDto": {
-            createdAt: string;
-            id: number;
-            inviter: components["schemas"]["response.MinimalUserDto"];
-            room: components["schemas"]["response.SimplifiedRoomDto"];
-            status: string;
-            user: components["schemas"]["response.MinimalUserDto"];
-        };
-        "response.RoomListDto": {
-            host: components["schemas"]["response.MinimalUserDto"];
-            id: string;
-            imageUrl: string;
-            isClosed: boolean;
-            isPrivate: boolean;
-            name: string;
-            noOfAttendees: number;
-        };
-        "response.SimplifiedRoomDto": {
-            date: string;
-            description: string;
-            host: components["schemas"]["response.MinimalUserDto"];
-            id: string;
-            imageUrl: string;
-            isPrivate: boolean;
-            name: string;
-            noOfAttendees: number;
-            time: string;
-            venue: string;
-            venueUrl: string;
-        };
-        "response.SubscriptionDto": {
-            auth: string;
-            endpoint: string;
-            id: string;
-            p256dh: string;
-            userId: number;
-        };
-        "response.TransactionDto": {
-            amount: number;
-            consolidationId: number;
-            id: number;
-            isPaid: boolean;
-            paidOn?: string;
-            payee: components["schemas"]["response.MinimalUserDto"];
-            payer: components["schemas"]["response.MinimalUserDto"];
-        };
-        "utils.EmptyApiResponse": {
-            data?: Record<string, never>;
-            /** @example Operation completed successfully */
-            message?: string;
-            /** @example success */
-            status?: string;
-        };
+  schemas: {
+    "location.Venue": {
+      address?: string;
+      googleMapsPlaceId?: string;
+      name?: string;
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    "models.Message": {
+      content?: string;
+      id?: number;
+      room?: components["schemas"]["models.Room"];
+      roomId?: string;
+      /** @description Associations */
+      sender?: components["schemas"]["models.User"];
+      senderId?: number;
+      sentAt?: string;
+    };
+    "models.Room": {
+      attendees?: components["schemas"]["models.User"][];
+      consolidated?: string;
+      createdAt?: string;
+      date?: string;
+      description?: string;
+      /** @description Associations */
+      host?: components["schemas"]["models.User"];
+      hostId?: number;
+      id?: string;
+      imageUrl?: string;
+      isClosed?: boolean;
+      isPrivate?: boolean;
+      name?: string;
+      noOfAttendees?: number;
+      time?: string;
+      updatedAt?: string;
+      venue?: string;
+      venuePlaceId?: string;
+      venueUrl?: string;
+    };
+    "models.User": {
+      email?: string;
+      friends?: components["schemas"]["models.User"][];
+      id?: number;
+      isEmailValid?: boolean;
+      isOnline?: boolean;
+      lastSeen?: string;
+      noOfFriends?: number;
+      noOfPendingFriendRequests?: number;
+      noOfPendingRoomInvites?: number;
+      noOfRooms?: number;
+      password?: string;
+      pictureUrl?: string;
+      registeredAt?: string;
+      /** @description Associations */
+      rooms?: components["schemas"]["models.Room"][];
+      updatedAt?: string;
+      username?: string;
+    };
+    "request.ConsolidateBillsRequest": {
+      roomId: string;
+    };
+    "request.CreateBillRequest": {
+      amount: number;
+      includeOwner?: boolean;
+      name: string;
+      payers: string[];
+      roomId: string;
+    };
+    "request.CreateMessageRequest": {
+      content: string;
+    };
+    "request.CreateNotificationRequest": {
+      content: string;
+      title: string;
+      userId: number;
+    };
+    "request.CreateRoomRequest": {
+      /** @example 2025-12-25T19:00:00Z */
+      date: string;
+      /** @example Let's celebrate John's birthday! */
+      description?: string;
+      /** @example https://example.com/party.jpg */
+      imageUrl: string;
+      /**
+       * @description Array of user IDs
+       * @example [
+       *       "1",
+       *       "2",
+       *       "3"
+       *     ]
+       */
+      invitees?: string[];
+      /** @example false */
+      isPrivate?: boolean;
+      /** @example John's Birthday Party */
+      name: string;
+      /** @example 7:00 PM */
+      time: string;
+      /** @example Marina Bay Sands */
+      venue: string;
+      /** @example ChIJkxHPFjMZ2jERPRhLUvKGfFk */
+      venuePlaceId: string;
+    };
+    "request.CreateSubscriptionRequest": {
+      /** @example BCVxsr7N_eNgVRqvHtD0zTZsEc6-VV-JvLexhqUzORcx */
+      auth: string;
+      /** @example https://fcm.googleapis.com/fcm/send/abc123 */
+      endpoint: string;
+      /** @example BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u */
+      p256dh: string;
+      /** @example 1 */
+      userId: number;
+    };
+    "request.EditRoomRequest": {
+      /** @example 2025-12-26T19:00:00Z */
+      date?: string;
+      /** @example Updated description */
+      description?: string;
+      /** @example https://example.com/updated.jpg */
+      imageUrl?: string;
+      /** @example Updated Party Name */
+      name?: string;
+      /** @example 8:00 PM */
+      time?: string;
+      /** @example Sentosa Beach */
+      venue?: string;
+      /** @example ChIJkxHPFjMZ2jERPRhLUvKGfFk */
+      venuePlaceId?: string;
+    };
+    "request.GoogleAuthRequest": {
+      /** @example 4/0AY0e-g7X... */
+      code: string;
+    };
+    "request.InviteUserRequest": {
+      /**
+       * @description Array of user IDs
+       * @example [
+       *       "4",
+       *       "5",
+       *       "6"
+       *     ]
+       */
+      invitees: string[];
+    };
+    "request.LoginRequest": {
+      /** @example SecurePass123! */
+      password: string;
+      /** @example johndoe123 */
+      username: string;
+    };
+    "request.ResetPasswordRequest": {
+      /** @example john.doe@example.com */
+      email: string;
+      /** @example NewSecurePass123! */
+      password: string;
+    };
+    "request.RespondToFriendRequestRequest": {
+      /** @enum {string} */
+      action: "accept" | "reject";
+      requestId: number;
+    };
+    "request.RespondToRoomInviteRequest": {
+      /** @example true */
+      accept?: boolean;
+    };
+    "request.SendFriendRequest": {
+      friendId: number;
+    };
+    "request.SendOTPEmailRequest": {
+      /** @example john.doe@example.com */
+      email: string;
+      /**
+       * @example verify-email
+       * @enum {string}
+       */
+      purpose: "verify-email" | "reset-password";
+    };
+    "request.SignUpRequest": {
+      /** @example john.doe@example.com */
+      email: string;
+      /** @example SecurePass123! */
+      password: string;
+      /** @example johndoe123 */
+      username: string;
+    };
+    "request.UpdateUsernameRequest": {
+      username: string;
+    };
+    "request.VerifyOTPRequest": {
+      /** @example john.doe@example.com */
+      email: string;
+      /** @example 123456 */
+      otp: string;
+    };
+    "response.AuthResponse": {
+      email: string;
+      id: number;
+      pictureUrl: string;
+      username: string;
+    };
+    "response.BillDto": {
+      amount: number;
+      consolidationId?: number;
+      date: string;
+      id: number;
+      includeOwner: boolean;
+      name: string;
+      owner: components["schemas"]["response.MinimalUserDto"];
+      payers: components["schemas"]["response.MinimalUserDto"][];
+    };
+    "response.FriendRequestDto": {
+      id: number;
+      receiver: components["schemas"]["response.MinimalUserDto"];
+      respondedAt?: string;
+      sender: components["schemas"]["response.MinimalUserDto"];
+      sentAt: string;
+      status: string;
+    };
+    "response.GetMessagesResponse": {
+      messages: components["schemas"]["response.MessageDto"][];
+      page: number;
+      pageCount: number;
+    };
+    "response.MessageDto": {
+      content: string;
+      id: number;
+      roomId: string;
+      sender: components["schemas"]["response.MinimalUserDto"];
+      sentAt: string;
+    };
+    "response.MinimalUserDto": {
+      id: number;
+      pictureUrl: string;
+      username: string;
+    };
+    "response.NotificationDto": {
+      content: string;
+      createdAt: string;
+      id: number;
+      isRead: boolean;
+      title: string;
+    };
+    "response.RoomDto": {
+      attendees: components["schemas"]["response.MinimalUserDto"][];
+      consolidated: string;
+      date: string;
+      description: string;
+      host: components["schemas"]["response.MinimalUserDto"];
+      id: string;
+      imageUrl: string;
+      isClosed: boolean;
+      isPrivate: boolean;
+      name: string;
+      noOfAttendees: number;
+      time: string;
+      venue: string;
+      venueUrl: string;
+    };
+    "response.RoomInviteDto": {
+      createdAt: string;
+      id: number;
+      inviter: components["schemas"]["response.MinimalUserDto"];
+      room: components["schemas"]["response.SimplifiedRoomDto"];
+      status: string;
+      user: components["schemas"]["response.MinimalUserDto"];
+    };
+    "response.RoomListDto": {
+      host: components["schemas"]["response.MinimalUserDto"];
+      id: string;
+      imageUrl: string;
+      isClosed: boolean;
+      isPrivate: boolean;
+      name: string;
+      noOfAttendees: number;
+    };
+    "response.SimplifiedRoomDto": {
+      date: string;
+      description: string;
+      host: components["schemas"]["response.MinimalUserDto"];
+      id: string;
+      imageUrl: string;
+      isPrivate: boolean;
+      name: string;
+      noOfAttendees: number;
+      time: string;
+      venue: string;
+      venueUrl: string;
+    };
+    "response.SubscriptionDto": {
+      auth: string;
+      endpoint: string;
+      id: string;
+      p256dh: string;
+      userId: number;
+    };
+    "response.TransactionDto": {
+      amount: number;
+      consolidationId: number;
+      id: number;
+      isPaid: boolean;
+      paidOn?: string;
+      payee: components["schemas"]["response.MinimalUserDto"];
+      payer: components["schemas"]["response.MinimalUserDto"];
+    };
+    "utils.EmptyApiResponse": {
+      data?: Record<string, never>;
+      /** @example Operation completed successfully */
+      message?: string;
+      /** @example success */
+      status?: string;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;
