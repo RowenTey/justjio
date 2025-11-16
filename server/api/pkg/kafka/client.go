@@ -41,7 +41,7 @@ func NewKafkaClient(conf *config.Config, logger *logrus.Logger, env string) (Kaf
 		admin:       a,
 		env:         env,
 		topicPrefix: conf.Kafka.TopicPrefix,
-		logger:      logger.WithFields(logrus.Fields{"service": "KafkaService"}),
+		logger:      logger.WithFields(logrus.Fields{"component": "KafkaClient"}),
 	}, nil
 }
 
@@ -131,9 +131,10 @@ func (kc *kafkaClient) PublishMessage(topic string, message string) error {
 }
 
 func (kc *kafkaClient) Close() {
-	// Flush and close the producer and the events channel
 	unflushed := kc.producer.Flush(10000)
-	kc.logger.Warnf("Unflushed messages: %d\n", unflushed)
+	if unflushed > 0 {
+		kc.logger.Warnf("Unflushed messages: %d\n", unflushed)
+	}
 	kc.producer.Close()
 }
 
