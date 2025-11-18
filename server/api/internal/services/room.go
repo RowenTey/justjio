@@ -191,7 +191,12 @@ func (rs *RoomService) GetUnjoinedPublicRooms(ctx context.Context, userId string
 }
 
 func (rs *RoomService) GetRoomAttendeesIds(ctx context.Context, roomId string) ([]string, error) {
-	return rs.roomRepo.GetRoomAttendeeIDs(ctx, roomId)
+	attendeeIds, err := rs.roomRepo.GetRoomAttendeeIDs(ctx, roomId)
+	if err != nil {
+		return nil, err
+	}
+
+	return attendeeIds, nil
 }
 
 func (rs *RoomService) GetRoomById(ctx context.Context, roomId string) (*response.RoomDto, error) {
@@ -276,7 +281,12 @@ func (rs *RoomService) GetRoomInvites(ctx context.Context, userId string) ([]res
 }
 
 func (rs *RoomService) GetNumRoomInvites(ctx context.Context, userId string) (int64, error) {
-	return rs.roomRepo.CountPendingInvites(ctx, userId)
+	count, err := rs.roomRepo.CountPendingInvites(ctx, userId)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 func (rs *RoomService) UpdateRoom(

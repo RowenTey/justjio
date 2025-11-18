@@ -82,6 +82,7 @@ func (s *SubscriptionService) DeleteSubscription(ctx context.Context, subId stri
 	if _, err := s.subscriptionRepo.FindByID(ctx, subId); err != nil {
 		return err
 	}
+
 	return s.subscriptionRepo.Delete(ctx, subId)
 }
 

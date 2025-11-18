@@ -60,29 +60,37 @@ func (r *userRepository) WithTx(tx *gorm.DB) UserRepository {
 
 // Create inserts a new user into the database.
 func (r *userRepository) Create(ctx context.Context, user *models.User) (*models.User, error) {
-	err := r.db.WithContext(ctx).Create(user).Error
-	return user, err
+	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 // FindByID retrieves a user by their ID.
 func (r *userRepository) FindByID(ctx context.Context, id string) (*models.User, error) {
 	var user models.User
-	err := r.db.WithContext(ctx).First(&user, id).Error
-	return &user, err
+	if err := r.db.WithContext(ctx).First(&user, id).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 // FindByUsername retrieves a user by their username.
 func (r *userRepository) FindByUsername(ctx context.Context, username string) (*models.User, error) {
 	var user models.User
-	err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error
-	return &user, err
+	if err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 // FindByEmail retrieves a user by their email address.
 func (r *userRepository) FindByEmail(ctx context.Context, email string) (*models.User, error) {
 	var user models.User
-	err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error
-	return &user, err
+	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 // FindByIDs retrieves users by their IDs.
@@ -95,9 +103,11 @@ func (r *userRepository) FindByIDs(ctx context.Context, ids []string) ([]models.
 	err := r.db.WithContext(ctx).Find(&users, ids).Error
 	if len(users) != len(ids) {
 		return nil, gorm.ErrRecordNotFound
+	} else if err != nil {
+		return nil, err
 	}
 
-	return users, err
+	return users, nil
 }
 
 // Update modifies an existing user.
@@ -118,8 +128,10 @@ func (r *userRepository) CreateFriendRequest(ctx context.Context, request *model
 // FindFriendRequest retrieves a friend request by its ID.
 func (r *userRepository) FindFriendRequest(ctx context.Context, id uint) (*models.FriendRequest, error) {
 	var request models.FriendRequest
-	err := r.db.WithContext(ctx).First(&request, id).Error
-	return &request, err
+	if err := r.db.WithContext(ctx).First(&request, id).Error; err != nil {
+		return nil, err
+	}
+	return &request, nil
 }
 
 // UpdateFriendRequest updates an existing friend request.
@@ -130,23 +142,27 @@ func (r *userRepository) UpdateFriendRequest(ctx context.Context, requestID uint
 // FindFriendRequestsByReceiver retrieves friend requests for a specific receiver with a given status.
 func (r *userRepository) FindFriendRequestsByReceiver(ctx context.Context, receiverID uint, status string) ([]models.FriendRequest, error) {
 	var requests []models.FriendRequest
-	err := r.db.WithContext(ctx).
-		Preload("Sender", func(db *gorm.DB) *gorm.DB {
+	if err := r.db.WithContext(ctx).
+		Joins("Sender", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
-		Preload("Receiver", func(db *gorm.DB) *gorm.DB {
+		Joins("Receiver", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
 		Where("receiver_id = ? AND status = ?", receiverID, status).
-		Find(&requests).Error
-	return requests, err
+		Find(&requests).Error; err != nil {
+		return nil, err
+	}
+	return requests, nil
 }
 
 // CountPendingFriendRequestsByReceiver counts the number of friend requests for a specific receiver with a given status.
 func (r *userRepository) CountPendingFriendRequestsByReceiver(ctx context.Context, receiverID uint) (int64, error) {
 	var user models.User
-	err := r.db.WithContext(ctx).First(&user, receiverID).Error
-	return int64(user.NoOfPendingFriendRequests), err
+	if err := r.db.WithContext(ctx).First(&user, receiverID).Error; err != nil {
+		return 0, err
+	}
+	return int64(user.NoOfPendingFriendRequests), nil
 }
 
 // CheckFriendRequestExists checks if a friend request exists between two users.
@@ -192,18 +208,22 @@ func (r *userRepository) RemoveFriend(ctx context.Context, userID, friendID uint
 // GetFriends retrieves the friends of a user.
 func (r *userRepository) GetFriends(ctx context.Context, userID uint) ([]models.User, error) {
 	var friends []models.User
-	err := r.db.WithContext(ctx).
+	if err := r.db.WithContext(ctx).
 		Model(models.User{ID: userID}).
 		Association("Friends").
-		Find(&friends)
-	return friends, err
+		Find(&friends); err != nil {
+		return nil, err
+	}
+	return friends, nil
 }
 
 // CountFriends returns the number of friends a user has.
 func (r *userRepository) CountFriends(ctx context.Context, userID uint) (int64, error) {
 	var user models.User
-	err := r.db.WithContext(ctx).First(&user, userID).Error
-	return int64(user.NoOfFriends), err
+	if err := r.db.WithContext(ctx).First(&user, userID).Error; err != nil {
+		return 0, err
+	}
+	return int64(user.NoOfFriends), nil
 }
 
 // CheckFriendship checks if a user is friends with another user.
@@ -249,14 +269,16 @@ func (r *userRepository) SearchNonFriendUsers(ctx context.Context, currentUserId
 // GetUninvitedFriends retrieves friends of a user who are not invited to a specific room.
 func (r *userRepository) GetUninvitedFriends(ctx context.Context, roomID, userID string) ([]models.User, error) {
 	var friends []models.User
-	err := r.db.WithContext(ctx).
+	if err := r.db.WithContext(ctx).
 		Table("users u").
 		Select("u.id, u.username, u.picture_url").
 		Joins("JOIN user_friends uf ON uf.friend_id = u.id AND uf.user_id = ?", userID).
 		Where("NOT EXISTS (SELECT 1 FROM room_users ru WHERE ru.user_id = u.id AND ru.room_id = ?)", roomID).
 		Where("NOT EXISTS (SELECT 1 FROM room_invites ri WHERE ri.user_id = u.id AND ri.room_id = ? AND ri.status = 'pending')", roomID).
-		Find(&friends).Error
-	return friends, err
+		Find(&friends).Error; err != nil {
+		return nil, err
+	}
+	return friends, nil
 }
 
 func (r *userRepository) UpdateNoOfPendingRoomInvites(ctx context.Context, userIDs []string, delta int) error {

@@ -55,36 +55,40 @@ func (r *roomRepository) Create(ctx context.Context, room *models.Room) error {
 
 func (r *roomRepository) GetByID(ctx context.Context, roomID string) (*models.Room, error) {
 	var room models.Room
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Table("rooms").
-		Preload("Users", func(db *gorm.DB) *gorm.DB {
+		Joins("Users", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
-		First(&room, "id = ?", roomID).Error
-	return &room, err
+		First(&room, "id = ?", roomID).Error; err != nil {
+		return nil, err
+	}
+	return &room, nil
 }
 
 func (r *roomRepository) GetByIDWithAttendees(ctx context.Context, roomID string) (*models.Room, error) {
 	var room models.Room
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
-		Preload("Host", func(db *gorm.DB) *gorm.DB {
+		Joins("Host", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
-		Preload("Users", func(db *gorm.DB) *gorm.DB {
+		Joins("Users", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
-		First(&room, "id = ?", roomID).Error
-	return &room, err
+		First(&room, "id = ?", roomID).Error; err != nil {
+		return nil, err
+	}
+	return &room, nil
 }
 
 func (r *roomRepository) GetUserRooms(ctx context.Context, userID string, page int, pageSize int) ([]models.Room, error) {
 	var rooms []models.Room
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Model(&models.Room{}).
-		Preload("Host", func(db *gorm.DB) *gorm.DB {
+		Joins("Host", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
 		Joins("JOIN room_users ON rooms.id = room_users.room_id").
@@ -92,23 +96,27 @@ func (r *roomRepository) GetUserRooms(ctx context.Context, userID string, page i
 		Where("rooms.is_closed = ?", false).
 		Order("rooms.updated_at DESC").
 		Scopes(database.Paginate(page, pageSize)).
-		Find(&rooms).Error
-	return rooms, err
+		Find(&rooms).Error; err != nil {
+		return nil, err
+	}
+	return rooms, nil
 }
 
 func (r *roomRepository) CountUserRooms(ctx context.Context, userID string) (int64, error) {
 	var count int64
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Table("users").
 		Where("id = ?", userID).
-		Pluck("no_of_rooms", &count).Error
-	return count, err
+		Pluck("no_of_rooms", &count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (r *roomRepository) GetUnjoinedRoomsByIsPrivate(ctx context.Context, userID string, isPrivate bool) ([]models.Room, error) {
 	var rooms []models.Room
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Table("rooms").
 		Joins("Host", func(db *gorm.DB) *gorm.DB {
@@ -118,19 +126,23 @@ func (r *roomRepository) GetUnjoinedRoomsByIsPrivate(ctx context.Context, userID
 		Where("rooms.id NOT IN (SELECT room_id FROM room_users WHERE user_id = ?)", userID).
 		Where("rooms.id NOT IN (SELECT room_id FROM room_invites WHERE user_id = ?)", userID).
 		Order("rooms.updated_at DESC").
-		Find(&rooms).Error
-	return rooms, err
+		Find(&rooms).Error; err != nil {
+		return nil, err
+	}
+	return rooms, nil
 }
 
 func (r *roomRepository) GetRoomAttendeeIDs(ctx context.Context, roomID string) ([]string, error) {
 	var userIds []string
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Table("room_users").
 		Where("room_id = ?", roomID).
 		Select("user_id").
-		Find(&userIds).Error
-	return userIds, err
+		Find(&userIds).Error; err != nil {
+		return nil, err
+	}
+	return userIds, nil
 }
 
 func (r *roomRepository) CloseRoom(ctx context.Context, roomID string) error {
@@ -169,18 +181,20 @@ func (r *roomRepository) DeletePendingInvites(ctx context.Context, roomID string
 
 func (r *roomRepository) GetPendingInviteUsers(ctx context.Context, roomID string) ([]string, error) {
 	var userIds []string
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Table("room_invites").
 		Where("room_id = ? AND status = ?", roomID, "pending").
 		Select("user_id").
-		Find(&userIds).Error
-	return userIds, err
+		Find(&userIds).Error; err != nil {
+		return nil, err
+	}
+	return userIds, nil
 }
 
 func (r *roomRepository) GetPendingInvites(ctx context.Context, userID string) ([]models.RoomInvite, error) {
 	var invites []models.RoomInvite
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Joins("Room", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, name, time, venue, venue_url, date, description, image_url, is_private, no_of_attendees, host_id")
@@ -195,18 +209,22 @@ func (r *roomRepository) GetPendingInvites(ctx context.Context, userID string) (
 			return db.Select("id, username, picture_url")
 		}).
 		Where("user_id = ? AND status = ?", userID, "pending").
-		Find(&invites).Error
-	return invites, err
+		Find(&invites).Error; err != nil {
+		return nil, err
+	}
+	return invites, nil
 }
 
 func (r *roomRepository) CountPendingInvites(ctx context.Context, userID string) (int64, error) {
 	var count int64
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Model(&models.User{}).
 		Where("id = ?", userID).
-		Pluck("no_of_pending_room_invites", &count).Error
-	return count, err
+		Pluck("no_of_pending_room_invites", &count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (r *roomRepository) UpdateInviteStatus(ctx context.Context, roomID, userID, status string) error {
@@ -230,10 +248,12 @@ func (r *roomRepository) CreateInvites(ctx context.Context, invites []models.Roo
 
 func (r *roomRepository) HasPendingInvites(ctx context.Context, roomID, userID string) (bool, error) {
 	var count int64
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Model(&models.RoomInvite{}).
 		Where("room_id = ? AND user_id = ? AND status = ?", roomID, userID, "pending").
-		Count(&count).Error
-	return count > 0, err
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

@@ -101,7 +101,12 @@ func (ms *MessageService) SaveMessage(
 }
 
 func (ms *MessageService) GetMessageById(ctx context.Context, msgId string) (*models.Message, error) {
-	return ms.messageRepo.FindByID(ctx, msgId)
+	msg, err := ms.messageRepo.FindByID(ctx, msgId)
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, nil
 }
 
 func (ms *MessageService) DeleteMessage(ctx context.Context, msgId string) error {
@@ -117,6 +122,7 @@ func (ms *MessageService) CountNumMessagesPages(ctx context.Context, roomId stri
 	if err != nil {
 		return 0, err
 	}
+
 	return int(math.Ceil(float64(count) / float64(MESSAGE_PAGE_SIZE))), nil
 }
 

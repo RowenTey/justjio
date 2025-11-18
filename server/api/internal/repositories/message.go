@@ -43,11 +43,13 @@ func (r *messageRepository) Create(ctx context.Context, message *models.Message)
 
 func (r *messageRepository) FindByID(ctx context.Context, msgID string) (*models.Message, error) {
 	var message models.Message
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Where("id = ?", msgID).
-		First(&message).Error
-	return &message, err
+		First(&message).Error; err != nil {
+		return nil, err
+	}
+	return &message, nil
 }
 
 func (r *messageRepository) Delete(ctx context.Context, msgID string) error {
@@ -66,10 +68,12 @@ func (r *messageRepository) DeleteByRoom(ctx context.Context, roomID string) err
 
 func (r *messageRepository) CountByRoom(ctx context.Context, roomID string) (int64, error) {
 	var count int64
-	err := r.db.WithContext(ctx).Model(&models.Message{}).
+	if err := r.db.WithContext(ctx).Model(&models.Message{}).
 		Where("room_id = ?", roomID).
-		Count(&count).Error
-	return count, err
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 func (r *messageRepository) FindByRoom(ctx context.Context, roomId string, page int, pageSize int, asc bool) ([]models.Message, error) {
@@ -80,15 +84,17 @@ func (r *messageRepository) FindByRoom(ctx context.Context, roomId string, page 
 		order = "sent_at DESC"
 	}
 
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Where("room_id = ?", roomId).
 		Order(order).
 		Scopes(database.Paginate(page, pageSize)).
-		Preload("Sender", func(db *gorm.DB) *gorm.DB {
+		Joins("Sender", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
-		Find(&messages).Error
+		Find(&messages).Error; err != nil {
+		return nil, err
+	}
 
-	return messages, err
+	return messages, nil
 }

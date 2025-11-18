@@ -43,19 +43,39 @@ func NewUserService(
 }
 
 func (s *UserService) GetUserByID(ctx context.Context, userId string) (*models.User, error) {
-	return s.userRepo.FindByID(ctx, userId)
+	user, err := s.userRepo.FindByID(ctx, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (s *UserService) GetUserByUsername(ctx context.Context, username string) (*models.User, error) {
-	return s.userRepo.FindByUsername(ctx, username)
+	user, err := s.userRepo.FindByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	return s.userRepo.FindByEmail(ctx, email)
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (s *UserService) GetUsersByID(ctx context.Context, userIds []string) ([]models.User, error) {
-	return s.userRepo.FindByIDs(ctx, userIds)
+	users, err := s.userRepo.FindByIDs(ctx, userIds)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 func (s *UserService) UpdateUsername(ctx context.Context, userId string, newUsername string) error {
@@ -89,11 +109,12 @@ func (s *UserService) UpdateUserField(ctx context.Context, userid string, field 
 }
 
 func (s *UserService) UpsertUser(ctx context.Context, user *models.User, isCreate bool) (*models.User, error) {
-	if isCreate {
-		return s.userRepo.Create(ctx, user)
+	if !isCreate {
+		err := s.userRepo.Update(ctx, user)
+		return user, err
 	}
 
-	err := s.userRepo.Update(ctx, user)
+	user, err := s.userRepo.Create(ctx, user)
 	return user, err
 }
 
@@ -300,7 +321,12 @@ func (s *UserService) GetFriendRequestsByStatus(
 }
 
 func (s *UserService) CountPendingFriendRequests(ctx context.Context, userID uint) (int64, error) {
-	return s.userRepo.CountPendingFriendRequestsByReceiver(ctx, userID)
+	count, err := s.userRepo.CountPendingFriendRequestsByReceiver(ctx, userID)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 func (s *UserService) GetNumFriends(ctx context.Context, userID string) (int64, error) {
@@ -308,6 +334,7 @@ func (s *UserService) GetNumFriends(ctx context.Context, userID string) (int64, 
 	if err != nil {
 		return 0, err
 	}
+
 	return s.userRepo.CountFriends(ctx, uint(userIDUint))
 }
 
@@ -316,5 +343,6 @@ func (s *UserService) IsFriend(ctx context.Context, userID uint, friendID uint) 
 	if err != nil {
 		return false
 	}
+
 	return isFriend
 }

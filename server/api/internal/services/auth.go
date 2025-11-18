@@ -81,6 +81,7 @@ func (as *AuthService) SignUp(ctx context.Context, newUser *models.User, otpMap 
 	}
 
 	// TODO: Make OTP have TTL
+	// TODO: Should have some retry mechanism if email sending fails
 	// Send OTP email
 	go func() {
 		otp := as.GenerateOTP()
@@ -193,6 +194,7 @@ func (as *AuthService) CreateToken(user *models.User) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return t, nil
 }
 
