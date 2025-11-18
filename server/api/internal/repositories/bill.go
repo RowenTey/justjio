@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/RowenTey/JustJio/server/api/internal/models"
@@ -76,8 +77,10 @@ func (r *billRepository) FindByID(ctx context.Context, billID uint) (*models.Bil
 	if err != nil {
 		return nil, err
 	}
-	defer func() error {
-		return rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Println("Error closing rows: ", err)
+		}
 	}()
 
 	var bill *models.Bill
@@ -156,8 +159,10 @@ func (r *billRepository) FindByRoom(ctx context.Context, roomID string) ([]model
 	if err != nil {
 		return nil, err
 	}
-	defer func() error {
-		return rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Println("Error closing rows: ", err)
+		}
 	}()
 
 	billMap := make(map[uint]*models.Bill)
@@ -274,8 +279,10 @@ func (r *billRepository) FindByConsolidation(ctx context.Context, consolidationI
 	if err != nil {
 		return nil, err
 	}
-	defer func() error {
-		return rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Println("Error closing rows: ", err)
+		}
 	}()
 
 	// deduplicate bills
