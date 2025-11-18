@@ -1,6 +1,8 @@
 package database
 
 import (
+	"time"
+
 	log "github.com/sirupsen/logrus"
 
 	config "github.com/RowenTey/JustJio/server/api/config"
@@ -29,6 +31,19 @@ func ConnectDB() {
 		logger.Fatal(err)
 	}
 	logger.Info("Connection opened to database")
+
+	// Configure connection pool for better performance
+	sqlDB, err := DB.DB()
+	if err != nil {
+		logger.Error("Failed to get database instance")
+		logger.Fatal(err)
+	}
+
+	// Set connection pool settings
+	sqlDB.SetMaxIdleConns(10)                           // Maximum number of idle connections
+	sqlDB.SetMaxOpenConns(100)                          // Maximum number of open connections
+	sqlDB.SetConnMaxLifetime(time.Hour * 2)             // Maximum lifetime of a connection (2 hours)
+	sqlDB.SetConnMaxIdleTime(time.Minute * 10)          // Maximum idle time for a connection
 
 	err = Migrate(DB)
 	if err != nil {

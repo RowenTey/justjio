@@ -30,6 +30,18 @@ func SignUp(c *fiber.Ctx) error {
 	if err := c.BodyParser(&user); err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
+
+	// Validate input
+	if err := utils.ValidateEmail(user.Email); err != nil {
+		return utils.HandleInvalidInputError(c, err)
+	}
+	if err := utils.ValidateUsername(user.Username); err != nil {
+		return utils.HandleInvalidInputError(c, err)
+	}
+	if err := utils.ValidatePassword(user.Password); err != nil {
+		return utils.HandleInvalidInputError(c, err)
+	}
+
 	authLogger.Info("Received sign up request for user: ", user.Username)
 
 	authService := services.NewAuthService(
@@ -84,6 +96,14 @@ func Login(c *fiber.Ctx, kafkaSvc *services.KafkaService) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
+	// Validate input
+	if err := utils.ValidateUsername(input.Username); err != nil {
+		return utils.HandleInvalidInputError(c, err)
+	}
+	if input.Password == "" {
+		return utils.HandleInvalidInputError(c, errors.New("password cannot be empty"))
+	}
+
 	username := input.Username
 	user, err := services.NewUserService(database.DB).GetUserByUsername(username)
 	if err != nil {
@@ -130,6 +150,11 @@ func SendOTPEmail(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
+	// Validate input
+	if err := utils.ValidateEmail(request.Email); err != nil {
+		return utils.HandleInvalidInputError(c, err)
+	}
+
 	if request.Purpose != model.OTPPurposeVerifyEmail && request.Purpose != model.OTPPurposeResetPassword {
 		return utils.HandleError(c, fiber.StatusBadRequest, "Invalid purpose", errors.New("invalid purpose"))
 	}
@@ -165,6 +190,14 @@ func SendOTPEmail(c *fiber.Ctx) error {
 func VerifyOTP(c *fiber.Ctx) error {
 	var request request.VerifyOTPRequest
 	if err := c.BodyParser(&request); err != nil {
+		return utils.HandleInvalidInputError(c, err)
+	}
+
+	// Validate input
+	if err := utils.ValidateEmail(request.Email); err != nil {
+		return utils.HandleInvalidInputError(c, err)
+	}
+	if err := utils.ValidateOTP(request.OTP); err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
@@ -207,6 +240,14 @@ func VerifyOTP(c *fiber.Ctx) error {
 func ResetPassword(c *fiber.Ctx) error {
 	var request request.ResetPasswordRequest
 	if err := c.BodyParser(&request); err != nil {
+		return utils.HandleInvalidInputError(c, err)
+	}
+
+	// Validate input
+	if err := utils.ValidateEmail(request.Email); err != nil {
+		return utils.HandleInvalidInputError(c, err)
+	}
+	if err := utils.ValidatePassword(request.Password); err != nil {
 		return utils.HandleInvalidInputError(c, err)
 	}
 

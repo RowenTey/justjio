@@ -80,9 +80,16 @@ func main() {
 	app := fiber.New()
 	connMap := utils.NewConnMap()
 
-	// healthcheck endpoint
+	// health check endpoints
 	app.Get("/ping", func(c *fiber.Ctx) error {
 		return c.Status(200).SendString("pong")
+	})
+	app.Get("/health", func(c *fiber.Ctx) error {
+		return c.Status(200).JSON(fiber.Map{
+			"status": "healthy",
+			"service": "websocket",
+			"active_users": len(userKafkaClients),
+		})
 	})
 
 	// websocket endpoint with middleware to handle websocket upgrade

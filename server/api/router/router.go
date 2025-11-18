@@ -13,10 +13,13 @@ import (
 type NotificationData = model_push_notifications.NotificationData
 
 func Initalize(router *fiber.App, kafkaSvc *services.KafkaService, notificationsChan chan<- NotificationData) {
-	// healthcheck endpoint
+	// health check endpoints
 	router.Get("/", func(c *fiber.Ctx) error {
 		return c.Status(200).SendString("Hello world from JustJio API :)")
 	})
+	router.Get("/health", handlers.HealthCheck)
+	router.Get("/health/live", handlers.LivenessProbe)
+	router.Get("/health/ready", handlers.ReadinessProbe)
 
 	// OpenAPI docs
 	router.Get("/openapi.yaml", func(c *fiber.Ctx) error {
