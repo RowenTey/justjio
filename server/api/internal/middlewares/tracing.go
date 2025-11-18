@@ -41,24 +41,23 @@ func Tracing(config ...TracingConfig) fiber.Handler {
 	propagator := otel.GetTextMapPropagator()
 
 	return func(c *fiber.Ctx) error {
-		// Skip if Next returns true
 		if cfg.Next != nil && cfg.Next(c) {
 			return c.Next()
 		}
 
-		// Extract context from headers (for distributed tracing)
 		ctx := propagator.Extract(c.Context(), &fiberCarrier{c: c})
 
-		// Start span
 		spanName := cfg.SpanNameFormatter(c)
 		ctx, span := tracer.Start(ctx, spanName, trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 
-		// Set context in Fiber locals for downstream usage (services and repositories)
 		c.Locals("otel-context", ctx)
 
-		// Add HTTP attributes
-		port, _ := strconv.Atoi(c.Port())
+		port, err := strconv.Atoi(c.Port())
+		if err != nil {
+			port = 0
+		}
+
 		span.SetAttributes(
 			semconv.HTTPMethod(c.Method()),
 			semconv.HTTPTarget(c.OriginalURL()),
@@ -71,24 +70,20 @@ func Tracing(config ...TracingConfig) fiber.Handler {
 			attribute.String("http.client_ip", c.IP()),
 		)
 
-		// Execute request
-		err := c.Next()
+		err = c.Next()
 
-		// Record response status
 		statusCode := c.Response().StatusCode()
 		span.SetAttributes(
 			semconv.HTTPStatusCode(statusCode),
 			semconv.HTTPResponseContentLength(len(c.Response().Body())),
 		)
 
-		// Set span status based on HTTP status code
+		// TODO: Check out what is going on with status codes and spans
+		span.SetStatus(codes.Ok, "")
 		if statusCode >= 400 {
 			span.SetStatus(codes.Error, fiber.ErrBadRequest.Message)
-		} else {
-			span.SetStatus(codes.Ok, "")
 		}
 
-		// Record error if any
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, err.Error())

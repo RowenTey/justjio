@@ -12,7 +12,6 @@ import (
 )
 
 // GracefulShutdown coordinates everything that must stop.
-// Call it once from main().
 func GracefulShutdown(
 	appCtx *Context,
 	workersWg *sync.WaitGroup,

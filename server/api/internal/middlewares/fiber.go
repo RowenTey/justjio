@@ -50,6 +50,7 @@ func Fiber(ctx *app.Context) {
 		prometheus.Middleware,
 
 		// Rate limiting
+		// TODO: Make this configurable per environment
 		limiter.New(limiter.Config{
 			Next: func(c *fiber.Ctx) bool {
 				return c.IP() == "127.0.0.1" // Don't limit from localhost
