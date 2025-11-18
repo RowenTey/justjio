@@ -279,7 +279,7 @@ func (suite *BillHandlerTestSuite) TestCreateBill_RoomNotFound() {
 	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "Room not found", responseBody["message"])
+	assert.Equal(suite.T(), "Room / payer not found", responseBody["message"])
 }
 
 func (suite *BillHandlerTestSuite) TestCreateBill_PayerNotFound() {
@@ -304,7 +304,7 @@ func (suite *BillHandlerTestSuite) TestCreateBill_PayerNotFound() {
 	var responseBody map[string]any
 	err = json.NewDecoder(resp.Body).Decode(&responseBody)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "payer(s) not found", responseBody["message"])
+	assert.Equal(suite.T(), "Room / payer not found", responseBody["message"])
 }
 
 func (suite *BillHandlerTestSuite) TestCreateBill_NoPayersSpecifiedAndOwnerNotIncluded() {

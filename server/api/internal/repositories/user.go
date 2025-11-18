@@ -280,7 +280,8 @@ func (r *userRepository) GetUninvitedFriends(ctx context.Context, roomID, userID
 	if err := r.db.WithContext(ctx).
 		Table("users u").
 		Select("u.id, u.username, u.picture_url").
-		Joins("LEFT JOIN user_friends uf ON uf.friend_id = u.id AND uf.user_id = ?", userID).
+		Joins("INNER JOIN user_friends uf ON uf.friend_id = u.id AND uf.user_id = ?", userID).
+		Where("u.id != ?", userID).
 		Where("NOT EXISTS (SELECT 1 FROM room_users ru WHERE ru.user_id = u.id AND ru.room_id = ?)", roomID).
 		Where("NOT EXISTS (SELECT 1 FROM room_invites ri WHERE ri.user_id = u.id AND ri.room_id = ? AND ri.status = 'pending')", roomID).
 		Find(&friends).Error; err != nil {
