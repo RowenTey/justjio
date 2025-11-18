@@ -1,6 +1,8 @@
 package kafka
 
 import (
+	"context"
+
 	"github.com/stretchr/testify/mock"
 )
 
@@ -13,13 +15,13 @@ func (m *MockKafkaClient) CreateTopic(topic string) error {
 	return args.Error(0)
 }
 
-func (m *MockKafkaClient) BroadcastMessage(userIds []string, message KafkaMessage) error {
-	args := m.Called(userIds, message)
+func (m *MockKafkaClient) BroadcastMessage(ctx context.Context, userIds []string, message KafkaMessage) error {
+	args := m.Called(ctx, userIds, message)
 	return args.Error(0)
 }
 
-func (m *MockKafkaClient) PublishMessage(topic string, message string) error {
-	args := m.Called(topic, message)
+func (m *MockKafkaClient) PublishMessage(ctx context.Context, topic string, messageJson []byte) error {
+	args := m.Called(ctx, topic, messageJson)
 	return args.Error(0)
 }
 

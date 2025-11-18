@@ -63,6 +63,7 @@ func (r *userRepository) Create(ctx context.Context, user *models.User) (*models
 	if err := r.db.WithContext(ctx).Create(user).Error; err != nil {
 		return nil, err
 	}
+
 	return user, nil
 }
 
@@ -72,6 +73,7 @@ func (r *userRepository) FindByID(ctx context.Context, id string) (*models.User,
 	if err := r.db.WithContext(ctx).First(&user, id).Error; err != nil {
 		return nil, err
 	}
+
 	return &user, nil
 }
 
@@ -81,6 +83,7 @@ func (r *userRepository) FindByUsername(ctx context.Context, username string) (*
 	if err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error; err != nil {
 		return nil, err
 	}
+
 	return &user, nil
 }
 
@@ -90,6 +93,7 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*models
 	if err := r.db.WithContext(ctx).Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, err
 	}
+
 	return &user, nil
 }
 
@@ -131,6 +135,7 @@ func (r *userRepository) FindFriendRequest(ctx context.Context, id uint) (*model
 	if err := r.db.WithContext(ctx).First(&request, id).Error; err != nil {
 		return nil, err
 	}
+
 	return &request, nil
 }
 
@@ -149,10 +154,11 @@ func (r *userRepository) FindFriendRequestsByReceiver(ctx context.Context, recei
 		Joins("Receiver", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
-		Where("receiver_id = ? AND status = ?", receiverID, status).
+		Where("friend_requests.receiver_id = ? AND friend_requests.status = ?", receiverID, status).
 		Find(&requests).Error; err != nil {
 		return nil, err
 	}
+
 	return requests, nil
 }
 
@@ -162,6 +168,7 @@ func (r *userRepository) CountPendingFriendRequestsByReceiver(ctx context.Contex
 	if err := r.db.WithContext(ctx).First(&user, receiverID).Error; err != nil {
 		return 0, err
 	}
+
 	return int64(user.NoOfPendingFriendRequests), nil
 }
 
@@ -180,12 +187,9 @@ func (r *userRepository) CheckFriendRequestExists(ctx context.Context, senderID,
 		First(&existing).Error
 	if err == nil {
 		return existing.ID != 0, nil
-	}
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, nil
 	}
-
 	return false, err
 }
 
@@ -214,6 +218,7 @@ func (r *userRepository) GetFriends(ctx context.Context, userID uint) ([]models.
 		Find(&friends); err != nil {
 		return nil, err
 	}
+
 	return friends, nil
 }
 
@@ -223,6 +228,7 @@ func (r *userRepository) CountFriends(ctx context.Context, userID uint) (int64, 
 	if err := r.db.WithContext(ctx).First(&user, userID).Error; err != nil {
 		return 0, err
 	}
+
 	return int64(user.NoOfFriends), nil
 }
 
@@ -233,6 +239,7 @@ func (r *userRepository) CheckFriendship(ctx context.Context, userID, friendID u
 		Where("id = ?", friendID).
 		Association("Friends").
 		Count()
+
 	return count > 0, nil
 }
 
@@ -263,6 +270,7 @@ func (r *userRepository) SearchNonFriendUsers(ctx context.Context, currentUserId
 		Find(&users).Error; err != nil {
 		return nil, err
 	}
+
 	return users, nil
 }
 
@@ -272,12 +280,13 @@ func (r *userRepository) GetUninvitedFriends(ctx context.Context, roomID, userID
 	if err := r.db.WithContext(ctx).
 		Table("users u").
 		Select("u.id, u.username, u.picture_url").
-		Joins("JOIN user_friends uf ON uf.friend_id = u.id AND uf.user_id = ?", userID).
+		Joins("LEFT JOIN user_friends uf ON uf.friend_id = u.id AND uf.user_id = ?", userID).
 		Where("NOT EXISTS (SELECT 1 FROM room_users ru WHERE ru.user_id = u.id AND ru.room_id = ?)", roomID).
 		Where("NOT EXISTS (SELECT 1 FROM room_invites ri WHERE ri.user_id = u.id AND ri.room_id = ? AND ri.status = 'pending')", roomID).
 		Find(&friends).Error; err != nil {
 		return nil, err
 	}
+
 	return friends, nil
 }
 

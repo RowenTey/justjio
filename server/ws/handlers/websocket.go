@@ -21,7 +21,7 @@ func HandleWebsocketConn(
 	kafkaClientMap map[string]*services.UserKafkaClient,
 	env string,
 ) {
-	wsLogger := logger.WithField("service", "WebSocket")
+	wsLogger := logger.WithField("component", "WebSocket")
 
 	user, err := utils.GetCurrentUser(conf, c)
 	if err != nil {
@@ -42,7 +42,8 @@ func HandleWebsocketConn(
 		}
 	}
 
-	onMessage := func(message kafka.Message) {
+	onMessage := func(ctx context.Context, message kafka.Message) {
+		wsLogger.Infof("Ctx received in onMessage: %v", ctx)
 		forAllConns(writeMessageFn(message))
 	}
 
@@ -52,7 +53,7 @@ func HandleWebsocketConn(
 	processWsMessage(c, logger, onMessage)
 }
 
-func processWsMessage(c *websocket.Conn, logger *logrus.Logger, onMessage func(message kafka.Message)) {
+func processWsMessage(c *websocket.Conn, logger *logrus.Logger, onMessage func(ctx context.Context, message kafka.Message)) {
 	wsLogger := logger.WithField("service", "WebSocket")
 
 	var (
@@ -71,14 +72,14 @@ func processWsMessage(c *websocket.Conn, logger *logrus.Logger, onMessage func(m
 		}
 
 		wsLogger.Infof("Received (%d): %s\n", mt, msg)
-		onMessage(kafka.Message{
+		onMessage(context.Background(), kafka.Message{
 			Value: msg,
 		})
 	}
 }
 
 func setupHeartbeat(c *websocket.Conn, logger *logrus.Logger) {
-	wsLogger := logger.WithField("service", "WebSocket")
+	wsLogger := logger.WithField("component", "WebSocket")
 
 	// send ping messages every 5 seconds (heartbeat) via a goroutine
 	ctx, cancel := context.WithCancel(context.Background())
@@ -113,8 +114,8 @@ func setupConnectionHandler(
 	kafkaClient *services.KafkaService,
 	kafkaClientMap map[string]*services.UserKafkaClient,
 ) {
-	wsLogger := logger.WithField("service", "WebSocket")
-	kafkaLogger := logger.WithField("service", "Kafka")
+	wsLogger := logger.WithField("component", "WebSocket")
+	kafkaLogger := logger.WithField("component", "Kafka")
 
 	onClose := func(code int, text string) error {
 		wsLogger.Infof("User %s disconnected\n", user.ID)
@@ -132,11 +133,10 @@ func setupConnectionHandler(
 
 	// set up ping/pong handlers
 	c.SetPingHandler(func(appData string) error {
-		wsLogger.Debug("Received ping: ", appData)
 		return c.WriteMessage(websocket.PongMessage, []byte(appData))
 	})
 	c.SetPongHandler(func(appData string) error {
-		return nil
+		return c.WriteMessage(websocket.PingMessage, []byte(appData))
 	})
 }
 
@@ -147,16 +147,16 @@ func getKafkaClient(
 	env string,
 	user *utils.User,
 	kafkaClientMap map[string]*services.UserKafkaClient,
-	onMessage func(message kafka.Message),
+	onMessage func(ctx context.Context, message kafka.Message),
 ) *services.KafkaService {
 	if !isInit {
 		return kafkaClientMap[user.ID].Client
 	}
 
-	kafkaLogger := logger.WithField("service", "Kafka")
+	kafkaLogger := logger.WithField("component", "Kafka")
 
 	consumerName := "chat-service"
-	if env == "dev" || env == "staging" {
+	if env != "production" {
 		consumerName = fmt.Sprintf("chat-service-%s", env)
 	}
 	consumerName = fmt.Sprintf("%s-%s", conf.Kafka.TopicPrefix, consumerName)
@@ -185,16 +185,16 @@ func getKafkaClient(
 }
 
 func handleAuthError(c *websocket.Conn, logger *logrus.Logger, err error) {
-	logger.WithField("service", "AUTH").Error(err)
+	logger.WithField("component", "AUTH").Error(err)
 
 	if err := c.WriteJSON(fiber.Map{
 		"status": "Unauthorized",
 		"error":  err.Error(),
 	}); err != nil {
-		logger.WithField("service", "WebSocket").Error("Error writing JSON:", err)
+		logger.WithField("component", "WebSocket").Error("Error writing JSON:", err)
 	}
 
 	if closeErr := c.Close(); closeErr != nil {
-		logger.WithField("service", "WebSocket").Error("Error closing connection:", closeErr)
+		logger.WithField("component", "WebSocket").Error("Error closing connection:", closeErr)
 	}
 }

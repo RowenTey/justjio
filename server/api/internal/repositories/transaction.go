@@ -45,7 +45,7 @@ func (r *transactionRepository) FindByUser(ctx context.Context, isPaid bool, use
 	var transactions []models.Transaction
 	if err := r.db.
 		WithContext(ctx).
-		Where("is_paid = ? AND (payee_id = ? OR payer_id = ?)", isPaid, userID, userID).
+		Where("transactions.is_paid = ? AND (transactions.payee_id = ? OR transactions.payer_id = ?)", isPaid, userID, userID).
 		Joins("Payee", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "username", "picture_url")
 		}).
@@ -55,6 +55,7 @@ func (r *transactionRepository) FindByUser(ctx context.Context, isPaid bool, use
 		Find(&transactions).Error; err != nil {
 		return nil, err
 	}
+
 	return transactions, nil
 }
 
@@ -63,6 +64,7 @@ func (r *transactionRepository) FindByID(ctx context.Context, transactionID stri
 	if err := r.db.WithContext(ctx).First(&transaction, transactionID).Error; err != nil {
 		return nil, err
 	}
+
 	return &transaction, nil
 }
 

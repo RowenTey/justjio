@@ -83,9 +83,6 @@ func (bs *BillService) CreateBill(
 
 		payers, err := userRepoTx.FindByIDs(ctx, payersId)
 		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return ErrPayersNotFound
-			}
 			return err
 		}
 
