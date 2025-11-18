@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/RowenTey/JustJio/server/api/internal/models"
@@ -109,8 +110,10 @@ func (r *roomRepository) GetByIDWithAttendees(ctx context.Context, roomID string
 	if err != nil {
 		return nil, err
 	}
-	defer func() error {
-		return rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Println("Error closing rows: ", err)
+		}
 	}()
 
 	var result *models.Room

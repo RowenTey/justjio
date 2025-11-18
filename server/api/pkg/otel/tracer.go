@@ -60,7 +60,8 @@ func New(appCtx *app.Context) (*Tracer, error) {
 	}
 
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter,
+		sdktrace.WithBatcher(
+			exporter,
 			sdktrace.WithBatchTimeout(5*time.Second),
 			sdktrace.WithMaxExportBatchSize(512),
 		),

@@ -13,18 +13,17 @@ import (
 
 func IsUserInRoom(c *fiber.Ctx, roomService *services.RoomService) error {
 	ctx := otel.GetOtelContext(c)
+
 	// Check if user is in room
 	token := c.Locals("user").(*jwt.Token)
 	userId := utils.GetUserInfoFromToken(token, "user_id")
 	roomId := c.Params("roomId")
 
-	if _, err := roomService.GetRoomById(ctx, roomId); err != nil {
-		return utils.HandleNotFoundOrInternalError(c, err, "Room not found")
-	}
-
 	userIds, err := roomService.GetRoomAttendeesIds(ctx, roomId)
 	if err != nil {
 		return utils.HandleInternalServerError(c, err)
+	} else if len(userIds) == 0 {
+		return utils.HandleError(c, fiber.StatusNotFound, "Room not found", nil)
 	}
 
 	// Check if user is in room
