@@ -35,7 +35,10 @@ func (r *subscriptionRepository) WithTx(tx *gorm.DB) SubscriptionRepository {
 
 func (r *subscriptionRepository) Create(ctx context.Context, subscription *models.Subscription) (*models.Subscription, error) {
 	err := r.db.WithContext(ctx).Create(subscription).Error
-	return subscription, err
+	if err != nil {
+		return nil, err
+	}
+	return subscription, nil
 }
 
 func (r *subscriptionRepository) FindByID(ctx context.Context, subID string) (*models.Subscription, error) {
@@ -50,13 +53,19 @@ func (r *subscriptionRepository) FindByID(ctx context.Context, subID string) (*m
 func (r *subscriptionRepository) FindByUserID(ctx context.Context, userID string) ([]models.Subscription, error) {
 	var subscriptions []models.Subscription
 	err := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&subscriptions).Error
-	return subscriptions, err
+	if err != nil {
+		return nil, err
+	}
+	return subscriptions, nil
 }
 
 func (r *subscriptionRepository) FindByEndpoint(ctx context.Context, endpoint string) (*models.Subscription, error) {
 	var subscription models.Subscription
 	err := r.db.WithContext(ctx).Where("endpoint = ?", endpoint).First(&subscription).Error
-	return &subscription, err
+	if err != nil {
+		return nil, err
+	}
+	return &subscription, nil
 }
 
 func (r *subscriptionRepository) Delete(ctx context.Context, subID string) error {

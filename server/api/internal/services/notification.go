@@ -60,6 +60,7 @@ func (s *NotificationService) MarkNotificationAsRead(ctx context.Context, notifi
 	if _, err := s.notificationRepo.FindByID(ctx, notificationId); err != nil {
 		return err
 	}
+
 	return s.notificationRepo.MarkAsRead(ctx, notificationId)
 }
 

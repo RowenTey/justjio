@@ -39,21 +39,25 @@ func (r *notificationRepository) Create(ctx context.Context, notification *model
 
 func (r *notificationRepository) FindByID(ctx context.Context, notificationID uint) (*models.Notification, error) {
 	var notification models.Notification
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Where("id = ?", notificationID).
-		First(&notification).Error
-	return &notification, err
+		First(&notification).Error; err != nil {
+		return nil, err
+	}
+	return &notification, nil
 }
 
 func (r *notificationRepository) FindByUser(ctx context.Context, userID string) ([]models.Notification, error) {
 	var notifications []models.Notification
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Where("user_id = ?", userID).
 		Order("created_at DESC").
-		Find(&notifications).Error
-	return notifications, err
+		Find(&notifications).Error; err != nil {
+		return nil, err
+	}
+	return notifications, nil
 }
 
 func (r *notificationRepository) MarkAsRead(ctx context.Context, notificationID uint) error {

@@ -43,23 +43,27 @@ func (r *transactionRepository) Create(ctx context.Context, transactions []model
 // TODO: Implement pagination
 func (r *transactionRepository) FindByUser(ctx context.Context, isPaid bool, userID string) ([]models.Transaction, error) {
 	var transactions []models.Transaction
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Where("is_paid = ? AND (payee_id = ? OR payer_id = ?)", isPaid, userID, userID).
-		Preload("Payee", func(db *gorm.DB) *gorm.DB {
+		Joins("Payee", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "username", "picture_url")
 		}).
-		Preload("Payer", func(db *gorm.DB) *gorm.DB {
+		Joins("Payer", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "username", "picture_url")
 		}).
-		Find(&transactions).Error
-	return transactions, err
+		Find(&transactions).Error; err != nil {
+		return nil, err
+	}
+	return transactions, nil
 }
 
 func (r *transactionRepository) FindByID(ctx context.Context, transactionID string) (*models.Transaction, error) {
 	var transaction models.Transaction
-	err := r.db.WithContext(ctx).First(&transaction, transactionID).Error
-	return &transaction, err
+	if err := r.db.WithContext(ctx).First(&transaction, transactionID).Error; err != nil {
+		return nil, err
+	}
+	return &transaction, nil
 }
 
 func (r *transactionRepository) Update(ctx context.Context, transaction *models.Transaction) error {

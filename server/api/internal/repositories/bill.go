@@ -40,32 +40,36 @@ func (r *billRepository) Create(ctx context.Context, bill *models.Bill) error {
 
 func (r *billRepository) FindByID(ctx context.Context, billID uint) (*models.Bill, error) {
 	var bill models.Bill
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Where("id = ?", billID).
-		Preload("Owner", func(db *gorm.DB) *gorm.DB {
+		Joins("Owner", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "username", "picture_url")
 		}).
-		Preload("Payers", func(db *gorm.DB) *gorm.DB {
+		Joins("Payers", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "username", "picture_url")
 		}).
-		First(&bill).Error
-	return &bill, err
+		First(&bill).Error; err != nil {
+		return nil, err
+	}
+	return &bill, nil
 }
 
 func (r *billRepository) FindByRoom(ctx context.Context, roomID string) ([]models.Bill, error) {
 	var bills []models.Bill
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Where("room_id = ?", roomID).
-		Preload("Owner", func(db *gorm.DB) *gorm.DB {
+		Joins("Owner", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "username", "picture_url")
 		}).
-		Preload("Payers", func(db *gorm.DB) *gorm.DB {
+		Joins("Payers", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "username", "picture_url")
 		}).
-		Find(&bills).Error
-	return bills, err
+		Find(&bills).Error; err != nil {
+		return nil, err
+	}
+	return bills, nil
 }
 
 func (r *billRepository) DeleteByRoom(ctx context.Context, roomID string) error {
@@ -100,13 +104,15 @@ func (r *billRepository) ConsolidateBills(ctx context.Context, roomID string) (*
 
 func (r *billRepository) FindByConsolidation(ctx context.Context, consolidationID uint) ([]models.Bill, error) {
 	var bills []models.Bill
-	err := r.db.
+	if err := r.db.
 		WithContext(ctx).
 		Model(&models.Bill{}).
-		Preload("Payers", func(db *gorm.DB) *gorm.DB {
+		Joins("Payers", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id", "username", "picture_url")
 		}).
 		Where("consolidation_id = ?", consolidationID).
-		Find(&bills).Error
-	return bills, err
+		Find(&bills).Error; err != nil {
+		return nil, err
+	}
+	return bills, nil
 }
