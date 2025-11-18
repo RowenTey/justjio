@@ -89,7 +89,7 @@ func (ms *MessageService) SaveMessage(
 				SentAt:     time.Now().Format(time.RFC3339),
 			},
 		}
-		if err := ms.kafkaClient.BroadcastMessage(roomUserIds, broadcastPayload); err != nil {
+		if err := ms.kafkaClient.BroadcastMessage(ctx, roomUserIds, broadcastPayload); err != nil {
 			ms.logger.Error("Failed to broadcast message:", err)
 			return err
 		}

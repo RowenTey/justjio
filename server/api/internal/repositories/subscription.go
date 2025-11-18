@@ -38,6 +38,7 @@ func (r *subscriptionRepository) Create(ctx context.Context, subscription *model
 	if err != nil {
 		return nil, err
 	}
+
 	return subscription, nil
 }
 
@@ -47,6 +48,7 @@ func (r *subscriptionRepository) FindByID(ctx context.Context, subID string) (*m
 	if err != nil {
 		return nil, err
 	}
+
 	return &subscription, nil
 }
 
@@ -56,6 +58,7 @@ func (r *subscriptionRepository) FindByUserID(ctx context.Context, userID string
 	if err != nil {
 		return nil, err
 	}
+
 	return subscriptions, nil
 }
 
@@ -65,6 +68,7 @@ func (r *subscriptionRepository) FindByEndpoint(ctx context.Context, endpoint st
 	if err != nil {
 		return nil, err
 	}
+
 	return &subscription, nil
 }
 

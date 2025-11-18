@@ -34,7 +34,11 @@ func (r *notificationRepository) WithTx(tx *gorm.DB) NotificationRepository {
 
 func (r *notificationRepository) Create(ctx context.Context, notification *models.Notification) (*models.Notification, error) {
 	err := r.db.WithContext(ctx).Create(notification).Error
-	return notification, err
+	if err != nil {
+		return nil, err
+	}
+
+	return notification, nil
 }
 
 func (r *notificationRepository) FindByID(ctx context.Context, notificationID uint) (*models.Notification, error) {
@@ -45,6 +49,7 @@ func (r *notificationRepository) FindByID(ctx context.Context, notificationID ui
 		First(&notification).Error; err != nil {
 		return nil, err
 	}
+
 	return &notification, nil
 }
 
@@ -57,6 +62,7 @@ func (r *notificationRepository) FindByUser(ctx context.Context, userID string) 
 		Find(&notifications).Error; err != nil {
 		return nil, err
 	}
+
 	return notifications, nil
 }
 

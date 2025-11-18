@@ -37,6 +37,7 @@ func ConnectDB(ctx *app.Context) *gorm.DB {
 
 	gormConfig := &gorm.Config{
 		TranslateError: true,
+		PrepareStmt:    true,
 		Logger:         nil,
 	}
 	if environment != "production" {
@@ -56,6 +57,16 @@ func ConnectDB(ctx *app.Context) *gorm.DB {
 		logger.Fatal(err)
 	}
 	logger.Info("Connection opened to database")
+
+	// Set connection pool settings
+	sqlDb, err := conn.DB()
+	if err != nil {
+		logger.Error("Failed to get database instance from GORM!")
+		logger.Fatal(err)
+	}
+	sqlDb.SetMaxIdleConns(10)
+	sqlDb.SetMaxOpenConns(50)
+	sqlDb.SetConnMaxLifetime(10 * time.Minute)
 
 	if err := conn.Use(otelgorm.NewPlugin(otelgorm.WithDBName(config.Database))); err != nil {
 		logger.Warn("Failed to add OpenTelemetry plugin to GORM: ", err.Error())

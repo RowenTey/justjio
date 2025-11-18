@@ -12,6 +12,8 @@ import (
 	"github.com/RowenTey/JustJio/server/api/pkg/config"
 
 	confluentKafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 type kafkaClient struct {
@@ -63,14 +65,15 @@ func (kc *kafkaClient) CreateTopic(topic string) error {
 	return nil
 }
 
-func (kc *kafkaClient) BroadcastMessage(userIds []string, message KafkaMessage) error {
-	messageJSON, err := json.Marshal(message)
-	if err != nil {
-		return err
-	}
-
+func (kc *kafkaClient) BroadcastMessage(ctx context.Context, userIds []string, message KafkaMessage) error {
 	var wg sync.WaitGroup
 	errorChan := make(chan error)
+
+	// Serialize message data to JSON
+	messageJSON, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("failed to marshal message: %w", err)
+	}
 
 	// TODO: Need to think more about this
 	for _, userId := range userIds {
@@ -81,7 +84,7 @@ func (kc *kafkaClient) BroadcastMessage(userIds []string, message KafkaMessage) 
 			channel := fmt.Sprintf("user-%s", userId)
 			channel = kc.getFormattedTopic(channel)
 
-			if err := kc.PublishMessage(channel, string(messageJSON)); err != nil {
+			if err := kc.PublishMessage(ctx, channel, messageJSON); err != nil {
 				errorChan <- err
 			}
 		}(userId)
@@ -106,7 +109,19 @@ func (kc *kafkaClient) BroadcastMessage(userIds []string, message KafkaMessage) 
 	return allErrors
 }
 
-func (kc *kafkaClient) PublishMessage(topic string, message string) error {
+func (kc *kafkaClient) PublishMessage(ctx context.Context, topic string, messageJson []byte) error {
+	// Inject trace context into message headers
+	headers := kc.injectTraceContext(ctx)
+
+	// Convert headers to Kafka headers format
+	kafkaHeaders := make([]confluentKafka.Header, 0, len(headers))
+	for key, value := range headers {
+		kafkaHeaders = append(kafkaHeaders, confluentKafka.Header{
+			Key:   key,
+			Value: []byte(value),
+		})
+	}
+
 	deliveryChan := make(chan confluentKafka.Event)
 
 	if err := kc.producer.Produce(&confluentKafka.Message{
@@ -114,7 +129,8 @@ func (kc *kafkaClient) PublishMessage(topic string, message string) error {
 			Topic:     &topic,
 			Partition: confluentKafka.PartitionAny,
 		},
-		Value: []byte(message),
+		Value:   messageJson,
+		Headers: kafkaHeaders,
 	}, deliveryChan); err != nil {
 		return err
 	}
@@ -144,4 +160,12 @@ func (kc *kafkaClient) getFormattedTopic(topic string) string {
 	}
 	topic = fmt.Sprintf("%s-%s", kc.topicPrefix, topic)
 	return topic
+}
+
+// injectTraceContext injects OpenTelemetry trace context into a map for Kafka headers
+func (kc *kafkaClient) injectTraceContext(ctx context.Context) map[string]string {
+	headers := make(map[string]string)
+	propagator := otel.GetTextMapPropagator()
+	propagator.Inject(ctx, propagation.MapCarrier(headers))
+	return headers
 }

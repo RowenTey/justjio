@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
+	"time"
 
 	"github.com/RowenTey/JustJio/server/api/internal/models"
 	"github.com/RowenTey/JustJio/server/api/pkg/database"
@@ -57,48 +59,123 @@ func (r *roomRepository) GetByID(ctx context.Context, roomID string) (*models.Ro
 	var room models.Room
 	if err := r.db.
 		WithContext(ctx).
-		Table("rooms").
-		Joins("Users", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id, username, picture_url")
-		}).
 		First(&room, "id = ?", roomID).Error; err != nil {
 		return nil, err
 	}
+
 	return &room, nil
 }
 
 func (r *roomRepository) GetByIDWithAttendees(ctx context.Context, roomID string) (*models.Room, error) {
-	var room models.Room
-	if err := r.db.
-		WithContext(ctx).
-		Joins("Host", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id, username, picture_url")
-		}).
-		Joins("Users", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id, username, picture_url")
-		}).
-		First(&room, "id = ?", roomID).Error; err != nil {
+	type row struct {
+		ID             string
+		Name           string
+		Time           string
+		Venue          string
+		VenuePlaceId   string
+		VenueUrl       string
+		Date           time.Time
+		Description    string
+		HostID         uint
+		NoOfAttendees  int
+		Consolidated   string
+		IsClosed       bool
+		IsPrivate      bool
+		ImageUrl       string
+		CreatedAt      time.Time
+		UpdatedAt      time.Time
+		HostUsername   sql.NullString
+		HostPictureURL sql.NullString
+		UserID         sql.NullInt64
+		UserUsername   sql.NullString
+		UserPictureURL sql.NullString
+	}
+
+	rows, err := r.db.WithContext(ctx).
+		Table("rooms r").
+		Select("r.*, h.username AS host_username, h.picture_url AS host_picture_url, u.id AS user_id, u.username AS user_username, u.picture_url AS user_picture_url").
+		Where("r.id = ?", roomID).
+		Joins("LEFT JOIN users h ON r.host_id = h.id").
+		Joins("LEFT JOIN room_users ru ON r.id = ru.room_id").
+		Joins("LEFT JOIN users u ON ru.user_id = u.id").
+		Rows()
+	if err != nil {
 		return nil, err
 	}
-	return &room, nil
+	defer rows.Close()
+
+	var result *models.Room
+	for rows.Next() {
+		var sc row
+		if err := r.db.ScanRows(rows, &sc); err != nil {
+			return nil, err
+		}
+
+		if result == nil {
+			result = &models.Room{
+				ID:            sc.ID,
+				Name:          sc.Name,
+				Time:          sc.Time,
+				Venue:         sc.Venue,
+				VenuePlaceId:  sc.VenuePlaceId,
+				VenueUrl:      sc.VenueUrl,
+				Date:          sc.Date,
+				Description:   sc.Description,
+				HostID:        sc.HostID,
+				NoOfAttendees: sc.NoOfAttendees,
+				Consolidated:  sc.Consolidated,
+				IsClosed:      sc.IsClosed,
+				IsPrivate:     sc.IsPrivate,
+				ImageUrl:      sc.ImageUrl,
+				CreatedAt:     sc.CreatedAt,
+				UpdatedAt:     sc.UpdatedAt,
+			}
+
+			if sc.HostUsername.Valid {
+				result.Host = models.User{
+					ID:         sc.HostID,
+					Username:   sc.HostUsername.String,
+					PictureUrl: sc.HostPictureURL.String,
+				}
+			}
+		}
+
+		if sc.UserID.Valid {
+			userID := uint(sc.UserID.Int64)
+			result.Users = append(result.Users, models.User{
+				ID:         userID,
+				Username:   sc.UserUsername.String,
+				PictureUrl: sc.UserPictureURL.String,
+			})
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	} else if result == nil {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	return result, nil
 }
 
 func (r *roomRepository) GetUserRooms(ctx context.Context, userID string, page int, pageSize int) ([]models.Room, error) {
 	var rooms []models.Room
 	if err := r.db.
 		WithContext(ctx).
-		Model(&models.Room{}).
+		Table("rooms r").
 		Joins("Host", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
-		Joins("JOIN room_users ON rooms.id = room_users.room_id").
-		Where("room_users.user_id = ?", userID).
-		Where("rooms.is_closed = ?", false).
-		Order("rooms.updated_at DESC").
+		Joins("LEFT JOIN room_users ru ON r.id = ru.room_id").
+		Where("ru.user_id = ?", userID).
+		Where("r.is_closed = ?", false).
+		Order("r.updated_at DESC").
 		Scopes(database.Paginate(page, pageSize)).
 		Find(&rooms).Error; err != nil {
 		return nil, err
 	}
+
 	return rooms, nil
 }
 
@@ -111,6 +188,7 @@ func (r *roomRepository) CountUserRooms(ctx context.Context, userID string) (int
 		Pluck("no_of_rooms", &count).Error; err != nil {
 		return 0, err
 	}
+
 	return count, nil
 }
 
@@ -118,17 +196,18 @@ func (r *roomRepository) GetUnjoinedRoomsByIsPrivate(ctx context.Context, userID
 	var rooms []models.Room
 	if err := r.db.
 		WithContext(ctx).
-		Table("rooms").
+		Table("rooms r").
+		Where("r.is_private = ?", isPrivate).
+		Where("r.id NOT IN (SELECT room_id FROM room_users WHERE user_id = ?)", userID).
+		Where("r.id NOT IN (SELECT room_id FROM room_invites WHERE user_id = ?)", userID).
+		Order("r.updated_at DESC").
 		Joins("Host", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
-		Where("rooms.is_private = ?", isPrivate).
-		Where("rooms.id NOT IN (SELECT room_id FROM room_users WHERE user_id = ?)", userID).
-		Where("rooms.id NOT IN (SELECT room_id FROM room_invites WHERE user_id = ?)", userID).
-		Order("rooms.updated_at DESC").
 		Find(&rooms).Error; err != nil {
 		return nil, err
 	}
+
 	return rooms, nil
 }
 
@@ -142,6 +221,7 @@ func (r *roomRepository) GetRoomAttendeeIDs(ctx context.Context, roomID string) 
 		Find(&userIds).Error; err != nil {
 		return nil, err
 	}
+
 	return userIds, nil
 }
 
@@ -189,6 +269,7 @@ func (r *roomRepository) GetPendingInviteUsers(ctx context.Context, roomID strin
 		Find(&userIds).Error; err != nil {
 		return nil, err
 	}
+
 	return userIds, nil
 }
 
@@ -196,6 +277,7 @@ func (r *roomRepository) GetPendingInvites(ctx context.Context, userID string) (
 	var invites []models.RoomInvite
 	if err := r.db.
 		WithContext(ctx).
+		Table("room_invites ri").
 		Joins("Room", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, name, time, venue, venue_url, date, description, image_url, is_private, no_of_attendees, host_id")
 		}).
@@ -208,10 +290,11 @@ func (r *roomRepository) GetPendingInvites(ctx context.Context, userID string) (
 		Joins("Inviter", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
-		Where("user_id = ? AND status = ?", userID, "pending").
+		Where("ri.user_id = ? AND ri.status = ?", userID, "pending").
 		Find(&invites).Error; err != nil {
 		return nil, err
 	}
+
 	return invites, nil
 }
 
@@ -224,6 +307,7 @@ func (r *roomRepository) CountPendingInvites(ctx context.Context, userID string)
 		Pluck("no_of_pending_room_invites", &count).Error; err != nil {
 		return 0, err
 	}
+
 	return count, nil
 }
 
@@ -255,5 +339,6 @@ func (r *roomRepository) HasPendingInvites(ctx context.Context, roomID, userID s
 		Count(&count).Error; err != nil {
 		return false, err
 	}
+
 	return count > 0, nil
 }

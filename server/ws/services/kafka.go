@@ -8,6 +8,10 @@ import (
 
 	"github.com/RowenTey/JustJio/server/ws/utils"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type KafkaService struct {
@@ -48,7 +52,7 @@ func NewKafkaService(conf *utils.Config, groupId, env string) (*KafkaService, er
 		Config:   config,
 		ctx:      ctx,
 		cancel:   cancel,
-		logger:   log.WithField("service", "Kafka"),
+		logger:   log.WithField("component", "Kafka"),
 		env:      env,
 		prefix:   conf.Kafka.TopicPrefix,
 	}, nil
@@ -60,6 +64,7 @@ func (s *KafkaService) Subscribe(topics []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to topics: %w", err)
 	}
+
 	s.logger.Infof("Subscribed to topics: %v\n", topics)
 	return nil
 }
@@ -73,12 +78,13 @@ func (s *KafkaService) Unsubscribe() error {
 	if err != nil {
 		return fmt.Errorf("failed to unsubscribe from topics: %w", err)
 	}
+
 	s.logger.Info("Unsubscribed from topics")
 	return nil
 }
 
 // Consumes messages from subscribed topics in a loop
-func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) {
+func (s *KafkaService) ConsumeMessages(handler func(ctx context.Context, msg kafka.Message)) {
 	for {
 		select {
 		case <-s.ctx.Done():
@@ -93,7 +99,10 @@ func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) {
 				return
 			}
 			s.logger.Debugf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
-			handler(*msg)
+
+			// Extract trace context from message headers
+			ctx := s.extractTraceContext(s.ctx, *msg)
+			handler(ctx, *msg)
 		}
 	}
 }
@@ -108,9 +117,42 @@ func (s *KafkaService) Close() {
 
 func (s *KafkaService) GetUserChannel(userId string) string {
 	channel := fmt.Sprintf("user-%s", userId)
-	if s.env == "dev" || s.env == "staging" {
+	if s.env != "production" {
 		channel = fmt.Sprintf("%s-%s", s.env, channel)
 	}
+
 	channel = fmt.Sprintf("%s-%s", s.prefix, channel)
 	return channel
+}
+
+// extractTraceContext extracts OpenTelemetry trace context from Kafka message headers
+func (s *KafkaService) extractTraceContext(ctx context.Context, msg kafka.Message) context.Context {
+	// Convert Kafka headers to map
+	headers := make(map[string]string)
+	for _, header := range msg.Headers {
+		headers[header.Key] = string(header.Value)
+	}
+
+	// Extract trace context using OpenTelemetry propagator
+	propagator := otel.GetTextMapPropagator()
+	newCtx := propagator.Extract(ctx, propagation.MapCarrier(headers))
+
+	// Start a new span for message processing
+	tracer := otel.Tracer("kafka-consumer")
+	spanCtx, span := tracer.Start(newCtx, "kafka.consume",
+		trace.WithSpanKind(trace.SpanKindConsumer),
+	)
+	defer span.End()
+
+	// Add message metadata as span attributes
+	if msg.TopicPartition.Topic != nil {
+		span.SetAttributes(
+			attribute.String("messaging.system", "kafka"),
+			attribute.String("messaging.destination", *msg.TopicPartition.Topic),
+			attribute.Int64("messaging.kafka.partition", int64(msg.TopicPartition.Partition)),
+			attribute.Int64("messaging.kafka.offset", int64(msg.TopicPartition.Offset)),
+		)
+	}
+
+	return spanCtx
 }

@@ -49,6 +49,7 @@ func (r *messageRepository) FindByID(ctx context.Context, msgID string) (*models
 		First(&message).Error; err != nil {
 		return nil, err
 	}
+
 	return &message, nil
 }
 
@@ -73,6 +74,7 @@ func (r *messageRepository) CountByRoom(ctx context.Context, roomID string) (int
 		Count(&count).Error; err != nil {
 		return 0, err
 	}
+
 	return count, nil
 }
 
@@ -86,12 +88,12 @@ func (r *messageRepository) FindByRoom(ctx context.Context, roomId string, page 
 
 	if err := r.db.
 		WithContext(ctx).
-		Where("room_id = ?", roomId).
-		Order(order).
-		Scopes(database.Paginate(page, pageSize)).
 		Joins("Sender", func(db *gorm.DB) *gorm.DB {
 			return db.Select("id, username, picture_url")
 		}).
+		Where("messages.room_id = ?", roomId).
+		Order(order).
+		Scopes(database.Paginate(page, pageSize)).
 		Find(&messages).Error; err != nil {
 		return nil, err
 	}

@@ -47,6 +47,9 @@ func GracefulShutdown(
 		}()
 
 		// Stop scheduler
+		if err := (*scheduler).StopJobs(); err != nil {
+			logger.Error("Scheduler forced stop jobs: ", err)
+		}
 		if err := (*scheduler).Shutdown(); err != nil {
 			logger.Error("Scheduler forced shutdown: ", err)
 		}

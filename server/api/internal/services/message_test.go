@@ -84,7 +84,7 @@ func (s *MessageServiceTestSuite) TestSaveMessage_Success() {
 	s.mockRoomRepo.On("GetByID", mock.Anything, roomID).Return(room, nil)
 	s.mockUserRepo.On("FindByID", mock.Anything, senderID).Return(sender, nil)
 	s.mockMessageRepo.On("Create", mock.Anything, mock.AnythingOfType("*models.Message")).Return(nil)
-	s.mockKafkaClient.On("BroadcastMessage", roomUserIDs, mock.AnythingOfType("kafka.KafkaMessage")).Return(nil)
+	s.mockKafkaClient.On("BroadcastMessage", mock.Anything, roomUserIDs, mock.AnythingOfType("kafka.KafkaMessage")).Return(nil)
 
 	// Expect transaction commit
 	s.sqlMock.ExpectCommit()
@@ -157,7 +157,7 @@ func (s *MessageServiceTestSuite) TestSaveMessage_KafkaBroadcastFailure() {
 	s.mockRoomRepo.On("GetByID", mock.Anything, roomID).Return(room, nil)
 	s.mockUserRepo.On("FindByID", mock.Anything, senderID).Return(sender, nil)
 	s.mockMessageRepo.On("Create", mock.Anything, mock.AnythingOfType("*models.Message")).Return(nil)
-	s.mockKafkaClient.On("BroadcastMessage", roomUserIDs, mock.AnythingOfType("kafka.KafkaMessage")).Return(kafkaErr)
+	s.mockKafkaClient.On("BroadcastMessage", mock.Anything, roomUserIDs, mock.AnythingOfType("kafka.KafkaMessage")).Return(kafkaErr)
 
 	// Expect transaction rollback
 	s.sqlMock.ExpectRollback()
