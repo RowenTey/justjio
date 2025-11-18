@@ -514,8 +514,7 @@ func (suite *RoomRepositoryTestSuite) TestGetByID_NotFound() {
 	room, err := suite.repo.GetByID(suite.ctx, "00000000-0000-0000-0000-000000000000")
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
-	assert.NotNil(suite.T(), room)       // Repository returns &models.Room{} even on error
-	assert.Equal(suite.T(), "", room.ID) // Zero-value ID
+	assert.Nil(suite.T(), room)
 }
 
 func (suite *RoomRepositoryTestSuite) TestAddUserToRoom_Duplicate() {

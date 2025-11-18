@@ -99,13 +99,8 @@ func (s *NotificationServiceTestSuite) TestCreateNotification_InvalidUserID() {
 func (s *NotificationServiceTestSuite) TestMarkNotificationAsRead_Success() {
 	// Setup test data
 	notificationId := uint(1)
-	userId := uint(1)
 
 	// Mock expectations
-	s.mockNotificationRepo.On("FindByID", mock.Anything, notificationId).Return(&models.Notification{
-		ID:     notificationId,
-		UserID: userId,
-	}, nil)
 	s.mockNotificationRepo.On("MarkAsRead", mock.Anything, notificationId).Return(nil)
 
 	// Execute

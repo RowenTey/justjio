@@ -65,7 +65,7 @@ func (h *BillHandler) CreateBill(c *fiber.Ctx) error {
 		if errors.Is(err, services.ErrAlreadyConsolidated) {
 			return utils.HandleError(c, fiber.StatusBadRequest, err.Error(), nil)
 		}
-		return utils.HandleNotFoundOrInternalError(c, err, RoomNotFoundErrorMsg)
+		return utils.HandleNotFoundOrInternalError(c, err, "Room / payer not found")
 	}
 
 	h.logger.Info("Created bill successfully: ", createdBillId)

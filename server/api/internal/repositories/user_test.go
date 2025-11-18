@@ -482,24 +482,21 @@ func (suite *UserRepositoryTestSuite) TestFindByID_NotFound() {
 	user, err := suite.repo.FindByID(suite.ctx, "999999")
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
-	assert.NotNil(suite.T(), user)            // Repository returns &models.User{} even on error
-	assert.Equal(suite.T(), uint(0), user.ID) // Zero-value ID
+	assert.Nil(suite.T(), user)
 }
 
 func (suite *UserRepositoryTestSuite) TestFindByUsername_NotFound() {
 	user, err := suite.repo.FindByUsername(suite.ctx, "nonexistentuser")
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
-	assert.NotNil(suite.T(), user)            // Repository returns &models.User{} even on error
-	assert.Equal(suite.T(), uint(0), user.ID) // Zero-value ID
+	assert.Nil(suite.T(), user)
 }
 
 func (suite *UserRepositoryTestSuite) TestFindByEmail_NotFound() {
 	user, err := suite.repo.FindByEmail(suite.ctx, "nonexistent@example.com")
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
-	assert.NotNil(suite.T(), user)            // Repository returns &models.User{} even on error
-	assert.Equal(suite.T(), uint(0), user.ID) // Zero-value ID
+	assert.Nil(suite.T(), user)
 }
 
 func (suite *UserRepositoryTestSuite) TestFindByIDs_EmptyArray() {
@@ -551,6 +548,5 @@ func (suite *UserRepositoryTestSuite) TestFindFriendRequest_NotFound() {
 	found, err := suite.repo.FindFriendRequest(suite.ctx, 99999)
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), gorm.ErrRecordNotFound, err)
-	assert.NotNil(suite.T(), found)            // Repository returns &models.FriendRequest{} even on error
-	assert.Equal(suite.T(), uint(0), found.ID) // Zero-value ID
+	assert.Nil(suite.T(), found)
 }

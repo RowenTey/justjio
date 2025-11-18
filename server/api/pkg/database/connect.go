@@ -67,6 +67,7 @@ func ConnectDB(ctx *app.Context) *gorm.DB {
 	sqlDb.SetMaxIdleConns(10)
 	sqlDb.SetMaxOpenConns(50)
 	sqlDb.SetConnMaxLifetime(10 * time.Minute)
+	sqlDb.SetConnMaxIdleTime(5 * time.Minute)
 
 	if err := conn.Use(otelgorm.NewPlugin(otelgorm.WithDBName(config.Database))); err != nil {
 		logger.Warn("Failed to add OpenTelemetry plugin to GORM: ", err.Error())
