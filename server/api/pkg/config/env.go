@@ -82,10 +82,9 @@ func LoadConfig(env string) (*Config, error) {
 		},
 	}
 
+	cfg.Environment = "production"
 	if env != "" {
 		cfg.Environment = env
-	} else {
-		cfg.Environment = "production"
 	}
 
 	return cfg, nil

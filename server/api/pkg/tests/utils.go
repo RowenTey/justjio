@@ -82,11 +82,13 @@ func GenerateTestToken(userID uint, username, email, jwtSecret string) (string, 
 		"email":    email,
 		"exp":      time.Now().Add(time.Hour * 72).Unix(),
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	t, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
 		return "", err
 	}
+
 	return t, nil
 }
 

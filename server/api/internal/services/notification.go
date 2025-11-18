@@ -57,10 +57,6 @@ func (s *NotificationService) CreateNotification(ctx context.Context, userId, ti
 
 // MarkNotificationAsRead updates a notification's read status
 func (s *NotificationService) MarkNotificationAsRead(ctx context.Context, notificationId uint) error {
-	if _, err := s.notificationRepo.FindByID(ctx, notificationId); err != nil {
-		return err
-	}
-
 	return s.notificationRepo.MarkAsRead(ctx, notificationId)
 }
 

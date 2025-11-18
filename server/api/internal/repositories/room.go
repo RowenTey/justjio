@@ -93,7 +93,14 @@ func (r *roomRepository) GetByIDWithAttendees(ctx context.Context, roomID string
 
 	rows, err := r.db.WithContext(ctx).
 		Table("rooms r").
-		Select("r.*, h.username AS host_username, h.picture_url AS host_picture_url, u.id AS user_id, u.username AS user_username, u.picture_url AS user_picture_url").
+		Select(`
+			r.*, 
+			h.username 		AS host_username,
+			h.picture_url 	AS host_picture_url,
+			u.id 			AS user_id,
+			u.username 		AS user_username,
+			u.picture_url 	AS user_picture_url
+		`).
 		Where("r.id = ?", roomID).
 		Joins("LEFT JOIN users h ON r.host_id = h.id").
 		Joins("LEFT JOIN room_users ru ON r.id = ru.room_id").
@@ -102,7 +109,9 @@ func (r *roomRepository) GetByIDWithAttendees(ctx context.Context, roomID string
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() error {
+		return rows.Close()
+	}()
 
 	var result *models.Room
 	for rows.Next() {

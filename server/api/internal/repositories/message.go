@@ -54,17 +54,34 @@ func (r *messageRepository) FindByID(ctx context.Context, msgID string) (*models
 }
 
 func (r *messageRepository) Delete(ctx context.Context, msgID string) error {
-	return r.db.
+	result := r.db.
 		WithContext(ctx).
 		Where("id = ?", msgID).
-		Delete(&models.Message{}).Error
+		Delete(&models.Message{})
+
+	if result.Error != nil {
+		return result.Error
+	} else if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }
 
 func (r *messageRepository) DeleteByRoom(ctx context.Context, roomID string) error {
-	return r.db.
+	result := r.db.
 		WithContext(ctx).
 		Where("room_id = ?", roomID).
-		Delete(&models.Message{}).Error
+		Delete(&models.Message{})
+
+	if result.Error != nil {
+		return result.Error
+	} else if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
+
 }
 
 func (r *messageRepository) CountByRoom(ctx context.Context, roomID string) (int64, error) {
