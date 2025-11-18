@@ -60,7 +60,7 @@ func SignUp(c *fiber.Ctx) error {
 		ClientOTP.Store(user.Email, otp)
 		authLogger.Info("Generated OTP for user: ", user.Username)
 
-		if err := authService.SendOTPEmail(otp, user.Username, user.Email, "verify-email"); err != nil {
+		if err := authService.SendOTPEmail(otp, user.Username, user.Email, model.OTPPurposeVerifyEmail); err != nil {
 			authLogger.Error("Error sending OTP email:", err)
 			ClientOTP.Delete(user.Email)
 		}
@@ -130,7 +130,7 @@ func SendOTPEmail(c *fiber.Ctx) error {
 		return utils.HandleInvalidInputError(c, err)
 	}
 
-	if request.Purpose != "verify-email" && request.Purpose != "reset-password" {
+	if request.Purpose != model.OTPPurposeVerifyEmail && request.Purpose != model.OTPPurposeResetPassword {
 		return utils.HandleError(c, fiber.StatusBadRequest, "Invalid purpose", errors.New("invalid purpose"))
 	}
 
@@ -147,7 +147,7 @@ func SendOTPEmail(c *fiber.Ctx) error {
 		return utils.HandleError(c, fiber.StatusNotFound, "Invalid email address", err)
 	}
 
-	if request.Purpose == "verify-email" && user.IsEmailValid {
+	if request.Purpose == model.OTPPurposeVerifyEmail && user.IsEmailValid {
 		return utils.HandleError(c, fiber.StatusConflict, "Email already verified", errors.New("email already verified"))
 	}
 

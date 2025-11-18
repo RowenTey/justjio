@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -206,6 +208,35 @@ func main() {
 		}
 	}))
 
-	log.Info("Server running on port ", utils.Config("PORT"))
-	log.Fatal(app.Listen(":" + utils.Config("PORT")))
+	// Channel to listen for interrupt signals
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	// Start server in a goroutine
+	go func() {
+		log.Info("Server running on port ", utils.Config("PORT"))
+		if err := app.Listen(":" + utils.Config("PORT")); err != nil {
+			log.Fatal("Server error:", err)
+		}
+	}()
+
+	// Wait for interrupt signal
+	<-quit
+	log.Info("Gracefully shutting down WebSocket server...")
+
+	// Close all Kafka clients
+	for userId, client := range userKafkaClients {
+		log.Info("Closing Kafka client for user:", userId)
+		if err := client.client.Unsubscribe(); err != nil {
+			log.Error("Error unsubscribing:", err)
+		}
+		client.client.Close()
+	}
+
+	// Shutdown server with timeout
+	if err := app.ShutdownWithTimeout(30 * time.Second); err != nil {
+		log.Error("Server forced to shutdown:", err)
+	}
+
+	log.Info("WebSocket server exited")
 }

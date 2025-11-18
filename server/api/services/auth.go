@@ -2,8 +2,9 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -42,7 +43,7 @@ var NewAuthService = func(
 	}
 }
 
-const TOKEN_EXPIRY_DURATION = time.Hour * 72 // 3 days
+
 
 func (s *AuthService) SignUp(newUser *model.User) (*model.User, error) {
 	var err error
@@ -63,7 +64,7 @@ func (s *AuthService) CreateToken(user *model.User) (string, error) {
 	claims["user_id"] = user.ID
 	claims["user_email"] = user.Email
 	claims["picture_url"] = user.PictureUrl
-	claims["exp"] = time.Now().Add(TOKEN_EXPIRY_DURATION).Unix()
+	claims["exp"] = time.Now().Add(time.Hour * model.TokenExpiryDuration).Unix()
 
 	t, err := token.SignedString([]byte(s.JwtSecret))
 	if err != nil {
@@ -77,12 +78,12 @@ func (s *AuthService) SendOTPEmail(otp, username, email, purpose string) error {
 
 	title := ""
 	message := []byte("")
-	if purpose == "verify-email" {
+	if purpose == model.OTPPurposeVerifyEmail {
 		title = "JustJio Email Verification"
 		message = []byte("Welcome " + username + ",\r\n\r\n" +
 			"We are happy to see you signed up with JustJio.\r\n\r\n" +
 			"Your OTP is: " + otp)
-	} else if purpose == "reset-password" {
+	} else if purpose == model.OTPPurposeResetPassword {
 		title = "JustJio Password Reset"
 		message = []byte("Hi " + username + ",\r\n\r\n" +
 			"Please use the following OTP to reset your password.\r\n\r\n" +
@@ -103,14 +104,17 @@ func (s *AuthService) VerifyOTP(storedOtp, email string, otp string) bool {
 }
 
 func (s *AuthService) GenerateOTP() string {
-	// Seed the random number generator
-	rand.New(rand.NewSource(time.Now().Unix()))
-
-	// Generate a random number between 000000 and 999999
-	randomNumber := rand.Intn(1000000)
+	// Generate a cryptographically secure random number between 000000 and 999999
+	maxVal := big.NewInt(1000000)
+	randomNumber, err := rand.Int(rand.Reader, maxVal)
+	if err != nil {
+		s.Logger.Error("Failed to generate secure random OTP:", err)
+		// Fallback to 0 in case of error - caller should handle appropriately
+		return "000000"
+	}
 
 	// Format as a zero-padded 6-digit string
-	return fmt.Sprintf("%06d", randomNumber)
+	return fmt.Sprintf("%06d", randomNumber.Int64())
 }
 
 func (s *AuthService) GetGoogleUser(code string) (*googleOAuth2.Userinfo, error) {

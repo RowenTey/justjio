@@ -2,6 +2,9 @@ package main
 
 import (
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -56,6 +59,29 @@ func main() {
 	middleware.Fiber(app, env, config.Config("ALLOWED_ORIGINS"))
 	router.Initalize(app, kafkaService, notificationsChan)
 
-	log.Info("Server running on port ", config.Config("PORT"))
-	log.Fatal(app.Listen(":" + config.Config("PORT")))
+	// Channel to listen for interrupt signals
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	// Start server in a goroutine
+	go func() {
+		log.Info("Server running on port ", config.Config("PORT"))
+		if err := app.Listen(":" + config.Config("PORT")); err != nil {
+			log.Fatal("Server error:", err)
+		}
+	}()
+
+	// Wait for interrupt signal
+	<-quit
+	log.Info("Gracefully shutting down server...")
+
+	// Close Kafka service
+	kafkaService.Close()
+
+	// Shutdown server with timeout
+	if err := app.ShutdownWithTimeout(30 * time.Second); err != nil {
+		log.Error("Server forced to shutdown:", err)
+	}
+
+	log.Info("Server exited")
 }

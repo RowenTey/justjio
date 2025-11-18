@@ -85,11 +85,13 @@ func (s *KafkaService) ConsumeMessages(handler func(msg kafka.Message)) {
 			s.logger.Info("Stopping message consumption")
 			return
 		default:
-			msg, err := s.Consumer.ReadMessage(1)
-			if err != nil && err.(kafka.Error).Code() == kafka.ErrTimedOut {
-				continue
-			} else if err != nil {
-				s.logger.Printf("Failed to consume message: %s", err.Error())
+			msg, err := s.Consumer.ReadMessage(100) // 100ms timeout
+			if err != nil {
+				kafkaErr, ok := err.(kafka.Error)
+				if ok && kafkaErr.Code() == kafka.ErrTimedOut {
+					continue
+				}
+				s.logger.Errorf("Failed to consume message: %s", err.Error())
 				return
 			}
 			s.logger.Debugf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))

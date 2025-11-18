@@ -199,7 +199,7 @@ func (s *UserService) SendFriendRequest(senderID, receiverID uint) error {
 
 	// Check if a friend request already exists (either sent by userA or userB)
 	var existing model.FriendRequest
-	if err := db.Where("((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) AND status = ?", senderID, receiverID, receiverID, senderID, "pending").First(&existing).Error; err == nil {
+	if err := db.Where("((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?)) AND status = ?", senderID, receiverID, receiverID, senderID, model.FriendRequestStatusPending).First(&existing).Error; err == nil {
 		return errors.New("friend request already sent")
 	}
 
@@ -207,7 +207,7 @@ func (s *UserService) SendFriendRequest(senderID, receiverID uint) error {
 	request := model.FriendRequest{
 		SenderID:   senderID,
 		ReceiverID: receiverID,
-		Status:     "pending",
+		Status:     model.FriendRequestStatusPending,
 	}
 	return db.Create(&request).Error
 }
@@ -220,11 +220,11 @@ func (s *UserService) AcceptFriendRequest(requestID uint) error {
 		return err
 	}
 
-	if request.Status != "pending" {
+	if request.Status != model.FriendRequestStatusPending {
 		return errors.New("friend request already processed")
 	}
 
-	request.Status = "accepted"
+	request.Status = model.FriendRequestStatusAccepted
 	request.RespondedAt = time.Now()
 	if err := db.Save(&request).Error; err != nil {
 		return err
@@ -257,11 +257,11 @@ func (s *UserService) RejectFriendRequest(requestID uint) error {
 		return err
 	}
 
-	if request.Status != "pending" {
+	if request.Status != model.FriendRequestStatusPending {
 		return errors.New("friend request already processed")
 	}
 
-	request.Status = "rejected"
+	request.Status = model.FriendRequestStatusRejected
 	request.RespondedAt = time.Now()
 	return db.Save(&request).Error
 }
@@ -311,7 +311,11 @@ func (s *UserService) GetFriendRequestsByStatus(userID uint, status string) (*[]
 	var requests []model.FriendRequest
 
 	// Validate status
-	validStatuses := map[string]bool{"pending": true, "accepted": true, "rejected": true}
+	validStatuses := map[string]bool{
+		model.FriendRequestStatusPending:  true,
+		model.FriendRequestStatusAccepted: true,
+		model.FriendRequestStatusRejected: true,
+	}
 	if !validStatuses[status] {
 		return nil, errors.New("invalid status")
 	}
@@ -333,7 +337,7 @@ func (s *UserService) CountPendingFriendRequests(userID uint) (int64, error) {
 
 	// Count pending friend requests where the user is the receiver
 	if err := db.Model(&model.FriendRequest{}).
-		Where("receiver_id = ? AND status = ?", userID, "pending").
+		Where("receiver_id = ? AND status = ?", userID, model.FriendRequestStatusPending).
 		Count(&count).Error; err != nil {
 		return 0, err
 	}
