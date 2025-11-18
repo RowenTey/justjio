@@ -3,12 +3,27 @@ package repositories
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/RowenTey/JustJio/server/api/internal/models"
 	"gorm.io/gorm"
 )
+
+type billRepoDto struct {
+	ID              uint
+	Name            string
+	Amount          float32
+	Date            time.Time
+	IncludeOwner    bool
+	RoomID          string
+	OwnerID         uint
+	ConsolidationID sql.NullInt64
+	OwnerUsername   sql.NullString
+	OwnerPictureURL sql.NullString
+	PayerID         sql.NullInt64
+	PayerUsername   sql.NullString
+	PayerPictureURL sql.NullString
+}
 
 type BillRepository interface {
 	WithTx(tx *gorm.DB) BillRepository
@@ -42,22 +57,6 @@ func (r *billRepository) Create(ctx context.Context, bill *models.Bill) error {
 }
 
 func (r *billRepository) FindByID(ctx context.Context, billID uint) (*models.Bill, error) {
-	type row struct {
-		ID              uint
-		Name            string
-		Amount          float32
-		Date            time.Time
-		IncludeOwner    bool
-		RoomID          string
-		OwnerID         uint
-		ConsolidationID sql.NullInt64
-		OwnerUsername   sql.NullString
-		OwnerPictureURL sql.NullString
-		PayerID         sql.NullInt64
-		PayerUsername   sql.NullString
-		PayerPictureURL sql.NullString
-	}
-
 	rows, err := r.db.WithContext(ctx).
 		Table("bills b").
 		Select(`
@@ -77,13 +76,15 @@ func (r *billRepository) FindByID(ctx context.Context, billID uint) (*models.Bil
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() error {
+		return rows.Close()
+	}()
 
 	var bill *models.Bill
 	seenPayers := make(map[uint]struct{})
 
 	for rows.Next() {
-		var sc row
+		var sc billRepoDto
 		if err := r.db.ScanRows(rows, &sc); err != nil {
 			return nil, err
 		}
@@ -135,22 +136,6 @@ func (r *billRepository) FindByID(ctx context.Context, billID uint) (*models.Bil
 }
 
 func (r *billRepository) FindByRoom(ctx context.Context, roomID string) ([]models.Bill, error) {
-	type row struct {
-		ID              uint
-		Name            string
-		Amount          float32
-		Date            time.Time
-		IncludeOwner    bool
-		RoomID          string
-		OwnerID         uint
-		ConsolidationID sql.NullInt64
-		OwnerUsername   sql.NullString
-		OwnerPictureURL sql.NullString
-		PayerID         sql.NullInt64
-		PayerUsername   sql.NullString
-		PayerPictureURL sql.NullString
-	}
-
 	rows, err := r.db.WithContext(ctx).
 		Table("bills b").
 		Select(`
@@ -166,18 +151,20 @@ func (r *billRepository) FindByRoom(ctx context.Context, roomID string) ([]model
 		Joins("LEFT JOIN users owner ON b.owner_id = owner.id").
 		Joins("LEFT JOIN payers p ON b.id = p.bill_id").
 		Joins("LEFT JOIN users payer ON p.user_id = payer.id").
-		Order("b.date DESC, b.id"). // optional: nice ordering
+		Order("b.date DESC, b.id").
 		Rows()
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() error {
+		return rows.Close()
+	}()
 
 	billMap := make(map[uint]*models.Bill)
 	payerSeen := make(map[uint]map[uint]struct{}) // billID → userID
 
 	for rows.Next() {
-		var sc row
+		var sc billRepoDto
 		if err := r.db.ScanRows(rows, &sc); err != nil {
 			return nil, err
 		}
@@ -269,22 +256,6 @@ func (r *billRepository) ConsolidateBills(ctx context.Context, roomID string) (*
 }
 
 func (r *billRepository) FindByConsolidation(ctx context.Context, consolidationID uint) ([]models.Bill, error) {
-	type row struct {
-		ID              uint
-		Name            string
-		Amount          float32
-		Date            time.Time
-		IncludeOwner    bool
-		RoomID          string
-		OwnerID         uint
-		ConsolidationID sql.NullInt64
-		OwnerUsername   sql.NullString
-		OwnerPictureURL sql.NullString
-		PayerID         sql.NullInt64
-		PayerUsername   sql.NullString
-		PayerPictureURL sql.NullString
-	}
-
 	rows, err := r.db.WithContext(ctx).
 		Table("bills b").
 		Select(`
@@ -303,7 +274,9 @@ func (r *billRepository) FindByConsolidation(ctx context.Context, consolidationI
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() error {
+		return rows.Close()
+	}()
 
 	// deduplicate bills
 	billMap := make(map[uint]*models.Bill)
@@ -311,7 +284,7 @@ func (r *billRepository) FindByConsolidation(ctx context.Context, consolidationI
 	payerSeen := make(map[uint]map[uint]struct{})
 
 	for rows.Next() {
-		var sc row
+		var sc billRepoDto
 		if err := r.db.ScanRows(rows, &sc); err != nil {
 			return nil, err
 		}
@@ -373,22 +346,5 @@ func (r *billRepository) FindByConsolidation(ctx context.Context, consolidationI
 		result = append(result, *bill)
 	}
 
-	fmt.Printf("Consolidated bills: %+v", result)
-
 	return result, nil
 }
-
-// func (r *billRepository) FindByConsolidation(ctx context.Context, consolidationID uint) ([]models.Bill, error) {
-// 	var bills []models.Bill
-// 	if err := r.db.
-// 		WithContext(ctx).
-// 		Model(&models.Bill{}).
-// 		Joins("Payers", func(db *gorm.DB) *gorm.DB {
-// 			return db.Select("id", "username", "picture_url")
-// 		}).
-// 		Where("biils.consolidation_id = ?", consolidationID).
-// 		Find(&bills).Error; err != nil {
-// 		return nil, err
-// 	}
-// 	return bills, nil
-// }

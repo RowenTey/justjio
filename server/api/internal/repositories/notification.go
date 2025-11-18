@@ -67,9 +67,17 @@ func (r *notificationRepository) FindByUser(ctx context.Context, userID string) 
 }
 
 func (r *notificationRepository) MarkAsRead(ctx context.Context, notificationID uint) error {
-	return r.db.
+	result := r.db.
 		WithContext(ctx).
 		Model(&models.Notification{}).
 		Where("id = ?", notificationID).
-		Update("is_read", true).Error
+		Update("is_read", true)
+
+	if result.Error != nil {
+		return result.Error
+	} else if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
 }
